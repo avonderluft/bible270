@@ -1,0 +1,25 @@
+<% t = b270_track(track); ref = readings[track]; done = reader_tracks.include?(track) %>
+<% if ref %>
+  <div class="b270-reading <%= track %> <%= 'done' if done %>" id="reading_<%= day %>_<%= track %>">
+    <% if signed_in? %>
+      <%= button_to toggle_checkoff_path(day, track), class: "b270-toggle", form: { data: { turbo_stream: true } },
+            aria: { label: (done ? "Mark #{t[:label]} unread" : "Mark #{t[:label]} read") } do %>
+        <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+      <% end %>
+    <% else %>
+      <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+    <% end %>
+    <div class="b270-rbody">
+      <div class="b270-cat"><%= t[:label] %></div>
+      <div class="b270-ref"><%= link_to ref, b270_passage_url(ref), target: "_blank", rel: "noopener" %></div>
+    </div>
+  </div>
+<% else %>
+  <div class="b270-reading <%= track %> rest" id="reading_<%= day %>_<%= track %>">
+    <span class="b270-check" style="visibility:hidden"></span>
+    <div class="b270-rbody">
+      <div class="b270-cat"><%= t[:label] %></div>
+      <div class="b270-ref">Rest · revisit or reflect</div>
+    </div>
+  </div>
+<% end %>

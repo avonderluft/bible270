@@ -1,0 +1,72 @@
+<% content_for :title, Bible270.config.app_name %>
+<p class="b270-eyebrow"><%= Bible270.config.tagline %></p>
+<h1><%= Bible270.config.app_name %> <em>— read the story straight through</em></h1>
+<p class="lede">Each day: a passage from the Old Testament, a couple of chapters of the New
+   Testament, and a Psalm or Proverb — portions sized to take about the same time to read.
+   Check off what you read; your place is kept for you, and you can see how the rest of the
+   community is journeying too.</p>
+
+<div class="b270-panel">
+  <% if signed_in? %>
+    <div class="b270-bignum">
+      <span class="n"><%= current_reader.days_completed %></span>
+      <span class="of">of <%= Plan::DAYS %> days complete</span>
+      <span class="pct"><%= current_reader.completion_percent %>%</span>
+    </div>
+    <div class="b270-tracks">
+      <% [["ot", current_reader.days_read_in("ot"), Plan::DAYS],
+          ["nt", current_reader.days_read_in("nt"), Plan.nt_content_days],
+          ["pp", current_reader.days_read_in("pp"), Plan::DAYS]].each do |track, read, total| %>
+        <% t = b270_track(track) %>
+        <div class="b270-tm">
+          <span class="lab"><span class="b270-rib" style="background:<%= t[:color] %>"></span><%= t[:label] %></span>
+          <span class="b270-bar"><i style="width:<%= total.zero? ? 0 : (read.to_f/total*100).round %>%;background:<%= t[:color] %>"></i></span>
+          <span class="val"><%= read %>/<%= total %></span>
+        </div>
+      <% end %>
+    </div>
+    <p style="margin:16px 0 0">
+      <%= link_to "Continue reading — Day #{@start_day} →", day_path(@start_day), class: "b270-btn" %>
+      <% if @today_day && @today_day != @start_day %>
+        <%= link_to "Go to today (Day #{@today_day})", day_path(@today_day), style: "margin-left:12px" %>
+      <% end %>
+    </p>
+    <%= render "bible270/days/start_date", reader: current_reader %>
+  <% else %>
+    <p class="b270-signedout"><%= link_to "Sign in", sign_in_path %> to track your progress and join
+       the conversation. You can browse the whole plan and read others' reflections without an account.</p>
+    <% if @community_start_date %>
+      <p class="b270-startline">The community began this plan on
+         <strong><%= @community_start_date.strftime("%B %-d, %Y") %></strong>
+         and finishes <%= Plan.end_date_for(@community_start_date).strftime("%B %-d, %Y") %>.</p>
+    <% end %>
+    <p style="margin:14px 0 0"><%= link_to "Start at Day 1 →", day_path(1), class: "b270-btn" %></p>
+  <% end %>
+</div>
+
+<% if @readers.any? %>
+  <h2 class="b270-section-h">The community</h2>
+  <div class="b270-list">
+    <% @readers.first(5).each_with_index do |r, i| %>
+      <div class="b270-li">
+        <span class="rank"><%= i + 1 %></span>
+        <%= b270_avatar(r) %>
+        <div>
+          <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
+          <div class="sub"><%= @days_completed[r.id] %> days read</div>
+        </div>
+        <div class="stat"><span class="big"><%= (@days_completed[r.id].to_f / Plan::DAYS * 100).round %>%</span></div>
+      </div>
+    <% end %>
+  </div>
+  <p style="margin:12px 0 0"><%= link_to "See everyone →", community_path %></p>
+<% end %>
+
+<details class="b270-index">
+  <summary>All <%= Plan::DAYS %> days</summary>
+  <div class="b270-grid">
+    <% (1..Plan::DAYS).each do |d| %>
+      <%= link_to d, day_path(d), class: "b270-cell #{b270_day_status_class(current_reader, d)} #{'now' if signed_in? && d == @start_day}" %>
+    <% end %>
+  </div>
+</details>

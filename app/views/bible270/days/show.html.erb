@@ -1,0 +1,50 @@
+<% content_for :title, "Day #{@day} — #{Bible270.config.app_name}" %>
+<div class="b270-daynav">
+  <%= link_to "‹", (@prev_day ? day_path(@prev_day) : "#"), class: "b270-arrow #{'disabled' unless @prev_day}", "aria-label": "Previous day" %>
+  <div class="b270-dayhead">
+    <div class="k">Day <%= @day %><% if signed_in? && current_reader.day_complete?(@day) %><span class="b270-badge">Complete</span><% end %></div>
+    <% if signed_in? && current_reader.dated? %>
+      <div class="date">
+        <%= current_reader.date_for_day(@day).strftime("%A, %B %-d, %Y") %>
+        <% if current_reader.calendar_day == @day %><span class="b270-badge">Today</span><% end %>
+      </div>
+    <% end %>
+  </div>
+  <%= link_to "›", (@next_day ? day_path(@next_day) : "#"), class: "b270-arrow #{'disabled' unless @next_day}", "aria-label": "Next day" %>
+</div>
+
+<div id="readings" class="b270-readings">
+  <%= render partial: "bible270/days/reading", collection: %w[ot nt pp],
+             as: :track, locals: { day: @day, readings: @readings, reader_tracks: @reader_tracks } %>
+</div>
+
+<% unless signed_in? %>
+  <p class="b270-signin-hint" style="margin-top:12px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to check off these readings.</p>
+<% end %>
+
+<div class="b270-completers" id="completers_<%= @day %>">
+  <% if @completers.any? %>
+    <span>Finished this day:</span>
+    <% @completers.first(12).each { |r| %><%= link_to b270_avatar(r), reader_path(r), title: r.display_name %><% } %>
+    <% if @completers.size > 12 %><span><%= @completers.size - 12 %> more</span><% end %>
+  <% else %>
+    <span>No one has finished this day yet — be the first.</span>
+  <% end %>
+</div>
+
+<h2 class="b270-section-h">Reflections</h2>
+<div id="comments">
+  <% if @comments.any? %>
+    <%= render partial: "bible270/comments/comment", collection: @comments, as: :comment %>
+  <% else %>
+    <p style="color:var(--faint)" id="no_comments">No reflections yet. Share the first.</p>
+  <% end %>
+</div>
+
+<% if signed_in? %>
+  <div style="margin-top:18px">
+    <%= render "bible270/comments/form", day: @day, comment: @new_comment %>
+  </div>
+<% else %>
+  <p class="b270-signin-hint" style="margin-top:14px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to leave a reflection.</p>
+<% end %>

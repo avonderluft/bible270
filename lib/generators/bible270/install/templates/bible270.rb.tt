@@ -1,0 +1,41 @@
+# frozen_string_literal: true
+#
+# bible270 configuration. See the gem README for the full reference.
+Bible270.configure do |config|
+  config.app_name = "Daily Bread"
+  config.tagline  = "A 270-day journey through Scripture"
+
+  # Share the host application's layout, helpers and CSRF setup.
+  config.parent_controller = "::ApplicationController"
+  # config.layout = "layouts/application"
+
+  # --- Authentication --------------------------------------------------------
+  # Email sign-in: a one-time link, no password, no third-party account needed.
+  # This is what lets anyone take part. Requires Action Mailer delivery to work.
+  config.email_sign_in = true
+  config.mailer_from   = "no-reply@example.com"     # <- change me
+  # config.email_sign_in_ttl = 20 * 60              # link lifetime, seconds
+  # config.email_sign_in_max_per_window = 5         # per email, per window
+  # config.email_sign_in_window = 15 * 60
+  config.email_sign_in_ask_name = true              # let readers choose a display name
+  # config.email_sign_in_deliver_later = true       # if you have a queue backend
+
+  # Optional social sign-in. The matching strategy gems and credentials live in
+  # the host app (see config/initializers/omniauth.rb). Set to [] to use email only.
+  config.omniauth_providers = [<%= providers_literal %>]
+
+  # Viewing the plan is always public; checking off and commenting require a reader.
+  config.require_sign_in_to_participate = true
+
+  # Where to land after signing in / out (defaults to the plan's own root).
+  # config.after_sign_in_path  = "<%= mount_at %>"
+  # config.after_sign_out_path = "/"
+
+  # --- Start date ------------------------------------------------------------
+  # Community-wide start date (Date, Time, or "YYYY-MM-DD"), or nil for undated.
+  # config.start_date = Date.new(2026, 9, 6)
+  config.allow_reader_start_date = true
+
+  # --- Reading links ---------------------------------------------------------
+  config.bible_version = "ESV"
+end

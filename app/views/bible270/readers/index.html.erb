@@ -1,0 +1,24 @@
+<% content_for :title, "Community — #{Bible270.config.app_name}" %>
+<p class="b270-eyebrow">Reading together</p>
+<h1>The community</h1>
+<p class="lede">Everyone journeying through the plan, and how far each has come.</p>
+
+<% if @readers.any? %>
+  <div class="b270-list">
+    <% @readers.each_with_index do |r, i| %>
+      <div class="b270-li">
+        <span class="rank"><%= i + 1 %></span>
+        <%= b270_avatar(r, size: 40) %>
+        <div>
+          <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
+          <div class="sub"><%= @days_completed[r.id] %> of <%= Plan::DAYS %> days · joined <%= r.created_at.strftime("%b %Y") %></div>
+        </div>
+        <div class="stat">
+          <span class="big"><%= (@days_completed[r.id].to_f / Plan::DAYS * 100).round %>%</span>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <p style="color:var(--faint)">No readers yet. Be the first to begin.</p>
+<% end %>

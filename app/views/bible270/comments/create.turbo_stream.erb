@@ -1,0 +1,7 @@
+<%= turbo_stream.remove "no_comments" %>
+<%= turbo_stream.append "comments" do %>
+  <%= render partial: "bible270/comments/comment", locals: { comment: @comment } %>
+<% end %>
+<%= turbo_stream.replace "new_comment_form" do %>
+  <%= render "bible270/comments/form", day: @day, comment: Bible270::Comment.new(day: @day) %>
+<% end %>

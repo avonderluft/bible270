@@ -1,0 +1,43 @@
+<div class="b270-startdate">
+  <% if reader.dated? %>
+    <p class="b270-startline">
+      <% if reader.own_start_date? %>
+        Started <strong><%= reader.start_date.strftime("%B %-d, %Y") %></strong>
+      <% else %>
+        Community plan began <strong><%= Bible270.config.start_date.strftime("%B %-d, %Y") %></strong>
+      <% end %>
+      · finishes <%= reader.plan_end_date.strftime("%B %-d, %Y") %>
+      <% if reader.not_started_yet? %>
+        · <em>begins in <%= (reader.effective_start_date - Date.current).to_i %> days</em>
+      <% elsif reader.past_end_date? %>
+        · <em>the 270 days have elapsed</em>
+      <% elsif (off = reader.days_off_pace) %>
+        <% if off > 0 %>
+          · <em><%= off %> day<%= "s" unless off == 1 %> behind</em>
+        <% elsif off < 0 %>
+          · <em><%= -off %> day<%= "s" unless off == -1 %> ahead</em>
+        <% else %>
+          · <em>right on pace</em>
+        <% end %>
+      <% end %>
+    </p>
+  <% else %>
+    <p class="b270-startline">This plan is undated — pick a start date to see it on a calendar.</p>
+  <% end %>
+
+  <% if Bible270.config.allow_reader_start_date %>
+    <details class="b270-startedit">
+      <summary><%= reader.own_start_date? ? "Change start date" : "Set a start date" %></summary>
+      <%= form_with url: start_date_path, method: :patch, class: "b270-startform" do |f| %>
+        <%= f.date_field :start_date, value: reader.start_date, required: true %>
+        <%= f.submit "Save", class: "b270-btn" %>
+      <% end %>
+      <% if reader.own_start_date? %>
+        <%= button_to "Clear my start date", clear_start_date_path, method: :delete,
+              class: "b270-linkbtn", form: { style: "display:inline" } %>
+      <% end %>
+      <p class="b270-hint">Setting a start date only changes how days map onto the calendar.
+         Your check-offs and reflections are untouched.</p>
+    </details>
+  <% end %>
+</div>

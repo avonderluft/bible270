@@ -1,0 +1,13 @@
+<%= form_with model: comment, url: day_comments_path(day), method: :post,
+      id: "new_comment_form", class: "b270-form", data: { turbo_stream: true } do |f| %>
+  <% if comment.errors.any? %>
+    <p style="color:var(--oxblood);font-size:13px"><%= comment.errors.full_messages.to_sentence %></p>
+  <% end %>
+  <%= f.text_area :body, placeholder: "Share a reflection on today's reading…" %>
+  <div class="row">
+    <%= f.select :track,
+          options_for_select([["The whole day", ""]] + Bible270::Plan::TRACKS.map { |k, v| [v[:label], k] }),
+          {}, style: "font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff" %>
+    <%= f.submit "Post reflection", class: "b270-btn" %>
+  </div>
+<% end %>

@@ -1,0 +1,20 @@
+<header class="b270-topbar">
+  <div class="b270-brand">
+    <%= link_to Bible270.config.app_name, root_path, class: "b270-title" %>
+    <span class="b270-tagline"><%= Bible270.config.tagline %></span>
+  </div>
+  <nav class="b270-nav">
+    <%= link_to "Plan", root_path %>
+    <%= link_to "Community", community_path %>
+    <% if signed_in? %>
+      <%= link_to current_reader.display_name, reader_path(current_reader), class: "b270-me" %>
+      <%= button_to "Sign out", sign_out_path, method: :delete, class: "b270-linkbtn",
+            form: { style: "display:inline" } %>
+    <% elsif Bible270.config.any_sign_in_method? %>
+      <%# Always route to the sign-in page: it offers email as well as any
+          social providers, so nobody is shut out. OmniAuth's own request phase
+          rejects GET, so its buttons live on that page as POST forms. %>
+      <%= link_to "Sign in", sign_in_path(origin: request.fullpath), class: "b270-signin" %>
+    <% end %>
+  </nav>
+</header>

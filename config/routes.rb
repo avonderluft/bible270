@@ -1,0 +1,30 @@
+# frozen_string_literal: true
+Bible270::Engine.routes.draw do
+  root to: "days#index"
+
+  get "day/:day", to: "days#show", as: :day, constraints: { day: /\d+/ }
+
+  post   "day/:day/toggle/:track", to: "checkoffs#toggle", as: :toggle_checkoff,
+         constraints: { day: /\d+/ }
+  post   "day/:day/comments",      to: "comments#create",  as: :day_comments,
+         constraints: { day: /\d+/ }
+  delete "comments/:id",           to: "comments#destroy", as: :comment
+
+  get "community",  to: "readers#index", as: :community
+  get "readers/:id", to: "readers#show", as: :reader
+
+  patch  "start-date", to: "readers#update_start_date", as: :start_date
+  delete "start-date", to: "readers#clear_start_date",  as: :clear_start_date
+
+  # Built-in OmniAuth sign-in. The request phase (POST <mount>/auth/:provider)
+  # is handled by the OmniAuth middleware in the host app, not by these routes.
+  get    "sign_in",                 to: "sessions#new",     as: :sign_in
+
+  # Email (magic link) sign-in, for readers without a social account.
+  post   "sign_in/email",           to: "sessions#email_link",     as: :email_sign_in_link
+  get    "sign_in/email/:token",    to: "sessions#email_callback", as: :email_sign_in
+  get    "auth/:provider/callback", to: "sessions#create"
+  post   "auth/:provider/callback", to: "sessions#create"
+  get    "auth/failure",            to: "sessions#failure"
+  delete "sign_out",                to: "sessions#destroy", as: :sign_out
+end

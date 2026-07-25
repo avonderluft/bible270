@@ -1,0 +1,41 @@
+<% content_for :title, "#{@reader.display_name} — #{Bible270.config.app_name}" %>
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+  <%= b270_avatar(@reader, size: 56) %>
+  <div>
+    <h1 style="margin:0"><%= @reader.display_name %></h1>
+    <p style="margin:2px 0 0;color:var(--faint);font-size:14px"><%= @days_completed %> of <%= Plan::DAYS %> days complete · <%= @reader.completion_percent %>%</p>
+  </div>
+</div>
+
+<div class="b270-panel" style="margin-top:18px">
+  <div class="b270-tracks">
+    <% [["ot", @reader.days_read_in("ot"), Plan::DAYS],
+        ["nt", @reader.days_read_in("nt"), Plan.nt_content_days],
+        ["pp", @reader.days_read_in("pp"), Plan::DAYS]].each do |track, read, total| %>
+      <% t = b270_track(track) %>
+      <div class="b270-tm">
+        <span class="lab"><span class="b270-rib" style="background:<%= t[:color] %>"></span><%= t[:label] %></span>
+        <span class="b270-bar"><i style="width:<%= total.zero? ? 0 : (read.to_f/total*100).round %>%;background:<%= t[:color] %>"></i></span>
+        <span class="val"><%= read %>/<%= total %></span>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="b270-grid">
+  <% (1..Plan::DAYS).each do |d| %>
+    <%= link_to d, day_path(d), class: "b270-cell #{b270_day_status_class(@reader, d)}" %>
+  <% end %>
+</div>
+
+<% if @recent_comments.any? %>
+  <h2 class="b270-section-h">Recent reflections</h2>
+  <% @recent_comments.each do |c| %>
+    <div class="b270-comment">
+      <div style="flex:1">
+        <div class="b270-cmeta"><%= link_to "Day #{c.day}", day_path(c.day), style: "text-decoration:none;color:var(--gold)" %> · <%= c.created_at.strftime("%b %-d, %Y") %></div>
+        <p class="b270-cbody"><%= c.body %></p>
+      </div>
+    </div>
+  <% end %>
+<% end %>

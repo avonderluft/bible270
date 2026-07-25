@@ -1,0 +1,4 @@
+<%= turbo_stream.replace "reading_#{@day}_#{@track}" do %>
+  <%= render partial: "bible270/days/reading", locals: {
+        track: @track, day: @day, readings: @readings, reader_tracks: @reader_tracks } %>
+<% end %>

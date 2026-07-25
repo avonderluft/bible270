@@ -1,0 +1,52 @@
+<% content_for :title, "Sign in — #{Bible270.config.app_name}" %>
+<p class="b270-eyebrow">Sign in</p>
+<h1>Join the reading</h1>
+<p class="lede">Signing in keeps your place in the plan, records what you've read, and lets you
+   leave reflections alongside everyone else. Browsing the plan and reading others' reflections
+   never requires an account.</p>
+
+<div class="b270-panel">
+  <% if Bible270.config.email_sign_in? %>
+    <h2 class="b270-subhead">Sign in with your email</h2>
+    <p class="b270-hint" style="margin-top:0">No password and no account needed — we'll email you
+       a link that signs you in.</p>
+    <%= form_with url: email_sign_in_link_path, method: :post, class: "b270-emailform" do |f| %>
+      <%= hidden_field_tag :origin, @origin if @origin %>
+      <% if Bible270.config.email_sign_in_ask_name %>
+        <label class="b270-field">
+          <span>Name shown beside your reflections</span>
+          <%= text_field_tag :display_name, nil, placeholder: "e.g. Andrew", autocomplete: "name" %>
+        </label>
+      <% end %>
+      <label class="b270-field">
+        <span>Email address</span>
+        <%= email_field_tag :email, nil, required: true, placeholder: "you@example.com",
+              autocomplete: "email", inputmode: "email" %>
+      </label>
+      <%= f.submit "Email me a sign-in link", class: "b270-btn" %>
+    <% end %>
+  <% end %>
+
+  <% if @providers.any? %>
+    <% if Bible270.config.email_sign_in? %>
+      <div class="b270-or"><span>or</span></div>
+    <% end %>
+    <h2 class="b270-subhead">Use an existing account</h2>
+    <div class="b270-providers">
+      <% @providers.each do |key, label| %>
+        <%= button_to b270_omniauth_path(key), method: :post, class: "b270-provider",
+              params: (@origin ? { origin: @origin } : {}), data: { turbo: false } do %>
+          Continue with <%= label %>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% unless Bible270.config.any_sign_in_method? %>
+    <p class="b270-signedout">No sign-in method is configured yet. Set
+       <code>config.email_sign_in</code> or <code>config.omniauth_providers</code>
+       in the host application.</p>
+  <% end %>
+</div>
+
+<p style="margin-top:18px"><%= link_to "← Back to the plan", root_path %></p>

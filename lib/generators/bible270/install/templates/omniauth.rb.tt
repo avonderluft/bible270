@@ -1,0 +1,25 @@
+# frozen_string_literal: true
+#
+# OmniAuth middleware for bible270's built-in sign-in.
+#
+# IMPORTANT: path_prefix must match where the engine is mounted, so that
+# OmniAuth's callback (<prefix>/:provider/callback) lands on the engine's
+# route. bible270 derives its sign-in button paths from the same value.
+#
+# OmniAuth 2.0+ only allows POST to the request phase (CVE-2015-9284);
+# omniauth-rails_csrf_protection supplies the Rails-aware token check, and
+# bible270's sign-in controls are already POST forms.
+Rails.application.config.middleware.use OmniAuth::Builder do
+  path_prefix "<%= omniauth_path_prefix %>"
+
+<% provider_list.each do |p| -%>
+  provider :<%= p %>,
+           Rails.application.credentials.dig(:<%= p %>, :client_id)     || ENV["<%= p.upcase %>_CLIENT_ID"],
+           Rails.application.credentials.dig(:<%= p %>, :client_secret) || ENV["<%= p.upcase %>_CLIENT_SECRET"]
+<% end -%>
+end
+
+# Send OmniAuth failures to the engine's failure route rather than raising.
+OmniAuth.config.on_failure = proc do |env|
+  Bible270::SessionsController.action(:failure).call(env)
+end

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= content_for?(:title) ? yield(:title) : Bible270.config.app_name %></title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag if respond_to?(:csp_meta_tag) %>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <%= render "bible270/shared/styles" %>
+  <%= yield :head %>
+</head>
+<body class="b270">
+  <div class="b270-wrap">
+    <%= render "bible270/shared/header" %>
+    <% if flash[:alert] %><div class="b270-flash alert"><%= flash[:alert] %></div><% end %>
+    <% if flash[:notice] %><div class="b270-flash notice"><%= flash[:notice] %></div><% end %>
+    <%= yield %>
+    <footer class="b270-footer">
+      <p>The Old Testament is read once, cover to cover. The New Testament is read twice —
+         the second pass begins on day <%= Bible270::Plan.nt_second_pass_start_day %>.
+         Psalms &amp; Proverbs runs alongside twice over, whole chapters at a time.</p>
+    </footer>
+  </div>
+</body>
+</html>
