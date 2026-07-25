@@ -31,7 +31,9 @@ nothing copyrighted is bundled). The database only holds **readers, check-offs, 
 ## Requirements & compatibility
 
 - **Ruby** >= 3.0 (the gemspec's `required_ruby_version`). The plan logic is plain Ruby with
-  no C extensions and no dependency on any gem that Ruby 4.0 unbundled.
+  no C extensions and no dependency on any gem that Ruby 4.0 unbundled. Installs and loads under
+  Ruby 4.0.6; the test suite is exercised on 3.2 and passes with
+  `--enable-frozen-string-literal` forced.
 - **Ruby 4.0 notes.** Audited against the 4.0 breaking changes: the gem does not use `cgi`
   (removed from default gems in 4.0 — URL escaping goes through `URI.encode_www_form_component`
   instead, which is byte-identical to `CGI.escape`), `Set`/`SortedSet`, `Ractor`, `Net::HTTP`,
@@ -50,12 +52,22 @@ nothing copyrighted is bundled). The database only holds **readers, check-offs, 
 Add to the host app's `Gemfile`:
 
 ```ruby
-gem "bible270", path: "vendor/gems/bible270"
-# or, once pushed to a git remote:
-# gem "bible270", git: "https://github.com/avonderluft/bible270.git", branch: "main"
+gem "bible270"
 ```
 
-Then:
+<details>
+<summary>Other sources (unreleased changes, local development)</summary>
+
+```ruby
+# straight from the repository
+gem "bible270", git: "https://github.com/avonderluft/bible270.git", branch: "main"
+
+# a local checkout you're editing
+gem "bible270", path: "../bible270"
+```
+</details>
+
+Then install, copy the migrations, and migrate:
 
 ```bash
 bundle install
@@ -63,13 +75,34 @@ bin/rails bible270:install:migrations
 bin/rails db:migrate
 ```
 
+`install:migrations` copies four migrations into your `db/migrate` (readers, check-offs, comments,
+sign-in tokens). They belong to your application from then on: they get your timestamps, appear in
+your `schema.rb`, and are yours to run, roll back, or edit. The engine does **not** add its own
+migration directory to your app's paths, so the copies are the only definitions in play.
+
 Mount it in `config/routes.rb`:
 
 ```ruby
 mount Bible270::Engine, at: "/reading-plan"
 ```
 
+Optionally generate the initializers (see [Authentication](#authentication)):
+
+```bash
+bin/rails generate bible270:install --mount-at=/reading-plan --providers=github
+```
+
 The plan is now live at `/reading-plan`.
+
+### Upgrading
+
+When a new version adds a migration, re-run the copy step — already-copied migrations are skipped:
+
+```bash
+bundle update bible270
+bin/rails bible270:install:migrations
+bin/rails db:migrate
+```
 
 ---
 
@@ -358,6 +391,54 @@ The community leaderboard computes completed-days in Ruby from grouped check-off
 counts. That's ideal for a homelab/parish-sized community (hundreds of readers). If
 you grow to many thousands, add a cached `days_completed` counter on `Reader`
 (updated in a `Checkoff` after_commit) and sort in SQL.
+
+## Troubleshooting
+
+**`ActiveRecord::DuplicateMigrationNameError: Multiple migrations have the name CreateBible270Readers`**
+
+You're on 0.6.2 or earlier, where the engine wrongly added its own `db/migrate` to the host app's
+migration paths *as well as* providing `install:migrations` — so copying them defined every
+migration class twice. Upgrade to >= 0.6.3 and keep your copied migrations:
+
+```bash
+bundle update bible270
+bin/rails db:migrate
+```
+
+**Sign-in returns 404 on the provider callback**
+
+OmniAuth's `path_prefix` doesn't match where the engine is mounted. They have to line up:
+mounting at `/reading-plan` means `path_prefix "/reading-plan/auth"`, and the URL registered with
+the provider must be `https://YOUR-HOST/reading-plan/auth/github/callback`. The install generator
+writes both consistently.
+
+**Clicking "Sign in with …" does nothing, or raises `OmniAuth::AuthenticityError`**
+
+The request has to be a POST with a CSRF token — OmniAuth 2.0+ refuses GET
+([CVE-2015-9284](https://nvd.nist.gov/vuln/detail/CVE-2015-9284)). The engine's own controls are
+already POST forms; if you've built your own link, convert it to `button_to`. Also confirm
+`omniauth-rails_csrf_protection` is in the bundle.
+
+**No sign-in email arrives**
+
+Email sign-in needs working Action Mailer delivery in the host app — the engine only calls
+`deliver_now` (or `deliver_later`). Check `config.mailer_from` is a real address your relay will
+accept, and watch the logs: delivery errors surface there. Nothing about a failure is shown to the
+reader, deliberately, since the "check your inbox" message is identical either way to avoid
+disclosing which addresses exist.
+
+**"That link has expired or was already used"**
+
+Links are single-use and live for `email_sign_in_ttl` (20 minutes by default). Some mail scanners
+and link-preview services fetch URLs before the recipient clicks, which consumes the token. If you
+see this a lot, lengthen the TTL or check whether something upstream is prefetching links.
+
+**Everything renders unstyled inside my layout**
+
+The engine ships scoped CSS in a partial rendered by its own layout. If you point
+`config.layout` at your application layout, add
+`<%= render "bible270/shared/styles" %>` to that layout's `<head>`, or style the `b270-*` classes
+yourself.
 
 ## Development / tests
 
