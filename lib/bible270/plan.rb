@@ -10,15 +10,16 @@ module Bible270
   # proxy for how much text there is), not by chapter count — so a day landing on
   # Psalm 119 (176 verses) is not treated as equal to a day on Psalm 117 (2 verses).
   #
-  # * Old Testament   – read once, cover to cover; WHOLE chapters grouped so each
-  #                     day is ~equal in verses (~73/day)
-  # * New Testament   – read through TWICE (~2 chapters/day, every day)
-  # * Psalms/Proverbs – a WHOLE-CHAPTER daily companion. With only 181 chapters
-  #                     over 270 days it cycles ~1.9x. Chapters stay intact; very
-  #                     short ones merge with a neighbour, and the one excessively
-  #                     long chapter (Psalm 119) is divided into two readings.
+  # * Old Testament   – read once (excluding Psalms and Proverbs); WHOLE chapters
+  #                     grouped so each day is ~equal in verses (~73/day)
+  # * New Testament   – read once, one reading every day; the 10 longest chapters
+  #                     (Luke 1 and friends) are divided in two so 260 chapters fill 270 days
+  # * Psalms/Proverbs – Psalms once and Proverbs TWICE, interleaved in one track.
+  #                     Longer psalms are divided so the two fill exactly 270 days;
+  #                     Psalm 119 is pinned to 11 sections of 16 verses.
   #
-  # Genesis→Malachi finishes on day 270, as does the second pass through the NT.
+  # Genesis→Malachi, Revelation 22, Psalm 150 and the second Proverbs 31 all land
+  # in the closing days.
   module Plan
     DAYS = 270
 
@@ -118,6 +119,65 @@ module Bible270
       groups
     end
 
+    # ---- dividing chapters to fill a fixed number of days ------------------
+    #
+    # Whole chapters are preferred; when a track has fewer chapters than days to
+    # fill, the longest chapters are divided until the counts match. Each extra
+    # division goes to whichever chapter currently carries the heaviest reading,
+    # so the longest are always split first.
+
+    # weights: verses per chapter, in order. pinned: {index => fixed part count}.
+    # Returns the number of readings each chapter becomes.
+    def divide_to_fill(weights, target, pinned = {})
+      parts = Array.new(weights.size, 1)
+      pinned.each { |i, n| parts[i] = n }
+      candidates = (0...weights.size).reject { |i| pinned.key?(i) }
+
+      while parts.sum < target && candidates.any?
+        heaviest = candidates.max_by { |i| weights[i].fdiv(parts[i]) }
+        parts[heaviest] += 1
+      end
+      parts
+    end
+
+    # Turn [book, chapter] pairs plus a part count into readings. A reading is
+    # [book, chapter] when whole, or [book, chapter, from, to] when it's a slice.
+    def expand_readings(chapters, parts)
+      chapters.each_with_index.flat_map do |(book, chapter), idx|
+        n = parts[idx]
+        next [[book, chapter]] if n == 1
+
+        total = verses_for(book, chapter)
+        base = total / n
+        extra = total % n
+        v = 1
+        n.times.map do |k|
+          size = base + (k < extra ? 1 : 0)
+          reading = [book, chapter, v, v + size - 1]
+          v += size
+          reading
+        end
+      end
+    end
+
+    def segment_length(segment)
+      segment.size == 2 ? verses_for(segment[0], segment[1]) : (segment[3] - segment[2] + 1)
+    end
+
+    # "Luke 2" for a whole chapter, "Luke 1:1\u201340" for part of one.
+    def format_segment(segment)
+      book, chapter, from, to = segment
+      return "#{book} #{chapter}" if from.nil?
+
+      from == to ? "#{book} #{chapter}:#{from}" : "#{book} #{chapter}:#{from}\u2013#{to}"
+    end
+
+    # Chapters that ended up divided, as {[book, chapter] => reading count}.
+    def divided(chapters, parts)
+      chapters.each_with_index.select { |_, i| parts[i] > 1 }
+              .to_h { |ch, i| [ch, parts[i]] }
+    end
+
     # ---- Old Testament ----------------------------------------------------
 
     def ot_groups
@@ -136,140 +196,120 @@ module Bible270
       @ot_verse_loads ||= ot_groups.map { |g| g.sum { |b, c| verses_for(b, c) } }
     end
 
-    # ---- New Testament (read through TWICE) -------------------------------
+    # ---- New Testament (read once, one reading every day) ------------------
     #
-    # 260 chapters x 2 passes = 520 chapter-readings over 270 days, so ~2 chapters
-    # a day and no rest days. Each pass gets its own half of the plan (135 days),
-    # so Revelation 22 lands on day 135 and again on day 270. Within a pass, whole
-    # chapters are grouped so each day is ~equal in verses.
+    # 260 chapters over 270 days, so the 10 longest chapters are each divided in
+    # two — Luke 1, Matthew 26 and 27, Mark 14, Luke 9, 12 and 22, John 6 and 8,
+    # and Acts 7. That gives exactly one reading a day with no days off, and
+    # brings the longest reading down from Luke 1's 80 verses to 58.
 
-    NT_PASSES = 2
+    NT_PASSES = 1
 
-    def nt_days_per_pass = DAYS / NT_PASSES
+    def nt_chapters = @nt_chapters ||= flatten(NT)
 
-    def nt_chapters
-      @nt_chapters ||= flatten(NT) * NT_PASSES
+    def nt_parts
+      @nt_parts ||= divide_to_fill(nt_chapters.map { |b, c| verses_for(b, c) }, DAYS)
     end
 
-    def nt_groups
-      @nt_groups ||= begin
-        chapters = flatten(NT)
-        weights  = chapters.map { |b, c| verses_for(b, c) }
-        one_pass = balance_by_weight(chapters, weights, nt_days_per_pass)
-        one_pass * NT_PASSES
-      end
+    def nt_readings
+      @nt_readings ||= expand_readings(nt_chapters, nt_parts)
     end
 
     def nt_plan
-      @nt_plan ||= nt_groups.map { |g| format_reference(g) }
+      @nt_plan ||= nt_readings.map { |seg| format_segment(seg) }
     end
 
     def nt_verse_loads
-      @nt_verse_loads ||= nt_groups.map { |g| g.sum { |b, c| verses_for(b, c) } }
+      @nt_verse_loads ||= nt_readings.map { |seg| segment_length(seg) }
     end
 
-    # Days on which the NT track has content (now every day).
-    def nt_content_days
-      @nt_content_days ||= nt_plan.count { |r| !r.nil? }
-    end
+    # Every day now carries a New Testament reading.
+    def nt_content_days = @nt_content_days ||= nt_plan.count { |r| !r.nil? }
 
-    # 1-indexed day on which the second pass through the NT begins.
-    def nt_second_pass_start_day = nt_days_per_pass + 1
+    def nt_rest_days = []
 
-    # ---- Psalms & Proverbs (whole-chapter companion, cycles ~1.9x) --------
+    def divided_nt_chapters = @divided_nt_chapters ||= divided(nt_chapters, nt_parts)
+
+    # ---- Psalms & Proverbs -------------------------------------------------
     #
-    # Chapters are kept WHOLE. Because there are only 181 Psalms/Proverbs
-    # chapters but 270 days, the track reads through roughly twice, cycling.
-    # Two adjustments keep daily portions roughly even without chopping text:
-    #   * very short chapters merge with a neighbour (no trivial 2-verse days)
-    #   * only excessively long chapters (> PP_LONG_CHAPTER verses) are split
-    #     into balanced parts — in practice just Psalms 78, 89, and 119.
+    # Psalms once and Proverbs TWICE across the 270 days, in one daily track.
+    #
+    # Proverbs supplies 31 x 2 = 62 readings (whole chapters), leaving 208 days
+    # for the Psalms. Since there are only 150 psalms, longer ones are divided:
+    #
+    #   * Psalm 119 is pinned to 11 sections of exactly 16 verses (176 = 11 x 16),
+    #     which matches its 22 eight-verse acrostic stanzas, two per section.
+    #   * The remaining 48 divisions go to whichever psalm currently carries the
+    #     heaviest reading, so the longest are split first and no single reading
+    #     runs long.
+    #
+    # The 62 Proverbs readings are then spaced evenly through the 270 days, which
+    # lands Proverbs 31 on day 135 and again on day 270.
 
-    PP_MIN_DAY      = 12  # keep merging until a portion reaches at least this many verses
-    PP_DAY_TARGET   = 22  # soft cap: stop merging once a portion would exceed this
-    PP_LONG_CHAPTER = 100 # only an excessively long chapter is split; in the whole
-                          # Psalter+Proverbs that is Psalm 119 (176v) alone, since
-                          # the next longest chapter is Psalm 78 at 72 verses
-    PP_SPLIT_PARTS  = 2   # such a chapter is divided into this many readings
+    PROVERBS_PASSES        = 2
+    PSALM_119_SECTION_SIZE = 16
 
-    # The base cycle of readings (whole chapters, short ones merged, long ones
-    # split). Each portion is an array of segments; a segment is either
-    # [book, chapter] (whole) or [book, chapter, from, to] (part of a chapter).
-    def pp_base_portions
-      @pp_base_portions ||= begin
-        units = flatten(PP).map { |b, c| [b, c, verses_for(b, c)] }
-        portions = []
-        buf = []
-        buflen = 0
-        units.each do |book, ch, len|
-          if len > PP_LONG_CHAPTER
-            unless buf.empty?
-              portions << buf
-              buf = []
-              buflen = 0
-            end
-            nparts = PP_SPLIT_PARTS
-            base = len / nparts
-            extra = len % nparts
-            v = 1
-            nparts.times do |i|
-              size = base + (i < extra ? 1 : 0)
-              portions << [[book, ch, v, v + size - 1]]
-              v += size
-            end
-          else
-            if !buf.empty? && buflen >= PP_MIN_DAY && buflen + len > PP_DAY_TARGET
-              portions << buf
-              buf = []
-              buflen = 0
-            end
-            buf << [book, ch]
-            buflen += len
-          end
-        end
-        portions << buf unless buf.empty?
-        portions
+    def proverbs_reading_count = flatten([["Proverbs", 31]]).size * PROVERBS_PASSES
+
+    def psalm_reading_count = DAYS - proverbs_reading_count
+
+    def psalm_chapters
+      @psalm_chapters ||= (1..Versification.chapter_count("Psalm")).map { |c| ["Psalm", c] }
+    end
+
+    # How many readings each psalm is divided into (index 0 == Psalm 1).
+    # Psalm 119 is pinned to 11 sections of PSALM_119_SECTION_SIZE verses.
+    def psalm_parts
+      @psalm_parts ||= begin
+        weights = psalm_chapters.map { |b, c| verses_for(b, c) }
+        i119 = 118
+        divide_to_fill(weights, psalm_reading_count, i119 => weights[i119] / PSALM_119_SECTION_SIZE)
       end
     end
 
-    def pp_cycle_length = pp_base_portions.size
+    def psalm_readings
+      @psalm_readings ||= expand_readings(psalm_chapters, psalm_parts)
+    end
+
+    # Proverbs 1..31, repeated PROVERBS_PASSES times, always whole chapters.
+    def proverbs_readings
+      @proverbs_readings ||= begin
+        chapters = (1..Versification.chapter_count("Proverbs")).map { |c| ["Proverbs", c] }
+        chapters * PROVERBS_PASSES
+      end
+    end
+
+    # True when the given 1-indexed day is one of the evenly spaced Proverbs days.
+    def proverbs_day?(day)
+      n = proverbs_reading_count
+      (day * n / DAYS) > ((day - 1) * n / DAYS)
+    end
+
+    # One reading per day, Psalms and Proverbs interleaved.
+    def pp_readings
+      @pp_readings ||= begin
+        psalms = psalm_readings.dup
+        proverbs = proverbs_readings.dup
+        (1..DAYS).map { |day| proverbs_day?(day) ? proverbs.shift : psalms.shift }
+      end
+    end
 
     def pp_plan
-      @pp_plan ||= (0...DAYS).map { |d| format_pp(pp_base_portions[d % pp_cycle_length]) }
+      @pp_plan ||= pp_readings.map { |seg| format_segment(seg) }
     end
 
     def pp_verse_loads
-      @pp_verse_loads ||= (0...DAYS).map do |d|
-        pp_base_portions[d % pp_cycle_length].sum do |s|
-          s.size == 2 ? verses_for(s[0], s[1]) : (s[3] - s[2] + 1)
-        end
-      end
+      @pp_verse_loads ||= pp_readings.map { |seg| segment_length(seg) }
     end
 
-    # Format a portion, collapsing consecutive whole chapters ("Psalm 24–25")
-    # and rendering split parts as verse ranges ("Psalm 119:1–22").
-    def format_pp(portion)
-      parts = []
-      i = 0
-      while i < portion.size
-        s = portion[i]
-        if s.size == 2 # whole chapter
-          book, ch = s
-          j = i
-          while j + 1 < portion.size && portion[j + 1].size == 2 &&
-                portion[j + 1][0] == book && portion[j + 1][1] == portion[j][1] + 1
-            j += 1
-          end
-          last = portion[j][1]
-          parts << (ch == last ? "#{book} #{ch}" : "#{book} #{ch}\u2013#{last}")
-          i = j + 1
-        else # part of a chapter
-          book, ch, from, to = s
-          parts << (from == to ? "#{book} #{ch}:#{from}" : "#{book} #{ch}:#{from}\u2013#{to}")
-          i += 1
-        end
-      end
-      parts.join(", ")
+    # 1-indexed days carrying a Proverbs reading.
+    def proverbs_days
+      @proverbs_days ||= (1..DAYS).select { |d| proverbs_day?(d) }
+    end
+
+    # Psalms that end up divided, as {chapter => number of readings}.
+    def divided_psalms
+      @divided_psalms ||= divided(psalm_chapters, psalm_parts).to_h { |ch, n| [ch[1], n] }
     end
 
     # ---- public API -------------------------------------------------------
@@ -336,15 +376,20 @@ module Bible270
 
     def totals
       {
-        ot: flatten(OT).size,                 # 748 chapters
-        nt: flatten(NT).size,                 # 260 chapters per pass
-        nt_passes: NT_PASSES,                 # read through twice
-        nt_chapters_read: nt_chapters.size,   # 520 chapter-readings
-        pp: flatten(PP).size,                 # 181 chapters
-        pp_verses: flatten(PP).sum { |b, c| verses_for(b, c) }, # 3376 verses
-        pp_cycle: pp_cycle_length,            # base portions before cycling
+        ot: flatten(OT).size,                  # 748 chapters
+        nt: flatten(NT).size,                  # 260 chapters, read once
+        nt_passes: NT_PASSES,
+        nt_readings: nt_readings.size,          # 270 - one every day
+        nt_divided: divided_nt_chapters.size,   # 10 long chapters halved
+        psalms: Versification.chapter_count("Psalm"),        # 150
+        psalm_readings: psalm_readings.size,                 # 208
+        proverbs: Versification.chapter_count("Proverbs"),   # 31
+        proverbs_passes: PROVERBS_PASSES,
+        proverbs_readings: proverbs_reading_count,           # 62
+        pp: flatten(PP).size,                  # 181 chapters
+        pp_verses: flatten(PP).sum { |b, c| verses_for(b, c) },
         ot_verses: flatten(OT).sum { |b, c| verses_for(b, c) },
-        nt_verses: nt_chapters.sum { |b, c| verses_for(b, c) },
+        nt_verses: flatten(NT).sum { |b, c| verses_for(b, c) },
         days: DAYS
       }
     end

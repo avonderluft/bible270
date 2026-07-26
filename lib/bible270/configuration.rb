@@ -27,6 +27,34 @@ module Bible270
     # Leave nil to use the built-in session-based sign-in (OmniAuth).
     attr_accessor :current_reader_resolver
 
+    # Where the engine is mounted in the host application. Set this once, in
+    # config/initializers/bible270.rb, and use it everywhere the path is needed:
+    #
+    #   # config/routes.rb
+    #   mount Bible270::Engine, at: Bible270.config.mount_at
+    #
+    #   # config/initializers/omniauth.rb
+    #   path_prefix Bible270.config.auth_path_prefix
+    #
+    # Accepts "daily-bread" or "/daily-bread"; stored with a leading slash and
+    # no trailing one.
+    attr_reader :mount_at
+
+    def mount_at=(value)
+      path = value.to_s.strip
+      path = "/#{path}" unless path.start_with?("/")
+      path = path.chomp("/")
+      @mount_at = path.empty? ? "/" : path
+    end
+
+    # The prefix OmniAuth's middleware should serve its routes under. Derived
+    # from mount_at unless omniauth_path_prefix is set explicitly.
+    def auth_path_prefix
+      return omniauth_path_prefix if omniauth_path_prefix
+
+      mount_at == "/" ? "/auth" : "#{mount_at}/auth"
+    end
+
     # Where to send the reader after a successful sign-in / sign-out.
     attr_accessor :after_sign_in_path
     attr_accessor :after_sign_out_path
@@ -146,6 +174,7 @@ module Bible270
       @app_name = "Daily Bread"
       @tagline = "A 270-day journey through Scripture"
       @require_sign_in_to_participate = true
+      self.mount_at = "/daily-bread"
       @start_date = nil
       @allow_reader_start_date = true
       self.omniauth_providers = [:github]

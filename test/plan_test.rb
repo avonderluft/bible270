@@ -6,9 +6,15 @@ class PlanTest < Minitest::Test
 
   def test_totals
     assert_equal 748,   P.totals[:ot]          # OT chapters (excl. Ps/Prov)
-    assert_equal 260,   P.totals[:nt]          # NT chapters per pass
-    assert_equal 2,     P.totals[:nt_passes]
-    assert_equal 520,   P.totals[:nt_chapters_read]
+    assert_equal 260,   P.totals[:nt]          # NT chapters, read once
+    assert_equal 1,     P.totals[:nt_passes]
+    assert_equal 270,   P.totals[:nt_readings]
+    assert_equal 10,    P.totals[:nt_divided]
+    assert_equal 150,   P.totals[:psalms]
+    assert_equal 208,   P.totals[:psalm_readings]
+    assert_equal 31,    P.totals[:proverbs]
+    assert_equal 2,     P.totals[:proverbs_passes]
+    assert_equal 62,    P.totals[:proverbs_readings]
     assert_equal 181,   P.totals[:pp]
     assert_equal 3376,  P.totals[:pp_verses]
     assert_equal 19771, P.totals[:ot_verses]
@@ -25,8 +31,17 @@ class PlanTest < Minitest::Test
   def test_final_day_closes_every_track
     r = P.readings_for(P::DAYS)
     assert_includes r["ot"], "Malachi"
-    assert_includes r["nt"], "Revelation"
-    assert_includes r["pp"], "Proverbs 31"
+    assert_equal "Revelation 22", r["nt"]
+    assert_equal "Proverbs 31", r["pp"]
+    # Psalm 150 lands in the closing days too
+    assert P.pp_plan.last(3).include?("Psalm 150"), "Psalm 150 should finish near the end"
+  end
+
+  def test_ot_and_ps_prov_present_every_day
+    (1..P::DAYS).each do |d|
+      assert P.readings_for(d)["ot"], "day #{d} missing OT"
+      assert P.readings_for(d)["pp"], "day #{d} missing Psalms/Proverbs"
+    end
   end
 
   def test_all_three_tracks_present_every_day
@@ -35,46 +50,106 @@ class PlanTest < Minitest::Test
     end
   end
 
-  # --- New Testament read twice -----------------------------------------
+  # --- New Testament read once ------------------------------------------
 
-  def test_new_testament_is_read_through_twice
-    tally = P.nt_groups.flatten(1).tally
-    assert_equal 260, tally.size, "every NT chapter should appear"
-    assert_equal [2], tally.values.uniq, "every NT chapter should be read exactly twice"
-  end
-
-  def test_each_nt_pass_gets_half_the_plan
-    assert_equal 135, P.nt_days_per_pass
-    assert_equal 136, P.nt_second_pass_start_day
-    # each pass ends with Revelation and the next begins with Matthew
-    assert_includes P.readings_for(135)["nt"], "Revelation"
-    assert P.readings_for(136)["nt"].start_with?("Matthew 1")
-  end
-
-  def test_nt_has_no_rest_days
-    assert_equal P::DAYS, P.nt_content_days
-  end
-
-  # --- whole chapters, with one exception --------------------------------
-
-  def test_only_psalm_119_is_split
-    split = P.pp_base_portions.flatten(1).select { |s| s.size == 4 }
-    assert_equal [["Psalm", 119]], split.map { |s| [s[0], s[1]] }.uniq,
-                 "Psalm 119 should be the only split chapter"
-  end
-
-  def test_psalm_119_is_divided_into_two_readings
-    parts = P.pp_base_portions.flatten(1).select { |s| s[0] == "Psalm" && s[1] == 119 }
-    assert_equal 2, parts.size
-    assert_equal [1, 88],   [parts[0][2], parts[0][3]]
-    assert_equal [89, 176], [parts[1][2], parts[1][3]]
-  end
-
-  def test_psalms_78_and_89_are_never_split
-    split = P.pp_base_portions.flatten(1).select { |s| s.size == 4 }
-    [78, 89].each do |ch|
-      refute split.any? { |s| s[0] == "Psalm" && s[1] == ch }, "Psalm #{ch} must stay whole"
+  def test_new_testament_is_read_exactly_once_and_completely
+    by_chapter = P.nt_readings.group_by { |s| [s[0], s[1]] }
+    assert_equal 260, by_chapter.size, "every NT chapter should appear"
+    by_chapter.each do |(book, chapter), segments|
+      total = Bible270::Versification.verses(book, chapter)
+      if segments.size == 1
+        assert_nil segments.first[2], "#{book} #{chapter} should be whole"
+      else
+        assert_equal (1..total).to_a, segments.flat_map { |s| (s[2]..s[3]).to_a },
+                     "#{book} #{chapter} parts should cover it exactly once"
+      end
     end
+    assert_equal P.totals[:nt_verses], P.nt_readings.sum { |s| P.segment_length(s) }
+  end
+
+  def test_nt_has_a_reading_every_day_with_no_days_off
+    assert_equal P::DAYS, P.nt_readings.size
+    assert_equal P::DAYS, P.nt_content_days
+    assert_empty P.nt_rest_days
+    (1..P::DAYS).each { |d| assert P.readings_for(d)["nt"], "day #{d} has no NT reading" }
+  end
+
+  def test_the_ten_longest_nt_chapters_are_halved
+    divided = P.divided_nt_chapters
+    assert_equal 10, divided.size
+    assert_equal [2], divided.values.uniq, "each divided chapter becomes two readings"
+    assert_includes divided.keys, ["Luke", 1]
+    # Luke 1 (80 verses) splits evenly
+    luke1 = P.nt_readings.select { |s| s[0] == "Luke" && s[1] == 1 }
+    assert_equal [["Luke", 1, 1, 40], ["Luke", 1, 41, 80]], luke1
+  end
+
+  def test_dividing_brings_the_longest_nt_reading_down
+    assert_equal 80, Bible270::Versification.verses("Luke", 1)
+    assert P.nt_verse_loads.max < 80,
+           "longest NT reading should be shorter than the longest chapter"
+    assert_equal 58, P.nt_verse_loads.max
+  end
+
+  def test_nt_runs_matthew_to_revelation
+    assert_equal "Matthew 1", P.readings_for(1)["nt"]
+    assert_equal "Revelation 22", P.readings_for(P::DAYS)["nt"]
+  end
+
+  # --- Psalms once, Proverbs twice ---------------------------------------
+
+  def test_psalm_119_is_eleven_sections_of_sixteen_verses
+    parts = P.pp_readings.select { |s| s[0] == "Psalm" && s[1] == 119 }
+    assert_equal 11, parts.size
+    parts.each { |s| assert_equal 16, s[3] - s[2] + 1, "each section should be 16 verses" }
+    assert_equal [1, 16],    [parts.first[2], parts.first[3]]
+    assert_equal [161, 176], [parts.last[2],  parts.last[3]]
+    # contiguous and complete, no gaps or overlaps
+    assert_equal (1..176).to_a, parts.flat_map { |s| (s[2]..s[3]).to_a }
+  end
+
+  def test_every_psalm_is_read_exactly_once
+    covered = P.psalm_readings.group_by { |s| s[1] }
+    assert_equal 150, covered.size, "all 150 psalms should appear"
+    covered.each do |chapter, segments|
+      total = Bible270::Versification.verses("Psalm", chapter)
+      if segments.size == 1
+        assert_nil segments.first[2], "Psalm #{chapter} should be a whole chapter"
+      else
+        verses = segments.flat_map { |s| (s[2]..s[3]).to_a }
+        assert_equal (1..total).to_a, verses,
+                     "Psalm #{chapter} parts should cover it exactly once"
+      end
+    end
+  end
+
+  def test_proverbs_is_read_twice_in_whole_chapters
+    prov = P.pp_readings.select { |s| s[0] == "Proverbs" }
+    assert_equal 62, prov.size
+    assert_equal [2], prov.group_by { |s| s[1] }.values.map(&:size).uniq,
+                 "every Proverbs chapter should appear twice"
+    prov.each { |s| assert_nil s[2], "Proverbs chapters should never be divided" }
+  end
+
+  def test_proverbs_readings_are_evenly_spaced
+    gaps = P.proverbs_days.each_cons(2).map { |a, b| b - a }.uniq.sort
+    assert gaps.max - gaps.min <= 1, "Proverbs days should be evenly spaced, got gaps #{gaps.inspect}"
+  end
+
+  def test_each_proverbs_pass_ends_on_a_landmark_day
+    assert_equal [135, 270], (1..P::DAYS).select { |d| P.readings_for(d)["pp"] == "Proverbs 31" }
+  end
+
+  def test_psalms_and_proverbs_exactly_fill_the_plan
+    assert_equal 208, P.psalm_readings.size
+    assert_equal 62,  P.proverbs_reading_count
+    assert_equal P::DAYS, P.psalm_readings.size + P.proverbs_reading_count
+    assert_equal P::DAYS, P.pp_readings.size
+  end
+
+  def test_no_psalm_reading_runs_long
+    lengths = P.psalm_readings.map { |s| P.segment_length(s) }
+    assert lengths.max <= 20, "longest psalm reading is #{lengths.max} verses"
   end
 
   def test_ot_chapters_are_never_split
@@ -84,12 +159,10 @@ class PlanTest < Minitest::Test
     end
   end
 
-  def test_ps_prov_covers_every_chapter_and_cycles_evenly
-    covered = P.pp_base_portions.flatten(1).map { |s| [s[0], s[1]] }.uniq
-    assert_equal 181, covered.size
-    # 135 base portions over 270 days = exactly two complete passes
-    assert_equal 135, P.pp_cycle_length
-    assert_equal 2, P::DAYS / P.pp_cycle_length
+  def test_ot_chapters_are_never_divided
+    (1..P::DAYS).each do |d|
+      refute_includes P.readings_for(d)["ot"], ":", "day #{d} OT reference divides a chapter"
+    end
   end
 
   # --- rough balance by actual text length -------------------------------
@@ -97,7 +170,14 @@ class PlanTest < Minitest::Test
   def test_daily_portions_are_roughly_equal_by_verses
     [["OT", P.ot_verse_loads], ["NT", P.nt_verse_loads], ["PsPr", P.pp_verse_loads]].each do |name, loads|
       assert_equal P::DAYS, loads.size
-      assert (loads.max.to_f / loads.min) < 8.0, "#{name} spread too wide: #{loads.min}..#{loads.max}"
+      ratio = loads.max.to_f / loads.min
+      assert ratio < 20.0, "#{name} spread too wide: #{loads.min}..#{loads.max}"
+    end
+  end
+
+  def test_no_track_ever_has_an_empty_day
+    [P.ot_verse_loads, P.nt_verse_loads, P.pp_verse_loads].each do |loads|
+      assert_equal 0, loads.count(&:zero?)
     end
   end
 
@@ -112,7 +192,8 @@ class PlanTest < Minitest::Test
   def test_long_psalm_outweighs_short_psalm
     days_119 = (1..P::DAYS).count { |d| P.readings_for(d)["pp"].include?("Psalm 119") }
     days_117 = (1..P::DAYS).count { |d| P.readings_for(d)["pp"].include?("Psalm 117") }
-    assert days_119 > days_117, "Psalm 119 (176v) should occupy more days than Psalm 117 (2v)"
+    assert_equal 11, days_119
+    assert_equal 1, days_117
   end
 
   # --- reference formatting ---------------------------------------------
@@ -124,10 +205,12 @@ class PlanTest < Minitest::Test
                  P.format_reference([["Malachi", 4], ["Matthew", 1]])
   end
 
-  def test_pp_formatting_of_whole_and_split_readings
-    assert_equal "Psalm 23",          P.format_pp([["Psalm", 23]])
-    assert_equal "Psalm 116\u2013117", P.format_pp([["Psalm", 116], ["Psalm", 117]])
-    assert_equal "Psalm 119:1\u201388", P.format_pp([["Psalm", 119, 1, 88]])
+  def test_segment_formatting
+    assert_equal "Psalm 23",           P.format_segment(["Psalm", 23])
+    assert_equal "Proverbs 31",        P.format_segment(["Proverbs", 31])
+    assert_equal "Psalm 119:1\u201316", P.format_segment(["Psalm", 119, 1, 16])
+    assert_equal "Psalm 9:5",          P.format_segment(["Psalm", 9, 5, 5])
+    assert_equal "Luke 1:41\u201380",   P.format_segment(["Luke", 1, 41, 80])
   end
 
   def test_valid_day_bounds

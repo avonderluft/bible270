@@ -1,73 +1,44 @@
-# bible270
+# Bible 270
 
-A mountable **Rails engine** that adds a social, 270-day Bible reading plan to a
-host Rails application such as [ComfortableMediaSurfer](https://github.com/shakacode/comfortable-mexican-sofa).
+[![Gem Version](https://badge.fury.io/rb/bible270.svg)](https://badge.fury.io/rb/bible270) [![Gem Downloads](https://img.shields.io/gem/dt/bible270.svg?style=flat)](http://rubygems.org/gems/bible270) [![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/avonderluft/bible270?label=last%20release&color=seagreen)](https://github.com/avonderluft/bible270/releases)
 
-Each day presents three readings, sized by **verse count** so daily portions take roughly
-the same time to read. Chapters are kept **whole** — the plan never chops a chapter into
-verse ranges except for the one excessively long chapter, Psalm 119.
+A mountable **Rails engine** that drops a 270-day (9 month) interactive Bible reading plan into any Rails app, built with [ComfortableMediaSurfer](https://github.com/shakacode/comfortable-media-surfer) CMS in mind. Readers tick off each day's readings, post reflections, and see how everyone else is getting on, much like the social plans on Bible.com.
 
-- **Old Testament** — read once, cover to cover. Whole chapters grouped so each day is
-  ~equal in verses (avg ~73/day, range 38–116).
-- **New Testament** — read **twice**. Each pass gets half the plan (135 days), so
-  Revelation lands on day 135 and again on day 270. ~2 chapters/day, every day, verse-balanced
-  within each pass.
-- **Psalms & Proverbs** — a whole-chapter companion that runs **twice** over the 270 days
-  (135 portions x 2). Very short chapters merge with a neighbour so there are no trivial
-  two-verse days (Psalm 117 reads as "Psalm 116–117"), and **Psalm 119 (176 verses) is the
-  sole chapter divided** — into exactly two readings, 1–88 and 89–176.
+Initially created for use by students and faculty of [Kingdom Movement School of Ministry](https://www.kmsm.life/), to read through all of Scripture together, during the school year. Thus it is potentially useful for any Bible School, Seminary, or Discipleship school with a 9 month school year.
 
-Genesis→Malachi, the second pass through Revelation, and Proverbs 31 all finish together on
-day 270. A typical day runs ~157 verses across the three tracks (range 102–238).
+## The plan
 
-Readers check off each track, leave reflections (comments) on any day, and can see everyone
-else's progress and reflections — similar to the social plans on Bible.com.
+Three readings a day, sized by **verse count** so each day takes roughly the same time.
 
-The plan itself is pure, deterministic Ruby (`Bible270::Plan`) — no rows are stored for the
-schedule. Daily portions are sized using per-chapter verse counts (`Bible270::Versification`,
-standard English/KJV versification; verse counts are facts about the text's structure, so
-nothing copyrighted is bundled). The database only holds **readers, check-offs, and comments**.
+- **Old Testament** — once through, with Psalms and Proverbs live in their own track. Whole chapters grouped so each day is ~73 verses (range 38–116).
+- **New Testament** — once through, a reading every day. 260 chapters over 270 days, so the 10 longest are halved (Luke 1, Matthew 26–27, Mark 14, Luke 9, 12, 22, John 6,8, Acts 7).
+- **Psalms & Proverbs** — Psalms once, Proverbs twice, interleaved in one track. Proverbs supplies 62 whole-chapter readings, leaving 208 days for the Psalms; longer psalms are divided to fill them. **Psalm 119 is pinned to 11 sections of exactly 16 verses** (176 = 11 × 16, i.e. two of its eight-verse acrostic stanzas per reading), and 41 psalms in total get divided so no single reading tops 20 verses.
 
-## Requirements & compatibility
+Genesi → Malachi and Revelation 22 both land on day 270, as does the second Proverbs 31 — the first falls on day 135, the midpoint. Psalm 150 comes in on day 269. Every day carries all three tracks. A typical day is ~119 verses (range 76–175).
 
-- **Ruby** >= 3.0 (the gemspec's `required_ruby_version`). The plan logic is plain Ruby with
-  no C extensions and no dependency on any gem that Ruby 4.0 unbundled. Installs and loads under
-  Ruby 4.0.6; the test suite is exercised on 3.2 and passes with
-  `--enable-frozen-string-literal` forced.
-- **Ruby 4.0 notes.** Audited against the 4.0 breaking changes: the gem does not use `cgi`
-  (removed from default gems in 4.0 — URL escaping goes through `URI.encode_www_form_component`
-  instead, which is byte-identical to `CGI.escape`), `Set`/`SortedSet`, `Ractor`, `Net::HTTP`,
-  `Process::Status`, `ObjectSpace`, or any of the gems promoted from default to bundled
-  (`ostruct`, `logger`, `benchmark`, `pstore`, `irb`, `rdoc`). Every file carries a
-  `# frozen_string_literal: true` magic comment and no string literal is mutated.
-- **Rails.** The gemspec allows `rails >= 7.0`, but on Ruby 4.0 the binding constraint is your
-  host app, not this engine: Rails 8.0/8.1 require Ruby >= 3.2, and ComfortableMediaSurfer is a
-  "Rails 7.0+" engine. Verify your own lockfile (e.g. with RailsBump) before pairing an older
-  Rails with Ruby 4.0.
-- A host application (this is an engine, not a standalone app).
-- Turbo is used for seamless check-offs and degrades to full-page redirects if absent.
+The schedule is pure deterministic Ruby (`Bible270::Plan`) — none of it is stored. Portions come from per-chapter verse counts in `Bible270::Versification`. The DB only holds readers, check-offs, comments, and sign-in tokens.
+
+## Requirements
+
+- **Ruby** >= 3.0. Plain Ruby, no C extensions. Runs on 4.0.6 — it avoids everything 4.0 dropped or unbundled (notably `cgi`; URL escaping uses `URI.encode_www_form_component`).
+- **Rails** >= 7.0. On Ruby 4.0 your host app is the real constraint, not this engine — check your lockfile with RailsBump first.
+- A host app, and Turbo if you want check-offs without a page reload.
 
 ## Install
 
-Add to the host app's `Gemfile`:
-
 ```ruby
+# Gemfile
 gem "bible270"
 ```
 
 <details>
-<summary>Other sources (unreleased changes, local development)</summary>
+<summary>Other sources</summary>
 
 ```ruby
-# straight from the repository
 gem "bible270", git: "https://github.com/avonderluft/bible270.git", branch: "main"
-
-# a local checkout you're editing
-gem "bible270", path: "../bible270"
+gem "bible270", path: "<path_to_your_local_copy>/bible270"   # local checkout
 ```
 </details>
-
-Then install, copy the migrations, and migrate:
 
 ```bash
 bundle install
@@ -75,118 +46,113 @@ bin/rails bible270:install:migrations
 bin/rails db:migrate
 ```
 
-`install:migrations` copies four migrations into your `db/migrate` (readers, check-offs, comments,
-sign-in tokens). They belong to your application from then on: they get your timestamps, appear in
-your `schema.rb`, and are yours to run, roll back, or edit. The engine does **not** add its own
-migration directory to your app's paths, so the copies are the only definitions in play.
+That copies four migrations into your `db/migrate` — yours from then on, in your `schema.rb`. The engine doesn't touch your migration paths, so the copies are the only definitions in play.
 
-Mount it in `config/routes.rb`:
+Mount it:
 
 ```ruby
-mount Bible270::Engine, at: "/reading-plan"
+# config/routes.rb
+mount Bible270::Engine, at: Bible270.config.mount_at
 ```
 
-Optionally generate the initializers (see [Authentication](#authentication)):
+Optionally generate the initializers:
 
 ```bash
-bin/rails generate bible270:install --mount-at=/reading-plan --providers=github
+bin/rails generate bible270:install --providers=github
 ```
 
-The plan is now live at `/reading-plan`.
+You're live at `/daily-bread`.
 
 ### Upgrading
 
-When a new version adds a migration, re-run the copy step — already-copied migrations are skipped:
-
 ```bash
 bundle update bible270
-bin/rails bible270:install:migrations
+bin/rails bible270:install:migrations   # skips ones you already have
 bin/rails db:migrate
 ```
 
----
+## Bible270 Mount point in your Rails app
+
+The path lives in exactly **one** place, `config.mount_at`:
+
+```ruby
+# config/initializers/bible270.rb
+Bible270.configure do |config|
+  config.mount_at = "/daily-bread"    # or "/read270", "/manna", whatever you wish
+end
+```
+
+Routes read it directly; OmniAuth reads `Bible270.config.auth_path_prefix` (just
+`"<mount_at>/auth"`). The engine builds its own sign-in links from `request.script_name` at runtime, so there's no third spot to update.
+
+Values are normalised — `"read270"`, `"/read270"`, `"/read270/"` all become `/read270`. Nested paths and mounting at `/` work too.
+
+Two things sit outside your app and still need doing by hand when you move it: the **OAuth callback URLs** in each provider's dashboard, and any **CMS links**.
+
+> **Load order matters.** `bible270.rb` has to be read before `omniauth.rb`, since the latter asks for `auth_path_prefix`. Rails loads initializers alphabetically so the default names work fine. If you rename either, keep that order — or set `mount_at` in `config/application.rb`, which loads before all initializers.
+
+Need OmniAuth somewhere unrelated? Set `config.omniauth_path_prefix` and it wins.
 
 ## Authentication
 
-Two built-in ways to sign in, so **nobody is excluded**:
+Two ways in, so **nobody's shut out**:
 
-1. **Email link (passwordless)** — the reader types their address, gets a one-time link, and
-   clicks it. No password, no account with anyone else. This is the default and it's what makes
-   the plan usable by people who don't have (or don't want to use) GitHub, Google, and friends.
-2. **OmniAuth social sign-in** — optional convenience for those who do.
+1. **Email link** — type an address, get a one-time link, click it. No password, no third-party account. The default, and what makes this usable by people with no GitHub or Google login.
+2. **Social sign-in** via OmniAuth — for people who'd rather.
 
-Either can run alone. `config.omniauth_providers = []` gives you an email-only site;
-`config.email_sign_in = false` gives you social-only. Viewing the plan and reading others'
-reflections stays public either way — only checking off and commenting require signing in.
+Either works alone: `omniauth_providers = []` for email-only, `email_sign_in = false` for
+social-only. Reading is always public; only ticking off and commenting need an account.
 
-### Email sign-in
+### Email links
 
 ```ruby
 Bible270.configure do |config|
   config.email_sign_in = true
-  config.mailer_from   = "no-reply@gknt.org"
-  config.email_sign_in_ask_name = true       # reader picks their display name
-  # config.email_sign_in_ttl = 20 * 60       # link lifetime (seconds)
-  # config.email_sign_in_max_per_window = 5  # per address, per window
+  config.mailer_from   = "no-reply@example.com"
+  config.email_sign_in_ask_name = true       # let readers pick their display name
+  # config.email_sign_in_ttl = 20 * 60       # link lifetime, seconds
+  # config.email_sign_in_max_per_window = 5  # per address
   # config.email_sign_in_window = 15 * 60
-  # config.email_sign_in_deliver_later = true  # needs an Active Job backend
+  # config.email_sign_in_deliver_later = true  # needs Active Job
 end
 ```
 
-The host app needs working Action Mailer delivery — nothing else. How it behaves:
+All it needs is working Action Mailer delivery.
 
-- Tokens are 256-bit, URL-safe, single-use, and expire (20 minutes by default).
-- **Only a SHA-256 digest of the token is stored**, so the table is useless to anyone who reads
-  the database. There is no password column anywhere in this gem.
-- Consuming a link is a conditional update, so a double-clicked link can't sign in twice.
-- The "check your inbox" response is identical whether the address was known, unknown, or
-  rate-limited — no account enumeration and no hint that a limit was hit.
-- Readers may set the display name shown beside their reflections; otherwise it's derived from the
-  address (`mary.anne.smith@…` → "Mary Anne Smith").
-- Spent and stale tokens can be cleaned up with `Bible270::SignInToken.sweep!` from a cron/rake task.
+- Tokens: 256-bit, URL-safe, single-use, 20-minute expiry.
+- **Only a SHA-256 digest is stored** — no password column anywhere, so the table is useless to
+  anyone reading your DB.
+- Claiming is a conditional update, so a double-clicked link still signs you in once.
+- "Check your inbox" reads the same whether the address was known, unknown, or rate-limited — no
+  account enumeration.
+- Display name comes from the reader, else the address (`mary.anne.smith@…` → "Mary Anne Smith").
+- `Bible270::SignInToken.sweep!` clears spent tokens. Good cron fodder.
 
-An email reader gets `provider: "email"` in the same identity columns OmniAuth uses, so downstream
-(progress, comments, leaderboard) treats every reader identically.
+Email readers get `provider: "email"` in the same columns OmniAuth uses, so everything downstream
+treats them identically.
 
-### OmniAuth social sign-in
+### Social sign-in
 
-### Quick setup
+The generator writes both initializers for you and adds the `mount` line:
 
 ```bash
-bin/rails generate bible270:install --mount-at=/reading-plan --providers=github
+bin/rails generate bible270:install --providers=github
 ```
 
-That writes `config/initializers/bible270.rb` (email sign-in enabled) and
-`config/initializers/omniauth.rb` (with `path_prefix` already matching your mount point), and adds
-the `mount` line to your routes. Pass `--providers=` with an empty value for an email-only site.
-Then add the gems you need and migrate:
+Add the strategy gem (`omniauth` and `omniauth-rails_csrf_protection` ride along with bible270):
 
 ```ruby
-# Gemfile — omniauth and omniauth-rails_csrf_protection come in with bible270;
-# the provider strategy is your choice:
 gem "omniauth-github"
 ```
 
-```bash
-bundle install
-bin/rails bible270:install:migrations && bin/rails db:migrate
-```
+Register the callback with the provider — `https://example.com/daily-bread/auth/github/callback`.
 
-Finally register the callback URL with the provider:
-
-```
-https://gknt.org/reading-plan/auth/github/callback
-```
-
-### Manual setup
-
-If you'd rather not use the generator, the only subtlety is that OmniAuth's `path_prefix` must
-line up with where the engine is mounted, so its callback lands on the engine's route:
+Doing it by hand? The one thing to get right is lining up `path_prefix` with the mount point:
 
 ```ruby
 # config/initializers/omniauth.rb
 Rails.application.config.middleware.use OmniAuth::Builder do
-  path_prefix "/reading-plan/auth"          # == <mount point>/auth
+  path_prefix Bible270.config.auth_path_prefix
   provider :github, ENV["GITHUB_CLIENT_ID"], ENV["GITHUB_CLIENT_SECRET"]
 end
 
@@ -196,31 +162,26 @@ OmniAuth.config.on_failure = proc { |env| Bible270::SessionsController.action(:f
 ```ruby
 # config/initializers/bible270.rb
 Bible270.configure do |config|
-  config.omniauth_providers = [:github]              # or [:github, [:google_oauth2, "Google"]]
+  config.mount_at           = "/daily-bread"
+  config.omniauth_providers = [:github]      # or [:github, [:google_oauth2, "Google"]]
   config.parent_controller  = "::ApplicationController"
 end
 ```
 
-### Notes worth knowing
+Worth knowing:
 
-- **Sign-in is a POST, not a link.** OmniAuth 2.0+ refuses GET on its request phase
-  (CVE-2015-9284), so every sign-in control the engine renders is a `button_to` carrying a CSRF
-  token, and `omniauth-rails_csrf_protection` provides the Rails-aware verifier. If you build your
-  own sign-in link, it must POST to `<mount>/auth/:provider`.
-- **One provider vs several.** With a single configured provider the header shows a direct
-  "Sign in with X" button; with several it links to a sign-in page (`GET <mount>/sign_in`) listing
-  them all.
-- **Return-to-origin.** Sign-in controls pass the current path as `origin`, so a reader who clicks
-  a check-off while signed out lands back on that same day afterwards. Origins are validated to be
-  local paths only.
-- **Session hygiene.** `reset_session` runs on both sign-in and sign-out to avoid session fixation.
-  Sign-out is `DELETE <mount>/sign_out`.
-- **What's stored.** Provider, uid, display name, email, and avatar URL — no tokens, no passwords.
+- **Sign-in is a POST.** OmniAuth 2.0+ refuses GET
+  ([CVE-2015-9284](https://nvd.nist.gov/vuln/detail/CVE-2015-9284)), so the engine's controls are
+  `button_to` forms with CSRF tokens. Build your own and it must POST to `<mount>/auth/:provider`.
+- One provider → a button in the header. Several → a sign-in page at `<mount>/sign_in`.
+- Sign-in carries the current path as `origin`, so clicking a check-off while signed out brings you
+  back to that day. Origins must be local paths.
+- `reset_session` on sign-in and sign-out, against session fixation.
+- Stored: provider, uid, display name, email, avatar URL. No tokens, no passwords.
 
-### Alternative: bridge your host's own users
+### Or use your own users
 
-If the host app already has authentication and you'd rather not use OmniAuth at all, set a
-resolver instead and the engine will never touch sessions:
+Already have auth? Hand the engine a resolver and it'll never touch sessions:
 
 ```ruby
 config.current_reader_resolver = lambda do |controller|
@@ -231,223 +192,199 @@ config.current_reader_resolver = lambda do |controller|
 end
 ```
 
-`Reader.for_owner` links a reader to any host model polymorphically via `owner`. Note that
-ComfortableMediaSurfer's admin authentication is separate from public site visitors, so for a
-public plan on a CMS front-end the OmniAuth path above is usually the right fit.
+`Reader.for_owner` links to any host model polymorphically. Heads up: CMS admin auth is separate
+from public visitors, so for a public plan the email/OmniAuth route above is usually what you want.
 
 ## Start dates
 
-The plan works either **undated** (day numbers only) or **dated** (day numbers mapped onto a
-calendar). There are two levers:
+The plan runs **undated** (day numbers only) or **dated** (days mapped onto a calendar):
 
 ```ruby
-Bible270.configure do |config|
-  # A community-wide start date — everyone reads together as a cohort.
-  # Accepts a Date, Time, or "YYYY-MM-DD" string. Default: nil (undated).
-  config.start_date = Date.new(2026, 9, 6)
-
-  # May an individual reader set/change their own start date? Default: true.
-  # Set false to pin everyone to config.start_date.
-  config.allow_reader_start_date = true
-end
+config.start_date = Date.new(2026, 9, 6)   # Date, Time, or "YYYY-MM-DD". nil = undated
+config.allow_reader_start_date = true      # can readers set their own?
 ```
 
-How the two combine:
-
-| `start_date` | `allow_reader_start_date` | Behaviour |
+| `start_date` | `allow_reader_start_date` | What happens |
 |---|---|---|
-| nil | true (default) | Each reader is stamped with their own start date the first time they check something off, and can change it. |
-| a date | true | The community date is the default; any reader may override it with their own. |
-| a date | false | Everyone is pinned to the community date. The per-reader form is hidden. |
-| nil | false | Fully undated — day numbers only, no calendar anywhere. |
+| nil | true *(default)* | Each reader gets stamped on first check-off, and can change it |
+| a date | true | Community date is the default; anyone may override |
+| a date | false | Everyone pinned to the community date, form hidden |
+| nil | false | Fully undated — no calendar anywhere |
 
-When a plan is dated, each day page shows its calendar date with a **Today** badge, the overview
-gains a "Go to today" link, and readers see whether they're ahead of or behind the pace.
+Dated plans show each day's date with a **Today** badge, a "Go to today" link, and whether you're
+ahead or behind. Readers set their own from the overview. Changing a start date only re-maps the
+calendar — check-offs and reflections are keyed to day numbers, so nothing moves.
 
-Readers manage their own date from the overview page (`PATCH /start-date`, `DELETE /start-date`).
-Changing a start date only re-maps days onto the calendar — check-offs and reflections are keyed
-to day numbers and are never touched.
-
-The date helpers are pure functions on `Bible270::Plan`, so you can use them anywhere:
+Date helpers are pure functions, usable anywhere:
 
 ```ruby
-Bible270::Plan.date_for(1, "2026-09-06")        # => Sun, 06 Sep 2026
-Bible270::Plan.end_date_for("2026-09-06")       # => Wed, 02 Jun 2027  (day 270)
-Bible270::Plan.day_for(Date.current, start)     # => 42   (clamped to 1..270)
-Bible270::Plan.day_for(date, start, clamp: false) # => -3 or 271, to detect out-of-range
-Bible270::Plan.before_start?(date, start)       # => true/false
+Bible270::Plan.date_for(1, "2026-09-06")          # => Sun, 06 Sep 2026
+Bible270::Plan.end_date_for("2026-09-06")         # => Wed, 02 Jun 2027 (day 270)
+Bible270::Plan.day_for(Date.current, start)       # => 42 (clamped 1..270)
+Bible270::Plan.day_for(date, start, clamp: false) # => -3 or 271, to spot out-of-range
+Bible270::Plan.before_start?(date, start)
 ```
 
 ## Configuration reference
 
 ```ruby
 Bible270.configure do |config|
+  config.mount_at = "/daily-bread"         # single source of truth for the path
   config.app_name = "Daily Bread"
   config.tagline  = "A 270-day journey through Scripture"
 
   config.start_date = nil                  # community start date, or nil for undated
-  config.allow_reader_start_date = true    # may readers set their own?
+  config.allow_reader_start_date = true
 
-  config.parent_controller = "ActionController::Base"      # or "::ApplicationController"
+  config.parent_controller = "ActionController::Base"   # or "::ApplicationController"
   config.layout            = "bible270/application"
 
-  config.email_sign_in = true                              # passwordless email link
+  config.email_sign_in = true
   config.mailer_from = "no-reply@example.com"
   config.email_sign_in_ttl = 20 * 60
   config.email_sign_in_ask_name = true
-  config.omniauth_providers = [:github]                    # optional social sign-in
-  config.omniauth_path_prefix = nil                        # nil = derive "<mount>/auth"
-  config.current_reader_resolver = nil                     # set to bridge host users instead
+  config.omniauth_providers = [:github]
+  config.omniauth_path_prefix = nil        # nil = derive "<mount_at>/auth"
+  config.current_reader_resolver = nil     # set to bridge your own users
   config.require_sign_in_to_participate = true
 
-  config.after_sign_in_path  = nil                         # defaults to plan root
+  config.after_sign_in_path  = nil         # defaults to the plan root
   config.after_sign_out_path = nil
 
-  config.bible_version = "ESV"
+  config.bible_version = "NKJV"
   config.passage_url_builder = ->(reference, version) {
     "https://www.biblegateway.com/passage/?search=#{URI.encode_www_form_component(reference)}&version=#{version}"
   }
 end
 ```
 
-Every reading reference links out to the configured Bible reader (Bible Gateway by
-default). Point `passage_url_builder` at your own reader if you host one.
+References link to Bible Gateway by default — point `passage_url_builder` at your another reader if you wish, or your own reader if you host one.
 
----
+## With ComfortableMediaSurfer
 
-## Using it inside ComfortableMediaSurfer
-
-ComfortableMediaSurfer serves marketing/content pages; this engine is a separate
-mounted app. Two integration styles:
-
-1. **Link to it** — mount at `/reading-plan` and add a CMS navigation link. The
-   engine renders its own themed pages. Simplest and fully featured.
-
-2. **Match the site chrome** — set `config.parent_controller = "::ApplicationController"`
-   and `config.layout = "layouts/application"` (your site layout) so the plan pages
-   sit inside your normal header/footer. The engine's scoped CSS (all classes are
-   prefixed `b270-`) won't collide with CMS styles.
-
-Because CMS admin auth (`ComfortableMediaSurfer`) is separate from public readers,
-Option B (OmniAuth) is usually the right fit for public visitors on gknt.org.
-
----
+The CMS serves your content; this is a separate mounted app. Either **just link to it** (mount, add a nav link, done — the engine renders its own themed pages), or **match your chrome** by setting `config.parent_controller = "::ApplicationController"` and `config.layout = "layouts/application"`
+so it sits inside your header and footer. All engine CSS is prefixed `b270-`, so nothing collides.
 
 ## Data model
 
-| Table | Purpose |
-|-------|---------|
+| Table | Holds |
+|-------|-------|
 | `bible270_readers` | identity: display name, avatar, provider/uid or polymorphic `owner`, `started_on` |
-| `bible270_checkoffs` | one row per reader per day per track (`ot`/`nt`/`pp`); unique index prevents dups |
-| `bible270_sign_in_tokens` | short-lived magic-link tokens: email, **digest only**, expiry, consumed-at |
-| `bible270_comments` | a reflection on a day (optionally scoped to a track), public to all |
+| `bible270_checkoffs` | one row per reader per day per track (`ot`/`nt`/`pp`), unique-indexed |
+| `bible270_comments` | a reflection on a day, optionally scoped to a track, public to all |
+| `bible270_sign_in_tokens` | magic-link tokens: email, **digest only**, expiry, consumed-at |
 
-A day counts as "complete" for a reader when they've checked every track that has
-content that day (2 on a light-NT day, otherwise 3). All progress and comments are
-**public** to other readers by design (mirroring Bible.com's shared plans).
+A day is "complete" once all three tracks are ticked. Progress and comments are **public** by
+design, same as Bible.com's shared plans.
 
-## Routes (within the mount point)
+## Routes (inside the mount point)
 
 ```
 GET    /                         days#index      overview + community + calendar
-GET    /day/:day                 days#show       three readings, completers, reflections
+GET    /day/:day                 days#show       readings, who's finished, reflections
 POST   /day/:day/toggle/:track   checkoffs#toggle
 POST   /day/:day/comments        comments#create
 DELETE /comments/:id             comments#destroy
 PATCH  /start-date               readers#update_start_date
 DELETE /start-date               readers#clear_start_date
 GET    /community                readers#index   leaderboard
-GET    /readers/:id              readers#show    a reader's progress + reflections
-GET    /sign_in                  sessions#new     email form + provider list
-POST   /sign_in/email            sessions#email_link      send a magic link
-GET    /sign_in/email/:token     sessions#email_callback  consume a magic link
-GET    /auth/:provider/callback  sessions#create  (OmniAuth callback)
+GET    /readers/:id              readers#show
+GET    /sign_in                  sessions#new    email form + provider list
+POST   /sign_in/email            sessions#email_link
+GET    /sign_in/email/:token     sessions#email_callback
+GET    /auth/:provider/callback  sessions#create
 POST   /auth/:provider/callback  sessions#create
 GET    /auth/failure             sessions#failure
 DELETE /sign_out                 sessions#destroy
 
-POST   <mount>/auth/:provider    handled by the OmniAuth middleware, not the engine
+POST   <mount>/auth/:provider    OmniAuth middleware, not the engine
 ```
 
-## Tuning the plan shape
+## Tuning the plan
 
-The whole schedule is derived from a handful of constants in `Bible270::Plan`, so the shape
-can be changed without touching anything else:
+The whole schedule falls out of a few constants in `Bible270::Plan`:
 
 | Constant | Default | Effect |
 |----------|---------|--------|
 | `DAYS` | `270` | plan length |
-| `NT_PASSES` | `2` | how many times the New Testament is read (each pass gets `DAYS / NT_PASSES` days) |
-| `PP_LONG_CHAPTER` | `100` | a chapter longer than this is divided. At 100 only Psalm 119 (176v) qualifies, since the next longest is Psalm 78 at 72v. Raise it above 176 to never split anything |
-| `PP_SPLIT_PARTS` | `2` | how many readings such a chapter becomes |
-| `PP_MIN_DAY` / `PP_DAY_TARGET` | `12` / `22` | how aggressively short chapters merge. These two values are what make the companion come out to exactly 135 portions, i.e. two clean passes across 270 days |
+| `PROVERBS_PASSES` | `2` | Proverbs laps. Each pass is 31 readings, so this decides how many days are left for the Psalms |
+| `PSALM_119_SECTION_SIZE` | `16` | verses per Psalm 119 section. 176 divides evenly by 8, 11, 16, 22 and 44 |
 
-Everything is computed at load time and memoized; there is no generated schedule to migrate
-if you change these.
+Change `PROVERBS_PASSES` or `DAYS` and both the New Testament and the Psalms re-divide automatically
+to fill whatever's left. Divisions always go to whichever chapter currently carries the heaviest
+reading, so the longest get split first and nothing is divided that doesn't need to be.
 
-## Scaling note
+All computed at load and memoized — no generated schedule, so nothing to migrate if you change them.
 
-The community leaderboard computes completed-days in Ruby from grouped check-off
-counts. That's ideal for a homelab/parish-sized community (hundreds of readers). If
-you grow to many thousands, add a cached `days_completed` counter on `Reader`
-(updated in a `Checkoff` after_commit) and sort in SQL.
+## Scaling
+
+The leaderboard counts completed days in Ruby from grouped check-offs — fine for hundreds of
+readers. Past a few thousand, cache a `days_completed` counter on `Reader` via a `Checkoff`
+`after_commit` and sort in SQL.
 
 ## Troubleshooting
 
-**`ActiveRecord::DuplicateMigrationNameError: Multiple migrations have the name CreateBible270Readers`**
+**`DuplicateMigrationNameError: Multiple migrations have the name CreateBible270Readers`**
 
-You're on 0.6.2 or earlier, where the engine wrongly added its own `db/migrate` to the host app's
-migration paths *as well as* providing `install:migrations` — so copying them defined every
-migration class twice. Upgrade to >= 0.6.3 and keep your copied migrations:
+0.6.2 and earlier wrongly added the engine's `db/migrate` to your app's paths *and* shipped
+`install:migrations`, so copying defined everything twice. `bundle update bible270` to >= 0.6.3,
+keep your copies, migrate.
 
-```bash
-bundle update bible270
-bin/rails db:migrate
-```
+**404 on the provider callback**
 
-**Sign-in returns 404 on the provider callback**
+`path_prefix` doesn't match the mount point. Use `Bible270.config.auth_path_prefix` rather than a
+literal, and check the URL registered with the provider matches. Setting `mount_at` in an initializer
+Rails loads *after* `omniauth.rb` gives you the default prefix — see [Mount point](#mount-point).
 
-OmniAuth's `path_prefix` doesn't match where the engine is mounted. They have to line up:
-mounting at `/reading-plan` means `path_prefix "/reading-plan/auth"`, and the URL registered with
-the provider must be `https://YOUR-HOST/reading-plan/auth/github/callback`. The install generator
-writes both consistently.
+**Sign-in button does nothing, or `OmniAuth::AuthenticityError`**
 
-**Clicking "Sign in with …" does nothing, or raises `OmniAuth::AuthenticityError`**
+Has to be a POST with a CSRF token. The engine's controls already are — if you built your own, make
+it a `button_to`. Also check `omniauth-rails_csrf_protection` is in the bundle.
 
-The request has to be a POST with a CSRF token — OmniAuth 2.0+ refuses GET
-([CVE-2015-9284](https://nvd.nist.gov/vuln/detail/CVE-2015-9284)). The engine's own controls are
-already POST forms; if you've built your own link, convert it to `button_to`. Also confirm
-`omniauth-rails_csrf_protection` is in the bundle.
+**No email arrives**
 
-**No sign-in email arrives**
-
-Email sign-in needs working Action Mailer delivery in the host app — the engine only calls
-`deliver_now` (or `deliver_later`). Check `config.mailer_from` is a real address your relay will
-accept, and watch the logs: delivery errors surface there. Nothing about a failure is shown to the
-reader, deliberately, since the "check your inbox" message is identical either way to avoid
-disclosing which addresses exist.
+Needs working Action Mailer delivery — the engine just calls `deliver_now`. Check `mailer_from` is
+an address your relay accepts, and watch the logs. Failures never surface to the reader, on purpose,
+since that message can't reveal which addresses exist.
 
 **"That link has expired or was already used"**
 
-Links are single-use and live for `email_sign_in_ttl` (20 minutes by default). Some mail scanners
-and link-preview services fetch URLs before the recipient clicks, which consumes the token. If you
-see this a lot, lengthen the TTL or check whether something upstream is prefetching links.
+Links are single-use, 20-minute life. Some mail scanners and link-preview bots fetch URLs before the
+recipient clicks, burning the token. If it keeps happening, lengthen `email_sign_in_ttl` or find
+what's prefetching.
 
-**Everything renders unstyled inside my layout**
+**Everything's unstyled in my layout**
 
-The engine ships scoped CSS in a partial rendered by its own layout. If you point
-`config.layout` at your application layout, add
-`<%= render "bible270/shared/styles" %>` to that layout's `<head>`, or style the `b270-*` classes
-yourself.
+The engine's CSS rides in a partial its own layout renders. Using your layout? Add
+`<%= render "bible270/shared/styles" %>` to the `<head>`, or style the `b270-*` classes yourself.
 
-## Development / tests
-
-The deterministic plan logic is fully unit-tested with no Rails dependency:
+## Development
 
 ```bash
 bundle install
 rake test
 ```
+
+Plan logic is fully unit-tested with no Rails dependency.
+
+## Contributing
+
+Bug reports and pull requests are welcome at <https://github.com/avonderluft/bible270>.
+
+1. Fork it and clone your fork.
+2. Branch off `main`: `git checkout -b my-feature`.
+3. Make your change, and add tests — `rake test` should stay green.
+4. Commit with a clear message: `git commit -am "Add my feature"`.
+5. Push: `git push origin my-feature`.
+6. Open a pull request against `main`, saying what changed and why.
+
+A few things that'll make review quick:
+
+- Keep plan logic free of Rails so it stays unit-testable.
+- Anything touching the reading schedule needs a test pinning the expected references — the plan is
+  deterministic, so assert exact values.
+- Prefix new CSS classes and helpers with `b270`.
+- Note anything user-visible in `CHANGELOG.md`.
 
 ## License
 

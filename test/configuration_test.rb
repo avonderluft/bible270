@@ -126,3 +126,50 @@ class OmniAuthConfigTest < Minitest::Test
     refute @config.single_provider?
   end
 end
+
+class MountPointConfigTest < Minitest::Test
+  def setup
+    @config = Bible270::Configuration.new
+  end
+
+  def test_defaults_to_daily_bread
+    assert_equal "/daily-bread", @config.mount_at
+    assert_equal "/daily-bread/auth", @config.auth_path_prefix
+  end
+
+  def test_adds_a_leading_slash
+    @config.mount_at = "read270"
+    assert_equal "/read270", @config.mount_at
+    assert_equal "/read270/auth", @config.auth_path_prefix
+  end
+
+  def test_strips_trailing_slash_and_whitespace
+    @config.mount_at = "  /reading-plan/  "
+    assert_equal "/reading-plan", @config.mount_at
+  end
+
+  def test_nested_paths_are_preserved
+    @config.mount_at = "/church/bible/plan"
+    assert_equal "/church/bible/plan", @config.mount_at
+    assert_equal "/church/bible/plan/auth", @config.auth_path_prefix
+  end
+
+  def test_mounting_at_root_does_not_double_the_slash
+    @config.mount_at = "/"
+    assert_equal "/", @config.mount_at
+    assert_equal "/auth", @config.auth_path_prefix
+  end
+
+  def test_empty_value_becomes_root
+    @config.mount_at = ""
+    assert_equal "/", @config.mount_at
+    assert_equal "/auth", @config.auth_path_prefix
+  end
+
+  def test_explicit_omniauth_prefix_overrides_the_derived_one
+    @config.mount_at = "/read270"
+    @config.omniauth_path_prefix = "/somewhere/else/auth"
+    assert_equal "/somewhere/else/auth", @config.auth_path_prefix
+    assert_equal "/read270", @config.mount_at, "mount_at should be unaffected"
+  end
+end

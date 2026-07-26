@@ -10,8 +10,8 @@ module Bible270
     class InstallGenerator < Rails::Generators::Base
       source_root File.expand_path("templates", __dir__)
 
-      class_option :mount_at, type: :string, default: "/reading-plan",
-                   desc: "Path the engine is mounted at"
+      class_option :mount_at, type: :string, default: "/daily-bread",
+                   desc: "Path the engine is mounted at (default /daily-bread)"
       class_option :providers, type: :string, default: "github",
                    desc: "Comma-separated OmniAuth providers (e.g. github,google_oauth2)"
 
@@ -21,7 +21,8 @@ module Bible270
       end
 
       def add_route
-        route %(mount Bible270::Engine, at: "#{mount_at}")
+        # Driven by config.mount_at so the path is defined in exactly one place.
+        route "mount Bible270::Engine, at: Bible270.config.mount_at"
       end
 
       def show_next_steps
@@ -58,9 +59,6 @@ module Bible270
         provider_list.map { |p| ":#{p}" }.join(", ")
       end
 
-      def omniauth_path_prefix
-        "#{mount_at}/auth"
-      end
     end
   end
 end

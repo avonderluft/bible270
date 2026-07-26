@@ -4,6 +4,102 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html), treating pre-1.0 minor
 bumps as the place breaking changes may land.
 
+## [0.9.0] — 2026-07-25
+
+### Changed
+- **The New Testament now has a reading every day — no days off.** 260 chapters over 270 days is
+  reconciled by dividing the 10 longest chapters in two: Luke 1, Matthew 26 and 27, Mark 14,
+  Luke 9, 12 and 22, John 6 and 8, and Acts 7. Luke 1 reads as 1–40 then 41–80. This drops the
+  longest NT reading from 80 verses to 58 (stdev 14.6 → 11.4) and removes the 10 rest days from
+  0.8.0, so all three tracks are present on all 270 days and every day needs three check-offs.
+- The daily total is now 76–175 verses (was 76–203), averaging ~119.
+
+### Added
+- Shared division machinery used by both the NT and the Psalms: `Plan.divide_to_fill`,
+  `expand_readings`, `segment_length`, `format_segment`, `divided`.
+- `Plan.nt_parts`, `nt_readings`, `nt_chapters`, `divided_nt_chapters`, `psalm_chapters`.
+- `totals` reports `nt_readings` (270) and `nt_divided` (10).
+
+### Removed
+- `Plan.nt_groups`, `format_pp_segment`, `pp_segment_length` (superseded by the shared
+  `format_segment` and `segment_length`), and `totals[:nt_rest_days]`.
+- `nt_rest_days` remains but now always returns an empty array.
+
+## [0.8.0] — 2026-07-25
+
+### Changed — BREAKING (the reading plan itself)
+- **New Testament is read once**, not twice: one chapter a day with 10 evenly spaced days off
+  (every 27th). Matthew 1 on day 1, Revelation 22 on day 270. Chapters stay whole, so the NT load
+  swings with chapter length (8–80 verses: Revelation 15 to Luke 1). Verse-balancing the NT would
+  have needed 48 rest days,
+  since 260 whole chapters can't spread evenly over 270 days — one-a-day is the better trade.
+- **Psalms once and Proverbs twice**, interleaved in the third track. Proverbs contributes
+  31 × 2 = 62 whole-chapter readings, spaced evenly, which leaves 208 days for the Psalms.
+- **Psalm 119 is divided into 11 sections of exactly 16 verses** (176 = 11 × 16 — two of its
+  eight-verse acrostic stanzas per reading), replacing the previous two-part split.
+- **Longer psalms are divided to fill the remaining days.** After Psalm 119's 11 sections, 48 further
+  divisions are spent on whichever psalm currently carries the heaviest reading, so the longest go
+  first: 41 psalms end up divided and no single psalm reading exceeds 20 verses.
+- Short psalms are no longer merged with a neighbour — the track now needs more readings, not fewer,
+  so every psalm stands on its own day or is divided. Psalm 117 is a light day (2 verses) on that
+  track, though the day still carries its OT and NT readings.
+- Proverbs 31 lands on day 135 and again on day 270; Psalm 150 on day 269.
+- A typical day is now ~119 verses (range 76–203), down from ~157.
+
+### Added
+- `Plan.psalm_parts`, `psalm_readings`, `proverbs_readings`, `pp_readings`, `proverbs_days`,
+  `divided_psalms`, `nt_rest_days`, `pp_segment_length`, `format_pp_segment`.
+- `totals` now reports `psalms`, `psalm_readings`, `proverbs`, `proverbs_passes`,
+  `proverbs_readings`, and `nt_rest_days`.
+
+### Removed
+- `PP_LONG_CHAPTER`, `PP_SPLIT_PARTS`, `PP_MIN_DAY`, `PP_DAY_TARGET` (no more merging or
+  threshold-based splitting), `pp_base_portions`, `pp_cycle_length`, `format_pp`,
+  `nt_days_per_pass`, `nt_second_pass_start_day`, `nt_chapters`, and `totals[:nt_chapters_read]`.
+- New tuning constants are `PROVERBS_PASSES` and `PSALM_119_SECTION_SIZE`.
+
+### Notes
+- A day counts as complete when every track with content is ticked: three normally, two on the 10 NT
+  rest days. Check-offs are keyed to day and track, so existing rows stay valid — but the readings
+  those rows point at have changed, so anyone mid-plan is now tracking a different schedule.
+
+## [0.7.0] — 2026-07-25
+
+### Added
+- **`config.mount_at`** — the mount path is now defined in one place, defaulting to `/daily-bread`.
+  `config/routes.rb` uses `mount Bible270::Engine, at: Bible270.config.mount_at` and
+  `config/initializers/omniauth.rb` uses `path_prefix Bible270.config.auth_path_prefix`, so moving
+  the plan is a one-line change. Values are normalised (`"read270"`, `"/read270"`, `"/read270/"` all
+  become `/read270`); nested paths and mounting at `/` are supported.
+- `config.auth_path_prefix`, derived as `"<mount_at>/auth"`. An explicit
+  `config.omniauth_path_prefix` still takes precedence for unusual setups.
+
+### Changed
+- The install generator defaults to `/daily-bread`, writes `config.mount_at` into the engine
+  initializer, and emits a config-driven `mount` line and `path_prefix` rather than literal paths.
+  `--mount-at` is still accepted to set the initial value.
+- README documents the mount point in one section, including the initializer load-order caveat
+  (`bible270.rb` must be read before `omniauth.rb`; alphabetical ordering makes the default naming
+  work) and the two things that still need editing by hand when the path changes: OAuth callback URLs
+  and any CMS links.
+
+### Notes
+- The engine's own sign-in paths are built from `request.script_name` at runtime, so they follow the
+  mount point without configuration.
+
+## [0.6.3] — 2026-07-25
+
+### Fixed
+- **`db:migrate` failed with `ActiveRecord::DuplicateMigrationNameError`.** The engine appended its
+  own `db/migrate` to the host application's migration paths *and* exposed
+  `bible270:install:migrations`. Using the task — the documented install step — meant every
+  migration class was defined twice, once in the host's `db/migrate` and once in the gem. The engine
+  no longer touches the host's migration paths; copying via the task is the single supported path,
+  which also means the host owns the migrations and they appear in `schema.rb` normally.
+
+### Added
+- `spec.email` in the gemspec.
+
 ## [0.6.2] — 2026-07-24
 
 ### Changed
@@ -170,6 +266,10 @@ bumps as the place breaking changes may land.
 - The schedule is pure, deterministic Ruby — no rows are stored for the plan itself; the database
   holds only readers, check-offs, and comments.
 
+[0.9.0]: https://github.com/avonderluft/bible270/releases/tag/v0.9.0
+[0.8.0]: https://github.com/avonderluft/bible270/releases/tag/v0.8.0
+[0.7.0]: https://github.com/avonderluft/bible270/releases/tag/v0.7.0
+[0.6.3]: https://github.com/avonderluft/bible270/releases/tag/v0.6.3
 [0.6.2]: https://github.com/avonderluft/bible270/releases/tag/v0.6.2
 [0.6.1]: https://github.com/avonderluft/bible270/releases/tag/v0.6.1
 [0.6.0]: https://github.com/avonderluft/bible270/releases/tag/v0.6.0

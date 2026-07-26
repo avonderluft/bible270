@@ -2,6 +2,12 @@
 #
 # bible270 configuration. See the gem README for the full reference.
 Bible270.configure do |config|
+  # --- Where the plan lives --------------------------------------------------
+  # Change this one value to move the plan; config/routes.rb and
+  # config/initializers/omniauth.rb both read it, so nothing else needs editing.
+  # (Remember to update the callback URLs registered with each OAuth provider.)
+  config.mount_at = "<%= mount_at %>"
+
   config.app_name = "Daily Bread"
   config.tagline  = "A 270-day journey through Scripture"
 

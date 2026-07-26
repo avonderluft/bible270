@@ -2,15 +2,17 @@
 #
 # OmniAuth middleware for bible270's built-in sign-in.
 #
-# IMPORTANT: path_prefix must match where the engine is mounted, so that
-# OmniAuth's callback (<prefix>/:provider/callback) lands on the engine's
-# route. bible270 derives its sign-in button paths from the same value.
+# path_prefix must match where the engine is mounted, so that OmniAuth's
+# callback (<prefix>/:provider/callback) lands on the engine's route. Rather
+# than repeat the path, we read it from Bible270.config.mount_at — set once in
+# config/initializers/bible270.rb, which Rails loads before this file
+# (initializers run in alphabetical order, and "bible270" precedes "omniauth").
 #
 # OmniAuth 2.0+ only allows POST to the request phase (CVE-2015-9284);
 # omniauth-rails_csrf_protection supplies the Rails-aware token check, and
 # bible270's sign-in controls are already POST forms.
 Rails.application.config.middleware.use OmniAuth::Builder do
-  path_prefix "<%= omniauth_path_prefix %>"
+  path_prefix Bible270.config.auth_path_prefix
 
 <% provider_list.each do |p| -%>
   provider :<%= p %>,
