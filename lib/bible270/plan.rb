@@ -15,7 +15,7 @@ module Bible270
   #                     grouped so each day is ~equal in verses (~73/day)
   # * New Testament   – read once, one reading every day; the 10 longest chapters
   #                     (Luke 1 and friends) are divided in two so 260 chapters fill 270 days
-  # * Psalms/Proverbs – Psalms once and Proverbs TWICE, interleaved in one track.
+  # * Psalms/Proverbs – Psalms and Proverbs once, interleaved in one track.
   #                     Longer psalms are divided so the two fill exactly 270 days;
   #                     Psalm 119 is pinned to 11 sections of 16 verses.
   #
@@ -292,7 +292,7 @@ module Bible270
     end
 
     def parse_breaks_file(path)
-      raw = YAML.safe_load(File.read(path), permitted_classes: [], aliases: false) || {}
+      raw = YAML.safe_load_file(path, permitted_classes: [], aliases: false) || {}
       raise ArgumentError, "#{path} must map \"Book Chapter\" to a list of verses" unless raw.is_a?(Hash)
 
       normalize_breaks(raw)
@@ -308,7 +308,7 @@ module Bible270
     def break_key(key)
       return [key[0].to_s, key[1].to_i] if key.is_a?(Array)
 
-      match = key.to_s.strip.match(/\A(.+?)\s+(\d+)\z/)
+      match = key.to_s.strip.match(%r{\A(.+?)\s+(\d+)\z})
       raise ArgumentError, "chapter break key #{key.inspect} must look like 'Psalm 18'" if match.nil?
 
       [match[1], match[2].to_i]
@@ -406,7 +406,7 @@ module Bible270
       ['Psalm', 44] => [], ['Psalm', 49] => [], ['Psalm', 50] => [], ['Psalm', 51] => [], # Stay whole
       ['Psalm', 55] => [], ['Psalm', 59] => [], ['Psalm', 65] => [], ['Psalm', 66] => [], # Stay whole
       ['Psalm', 68] => [18], # => Psalm 68:1–18, 68:19–35
-      ['Psalm', 69] => [18 ], # => Psalm 69:1–18, 69:19–36
+      ['Psalm', 69] => [18], # => Psalm 69:1–18, 69:19–36
       ['Psalm', 78] => [20, 39, 55], # => 78:1–20, 21–39, 40–55, 56–72
       ['Psalm', 37] => [20], # => Psalm 37:1–20, 37:21–40
       ['Matthew', 26] => [35], # => Matthew 26:1–35, 26:36–75

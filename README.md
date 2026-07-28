@@ -4,15 +4,15 @@
 
 A mountable **Rails engine** that drops a 270-day (9 month) interactive Bible reading plan into any Rails app, built with [ComfortableMediaSurfer](https://github.com/shakacode/comfortable-media-surfer) CMS in mind. Readers tick off each day's readings, post reflections, and see how everyone else is getting on, much like the social plans on Bible.com.
 
-Initially created for use by students and faculty of [Kingdom Movement School of Ministry](https://www.kmsm.life/), to read through all of Scripture together, during the school year. Thus it is potentially useful for any Bible School, Seminary, or Discipleship school with a 9 month school year.
+Initially created for use by students and faculty of [Kingdom Movement School of Ministry](https://www.kmsm.life/), to read through all of Scripture together during the school year. Thus it is potentially useful for any Bible School, Seminary, or Discipleship school working on a 9 month schedule.
 
 ## The plan
 
 Three readings a day, sized by **verse count** so each day takes roughly the same time.
 
-- **Old Testament** — once through, with Psalms and Proverbs live in their own track. Whole chapters grouped so each day is ~73 verses (range 38–116).
-- **New Testament** — once through, a reading every day. 260 chapters over 270 days, so the 10 longest are halved (Luke 1, Matthew 26–27, Mark 14, Luke 9, 12, 22, John 6,8, Acts 7).
-- **Psalms & Proverbs** — once each, interleaved in one track. 181 chapters have to cover 270 days, so 89 are divided, shared between the two books by verse load. **A psalm of 25 verses or fewer is never divided**, keeping 131 of the 150 whole; longer psalms and Proverbs chapters break at their turns of thought (see `CHAPTER_BREAKS`). **Psalm 119 is 11 sections of 16 verses** — two of its eight-verse acrostic stanzas each. Proverbs lands on 89 days, near its proportional share. **A divided chapter is always read on consecutive days**, so nothing is inserted between the parts of a split psalm.
+- **Old Testament** — once through, with Psalms and Proverbs in their own track. 
+- **New Testament** — once through, a reading every day. 260 chapters over 270 days, long chapters are divided to even out the daily reading
+- **Psalms & Proverbs** — once each, interleaved in one track. 181 chapters have to cover 270 days, so some are divided, shared between the two books by verse load. **A psalm of 25 verses or fewer is never divided**, keeping 131 of the 150 whole; longer psalms and Proverbs chapters break at their turns of thought (see `CHAPTER_BREAKS`). **Psalm 119 is 11 sections of 16 verses** — two of its eight-verse acrostic stanzas each. Proverbs lands on 89 days, near its proportional share. **A divided chapter is always read on consecutive days**, so nothing is inserted between the parts of a split psalm.
 
 Genesis → Malachi and Revelation 22 both land on day 270, as does the second Proverbs 31 — the first falls on day 135, the midpoint. Psalm 150 comes in on day 269. Every day carries all three tracks. A typical day is ~119 verses (range 76–175).
 
@@ -20,7 +20,7 @@ The schedule is pure deterministic Ruby (`Bible270::Plan`) — none of it is sto
 
 ## Requirements
 
-- **Ruby** >= 3.0. Plain Ruby, no C extensions. Runs on 4.0.6 — it avoids everything 4.0 dropped or unbundled (notably `cgi`; URL escaping uses `URI.encode_www_form_component`).
+- **Ruby** >= 3.2. Plain Ruby, no C extensions. Runs on 4.0.6 — it avoids everything 4.0 dropped or unbundled (notably `cgi`; URL escaping uses `URI.encode_www_form_component`).
 - **Rails** >= 7.0. On Ruby 4.0 your host app is the real constraint, not this engine — check your lockfile with RailsBump first.
 - A host app, and Turbo if you want check-offs without a page reload.
 
@@ -295,8 +295,10 @@ Bible270.configure do |config|
   config.mount_at = "/daily-bread"         # single source of truth for the path
   config.app_name = "Daily Bread"
   config.tagline  = "A 270-day journey through Scripture"
+  config.admin_emails = %w[andrew@example.org]
 
-  config.start_date = nil                  # community start date, or nil for undated
+  # config.start_date = nil       # community start date, or nil for undated
+  config.start_date = Date.new(2026, 9, 6)  
   config.allow_reader_start_date = true
 
   config.parent_controller = "ActionController::Base"   # or "::ApplicationController"

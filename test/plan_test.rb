@@ -96,7 +96,7 @@ class PlanTest < Minitest::Test
     assert_equal 'Revelation 22', P.readings_for(P::DAYS)['nt']
   end
 
-  # --- Psalms once, Proverbs twice ---------------------------------------
+  # --- Psalms and Proverbs once ---------------------------------------
 
   def test_psalm_119_is_eleven_sections_of_sixteen_verses
     parts = P.pp_readings.select { |s| s[0] == 'Psalm' && s[1] == 119 }
