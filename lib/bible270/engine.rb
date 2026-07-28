@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bible270
   class Engine < ::Rails::Engine
     isolate_namespace Bible270

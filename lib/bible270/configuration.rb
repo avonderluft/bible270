@@ -4,8 +4,8 @@
 # here: the CGI library was removed from Ruby's default gems in Ruby 4.0 (only
 # cgi/escape remains), so requiring it emits a deprecation warning there.
 # URI.encode_www_form_component produces byte-identical output to CGI.escape.
-require "uri"
-require "bible270/plan"
+require 'uri'
+require 'bible270/plan'
 
 module Bible270
   class Configuration
@@ -42,9 +42,9 @@ module Bible270
 
     def mount_at=(value)
       path = value.to_s.strip
-      path = "/#{path}" unless path.start_with?("/")
-      path = path.chomp("/")
-      @mount_at = path.empty? ? "/" : path
+      path = "/#{path}" unless path.start_with?('/')
+      path = path.chomp('/')
+      @mount_at = path.empty? ? '/' : path
     end
 
     # The prefix OmniAuth's middleware should serve its routes under. Derived
@@ -52,12 +52,11 @@ module Bible270
     def auth_path_prefix
       return omniauth_path_prefix if omniauth_path_prefix
 
-      mount_at == "/" ? "/auth" : "#{mount_at}/auth"
+      mount_at == '/' ? '/auth' : "#{mount_at}/auth"
     end
 
     # Where to send the reader after a successful sign-in / sign-out.
     attr_accessor :after_sign_in_path
-    attr_accessor :after_sign_out_path
 
     # ---- OmniAuth (built-in sign-in) --------------------------------------
 
@@ -78,17 +77,17 @@ module Bible270
 
     # Human labels for providers we know; anything else is titleised.
     PROVIDER_LABELS = {
-      github: "GitHub", gitlab: "GitLab", google_oauth2: "Google", google: "Google",
-      facebook: "Facebook", twitter: "Twitter", apple: "Apple", discord: "Discord",
-      microsoft_graph: "Microsoft", azure_activedirectory_v2: "Microsoft",
-      openid_connect: "OpenID Connect", saml: "SSO"
+      github: 'GitHub', gitlab: 'GitLab', google_oauth2: 'Google', google: 'Google',
+      facebook: 'Facebook', twitter: 'Twitter', apple: 'Apple', discord: 'Discord',
+      microsoft_graph: 'Microsoft', azure_activedirectory_v2: 'Microsoft',
+      openid_connect: 'OpenID Connect', saml: 'SSO'
     }.freeze
 
     def omniauth_providers=(list)
       @omniauth_providers = Array(list).map do |entry|
         key, label = entry.is_a?(Array) ? entry : [entry, nil]
         key = key.to_sym
-        [key, (label || PROVIDER_LABELS[key] || key.to_s.tr("_", " ").split.map(&:capitalize).join(" "))]
+        [key, label || PROVIDER_LABELS[key] || key.to_s.tr('_', ' ').split.map(&:capitalize).join(' ')]
       end
     end
 
@@ -109,11 +108,51 @@ module Bible270
 
     # Simple abuse guard: at most N links per address per window (seconds).
     attr_accessor :email_sign_in_window
-    attr_accessor :email_sign_in_max_per_window
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :admin_emails, :admin_resolver
 
     # Whether a reader may type the display name shown beside their reflections
     # when signing in by email (otherwise it's derived from the address).
     attr_accessor :email_sign_in_ask_name
+
+    # Write the sign-in link to the log. nil (default) means development and test
+    # only; true forces it on, for smoke-testing a production build locally
+    # before mail is wired up; false disables it everywhere. The link is a bearer
+    # credential, so true is not for a deployment real users can reach.
+    attr_accessor :email_sign_in_log_link
+
+    # Require a first AND last name when signing in by email. Names identify
+    # people to each other beside their reflections, so this is on by default.
+    attr_accessor :email_sign_in_require_name
+
+    # Who may reach the admin panel. Either a list of email addresses, or a
+    # lambda taking the current reader and returning true/false:
+    #
+    #   config.admin_emails = %w[andrew@example.org]
+    #   config.admin_resolver = ->(reader) { reader.email.end_with?('@example.org') }
+    #
+    # With neither set the panel is unreachable and its routes 404.
+    # Break points set from the host app, overriding Plan::CHAPTER_BREAKS.
+    # Keys may be ['Psalm', 18] or 'Psalm 18'; [] keeps a chapter whole.
+    attr_accessor :chapter_breaks
+
+    # Optional YAML file holding the same thing, re-read whenever it changes so
+    # breaks can be tuned without restarting:
+    #
+    #   # config/bible270_breaks.yml
+    #   Psalm 35: []
+    #   Psalm 78: [20, 39, 55]
+    attr_accessor :chapter_breaks_path
+
+    def admin?(reader)
+      return false if reader.nil?
+      return !!admin_resolver.call(reader) if admin_resolver.respond_to?(:call)
+
+      Array(admin_emails).map { |e| e.to_s.downcase }.include?(reader.email.to_s.downcase)
+    end
+
+    def admin_configured?
+      admin_resolver.respond_to?(:call) || Array(admin_emails).any?
+    end
 
     # Send the sign-in email via Active Job (deliver_later) instead of inline.
     # Leave false unless you have a queue backend configured.
@@ -132,16 +171,14 @@ module Bible270
       found = omniauth_providers.find { |k, _| k.to_s == key.to_s }
       return found.last if found
 
-      PROVIDER_LABELS[key.to_sym] || key.to_s.tr("_", " ").split.map(&:capitalize).join(" ")
+      PROVIDER_LABELS[key.to_sym] || key.to_s.tr('_', ' ').split.map(&:capitalize).join(' ')
     end
 
     # Default Bible translation and a builder for external passage links.
     attr_accessor :bible_version
-    attr_accessor :passage_url_builder
 
     # Public labels.
     attr_accessor :app_name
-    attr_accessor :tagline
 
     # Optional community-wide start date for the plan. Set this when everyone
     # reads together as a cohort (e.g. a church starting on a set Sunday):
@@ -160,31 +197,37 @@ module Bible270
     attr_accessor :require_sign_in_to_participate
 
     def initialize
-      @parent_controller = "ActionController::Base"
-      @layout = "bible270/application"
+      @parent_controller = 'ActionController::Base'
+      @layout = 'bible270/application'
       @current_reader_resolver = nil
       @after_sign_in_path = nil
       @after_sign_out_path = nil
-      @bible_version = "ESV"
-      @passage_url_builder = lambda do |reference, version|
+      @bible_version = 'NKJV'
+      @passage_url_builder = ->(reference, version) do
         search  = URI.encode_www_form_component(reference)
         version = URI.encode_www_form_component(version)
         "https://www.biblegateway.com/passage/?search=#{search}&version=#{version}"
       end
-      @app_name = "Daily Bread"
-      @tagline = "A 270-day journey through Scripture"
+      @app_name = 'Daily Bread'
+      @tagline = 'Journeying through Scripture in 9 months'
       @require_sign_in_to_participate = true
-      self.mount_at = "/daily-bread"
+      self.mount_at = '/daily-bread'
       @start_date = nil
       @allow_reader_start_date = true
       self.omniauth_providers = [:github]
       @omniauth_path_prefix = nil
       @email_sign_in = true
-      @mailer_from = "no-reply@example.com"
+      @mailer_from = 'no-reply@example.com'
       @email_sign_in_ttl = 20 * 60          # 20 minutes
       @email_sign_in_window = 15 * 60       # 15 minutes
       @email_sign_in_max_per_window = 5
       @email_sign_in_ask_name = true
+      @email_sign_in_require_name = true
+      @email_sign_in_log_link = nil
+      @chapter_breaks = {}
+      @chapter_breaks_path = nil
+      @admin_emails = []
+      @admin_resolver = nil
       @email_sign_in_deliver_later = false
     end
 

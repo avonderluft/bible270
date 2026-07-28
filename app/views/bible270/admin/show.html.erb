@@ -1,0 +1,89 @@
+<% content_for :title, "#{@reader.display_name} — Admin" %>
+<p class="b270-eyebrow"><%= link_to 'Admin', admin_path %></p>
+<h1><%= @reader.display_name %></h1>
+<p class="lede">
+  <%= @reader.email.presence || @reader.provider %> ·
+  <%= @days_completed %> of <%= Bible270::Plan::DAYS %> days ·
+  <%= @reader.completion_percent %>%
+  <% if @reader.dated? %>· day <%= @reader.calendar_day %> today<% end %>
+</p>
+
+<div class="b270-panel">
+  <h2 class="b270-subhead">Where they are in the plan</h2>
+  <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
+    <label class="b270-field">
+      <span>Put them on day (as of today)</span>
+      <%= number_field_tag :day, @reader.calendar_day || 1, min: 1, max: Bible270::Plan::DAYS %>
+    </label>
+    <%= submit_tag 'Move', class: 'b270-btn' %>
+  <% end %>
+  <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
+    <label class="b270-field">
+      <span>…or set the start date directly</span>
+      <%= date_field_tag :start_date, @reader.started_on %>
+    </label>
+    <%= submit_tag 'Set date', class: 'b270-btn' %>
+  <% end %>
+  <p class="b270-hint">Moving someone re-maps the calendar only. Their check-offs are keyed to day
+     numbers and are not touched.</p>
+</div>
+
+<div class="b270-panel">
+  <h2 class="b270-subhead">Completions</h2>
+  <%= form_with url: admin_reader_through_path(@reader), method: :patch, class: "b270-startform" do %>
+    <label class="b270-field">
+      <span>Mark complete through day (0 clears everything)</span>
+      <%= number_field_tag :day, @days_completed, min: 0, max: Bible270::Plan::DAYS %>
+    </label>
+    <%= submit_tag 'Apply', class: 'b270-btn' %>
+  <% end %>
+  <p class="b270-hint">This also clears anything after that day, so it sets their progress exactly.</p>
+
+  <div class="b270-grid" style="margin-top:16px">
+    <% (1..Bible270::Plan::DAYS).each do |d| %>
+      <%= button_to d, admin_reader_day_path(@reader, d), method: :post,
+            class: "b270-cell #{b270_day_status_class(@reader, d)}",
+            form: { style: 'display:contents', id: "day-#{d}" } %>
+    <% end %>
+  </div>
+  <p class="b270-hint">Click a day to toggle it complete.</p>
+</div>
+
+<div class="b270-panel">
+  <h2 class="b270-subhead">Their reflections</h2>
+  <% if @comments.any? %>
+    <% @comments.each do |comment| %>
+      <div class="b270-comment">
+        <div style="flex:1">
+          <div class="b270-cmeta">
+            <%= link_to "day #{comment.day}", day_path(comment.day) %>
+            · <%= comment.created_at.strftime('%b %-d, %Y') %>
+            <% if comment.hidden? %><span class="b270-badge">Hidden</span><% end %>
+          </div>
+          <p class="b270-cbody"><%= comment.body %></p>
+          <div style="display:flex;gap:10px;margin-top:6px">
+            <% if comment.hidden? %>
+              <%= button_to 'Restore', admin_unhide_comment_path(comment), method: :patch,
+                    params: { return_to: request.fullpath }, class: 'b270-linkbtn' %>
+            <% else %>
+              <%= button_to 'Hide', admin_hide_comment_path(comment), method: :patch,
+                    params: { return_to: request.fullpath }, class: 'b270-linkbtn' %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <p class="b270-hint" style="margin-top:0">None yet.</p>
+  <% end %>
+</div>
+
+<div class="b270-panel">
+  <h2 class="b270-subhead">Remove</h2>
+  <p class="b270-hint" style="margin-top:0">Deletes the reader together with every check-off and
+     reflection they have written. This cannot be undone.</p>
+  <%= button_to "Remove #{@reader.display_name}", admin_reader_path(@reader), method: :delete,
+        class: 'b270-btn', form: { data: { turbo_confirm: "Permanently remove #{@reader.display_name}?" } } %>
+</div>
+
+<p style="margin-top:18px"><%= link_to '← All readers', admin_path %></p>

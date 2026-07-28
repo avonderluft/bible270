@@ -1,11 +1,12 @@
 # frozen_string_literal: true
+
 module Bible270
   # A single-use, short-lived magic-link token for email sign-in.
   #
   # Only the SHA-256 digest of the token is stored, so the table is useless to
   # an attacker who reads it. Tokens are consumed on first successful use.
   class SignInToken < ApplicationRecord
-    self.table_name = "bible270_sign_in_tokens"
+    self.table_name = 'bible270_sign_in_tokens'
 
     validates :email, presence: true
     validates :token_digest, presence: true, uniqueness: true
@@ -16,7 +17,7 @@ module Bible270
 
     # Issue a token for an email. Returns [token_record, raw_token], or
     # [nil, nil] when the address is being hammered (see rate_limited?).
-    def self.issue!(email, display_name: nil)
+    def self.issue!(email, display_name: nil, first_name: nil, last_name: nil)
       address = EmailSignIn.normalize_email(email)
       return [nil, nil] if address.nil?
       return [nil, nil] if rate_limited?(address)
@@ -25,6 +26,8 @@ module Bible270
       record = create!(
         email: address,
         display_name: display_name.presence,
+        first_name: first_name.presence,
+        last_name: last_name.presence,
         token_digest: EmailSignIn.digest_token(raw),
         expires_at: Time.current + Bible270.config.email_sign_in_ttl
       )

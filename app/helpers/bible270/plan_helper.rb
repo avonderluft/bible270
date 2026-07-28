@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bible270
   module PlanHelper
     def b270_track(track)
@@ -18,27 +19,29 @@ module Bible270
     end
 
     def b270_passage_url(reference)
-      return "#" if reference.blank?
+      return '#' if reference.blank?
+
       Bible270.config.passage_url_builder.call(reference, Bible270.config.bible_version)
     end
 
     def b270_avatar(reader, size: 34)
       if reader.avatar_url.present?
-        image_tag reader.avatar_url, class: "b270-avatar", width: size, height: size, alt: reader.display_name
+        image_tag reader.avatar_url, class: 'b270-avatar', width: size, height: size, alt: reader.display_name
       else
-        content_tag :span, reader.initials, class: "b270-avatar b270-avatar-fallback",
-                    style: "width:#{size}px;height:#{size}px;line-height:#{size}px"
+        content_tag :span, reader.initials, class: 'b270-avatar b270-avatar-fallback',
+                                            style: "width:#{size}px;height:#{size}px;line-height:#{size}px"
       end
     end
 
     def b270_day_status_class(reader, day)
-      return "" unless reader
+      return '' unless reader
+
       if reader.day_complete?(day)
-        "complete"
+        'complete'
       elsif reader.read_tracks_for(day).any?
-        "partial"
+        'partial'
       else
-        ""
+        ''
       end
     end
   end

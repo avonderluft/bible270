@@ -7,7 +7,77 @@ this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html), tr
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.9.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.10.0...main)**
+
+## [0.10.0] — 2026-07-26
+
+### Reading plan
+- **Proverbs is read once**, not twice, and its longer chapters are divided — at the discourse
+  boundaries in chapters 1–9 and 30–31, evenly elsewhere, since 10–29 are collections of
+  independent sayings.
+- **A psalm of 25 verses or fewer is never divided** (`PSALM_WHOLE_MAX_VERSES`), which keeps 131 of
+  the 150 psalms whole. Psalms over 25 verses break at their turns of thought.
+- **A divided chapter is always read on consecutive days.** Nothing is inserted between the parts of
+  a split psalm.
+- Psalms and Proverbs are now divided against a single budget, so the two books balance by verse
+  load rather than each being squeezed into a fixed number of days.
+- The New Testament is read once with a reading every day: 260 chapters over 270 days, so the
+  longest are divided (at content boundaries via `CHAPTER_BREAKS`, e.g. Luke 1 at the annunciations,
+  Magnificat and Benedictus).
+- `CHAPTER_BREAKS` lets any chapter's break points be set by hand, or `[]` to force it whole. Break
+  points are validated; a bad entry raises rather than silently overlapping.
+- Break points can also come from the host app and be changed **without restarting**:
+  `config.chapter_breaks`, or a YAML file at `config.chapter_breaks_path` re-read whenever it
+  changes. Precedence: constant < config < file.
+
+### Features
+- **Interactive installer** — `bin/rails generate bible270:install` asks where to mount, which
+  sign-in methods to enable, writes the initializers, adds the `mount` line, copies the migrations
+  and runs them. Scriptable with `--defaults` and friends.
+- **`config.mount_at`** — the mount path in one place; routes and OmniAuth both read it.
+- **Passwordless email sign-in** with single-use magic links; only a SHA-256 digest is stored, and
+  the response never reveals whether an address exists. First and last name are required.
+- **Configurable start dates** — community-wide or per reader, with a Today badge and a pace
+  indicator. Check-offs are keyed to day numbers, so changing a date never moves history.
+- **Admin panel** (`/admin`, gated by `config.admin_emails` or `config.admin_resolver`; unauthorised
+  requests 404 rather than 403). Remove readers, set their progress exactly (mark complete through a
+  day, or toggle individual days), and move them to a given day of the plan — which re-maps the
+  calendar only, since check-offs are keyed to day numbers.
+- **Comment moderation.** Reflections are **visible as soon as they are written** — moderation is for
+  taking something down afterwards, not gatekeeping every post. An admin can hide a reflection
+  (removing it from the day and community pages while keeping the writer's words, reversibly) or
+  delete it outright, from a list filterable by visible/hidden or from the writer's own page.
+
+### Fixed
+- Sign-in was broken: OmniAuth 2.0+ rejects GET on its request phase, so the controls are now POST
+  forms with CSRF tokens. Open-redirect hardening on the return-to path, and `reset_session` on
+  sign-in and sign-out.
+- `db:migrate` failed with `DuplicateMigrationNameError` — the engine both appended its migrations
+  to the host's paths and shipped `install:migrations`.
+- Views raised `uninitialized constant Plan`: a template's lexical scope is `Object`, so engine
+  constants must be fully qualified.
+- Views raised `undefined method 'b270_*'`: Rails only auto-includes an engine's helpers when the
+  controller's superclass is exactly `ActionController::Base`, which it isn't once
+  `config.parent_controller` points at the host.
+- Buttons rendered dark-on-dark: `.b270 a{color:inherit}` outranked `.b270-btn`.
+- The generated OmniAuth initializer called `path_prefix`, which `OmniAuth::Builder` does not
+  define, and read credentials at boot so a bad master key stopped the app starting.
+- The sign-in email was rendered inside the host's mailer layout, nesting one HTML document in
+  another.
+- Ruby 4.0 compatibility: dropped `cgi`, removed from default gems in 4.0.
+- Posting a reflection about the whole day failed with "Track is not included in the list": the
+  form's blank option submits an empty string, which `allow_nil` rejects. Blank tracks are now
+  normalised to NULL before validation.
+
+- `config.email_sign_in_log_link` — tri-state: nil logs the sign-in link in development and test
+  only, true forces it on (for smoke-testing a production build locally before mail is wired up),
+  false disables it. The log also distinguishes sent, rate-limited and failed delivery, which the
+  response deliberately cannot.
+- A test asserts every setting the code calls is actually defined on `Configuration`, so a missing
+  accessor fails the suite instead of raising `NoMethodError` on whichever request touches it.
+
+### Notes
+- Table names changed from `bible_reading_plan_*` in the 0.9.0 line; this is a fresh install.
 
 ## [0.9.0] — 2026-07-25
 
@@ -106,5 +176,6 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[0.10.0]: https://github.com/avonderluft/bible270/releases/tag/v0.10.0
 [0.9.0]: https://github.com/avonderluft/bible270/releases/tag/v0.9.0
 [0.6.2]: https://github.com/avonderluft/bible270/releases/tag/v0.6.2

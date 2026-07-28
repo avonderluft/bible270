@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "securerandom"
-require "digest"
+require 'securerandom'
+require 'digest'
 
 module Bible270
   # Pure helpers for passwordless ("magic link") email sign-in. Kept free of
@@ -11,14 +11,14 @@ module Bible270
   # digest of it, so a leaked database can't be used to sign in.
   module EmailSignIn
     # Deliberately permissive: real validation is "did the link get clicked".
-    EMAIL_RE = /\A[^@\s,;:<>"]+@[^@\s,;:<>"]+\.[A-Za-z]{2,}\z/
+    EMAIL_RE = %r{\A[^@\s,;:<>"]+@[^@\s,;:<>"]+\.[A-Za-z]{2,}\z}
 
-    module_function
+  module_function
 
     # Trim, strip a mailto:, and downcase. Returns nil for anything unusable.
     def normalize_email(value)
       email = value.to_s.strip
-      email = email[7..] if email.downcase.start_with?("mailto:")
+      email = email[7..] if email.downcase.start_with?('mailto:')
       email = email.strip.downcase
       return nil if email.empty?
       return nil unless email.match?(EMAIL_RE)
@@ -58,11 +58,11 @@ module Bible270
     # The part of an address we can use as a default display name:
     # "mary.anne.smith@example.com" => "Mary Anne Smith"
     def display_name_from(email)
-      local = normalize_email(email)&.split("@")&.first
+      local = normalize_email(email)&.split('@')&.first
       return nil if local.nil? || local.empty?
 
       # NB: the hyphen must come last or tr reads "_-+" as a range.
-      local.tr("._+-", " ").split.map { |w| w[0].upcase + (w[1..] || "") }.join(" ")
+      local.tr('._+-', ' ').split.map { |w| w[0].upcase + (w[1..] || '') }.join(' ')
     end
   end
 end

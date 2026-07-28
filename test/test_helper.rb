@@ -10,6 +10,6 @@ unless ENV['SKIP_COV']
   SimpleCov.formatter = Coveralls::SimpleCov::Formatter
 end
 
-$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
-require "minitest/autorun"
-require "bible270/plan"
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
+require 'minitest/autorun'
+require 'bible270/plan'

@@ -7,6 +7,7 @@
     <%= link_to "Plan", root_path %>
     <%= link_to "Community", community_path %>
     <% if signed_in? %>
+      <% if Bible270.config.admin?(current_reader) %><%= link_to "Admin", admin_path %><% end %>
       <%= link_to current_reader.display_name, reader_path(current_reader), class: "b270-me" %>
       <%= button_to "Sign out", sign_out_path, method: :delete, class: "b270-linkbtn",
             form: { style: "display:inline" } %>

@@ -1,12 +1,13 @@
 # frozen_string_literal: true
+
 module Bible270
   # A reader identity. Either self-contained (created via OmniAuth) or bridged
   # to one of the host application's users through the polymorphic :owner.
   class Reader < ApplicationRecord
-    self.table_name = "bible270_readers"
+    self.table_name = 'bible270_readers'
 
-    has_many :checkoffs, class_name: "Bible270::Checkoff", dependent: :destroy
-    has_many :comments,  class_name: "Bible270::Comment",  dependent: :destroy
+    has_many :checkoffs, class_name: 'Bible270::Checkoff', dependent: :destroy
+    has_many :comments,  class_name: 'Bible270::Comment',  dependent: :destroy
     belongs_to :owner, polymorphic: true, optional: true
 
     validates :display_name, presence: true
@@ -20,11 +21,11 @@ module Bible270
       return nil if provider.empty? || uid.empty?
 
       info = dig_auth(auth, :info) || {}
-      name  = first_present(dig_auth(info, :name), dig_auth(info, :nickname),
-                            dig_auth(info, :first_name), dig_auth(info, :email))
+      name = first_present(dig_auth(info, :name), dig_auth(info, :nickname),
+                           dig_auth(info, :first_name), dig_auth(info, :email))
 
       reader = find_or_initialize_by(provider: provider, uid: uid)
-      reader.display_name = first_present(name, reader.display_name, "Reader")
+      reader.display_name = first_present(name, reader.display_name, 'Reader')
       email = dig_auth(info, :email)
       image = first_present(dig_auth(info, :image), dig_auth(info, :avatar_url))
       reader.email      = email if email.present?
@@ -36,14 +37,15 @@ module Bible270
     # Find or create the reader behind a verified email address. Uses the same
     # provider/uid identity columns as OmniAuth, with provider "email", so an
     # email reader is indistinguishable from any other downstream.
-    def self.from_email(email, display_name: nil)
+    def self.from_email(email, first_name: nil, last_name: nil, display_name: nil)
       address = EmailSignIn.normalize_email(email)
       return nil if address.nil?
 
-      reader = find_or_initialize_by(provider: "email", uid: address)
-      chosen = first_present(display_name, reader.display_name,
-                             EmailSignIn.display_name_from(address), "Reader")
-      reader.display_name = chosen
+      reader = find_or_initialize_by(provider: 'email', uid: address)
+      reader.first_name = first_name.to_s.strip if first_name.present?
+      reader.last_name  = last_name.to_s.strip  if last_name.present?
+      reader.display_name = first_present(reader.full_name, display_name, reader.display_name,
+                                          EmailSignIn.display_name_from(address), 'Reader')
       reader.email = address
       reader.save
       reader
@@ -51,6 +53,7 @@ module Bible270
 
     def self.dig_auth(obj, key)
       return nil if obj.nil?
+
       if obj.respond_to?(:[])
         obj[key] || (obj[key.to_s] if key.is_a?(Symbol))
       elsif obj.respond_to?(key)
@@ -62,22 +65,30 @@ module Bible270
     private_class_method :dig_auth
 
     def self.first_present(*values)
-      values.compact.find { |v| v.to_s.strip != "" }
+      values.compact.find { |v| v.to_s.strip != '' }
     end
     private_class_method :first_present
 
     # Find or create a reader bridged to a host user (or any model).
     def self.for_owner(owner, display_name:, email: nil, avatar_url: nil)
       reader = find_or_initialize_by(owner: owner)
-      reader.display_name = display_name.presence || reader.display_name || "Reader"
+      reader.display_name = display_name.presence || reader.display_name || 'Reader'
       reader.email      ||= email
       reader.avatar_url ||= avatar_url
       reader.save!
       reader
     end
 
+    def full_name
+      [first_name, last_name].map { |n| n.to_s.strip }.reject(&:empty?).join(' ').presence
+    end
+
+    def sort_name
+      [last_name, first_name].map { |n| n.to_s.strip.downcase }.join(' ').strip.presence || display_name.to_s.downcase
+    end
+
     def initials
-      display_name.to_s.split(/\s+/).first(2).map { |w| w[0] }.join.upcase.presence || "?"
+      display_name.to_s.split(%r{\s+}).first(2).map { |w| w[0] }.join.upcase.presence || '?'
     end
 
     # {day => number of tracks checked off}
@@ -116,6 +127,59 @@ module Bible270
     end
 
     # Day number implied by the calendar, if a start date is set.
+    # ---- administrative adjustments --------------------------------------
+
+    # Tick every track that has content on this day.
+    def mark_day_complete!(day)
+      return false unless Plan.valid_day?(day)
+
+      Plan.present_tracks(day).each do |track|
+        checkoffs.find_or_create_by!(day: day, track: track)
+      end
+      reload_progress
+      true
+    end
+
+    def clear_day!(day)
+      return false unless Plan.valid_day?(day)
+
+      checkoffs.where(day: day).destroy_all
+      reload_progress
+      true
+    end
+
+    def toggle_day!(day)
+      day_complete?(day) ? clear_day!(day) : mark_day_complete!(day)
+    end
+
+    # Mark everything up to and including `day` complete, and clear anything after.
+    def mark_through!(day)
+      return false unless day.to_i.between?(0, Plan::DAYS)
+
+      transaction do
+        checkoffs.where(day: (day.to_i + 1)..).destroy_all
+        (1..day.to_i).each do |d|
+          Plan.present_tracks(d).each { |t| checkoffs.find_or_create_by!(day: d, track: t) }
+        end
+      end
+      reload_progress
+      true
+    end
+
+    # Put this reader on `day` as of `on` — i.e. back-date the start so that the
+    # given date lands on the given day of the plan.
+    def restart_on!(day:, on: Date.current)
+      day = day.to_i
+      return false unless Plan.valid_day?(day)
+
+      update!(started_on: Plan.to_date(on) - (day - 1))
+    end
+
+    def reload_progress
+      @checked_counts = nil
+      self
+    end
+
     # ---- start date / calendar ------------------------------------------
 
     # The start date that actually governs this reader. A reader's own

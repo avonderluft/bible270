@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bible270
   class SignInMailer < ApplicationMailer
     # The URL is built by the controller (which has the request context), so the

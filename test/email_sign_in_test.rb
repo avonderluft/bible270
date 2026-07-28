@@ -1,7 +1,8 @@
 # frozen_string_literal: true
-require "test_helper"
-require "bible270/email_sign_in"
-require "bible270/configuration"
+
+require 'test_helper'
+require 'bible270/email_sign_in'
+require 'bible270/configuration'
 
 class EmailSignInTest < Minitest::Test
   E = Bible270::EmailSignIn
@@ -9,17 +10,17 @@ class EmailSignInTest < Minitest::Test
   # --- normalization ------------------------------------------------------
 
   def test_normalizes_case_and_whitespace
-    assert_equal "andrew@example.com", E.normalize_email("  Andrew@Example.COM  ")
+    assert_equal 'andrew@example.com', E.normalize_email('  Andrew@Example.COM  ')
   end
 
   def test_strips_mailto_prefix
-    assert_equal "a@b.io", E.normalize_email("mailto:a@b.io")
-    assert_equal "a@b.io", E.normalize_email("MAILTO:A@B.IO")
+    assert_equal 'a@b.io', E.normalize_email('mailto:a@b.io')
+    assert_equal 'a@b.io', E.normalize_email('MAILTO:A@B.IO')
   end
 
   def test_rejects_malformed_addresses
-    ["", "   ", nil, "bad", "a@b", "@x.com", "a@@b.com", "a b@x.com",
-     "a@x.c", "a,b@x.com", "a;b@x.com", "<a@x.com>"].each do |bad|
+    ['', '   ', nil, 'bad', 'a@b', '@x.com', 'a@@b.com', 'a b@x.com',
+     'a@x.c', 'a,b@x.com', 'a;b@x.com', '<a@x.com>'].each do |bad|
       assert_nil E.normalize_email(bad), "#{bad.inspect} should be rejected"
     end
   end
@@ -30,8 +31,8 @@ class EmailSignInTest < Minitest::Test
   end
 
   def test_accepts_ordinary_addresses
-    ["a@b.io", "first.last@sub.domain.org", "user+tag@example.co.uk",
-     "UPPER@EXAMPLE.COM", "a_b-c@example.com"].each do |good|
+    ['a@b.io', 'first.last@sub.domain.org', 'user+tag@example.co.uk',
+     'UPPER@EXAMPLE.COM', 'a_b-c@example.com'].each do |good|
       assert E.valid_email?(good), "#{good.inspect} should be accepted"
     end
   end
@@ -40,10 +41,10 @@ class EmailSignInTest < Minitest::Test
 
   def test_tokens_are_long_random_and_url_safe
     tokens = 200.times.map { E.generate_token }
-    assert_equal 200, tokens.uniq.size, "tokens must not repeat"
+    assert_equal 200, tokens.uniq.size, 'tokens must not repeat'
     tokens.first(20).each do |t|
       assert t.length >= 40, "token too short: #{t.length}"
-      assert_match(/\A[A-Za-z0-9_-]+\z/, t, "token must be URL-safe")
+      assert_match(%r{\A[A-Za-z0-9_-]+\z}, t, 'token must be URL-safe')
     end
   end
 
@@ -51,7 +52,7 @@ class EmailSignInTest < Minitest::Test
     token = E.generate_token
     assert_equal E.digest_token(token), E.digest_token(token)
     assert_equal 64, E.digest_token(token).length
-    assert_match(/\A[0-9a-f]{64}\z/, E.digest_token(token))
+    assert_match(%r{\A[0-9a-f]{64}\z}, E.digest_token(token))
   end
 
   def test_digest_does_not_leak_the_token
@@ -60,32 +61,32 @@ class EmailSignInTest < Minitest::Test
   end
 
   def test_different_tokens_digest_differently
-    assert E.digest_token("a") != E.digest_token("b")
+    assert E.digest_token('a') != E.digest_token('b')
   end
 
   def test_digest_of_nothing_is_nil
     assert_nil E.digest_token(nil)
-    assert_nil E.digest_token("")
+    assert_nil E.digest_token('')
   end
 
   def test_secure_compare
-    assert E.secure_compare("abcdef", "abcdef")
-    refute E.secure_compare("abcdef", "abcdeg")
-    refute E.secure_compare("abc", "abcdef")   # length mismatch
-    refute E.secure_compare(nil, "abc")
+    assert E.secure_compare('abcdef', 'abcdef')
+    refute E.secure_compare('abcdef', 'abcdeg')
+    refute E.secure_compare('abc', 'abcdef') # length mismatch
+    refute E.secure_compare(nil, 'abc')
   end
 
   # --- display names ------------------------------------------------------
 
   def test_derives_a_display_name_from_the_local_part
-    assert_equal "Mary Anne Smith", E.display_name_from("mary.anne.smith@x.com")
-    assert_equal "Jo", E.display_name_from("jo@x.com")
-    assert_equal "Mary Anne Plan", E.display_name_from("mary-anne+plan@x.com")
-    assert_equal "A B", E.display_name_from("a_b@x.com")
+    assert_equal 'Mary Anne Smith', E.display_name_from('mary.anne.smith@x.com')
+    assert_equal 'Jo', E.display_name_from('jo@x.com')
+    assert_equal 'Mary Anne Plan', E.display_name_from('mary-anne+plan@x.com')
+    assert_equal 'A B', E.display_name_from('a_b@x.com')
   end
 
   def test_display_name_is_nil_for_invalid_addresses
-    assert_nil E.display_name_from("nope")
+    assert_nil E.display_name_from('nope')
     assert_nil E.display_name_from(nil)
   end
 end
@@ -109,7 +110,7 @@ class EmailSignInConfigTest < Minitest::Test
 
   def test_email_only_deployment_is_possible
     @config.omniauth_providers = []
-    assert @config.any_sign_in_method?, "email alone must be a valid sign-in setup"
+    assert @config.any_sign_in_method?, 'email alone must be a valid sign-in setup'
     refute @config.single_provider?
   end
 

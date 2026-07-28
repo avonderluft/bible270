@@ -1,0 +1,44 @@
+<% content_for :title, "Reflections — Admin" %>
+<p class="b270-eyebrow"><%= link_to 'Admin', admin_path %></p>
+<h1>Reflections</h1>
+<p class="lede">Reflections are visible as soon as they're written. Hiding one takes it off the day
+   and community pages without deleting it; the writer keeps their words and you can restore it.</p>
+
+<p class="b270-startline" style="margin-bottom:14px">
+  <%= link_to 'All', admin_comments_path %> ·
+  <%= link_to 'Visible', admin_comments_path(filter: 'visible') %> ·
+  <%= link_to "Hidden (#{@hidden_count})", admin_comments_path(filter: 'hidden') %>
+</p>
+
+<% if @comments.any? %>
+  <% @comments.each do |comment| %>
+    <div class="b270-comment" id="comment-<%= comment.id %>">
+      <%= b270_avatar(comment.reader) %>
+      <div style="flex:1">
+        <div class="b270-cmeta">
+          <strong><%= comment.reader.display_name %></strong>
+          · <%= link_to "day #{comment.day}", day_path(comment.day) %>
+          · <%= comment.created_at.strftime('%b %-d, %Y') %>
+          <% if comment.hidden? %><span class="b270-badge">Hidden</span><% end %>
+        </div>
+        <p class="b270-cbody"><%= comment.body %></p>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+          <% if comment.hidden? %>
+            <%= button_to 'Restore', admin_unhide_comment_path(comment), method: :patch,
+                  params: { return_to: request.fullpath }, class: 'b270-linkbtn' %>
+          <% else %>
+            <%= button_to 'Hide', admin_hide_comment_path(comment), method: :patch,
+                  params: { return_to: request.fullpath }, class: 'b270-linkbtn' %>
+          <% end %>
+          <%= button_to 'Delete', admin_comment_path(comment), method: :delete,
+                params: { return_to: request.fullpath }, class: 'b270-linkbtn',
+                form: { data: { turbo_confirm: 'Delete this reflection permanently?' } } %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+<% else %>
+  <p style="color:var(--faint)">Nothing here.</p>
+<% end %>
+
+<p style="margin-top:18px"><%= link_to '← All readers', admin_path %></p>

@@ -3,15 +3,15 @@
   <%= b270_avatar(@reader, size: 56) %>
   <div>
     <h1 style="margin:0"><%= @reader.display_name %></h1>
-    <p style="margin:2px 0 0;color:var(--faint);font-size:14px"><%= @days_completed %> of <%= Plan::DAYS %> days complete · <%= @reader.completion_percent %>%</p>
+    <p style="margin:2px 0 0;color:var(--faint);font-size:14px"><%= @days_completed %> of <%= Bible270::Plan::DAYS %> days complete · <%= @reader.completion_percent %>%</p>
   </div>
 </div>
 
 <div class="b270-panel" style="margin-top:18px">
   <div class="b270-tracks">
-    <% [["ot", @reader.days_read_in("ot"), Plan::DAYS],
-        ["nt", @reader.days_read_in("nt"), Plan.nt_content_days],
-        ["pp", @reader.days_read_in("pp"), Plan::DAYS]].each do |track, read, total| %>
+    <% [["ot", @reader.days_read_in("ot"), Bible270::Plan::DAYS],
+        ["nt", @reader.days_read_in("nt"), Bible270::Plan.nt_content_days],
+        ["pp", @reader.days_read_in("pp"), Bible270::Plan::DAYS]].each do |track, read, total| %>
       <% t = b270_track(track) %>
       <div class="b270-tm">
         <span class="lab"><span class="b270-rib" style="background:<%= t[:color] %>"></span><%= t[:label] %></span>
@@ -23,7 +23,7 @@
 </div>
 
 <div class="b270-grid">
-  <% (1..Plan::DAYS).each do |d| %>
+  <% (1..Bible270::Plan::DAYS).each do |d| %>
     <%= link_to d, day_path(d), class: "b270-cell #{b270_day_status_class(@reader, d)}" %>
   <% end %>
 </div>

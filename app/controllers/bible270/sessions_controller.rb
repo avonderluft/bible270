@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bible270
   # Built-in OmniAuth sign-in.
   #
@@ -17,17 +18,13 @@ module Bible270
     end
 
     def create
-      auth = request.env["omniauth.auth"]
-      unless auth
-        redirect_to(sign_in_path, alert: "Sign in didn't complete. Please try again.") and return
-      end
+      auth = request.env['omniauth.auth']
+      redirect_to(sign_in_path, alert: "Sign in didn't complete. Please try again.") and return unless auth
 
       reader = Reader.from_omniauth(auth)
-      unless reader&.persisted?
-        redirect_to(sign_in_path, alert: "We couldn't set up your reader profile.") and return
-      end
+      redirect_to(sign_in_path, alert: "We couldn't set up your reader profile.") and return unless reader&.persisted?
 
-      destination = safe_origin(request.env["omniauth.origin"]) || after_sign_in_path
+      destination = safe_origin(request.env['omniauth.origin']) || after_sign_in_path
 
       # Rotate the session id to avoid session fixation, then sign in.
       reset_session
@@ -40,11 +37,11 @@ module Bible270
     def destroy
       reset_session
       @current_reader = nil
-      redirect_to(after_sign_out_path, notice: "Signed out.")
+      redirect_to(after_sign_out_path, notice: 'Signed out.')
     end
 
     def failure
-      message = params[:message].presence || "unknown error"
+      message = params[:message].presence || 'unknown error'
       redirect_to sign_in_path, alert: "Sign in failed (#{message.to_s.tr('_', ' ')})."
     end
 
@@ -63,14 +60,22 @@ module Bible270
                     alert: "That doesn't look like an email address — please check and try again.") and return
       end
 
-      name = Bible270.config.email_sign_in_ask_name ? params[:display_name].to_s.strip : nil
-      _record, raw = SignInToken.issue!(address, display_name: name)
+      first_name = params[:first_name].to_s.strip
+      last_name  = params[:last_name].to_s.strip
+
+      if Bible270.config.email_sign_in_require_name && (first_name.empty? || last_name.empty?)
+        redirect_to(sign_in_path(origin: origin, email: address),
+                    alert: 'Please give both your first and last name.') and return
+      end
+
+      _record, raw = SignInToken.issue!(address, first_name: first_name, last_name: last_name)
 
       if raw
-        url = email_sign_in_url(token: raw, origin: origin)
-        minutes = (Bible270.config.email_sign_in_ttl / 60.0).round
-        mail = SignInMailer.magic_link(email: address, url: url, expires_in_minutes: minutes)
-        Bible270.config.email_sign_in_deliver_later ? mail.deliver_later : mail.deliver_now
+        deliver_sign_in_link(address, email_sign_in_url(token: raw, origin: origin))
+      else
+        # Silent to the reader by design; say so in the log or this is undebuggable.
+        Rails.logger.warn("[bible270] no sign-in link issued for #{address} " \
+                          '(rate limited — see config.email_sign_in_max_per_window)')
       end
 
       # Deliberately identical whether or not a link was actually sent, so this
@@ -84,13 +89,12 @@ module Bible270
       token = SignInToken.claim!(params[:token])
       if token.nil?
         redirect_to(sign_in_path,
-                    alert: "That link has expired or was already used. Please request a new one.") and return
+                    alert: 'That link has expired or was already used. Please request a new one.') and return
       end
 
-      reader = Reader.from_email(token.email, display_name: token.display_name)
-      unless reader&.persisted?
-        redirect_to(sign_in_path, alert: "We couldn't set up your reader profile.") and return
-      end
+      reader = Reader.from_email(token.email, first_name: token.first_name,
+                                              last_name: token.last_name, display_name: token.display_name)
+      redirect_to(sign_in_path, alert: "We couldn't set up your reader profile.") and return unless reader&.persisted?
 
       destination = safe_origin(params[:origin]) || after_sign_in_path
 
@@ -101,16 +105,46 @@ module Bible270
       redirect_to destination, notice: "Welcome, #{reader.display_name}."
     end
 
-    private
+  private
+
+    # Delivery problems must not leak through the UI (the response is deliberately
+    # identical either way), so they are logged rather than raised. Without this a
+    # misconfigured mailer either 500s the request or fails silently, depending on
+    # config.action_mailer.raise_delivery_errors.
+    def deliver_sign_in_link(address, url)
+      minutes = (Bible270.config.email_sign_in_ttl / 60.0).round
+      mail = SignInMailer.magic_link(email: address, url: url, expires_in_minutes: minutes)
+      Bible270.config.email_sign_in_deliver_later ? mail.deliver_later : mail.deliver_now
+      Rails.logger.info("[bible270] sign-in email handed to Action Mailer for #{address}")
+    rescue StandardError => e
+      Rails.logger.error("[bible270] could not deliver the sign-in email to #{address}: #{e.class}: #{e.message}")
+    ensure
+      log_sign_in_link(address, url)
+    end
+
+    # In development and test, put the link in the log so you can sign in without
+    # working mail delivery. Never in production — the link is a bearer token.
+    def log_sign_in_link(address, url)
+      return unless log_sign_in_link?
+
+      Rails.logger.info("[bible270] sign-in link for #{address}: #{url}")
+    end
+
+    def log_sign_in_link?
+      flag = Bible270.config.email_sign_in_log_link
+      return flag unless flag.nil?
+
+      Rails.env.development? || Rails.env.test?
+    end
 
     # Only ever redirect within this app, and never back into an auth route.
     def safe_origin(value)
       value = value.to_s
       return nil if value.empty?
-      return nil unless value.start_with?("/")
-      return nil if value.include?("//")   # protocol-relative URL
-      return nil if value.include?("\\")   # browsers may normalise \ to /
-      return nil if value.include?("/auth/")
+      return nil unless value.start_with?('/')
+      return nil if value.include?('//')   # protocol-relative URL
+      return nil if value.include?('\\')   # browsers may normalise \ to /
+      return nil if value.include?('/auth/')
 
       value
     end

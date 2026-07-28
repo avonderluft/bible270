@@ -1,0 +1,30 @@
+<% content_for :title, "Admin — #{Bible270.config.app_name}" %>
+<p class="b270-eyebrow">Admin</p>
+<h1>Readers</h1>
+<p class="lede"><%= @readers.size %> reader<%= 's' unless @readers.size == 1 %> taking part.
+   <%= link_to 'Moderate reflections →', admin_comments_path %></p>
+
+<% if @readers.any? %>
+  <div class="b270-list">
+    <% @readers.each do |reader| %>
+      <div class="b270-li">
+        <%= b270_avatar(reader, size: 34) %>
+        <div>
+          <div class="name"><%= link_to reader.display_name, admin_reader_path(reader), style: 'text-decoration:none' %></div>
+          <div class="sub">
+            <%= reader.email.presence || reader.provider %>
+            · <%= @days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days
+            <% if reader.dated? %>· started <%= reader.effective_start_date.strftime('%b %-d, %Y') %><% end %>
+          </div>
+        </div>
+        <div class="stat">
+          <span class="big"><%= (@days_completed[reader.id].to_f / Bible270::Plan::DAYS * 100).round %>%</span>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <p style="color:var(--faint)">No readers yet.</p>
+<% end %>
+
+<p style="margin-top:18px"><%= link_to '← Back to the plan', root_path %></p>

@@ -1,0 +1,88 @@
+require:
+  # - rubocop-rails
+  # - rubocop-minitest
+
+AllCops:
+  TargetRubyVersion: 3.2
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - bin/*
+    - db/schema.rb
+    - db/migrate/**/*
+    - test/fixtures/**/*
+    - tmp/**/*
+    - vendor/bundle/**/*
+
+# -- Layout --------------------------------------------------------------------
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
+
+Layout/LineLength:
+  Enabled: false
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+Layout/AccessModifierIndentation:
+  EnforcedStyle: outdent
+
+# -- Metrics -------------------------------------------------------------------
+Metrics/AbcSize:
+  Enabled: false
+
+Metrics/BlockLength:
+  Max: 45
+
+Metrics/ClassLength:
+  Enabled: false
+
+Metrics/CyclomaticComplexity:
+  Max: 12
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false
+
+Metrics/PerceivedComplexity:
+  Max: 15
+
+# -- Naming --------------------------------------------------------------------
+Naming/MethodParameterName:
+  Enabled: false
+
+Naming/PredicateMethod:
+  Enabled: false
+
+Naming/VariableNumber:
+  Enabled: false
+
+# -- Style ---------------------------------------------------------------------
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/DocumentDynamicEvalDefinition:
+  Enabled: false
+
+Style/HashSyntax:
+  Enabled: false
+
+Style/IfUnlessModifier:
+  Enabled: false
+
+Style/Lambda:
+  EnforcedStyle: literal
+
+Style/OptionalBooleanParameter:
+  Enabled: false
+
+Style/SafeNavigation:
+  Enabled: false
+
+Style/RegexpLiteral:
+  EnforcedStyle: percent_r

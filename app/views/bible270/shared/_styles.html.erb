@@ -7,6 +7,9 @@
     color:var(--ink); font-family:"Inter",system-ui,sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased;
   }
   .b270 *{box-sizing:border-box}
+  /* Blanket anchor colour. NB: this is (0,1,1), so any single-class rule
+     colouring an <a> (.b270-btn, .b270-cell, .b270-arrow ...) must be
+     qualified with .b270 to outrank it, or the link inherits body colour. */
   .b270 a{color:inherit}
   .b270-wrap{max-width:820px;margin:0 auto;padding:clamp(14px,3.5vw,36px) clamp(14px,4vw,40px) 64px}
 
@@ -28,10 +31,10 @@
   .b270-or{display:flex;align-items:center;gap:12px;margin:22px 0 18px;color:var(--faint);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
   .b270-or::before,.b270-or::after{content:"";flex:1;height:1px;background:var(--line-soft)}
   .b270-providers{display:grid;gap:10px;max-width:340px}
-  .b270-provider{display:block;width:100%;text-align:center;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:12px 16px;font:inherit;font-weight:600;font-size:14.5px;cursor:pointer;transition:border-color .15s,transform .05s}
+  .b270 .b270-provider{display:block;width:100%;text-align:center;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:12px 16px;font:inherit;font-weight:600;font-size:14.5px;cursor:pointer;transition:border-color .15s,transform .05s}
   .b270-provider:hover{border-color:var(--gold);color:var(--gold)}
   .b270-provider:active{transform:translateY(1px)}
-  .b270-signinbtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 13px;font:inherit;font-weight:600;font-size:13px;cursor:pointer}
+  .b270 .b270-signinbtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 13px;font:inherit;font-weight:600;font-size:13px;cursor:pointer}
   .b270-signinbtn:hover{border-color:var(--gold);color:var(--gold)}
   .b270-signin-hint a{color:var(--gold);font-weight:600}
   .b270-flash{border-radius:10px;padding:11px 15px;margin-bottom:18px;font-size:14px}
@@ -41,7 +44,7 @@
   .b270-eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600;margin:0 0 10px}
   .b270 h1{font-family:"Spectral",serif;font-weight:600;font-size:clamp(28px,6vw,42px);line-height:1.03;letter-spacing:-.01em;margin:0 0 6px}
   .b270 h1 em{font-style:italic;color:var(--muted);font-weight:400}
-  .b270 .lede{color:var(--muted);max-width:54ch;margin:0 0 24px;font-size:15px}
+  .b270 .lede{color:var(--muted);max-width:77ch;margin:0 0 24px;font-size:15px}
 
   .b270-panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);margin-bottom:24px}
   .b270-bignum{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -72,7 +75,7 @@
 
   /* day nav */
   .b270-daynav{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-  .b270-arrow{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:17px;color:var(--muted);display:grid;place-items:center;text-decoration:none}
+  .b270 .b270-arrow{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:17px;color:var(--muted);display:grid;place-items:center;text-decoration:none}
   .b270-arrow:hover{border-color:var(--gold);color:var(--gold)}
   .b270-arrow.disabled{opacity:.35;pointer-events:none}
   .b270-dayhead{flex:1}
@@ -101,7 +104,7 @@
   .b270-ref a:hover{border-bottom-color:var(--gold)}
   .b270-reading.done .b270-ref{color:var(--muted)}
   .b270-reading.rest .b270-ref{font-style:italic;font-size:16px;color:var(--faint)}
-  .b270-signin-hint{font-size:12px;color:var(--faint)}
+  .b270 .b270-signin-hint{font-size:12px;color:var(--faint)}
 
   /* completers */
   .b270-completers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px;font-size:13px;color:var(--muted)}
@@ -118,7 +121,7 @@
   .b270-cdel{font-size:12px;color:var(--oxblood);background:none;border:none;cursor:pointer;padding:0;margin-left:8px}
   .b270-form textarea{width:100%;font:inherit;font-size:15px;border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:#fff;resize:vertical;min-height:76px}
   .b270-form .row{display:flex;align-items:center;gap:10px;margin-top:10px}
-  .b270-btn{border:none;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;font-size:14px;cursor:pointer;background:var(--ink);color:var(--paper);text-decoration:none;display:inline-block}
+  .b270 .b270-btn{border:none;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600;font-size:14px;cursor:pointer;background:var(--ink);color:var(--paper);text-decoration:none;display:inline-block}
   .b270-btn:hover{background:#3a352b}
 
   /* community */
@@ -133,7 +136,7 @@
 
   /* calendar grid */
   .b270-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:6px;margin-top:16px}
-  .b270-cell{aspect-ratio:1;border-radius:6px;border:1px solid var(--line);background:var(--card);font-size:10.5px;color:var(--faint);display:grid;place-items:center;text-decoration:none;font-variant-numeric:tabular-nums}
+  .b270 .b270-cell{aspect-ratio:1;border-radius:6px;border:1px solid var(--line);background:var(--card);font-size:10.5px;color:var(--faint);display:grid;place-items:center;text-decoration:none;font-variant-numeric:tabular-nums}
   .b270-cell:hover{border-color:var(--gold);color:var(--gold)}
   .b270-cell.partial{background:linear-gradient(135deg,var(--card) 50%,rgba(165,129,44,.35) 50%);color:var(--muted)}
   .b270-cell.complete{background:var(--teal);border-color:var(--teal);color:#eef3f2;font-weight:600}

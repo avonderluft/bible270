@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bible270
   class CheckoffsController < ApplicationController
     def toggle
@@ -7,9 +8,7 @@ module Bible270
       @day   = params[:day].to_i
       @track = params[:track].to_s
 
-      unless Plan.valid_day?(@day) && Plan.present_tracks(@day).include?(@track)
-        head :bad_request and return
-      end
+      head :bad_request and return unless Plan.valid_day?(@day) && Plan.present_tracks(@day).include?(@track)
 
       existing = current_reader.checkoffs.find_by(day: @day, track: @track)
       if existing

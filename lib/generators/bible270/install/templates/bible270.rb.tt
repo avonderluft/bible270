@@ -9,7 +9,7 @@ Bible270.configure do |config|
   config.mount_at = "<%= mount_at %>"
 
   config.app_name = "Daily Bread"
-  config.tagline  = "A 270-day journey through Scripture"
+  config.tagline  = "Journeying through Scripture in 9 months"
 
   # Share the host application's layout, helpers and CSRF setup.
   config.parent_controller = "::ApplicationController"
@@ -43,5 +43,5 @@ Bible270.configure do |config|
   config.allow_reader_start_date = true
 
   # --- Reading links ---------------------------------------------------------
-  config.bible_version = "ESV"
+  config.bible_version = "NKJV"
 end

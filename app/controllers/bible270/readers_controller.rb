@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bible270
   class ReadersController < ApplicationController
     def index
@@ -11,7 +12,7 @@ module Bible270
 
     def show
       @reader = Reader.find_by(id: params[:id])
-      redirect_to(community_path, alert: "Reader not found.") and return unless @reader
+      redirect_to(community_path, alert: 'Reader not found.') and return unless @reader
 
       @days_completed = @reader.days_completed
       @recent_comments = @reader.comments.recent.limit(20)
@@ -21,7 +22,7 @@ module Bible270
       return unless require_reader!
 
       unless Bible270.config.allow_reader_start_date
-        redirect_to(root_path, alert: "The start date is set for the whole community.") and return
+        redirect_to(root_path, alert: 'The start date is set for the whole community.') and return
       end
 
       if current_reader.update_start_date!(params[:start_date])
@@ -37,9 +38,9 @@ module Bible270
 
       if Bible270.config.allow_reader_start_date
         current_reader.clear_start_date!
-        redirect_to root_path, notice: "Start date cleared — the plan is now undated for you."
+        redirect_to root_path, notice: 'Start date cleared — the plan is now undated for you.'
       else
-        redirect_to root_path, alert: "The start date is set for the whole community."
+        redirect_to root_path, alert: 'The start date is set for the whole community.'
       end
     end
   end

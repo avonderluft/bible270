@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bible270
   class CommentsController < ApplicationController
     def create
@@ -17,7 +18,10 @@ module Bible270
         end
       else
         respond_to do |format|
-          format.turbo_stream { render turbo_stream: turbo_stream.replace("new_comment_form", partial: "bible270/comments/form", locals: { day: @day, comment: @comment }) }
+          format.turbo_stream do
+            render turbo_stream: turbo_stream.replace('new_comment_form', partial: 'bible270/comments/form',
+                                                                          locals: { day: @day, comment: @comment })
+          end
           format.html { redirect_to day_path(@day), alert: @comment.errors.full_messages.to_sentence }
         end
       end
@@ -37,7 +41,7 @@ module Bible270
       end
     end
 
-    private
+  private
 
     def comment_params
       params.require(:comment).permit(:body, :track)

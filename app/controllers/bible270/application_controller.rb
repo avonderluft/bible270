@@ -1,11 +1,28 @@
 # frozen_string_literal: true
+
 module Bible270
   class ApplicationController < Bible270.config.parent_controller.constantize
+    # Rails only auto-includes an isolated engine's helpers when the controller's
+    # superclass is *exactly* ActionController::Base:
+    #
+    #   # ActionController::Railties::Helpers#inherited
+    #   klass.helpers_path = namespace.railtie_helpers_paths
+    #   klass.helper :all if klass.superclass == ActionController::Base && ...
+    #
+    # config.parent_controller normally points at the host's ApplicationController,
+    # so that check fails and the b270_* helpers are never mixed in — every view
+    # calling one then raises NoMethodError. helpers_path is still set to this
+    # engine's app/helpers, so asking for them explicitly is all that's needed.
+    helper :all
+    # ...and name it outright, in case helpers_path resolves to the host app's
+    # helpers rather than this engine's.
+    helper Bible270::PlanHelper
+
     layout :bible270_layout
 
     helper_method :current_reader, :signed_in?, :b270_config
 
-    private
+  private
 
     def bible270_layout
       Bible270.config.layout
@@ -39,7 +56,7 @@ module Bible270
         format.turbo_stream { head :unauthorized }
         format.html do
           redirect_to sign_in_path(origin: request.fullpath),
-                      alert: "Please sign in to take part."
+                      alert: 'Please sign in to take part.'
         end
       end
       false

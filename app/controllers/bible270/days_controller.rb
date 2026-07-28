@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bible270
   class DaysController < ApplicationController
     def index
@@ -19,9 +20,7 @@ module Bible270
 
     def show
       @day = params[:day].to_i
-      unless Plan.valid_day?(@day)
-        redirect_to(root_path, alert: "That day is outside the plan.") and return
-      end
+      redirect_to(root_path, alert: 'That day is outside the plan.') and return unless Plan.valid_day?(@day)
 
       @readings   = Plan.readings_for(@day)
       @comments   = Comment.for_day(@day).includes(:reader)
@@ -30,9 +29,9 @@ module Bible270
 
       req = Plan.required_track_count(@day)
       completer_ids = Checkoff.where(day: @day)
-                              .group(:reader_id)
-                              .having("COUNT(*) >= ?", req)
-                              .pluck(:reader_id)
+        .group(:reader_id)
+        .having('COUNT(*) >= ?', req)
+        .pluck(:reader_id)
       @completers = Reader.where(id: completer_ids).order(:display_name)
 
       @prev_day = @day > 1 ? @day - 1 : nil

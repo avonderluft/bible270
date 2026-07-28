@@ -14,13 +14,19 @@
       <%= hidden_field_tag :origin, @origin if @origin %>
       <% if Bible270.config.email_sign_in_ask_name %>
         <label class="b270-field">
-          <span>Name shown beside your reflections</span>
-          <%= text_field_tag :display_name, nil, placeholder: "e.g. Andrew", autocomplete: "name" %>
+          <span>First name</span>
+          <%= text_field_tag :first_name, params[:first_name], autocomplete: "given-name",
+                required: Bible270.config.email_sign_in_require_name %>
+        </label>
+        <label class="b270-field">
+          <span>Last name</span>
+          <%= text_field_tag :last_name, params[:last_name], autocomplete: "family-name",
+                required: Bible270.config.email_sign_in_require_name %>
         </label>
       <% end %>
       <label class="b270-field">
         <span>Email address</span>
-        <%= email_field_tag :email, nil, required: true, placeholder: "you@example.com",
+        <%= email_field_tag :email, params[:email], required: true, placeholder: "you@example.com",
               autocomplete: "email", inputmode: "email" %>
       </label>
       <%= f.submit "Email me a sign-in link", class: "b270-btn" %>
