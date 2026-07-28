@@ -11,6 +11,8 @@ See the changes since the last release:
 
 ## [0.10.0] — 2026-07-26
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.9.0...v0.10.0)**
+
 ### Reading plan
 - **Proverbs is read once**, not twice, and its longer chapters are divided — at the discourse
   boundaries in chapters 1–9 and 30–31, evenly elsewhere, since 10–29 are collections of
