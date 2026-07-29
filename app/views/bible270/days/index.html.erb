@@ -23,7 +23,8 @@
       <% end %>
     </div>
     <p style="margin:16px 0 0">
-      <%= link_to "Continue reading — Day #{@start_day} →", day_path(@start_day), class: "b270-btn" %>
+      <% @day_verb = @start_day == 1 ? "Start" : "Continue" %>
+      <%= link_to "#{@day_verb} reading — Day #{@start_day} →", day_path(@start_day), class: "b270-btn" %>
       <% if @today_day && @today_day != @start_day %>
         <%= link_to "Go to today (Day #{@today_day})", day_path(@today_day), style: "margin-left:12px" %>
       <% end %>
