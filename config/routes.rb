@@ -15,7 +15,8 @@ Bible270::Engine.routes.draw do
   get    'admin',                        to: 'admin#index',            as: :admin
   get    'admin/readers/:id',            to: 'admin#show',             as: :admin_reader
   delete 'admin/readers/:id',            to: 'admin#destroy'
-  patch  'admin/readers/:id/name',       to: 'admin#update_name',      as: :admin_reader_name
+  patch  'admin/readers/:id/profile',    to: 'admin#update_profile',   as: :admin_reader_profile
+  delete 'admin/readers/:id/avatar',     to: 'admin#remove_avatar',    as: :admin_reader_avatar
   patch  'admin/readers/:id/start',      to: 'admin#update_start',     as: :admin_reader_start
   patch  'admin/readers/:id/through',    to: 'admin#complete_through', as: :admin_reader_through
   post   'admin/readers/:id/days/:day',  to: 'admin#toggle_day',       as: :admin_reader_day
@@ -26,9 +27,9 @@ Bible270::Engine.routes.draw do
   patch  'admin/comments/:id/unhide',    to: 'admin#unhide_comment',   as: :admin_unhide_comment
   delete 'admin/comments/:id',           to: 'admin#destroy_comment',  as: :admin_comment
 
-  get   'profile',                       to: 'profiles#edit', as: :profile
+  get   'profile',                       to: 'profiles#edit',   as: :profile
   patch 'profile',                       to: 'profiles#update'
-  delete 'profile/avatar', to: 'profiles#remove_avatar', as: :profile_avatar
+  delete 'profile/avatar',                to: 'profiles#remove_avatar', as: :profile_avatar
 
   get 'community', to: 'readers#index', as: :community
   get 'readers/:id', to: 'readers#show', as: :reader

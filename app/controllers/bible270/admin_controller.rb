@@ -10,7 +10,7 @@ module Bible270
   class AdminController < ApplicationController
     before_action :require_admin!
     before_action :load_reader,
-                  only: %i[show destroy update_start update_name complete_through toggle_day]
+                  only: %i[show destroy update_start update_profile remove_avatar complete_through toggle_day]
     before_action :load_comment, only: %i[hide_comment unhide_comment destroy_comment]
 
     # ---- enrolment --------------------------------------------------------
@@ -95,12 +95,28 @@ module Bible270
       end
     end
 
-    def update_name
-      if @reader.update_names(params[:first_name], params[:last_name])
-        redirect_to admin_reader_path(@reader), notice: 'Name updated.'
-      else
-        redirect_to admin_reader_path(@reader), alert: 'Both a first and last name are needed.'
+    # Name and picture together, mirroring what a reader can change about
+    # themselves on their own profile.
+    def update_profile
+      problems = []
+      if params[:first_name].present? || params[:last_name].present?
+        problems << 'both a first and last name' unless @reader.update_names(params[:first_name],
+                                                                            params[:last_name])
       end
+      if params[:avatar].present? && !@reader.attach_avatar(params[:avatar])
+        problems << (@reader.errors[:avatar].first || 'a valid image')
+      end
+
+      if problems.empty?
+        redirect_to admin_reader_path(@reader), notice: 'Updated.'
+      else
+        redirect_to admin_reader_path(@reader), alert: "Needs #{problems.to_sentence}."
+      end
+    end
+
+    def remove_avatar
+      @reader.remove_avatar!
+      redirect_to admin_reader_path(@reader), notice: "Removed #{@reader.display_name}'s picture."
     end
 
     def complete_through

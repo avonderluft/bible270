@@ -297,8 +297,8 @@ Bible270.configure do |config|
   config.tagline  = "A 270-day journey through Scripture"
   config.admin_emails = %w[andrew@example.org]
 
-  # config.start_date = nil       # community start date, or nil for undated
-  config.start_date = Date.new(2026, 9, 6)  
+  config.start_date = nil       # community start date, or nil for undated
+  # config.start_date = Date.new(2026, 9, 6)  
   config.allow_reader_start_date = true
 
   config.parent_controller = "ActionController::Base"   # or "::ApplicationController"

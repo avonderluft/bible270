@@ -2,7 +2,6 @@
 # Run from the root of your bible270 checkout. Reports which expected symbols are
 # present in which files, so a partially-applied update is visible in one pass
 # instead of one 500 at a time.
-
 status=0
 check() { # file, pattern, label
   if [ ! -f "$1" ]; then printf '  MISSING FILE  %s\n' "$1"; status=1
@@ -22,14 +21,14 @@ check app/models/bible270/reader.rb                   'def update_names'      'u
 check app/views/bible270/shared/_header.html.erb      'profile_path'          'Profile nav link'
 
 echo "admin:"
-check app/controllers/bible270/admin_controller.rb    'def update_name'       'update_name'
+check app/controllers/bible270/admin_controller.rb    'def update_profile'    'admin edits profile'
 check app/controllers/bible270/admin_controller.rb    'def comments'          'moderation'
-check app/views/bible270/admin/show.html.erb          'admin_reader_name_path' 'name form'
+check app/views/bible270/admin/show.html.erb          'admin_reader_profile_path' 'name+picture form'
 check app/views/bible270/admin/comments.html.erb      'admin_hide_comment_path' 'moderation view'
 check app/models/bible270/reader.rb                   'def set_start_date!'   'ungated start date'
 check app/models/bible270/reader.rb                   'def mark_through!'     'completions'
 check app/models/bible270/comment.rb                  'def hide!'             'hide/unhide'
-check config/routes.rb                                'admin_reader_name'     'admin name route'
+check config/routes.rb                                'admin_reader_profile'  'admin profile route'
 
 echo "day index on every page:"
 check app/views/bible270/shared/_day_index.html.erb   'b270-grid'             'partial'
@@ -77,6 +76,13 @@ check app/views/bible270/shared/_styles.html.erb       'b270-version'           
 check app/views/layouts/bible270/application.html.erb  'hide_day_index'         'day-index opt-out'
 check app/views/bible270/readers/show.html.erb         'hide_day_index'         'progress page opts out'
 check app/views/bible270/admin/show.html.erb           'hide_day_index'         'admin page opts out'
+check app/controllers/bible270/admin_controller.rb     'def update_profile'     'admin edits name+picture'
+check app/controllers/bible270/admin_controller.rb     'def remove_avatar'      'admin removes picture'
+check config/routes.rb                                 'admin_reader_profile'   'admin profile route'
+check app/views/bible270/admin/show.html.erb           'multipart: true'        'admin upload form'
+check lib/bible270/favicon.rb                          'module Favicon'         'favicon module'
+check lib/bible270.rb                                  "bible270/favicon"       'require favicon'
+check app/views/layouts/bible270/application.html.erb  'b270_favicon_tag'       'favicon in layout'
 
 echo
 [ $status -eq 0 ] && echo "All present." || echo "Some files are stale or missing (see above)."
