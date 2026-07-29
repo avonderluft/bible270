@@ -7,7 +7,19 @@ this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html), tr
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.11.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.12.0...main)**
+
+## [0.12.0] — 2026-07-29
+
+### Added
+
+- Readers can select their preferred Bible translation in profile edit view
+- Scripture links show bible version in parens
+
+### Changed
+
+- Top menu shows 'Progress' in place of user display name
+- Dependabot gem updates to minitest and rubocop
 
 ## [0.11.0] — 2026-07-28
  
@@ -234,7 +246,8 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[0.11.0]: https://github.com/avonderluft/bible270/releases/tag/v0.10.0
+[0.12.0]: https://github.com/avonderluft/bible270/releases/tag/v0.12.0
+[0.11.0]: https://github.com/avonderluft/bible270/releases/tag/v0.11.0
 [0.10.0]: https://github.com/avonderluft/bible270/releases/tag/v0.10.0
 [0.9.0]: https://github.com/avonderluft/bible270/releases/tag/v0.9.0
 [0.6.2]: https://github.com/avonderluft/bible270/releases/tag/v0.6.2
