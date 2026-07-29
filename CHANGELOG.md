@@ -7,13 +7,66 @@ this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html), tr
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.10.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.11.0...main)**
+
+## [0.11.0] — 2026-07-28
+ 
+### Added
+
+- **Readers can edit their own name and picture** at `<mount>/profile`, linked from the nav. An admin
+  can edit anyone's from that reader's admin page. Both go through one rule (`Bible270::Names`):
+  first and last required, whitespace squished, display name derived — so internal capitals and
+  particles survive (`vonderLuft`, `von der Luft`). A reader who arrived via OmniAuth with only a
+  display name gets the form pre-filled by splitting it.
+- **Avatar uploads** — PNG, JPEG, GIF or WebP up to `config.avatar_max_bytes` (2MB), with a Remove
+  button. SVG is refused, since it can carry script. Needs Active Storage in the host app; without it
+  the field is hidden, the engine still loads, and avatars come from the sign-in provider as before.
+  No resizing: the original is served at CSS dimensions.
+- **A run can be closed to new readers** from the admin panel. Existing readers carry on signing in;
+  nobody new can join. Enforced at all three points a reader can be created — the OmniAuth callback,
+  issuing an email link, and consuming one. Runtime state in a new `bible270_settings` table, so it
+  needs no deploy; `config.enrollment_open = false` launches closed.
+- The **All 270 days** index now appears on every page, rendered from the layout rather than only on
+  the overview.
+
+### Changed
+
+- **A returning reader needs only their email to sign in.** Names are optional on the sign-in form; a
+  new reader is asked for theirs on their profile straight after clicking the link. Requiring them
+  only for unknown addresses would have made the response differ between a known and an unknown one,
+  which is an account-enumeration oracle — and the closed-run banner exists for the same reason.
+- Closing a run says so on the sign-in page before anyone types, since the "check your inbox"
+  response deliberately cannot distinguish a known address from an unknown one.
+
+### Fixed
+
+- Setting a reader's start date from the admin panel failed with "That doesn't look like a date"
+  whenever `config.allow_reader_start_date` was off. That setting governs what a *reader* may change
+  about their own plan and was wrongly gating the admin action, which now uses an ungated setter.
+- The day grid ran a query per day (`read_tracks_for`), so its 270 cells cost up to 270 queries. It
+  now reads the reader's single grouped count — which matters more now the grid is on every page.
+- The nav's "Sign out" sat below the other items: `button_to` renders a form, and the shared
+  `.b270-linkbtn` class carries a top margin, smaller font and underline meant for use under a form.
+- `Bible270::Configuration` referenced `Avatars` without requiring it, so instantiating it raised
+  `NameError` unless something else had already loaded avatars — which the app did by luck of require
+  order and the test suite did not.
+
+### Internal
+
+- Tests now guard the classes of bug that bit during this run: every file under `lib/` must load on
+  its own *and* survive instantiating the configuration; every setting the code calls must exist on
+  `Configuration`; templates must not reference engine constants unqualified; a coloured link class
+  must outrank `.b270 a`; admin actions must not use reader-gated methods; and closure must be
+  enforced at all three creation points.
+- Migrations: `20260101000007` (settings). Active Storage tables are the host app's
+  (`bin/rails active_storage:install`).
 
 ## [0.10.0] — 2026-07-26
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.9.0...v0.10.0)**
 
 ### Reading plan
+
 - **Proverbs is read once**, not twice, and its longer chapters are divided — at the discourse
   boundaries in chapters 1–9 and 30–31, evenly elsewhere, since 10–29 are collections of
   independent sayings.
@@ -33,6 +86,7 @@ See the changes since the last release:
   changes. Precedence: constant < config < file.
 
 ### Features
+
 - **Interactive installer** — `bin/rails generate bible270:install` asks where to mount, which
   sign-in methods to enable, writes the initializers, adds the `mount` line, copies the migrations
   and runs them. Scriptable with `--defaults` and friends.
@@ -51,6 +105,7 @@ See the changes since the last release:
   delete it outright, from a list filterable by visible/hidden or from the writer's own page.
 
 ### Fixed
+
 - Sign-in was broken: OmniAuth 2.0+ rejects GET on its request phase, so the controls are now POST
   forms with CSRF tokens. Open-redirect hardening on the return-to path, and `reset_session` on
   sign-in and sign-out.
@@ -79,6 +134,7 @@ See the changes since the last release:
   accessor fails the suite instead of raising `NoMethodError` on whichever request touches it.
 
 ### Notes
+
 - Table names changed from `bible_reading_plan_*` in the 0.9.0 line; this is a fresh install.
 
 ## [0.9.0] — 2026-07-25
@@ -178,6 +234,7 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[0.11.0]: https://github.com/avonderluft/bible270/releases/tag/v0.10.0
 [0.10.0]: https://github.com/avonderluft/bible270/releases/tag/v0.10.0
 [0.9.0]: https://github.com/avonderluft/bible270/releases/tag/v0.9.0
 [0.6.2]: https://github.com/avonderluft/bible270/releases/tag/v0.6.2
