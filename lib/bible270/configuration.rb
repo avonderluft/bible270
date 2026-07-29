@@ -108,7 +108,7 @@ module Bible270
 
     # Simple abuse guard: at most N links per address per window (seconds).
     attr_accessor :email_sign_in_window
-    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :admin_emails, :admin_resolver
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline
 
     # Whether a reader may type the display name shown beside their reflections
     # when signing in by email (otherwise it's derived from the address).
@@ -133,6 +133,11 @@ module Bible270
     # With neither set the panel is unreachable and its routes 404.
     # Break points set from the host app, overriding Plan::CHAPTER_BREAKS.
     # Keys may be ['Psalm', 18] or 'Psalm 18'; [] keeps a chapter whole.
+    # Largest avatar a reader may upload, in bytes. Uploading needs Active
+    # Storage in the host app; without it the field is hidden and readers keep
+    # whatever avatar their sign-in provider gave them.
+    attr_accessor :avatar_max_bytes
+
     attr_accessor :chapter_breaks
 
     # Optional YAML file holding the same thing, re-read whenever it changes so
@@ -142,6 +147,9 @@ module Bible270
     #   Psalm 35: []
     #   Psalm 78: [20, 39, 55]
     attr_accessor :chapter_breaks_path
+
+    attr_accessor :admin_emails
+    attr_accessor :admin_resolver
 
     def admin?(reader)
       return false if reader.nil?
@@ -159,6 +167,27 @@ module Bible270
     attr_accessor :email_sign_in_deliver_later
 
     def email_sign_in? = !!@email_sign_in
+
+    # Reserved domains from RFC 2606 — a From: address at one of these will fail
+    # SPF for your real domain, and receiving servers routinely drop it without
+    # a bounce. The default value is one of them deliberately, so it has to be
+    # changed, but nothing was checking that it had been.
+    PLACEHOLDER_DOMAINS = %w[example.com example.org example.net example.edu invalid localhost].freeze
+
+    # Why the sign-in mail is likely to vanish, or nil if it looks fine.
+    def mailer_from_problem
+      return nil unless email_sign_in?
+
+      address = mailer_from.to_s.strip
+      return 'config.mailer_from is blank' if address.empty?
+      return "config.mailer_from (#{address}) is not a valid address" unless EmailSignIn.valid_email?(address)
+
+      domain = address.split('@').last.to_s.downcase
+      return nil unless PLACEHOLDER_DOMAINS.include?(domain)
+
+      "config.mailer_from is still the placeholder #{address} — mail from a reserved domain " \
+        'fails SPF and is usually dropped without a bounce'
+    end
 
     # Any way at all for a new person to sign in?
     def any_sign_in_method?
@@ -224,6 +253,7 @@ module Bible270
       @email_sign_in_ask_name = true
       @email_sign_in_require_name = true
       @email_sign_in_log_link = nil
+      @avatar_max_bytes = Avatars::DEFAULT_MAX_BYTES
       @chapter_breaks = {}
       @chapter_breaks_path = nil
       @admin_emails = []

@@ -9,7 +9,8 @@ module Bible270
   # so its existence isn't advertised.
   class AdminController < ApplicationController
     before_action :require_admin!
-    before_action :load_reader, only: %i[show destroy update_start complete_through toggle_day]
+    before_action :load_reader,
+                  only: %i[show destroy update_start update_name complete_through toggle_day]
     before_action :load_comment, only: %i[hide_comment unhide_comment destroy_comment]
 
     def index
@@ -62,16 +63,29 @@ module Bible270
     # Put the reader on a given day as of today, or set an explicit start date.
     def update_start
       if params[:start_date].present?
-        if @reader.update_start_date!(params[:start_date])
-          redirect_to admin_reader_path(@reader), notice: 'Start date updated.'
+        # set_start_date!, not update_start_date!: an admin is not subject to
+        # config.allow_reader_start_date, which governs what readers may do to
+        # their own dates.
+        if @reader.set_start_date!(params[:start_date])
+          redirect_to admin_reader_path(@reader),
+                      notice: "Start date set to #{@reader.started_on.strftime('%B %-d, %Y')}."
         else
-          redirect_to admin_reader_path(@reader), alert: "That doesn't look like a date."
+          redirect_to admin_reader_path(@reader),
+                      alert: "Couldn't read #{params[:start_date].inspect} as a date."
         end
       elsif params[:day].present? && @reader.restart_on!(day: params[:day])
         redirect_to admin_reader_path(@reader),
                     notice: "#{@reader.display_name} is now on day #{params[:day]}."
       else
         redirect_to admin_reader_path(@reader), alert: 'Give a start date or a day between 1 and 270.'
+      end
+    end
+
+    def update_name
+      if @reader.update_names(params[:first_name], params[:last_name])
+        redirect_to admin_reader_path(@reader), notice: 'Name updated.'
+      else
+        redirect_to admin_reader_path(@reader), alert: 'Both a first and last name are needed.'
       end
     end
 

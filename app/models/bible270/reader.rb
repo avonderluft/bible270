@@ -10,6 +10,14 @@ module Bible270
     has_many :comments,  class_name: 'Bible270::Comment',  dependent: :destroy
     belongs_to :owner, polymorphic: true, optional: true
 
+    # Active Storage is optional: an app may have it disabled, and the engine has
+    # to keep working there — readers simply can't upload, and any avatar from
+    # their sign-in provider is used instead.
+    AVATAR_UPLOADS = respond_to?(:has_one_attached)
+    has_one_attached :avatar if AVATAR_UPLOADS
+
+    def self.avatar_uploads? = AVATAR_UPLOADS
+
     validates :display_name, presence: true
     validates :uid, uniqueness: { scope: :provider }, allow_nil: true
 
@@ -87,6 +95,29 @@ module Bible270
       [last_name, first_name].map { |n| n.to_s.strip.downcase }.join(' ').strip.presence || display_name.to_s.downcase
     end
 
+    def avatar_uploaded?
+      self.class.avatar_uploads? && avatar.attached?
+    end
+
+    # Returns false and sets an error when the upload isn't acceptable.
+    def attach_avatar(upload)
+      return false unless self.class.avatar_uploads?
+
+      problem = Avatars.problem_with(content_type: upload.content_type, byte_size: upload.size)
+      if problem
+        errors.add(:avatar, problem)
+        return false
+      end
+
+      avatar.attach(upload)
+      true
+    end
+
+    def remove_avatar!
+      avatar.purge if avatar_uploaded?
+      true
+    end
+
     def initials
       display_name.to_s.split(%r{\s+}).first(2).map { |w| w[0] }.join.upcase.presence || '?'
     end
@@ -94,6 +125,20 @@ module Bible270
     # {day => number of tracks checked off}
     def checked_counts
       @checked_counts ||= checkoffs.group(:day).count
+    end
+
+    # Tracks ticked on a day, counted from the single grouped query in
+    # checked_counts. Use this rather than read_tracks_for when rendering a grid:
+    # read_tracks_for costs a query per day, which is 270 of them per page.
+    def checked_count(day)
+      checked_counts[day].to_i
+    end
+
+    def day_status(day)
+      done = checked_count(day)
+      return :none if done.zero?
+
+      done >= Plan.required_track_count(day) ? :complete : :partial
     end
 
     def read_tracks_for(day)
@@ -127,6 +172,23 @@ module Bible270
     end
 
     # Day number implied by the calendar, if a start date is set.
+    # Set the name shown beside this reader's reflections. Returns false when
+    # either half is missing, so callers can re-render with a message.
+    def update_names(first, last)
+      names = Names.normalize(first, last)
+      return false if names.nil?
+
+      update(**names)
+    end
+
+    # Fill first/last from the display name where we only have one string, e.g.
+    # a reader who arrived through OmniAuth.
+    def suggested_names
+      return { first_name: first_name, last_name: last_name } if full_name
+
+      Names.split(display_name) || { first_name: display_name, last_name: nil }
+    end
+
     # ---- administrative adjustments --------------------------------------
 
     # Tick every track that has content on this day.
@@ -248,13 +310,22 @@ module Bible270
       started_on
     end
 
-    def update_start_date!(value)
-      return false unless Bible270.config.allow_reader_start_date
-
+    # Set the start date regardless of whether readers are allowed to set their
+    # own. For administrative use: config.allow_reader_start_date governs what a
+    # reader may do to themselves, not what an admin may do on their behalf.
+    # Returns false only when the value isn't a date.
+    def set_start_date!(value)
       date = Plan.to_date(value)
       return false if date.nil?
 
       update!(started_on: date)
+    end
+
+    # The reader-facing version, which does respect that permission.
+    def update_start_date!(value)
+      return false unless Bible270.config.allow_reader_start_date
+
+      set_start_date!(value)
     end
 
     def clear_start_date!

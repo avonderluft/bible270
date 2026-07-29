@@ -24,9 +24,18 @@ module Bible270
       Bible270.config.passage_url_builder.call(reference, Bible270.config.bible_version)
     end
 
+    # An uploaded avatar wins over whatever the sign-in provider gave us.
+    # Active Storage routes live in the host app, hence main_app.
+    def b270_avatar_src(reader)
+      return main_app.rails_blob_path(reader.avatar, only_path: true) if reader.avatar_uploaded?
+
+      reader.avatar_url.presence
+    end
+
     def b270_avatar(reader, size: 34)
-      if reader.avatar_url.present?
-        image_tag reader.avatar_url, class: 'b270-avatar', width: size, height: size, alt: reader.display_name
+      src = b270_avatar_src(reader)
+      if src
+        image_tag src, class: 'b270-avatar', width: size, height: size, alt: reader.display_name
       else
         content_tag :span, reader.initials, class: 'b270-avatar b270-avatar-fallback',
                                             style: "width:#{size}px;height:#{size}px;line-height:#{size}px"
@@ -36,12 +45,10 @@ module Bible270
     def b270_day_status_class(reader, day)
       return '' unless reader
 
-      if reader.day_complete?(day)
-        'complete'
-      elsif reader.read_tracks_for(day).any?
-        'partial'
-      else
-        ''
+      case reader.day_status(day)
+      when :complete then 'complete'
+      when :partial  then 'partial'
+      else ''
       end
     end
   end

@@ -59,11 +59,3 @@
   <p style="margin:12px 0 0"><%= link_to "See everyone →", community_path %></p>
 <% end %>
 
-<details class="b270-index">
-  <summary>All <%= Bible270::Plan::DAYS %> days</summary>
-  <div class="b270-grid">
-    <% (1..Bible270::Plan::DAYS).each do |d| %>
-      <%= link_to d, day_path(d), class: "b270-cell #{b270_day_status_class(current_reader, d)} #{'now' if signed_in? && d == @start_day}" %>
-    <% end %>
-  </div>
-</details>

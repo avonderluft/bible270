@@ -1,0 +1,44 @@
+<% content_for :title, "Your profile — #{Bible270.config.app_name}" %>
+<p class="b270-eyebrow">Your details</p>
+<h1>Your profile</h1>
+<p class="lede">This is how you appear beside your reflections and on the community page.</p>
+
+<div class="b270-panel">
+  <%= form_with url: profile_path, method: :patch, class: "b270-emailform",
+                html: { multipart: true } do %>
+    <div class="b270-avatarrow">
+      <%= b270_avatar(current_reader, size: 64) %>
+      <% if Bible270::Reader.avatar_uploads? %>
+        <label class="b270-field" style="flex:1">
+          <span>Picture</span>
+          <%= file_field_tag :avatar, accept: Bible270::Avatars.content_types.join(',') %>
+          <span class="b270-hint" style="margin:0">
+            PNG, JPEG, GIF or WebP, up to <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %>.
+          </span>
+        </label>
+      <% end %>
+    </div>
+
+    <label class="b270-field">
+      <span>First name</span>
+      <%= text_field_tag :first_name, @names[:first_name], required: true, autocomplete: "given-name" %>
+    </label>
+    <label class="b270-field">
+      <span>Last name</span>
+      <%= text_field_tag :last_name, @names[:last_name], required: true, autocomplete: "family-name" %>
+    </label>
+    <%= submit_tag "Save", class: "b270-btn" %>
+  <% end %>
+
+  <% if current_reader.avatar_uploaded? %>
+    <%= button_to "Remove picture", profile_avatar_path, method: :delete, class: "b270-linkbtn",
+          form: { data: { turbo_confirm: "Remove your picture?" } } %>
+  <% end %>
+
+  <% unless Bible270::Reader.avatar_uploads? %>
+    <p class="b270-hint">Picture uploads need Active Storage in this application
+       (<code>bin/rails active_storage:install</code>). Until then, avatars come from your sign-in provider.</p>
+  <% end %>
+</div>
+
+<p style="margin-top:18px"><%= link_to "← Back to your progress", reader_path(current_reader) %></p>

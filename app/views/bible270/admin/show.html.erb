@@ -9,6 +9,21 @@
 </p>
 
 <div class="b270-panel">
+  <h2 class="b270-subhead">Name</h2>
+  <%= form_with url: admin_reader_name_path(@reader), method: :patch, class: "b270-emailform" do %>
+    <label class="b270-field">
+      <span>First name</span>
+      <%= text_field_tag :first_name, @reader.suggested_names[:first_name], required: true %>
+    </label>
+    <label class="b270-field">
+      <span>Last name</span>
+      <%= text_field_tag :last_name, @reader.suggested_names[:last_name], required: true %>
+    </label>
+    <%= submit_tag 'Save name', class: 'b270-btn' %>
+  <% end %>
+</div>
+
+<div class="b270-panel">
   <h2 class="b270-subhead">Where they are in the plan</h2>
   <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
     <label class="b270-field">

@@ -3,6 +3,8 @@
 require 'bible270/version'
 require 'bible270/plan'
 require 'bible270/email_sign_in'
+require 'bible270/names'
+require 'bible270/avatars'
 require 'bible270/configuration'
 require 'bible270/engine' if defined?(Rails::Engine)
 
