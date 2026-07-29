@@ -1,7 +1,6 @@
 # Changelog
 
-All notable changes to bible270. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
-this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html), treating pre-1.0 minor bumps as the place breaking changes may land.
+All notable changes to bible270. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html), treating pre-1.0 minor bumps as the place breaking changes may land.
 
 ## Unreleased Changes
 
@@ -10,6 +9,8 @@ See the changes since the last release:
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.12.0...main)**
 
 ## [0.12.0] — 2026-07-29
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.11.0...v0.12.0)** 
 
 ### Added
 
@@ -22,7 +23,9 @@ See the changes since the last release:
 - Dependabot gem updates to minitest and rubocop
 
 ## [0.11.0] — 2026-07-28
- 
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.10.0...v0.11.0)** 
+
 ### Added
 
 - **Readers can edit their own name and picture** at `<mount>/profile`, linked from the nav. An admin
