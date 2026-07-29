@@ -4,7 +4,7 @@
       <% if reader.own_start_date? %>
         Started <strong><%= reader.start_date.strftime("%B %-d, %Y") %></strong>
       <% else %>
-        Community plan began <strong><%= Bible270.config.start_date.strftime("%B %-d, %Y") %></strong>
+        Community plan start date: <strong><%= Bible270.config.start_date.strftime("%B %-d, %Y") %></strong>
       <% end %>
       · finishes <%= reader.plan_end_date.strftime("%B %-d, %Y") %>
       <% if reader.not_started_yet? %>

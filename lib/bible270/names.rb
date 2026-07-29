@@ -7,12 +7,12 @@ module Bible270
   #
   # Kept free of Rails so the rules can be tested on their own.
   module Names
-    module_function
+  module_function
 
     # Collapse runs of whitespace, including the non-breaking space that arrives
     # from copy-paste, and trim.
     def squish(value)
-      value.to_s.tr("\u00A0", ' ').gsub(/\s+/, ' ').strip
+      value.to_s.tr("\u00A0", ' ').gsub(%r{\s+}, ' ').strip
     end
 
     # A first and last name, or nil when either is missing. Returns the pieces
@@ -38,7 +38,7 @@ module Bible270
     # OmniAuth with only a display name. Everything after the first word is the
     # surname, so "Andrew von der Luft" keeps its particles together.
     def split(display_name)
-      parts = squish(display_name).split(' ')
+      parts = squish(display_name).split
       return nil if parts.size < 2
 
       { first_name: parts.first, last_name: parts[1..].join(' ') }

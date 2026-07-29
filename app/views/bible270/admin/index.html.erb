@@ -4,6 +4,24 @@
 <p class="lede"><%= @readers.size %> reader<%= 's' unless @readers.size == 1 %> taking part.
    <%= link_to 'Moderate reflections →', admin_comments_path %></p>
 
+<div class="b270-panel">
+  <h2 class="b270-subhead">This run of the plan</h2>
+  <% if @enrollment_closed %>
+    <p class="b270-startline"><strong>Closed to new readers</strong><% if @enrollment_closed_at %>
+      since <%= @enrollment_closed_at.strftime('%B %-d, %Y') %><% end %>.
+      The <%= @readers.size %> reader<%= 's' unless @readers.size == 1 %> already taking part can
+      still sign in and carry on.</p>
+    <%= button_to 'Open to new readers', admin_enrollment_path, method: :patch,
+          params: { state: 'open' }, class: 'b270-btn' %>
+  <% else %>
+    <p class="b270-startline"><strong>Open to new readers.</strong> Anyone signing in for the first
+      time joins this run.</p>
+    <%= button_to 'Close to new readers', admin_enrollment_path, method: :patch,
+          params: { state: 'closed' }, class: 'b270-btn',
+          form: { data: { turbo_confirm: 'Close this run? Existing readers keep their access.' } } %>
+  <% end %>
+</div>
+
 <% if @readers.any? %>
   <div class="b270-list">
     <% @readers.each do |reader| %>

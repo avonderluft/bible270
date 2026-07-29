@@ -13,7 +13,7 @@ module Bible270
     def update
       problems = []
       problems << 'both a first and last name' unless current_reader.update_names(params[:first_name],
-                                                                                 params[:last_name])
+                                                                                  params[:last_name])
       if params[:avatar].present? && !current_reader.attach_avatar(params[:avatar])
         problems << (current_reader.errors[:avatar].first || 'a valid image')
       end

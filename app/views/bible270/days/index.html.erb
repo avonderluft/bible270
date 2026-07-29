@@ -33,9 +33,8 @@
     <p class="b270-signedout"><%= link_to "Sign in", sign_in_path %> to track your progress and join
        the conversation. You can browse the whole plan and read others' reflections without an account.</p>
     <% if @community_start_date %>
-      <p class="b270-startline">The community began this plan on
-         <strong><%= @community_start_date.strftime("%B %-d, %Y") %></strong>
-         and finishes <%= Bible270::Plan.end_date_for(@community_start_date).strftime("%B %-d, %Y") %>.</p>
+      <p class="b270-startline">This community plan runs from <strong><%= @community_start_date.strftime("%B %-d, %Y") %></strong> to 
+         <strong><%= Bible270::Plan.end_date_for(@community_start_date).strftime("%B %-d, %Y") %></strong>.</p>
     <% end %>
     <p style="margin:14px 0 0"><%= link_to "Start at Day 1 →", day_path(1), class: "b270-btn" %></p>
   <% end %>

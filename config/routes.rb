@@ -20,14 +20,15 @@ Bible270::Engine.routes.draw do
   patch  'admin/readers/:id/through',    to: 'admin#complete_through', as: :admin_reader_through
   post   'admin/readers/:id/days/:day',  to: 'admin#toggle_day',       as: :admin_reader_day
 
+  patch  'admin/enrollment',             to: 'admin#update_enrollment', as: :admin_enrollment
   get    'admin/comments',               to: 'admin#comments',         as: :admin_comments
   patch  'admin/comments/:id/hide',      to: 'admin#hide_comment',     as: :admin_hide_comment
   patch  'admin/comments/:id/unhide',    to: 'admin#unhide_comment',   as: :admin_unhide_comment
   delete 'admin/comments/:id',           to: 'admin#destroy_comment',  as: :admin_comment
 
-  get   'profile',                       to: 'profiles#edit',   as: :profile
+  get   'profile',                       to: 'profiles#edit', as: :profile
   patch 'profile',                       to: 'profiles#update'
-  delete 'profile/avatar',                to: 'profiles#remove_avatar', as: :profile_avatar
+  delete 'profile/avatar', to: 'profiles#remove_avatar', as: :profile_avatar
 
   get 'community', to: 'readers#index', as: :community
   get 'readers/:id', to: 'readers#show', as: :reader

@@ -13,7 +13,21 @@ module Bible270
                   only: %i[show destroy update_start update_name complete_through toggle_day]
     before_action :load_comment, only: %i[hide_comment unhide_comment destroy_comment]
 
+    # ---- enrolment --------------------------------------------------------
+
+    def update_enrollment
+      if params[:state] == 'closed'
+        Setting.close_enrollment!
+        redirect_to admin_path, notice: 'Closed to new readers. Existing readers can still sign in.'
+      else
+        Setting.open_enrollment!
+        redirect_to admin_path, notice: 'Open to new readers.'
+      end
+    end
+
     def index
+      @enrollment_closed = Setting.enrollment_closed?
+      @enrollment_closed_at = Setting.enrollment_closed_at
       @readers = Reader.all.to_a.sort_by(&:sort_name)
       counts = Checkoff.group(:reader_id, :day).count
       @days_completed = Hash.new(0)

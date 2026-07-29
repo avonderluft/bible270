@@ -1,7 +1,16 @@
 <% content_for :title, "Sign in — #{Bible270.config.app_name}" %>
 <p class="b270-eyebrow">Sign in</p>
 <h1>Join the reading</h1>
-<p class="lede">Signing in keeps your place in the plan, records what you've read, and lets you leave reflections alongside everyone else.</p>
+<p class="lede">Signing in keeps your place in the plan, records what you've read, and lets you
+   leave reflections alongside everyone else. Browsing the plan and reading others' reflections
+   never requires an account.</p>
+
+<% if enrollment_closed? %>
+  <div class="b270-flash alert" style="margin-bottom:18px">
+    This run of the plan is closed to new readers. If you have taken part before, sign in with the
+    same email or account and you'll pick up where you left off.
+  </div>
+<% end %>
 
 <div class="b270-panel">
   <% if Bible270.config.email_sign_in? %>
@@ -11,15 +20,16 @@
     <%= form_with url: email_sign_in_link_path, method: :post, class: "b270-emailform" do |f| %>
       <%= hidden_field_tag :origin, @origin if @origin %>
       <% if Bible270.config.email_sign_in_ask_name %>
+        <p class="b270-hint" style="margin:0">
+          If you have read with us before, just your email is enough — we already know your name.
+        </p>
         <label class="b270-field">
-          <span>First name</span>
-          <%= text_field_tag :first_name, params[:first_name], autocomplete: "given-name",
-                required: Bible270.config.email_sign_in_require_name %>
+          <span>First name <em>(new readers)</em></span>
+          <%= text_field_tag :first_name, params[:first_name], autocomplete: "given-name" %>
         </label>
         <label class="b270-field">
-          <span>Last name</span>
-          <%= text_field_tag :last_name, params[:last_name], autocomplete: "family-name",
-                required: Bible270.config.email_sign_in_require_name %>
+          <span>Last name <em>(new readers)</em></span>
+          <%= text_field_tag :last_name, params[:last_name], autocomplete: "family-name" %>
         </label>
       <% end %>
       <label class="b270-field">

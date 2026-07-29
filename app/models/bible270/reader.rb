@@ -45,6 +45,21 @@ module Bible270
     # Find or create the reader behind a verified email address. Uses the same
     # provider/uid identity columns as OmniAuth, with provider "email", so an
     # email reader is indistinguishable from any other downstream.
+    # Used when enrolment is closed: an existing reader may still sign in, a new
+    # one may not be created.
+    def self.email_reader_exists?(email)
+      address = EmailSignIn.normalize_email(email)
+      return false if address.nil?
+
+      exists?(provider: 'email', uid: address)
+    end
+
+    def self.omniauth_reader_exists?(provider, uid)
+      return false if provider.blank? || uid.blank?
+
+      exists?(provider: provider.to_s, uid: uid.to_s)
+    end
+
     def self.from_email(email, first_name: nil, last_name: nil, display_name: nil)
       address = EmailSignIn.normalize_email(email)
       return nil if address.nil?

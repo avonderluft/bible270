@@ -21,6 +21,10 @@ module Bible270
       auth = request.env['omniauth.auth']
       redirect_to(sign_in_path, alert: "Sign in didn't complete. Please try again.") and return unless auth
 
+      if enrollment_closed? && !Reader.omniauth_reader_exists?(auth['provider'], auth['uid'])
+        redirect_to(sign_in_path, alert: enrollment_closed_message) and return
+      end
+
       reader = Reader.from_omniauth(auth)
       redirect_to(sign_in_path, alert: "We couldn't set up your reader profile.") and return unless reader&.persisted?
 
@@ -60,17 +64,18 @@ module Bible270
                     alert: "That doesn't look like an email address — please check and try again.") and return
       end
 
-      first_name = params[:first_name].to_s.strip
-      last_name  = params[:last_name].to_s.strip
+      # Names are optional here. Requiring them only for unknown addresses would
+      # make the response differ, which tells a stranger whether an address
+      # already has an account. A new reader is asked for their name after they
+      # click the link instead (see email_callback).
+      names = Names.normalize(params[:first_name], params[:last_name])
 
-      if Bible270.config.email_sign_in_require_name && (first_name.empty? || last_name.empty?)
-        redirect_to(sign_in_path(origin: origin, email: address),
-                    alert: 'Please give both your first and last name.') and return
-      end
+      _record, raw = SignInToken.issue!(address, first_name: names&.dig(:first_name),
+                                                last_name: names&.dig(:last_name))
 
-      _record, raw = SignInToken.issue!(address, first_name: first_name, last_name: last_name)
-
-      if raw
+      if raw && enrollment_closed? && !Reader.email_reader_exists?(address)
+        Rails.logger.info("[bible270] enrolment closed; no link sent to #{address}")
+      elsif raw
         deliver_sign_in_link(address, email_sign_in_url(token: raw, origin: origin))
       else
         # Silent to the reader by design; say so in the log or this is undebuggable.
@@ -92,8 +97,12 @@ module Bible270
                     alert: 'That link has expired or was already used. Please request a new one.') and return
       end
 
+      if enrollment_closed? && !Reader.email_reader_exists?(token.email)
+        redirect_to(sign_in_path, alert: enrollment_closed_message) and return
+      end
+
       reader = Reader.from_email(token.email, first_name: token.first_name,
-                                              last_name: token.last_name, display_name: token.display_name)
+                                 last_name: token.last_name, display_name: token.display_name)
       redirect_to(sign_in_path, alert: "We couldn't set up your reader profile.") and return unless reader&.persisted?
 
       destination = safe_origin(params[:origin]) || after_sign_in_path
@@ -101,6 +110,12 @@ module Bible270
       reset_session
       session[:bible270_reader_id] = reader.id
       @current_reader = reader
+
+      if name_needed?(reader)
+        redirect_to(profile_path,
+                    notice: 'Welcome. Please add your name, so others know who they are reading with.')
+        return
+      end
 
       redirect_to destination, notice: "Welcome, #{reader.display_name}."
     end
@@ -135,6 +150,20 @@ module Bible270
       return flag unless flag.nil?
 
       Rails.env.development? || Rails.env.test?
+    end
+
+    # A reader who signed in by email and still has no first/last name. Applies
+    # only to email sign-in: an OmniAuth reader carries whatever name their
+    # provider gave.
+    def name_needed?(reader)
+      Bible270.config.email_sign_in_require_name &&
+        reader.provider == 'email' &&
+        reader.full_name.nil?
+    end
+
+    def enrollment_closed_message
+      'This run of the plan is closed to new readers. If you have taken part before, ' \
+        'sign in with the same email or account.'
     end
 
     # Only ever redirect within this app, and never back into an auth route.

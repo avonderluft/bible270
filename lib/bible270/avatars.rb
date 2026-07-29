@@ -11,7 +11,7 @@ module Bible270
     # nobody's profile page crawls.
     DEFAULT_MAX_BYTES = 2 * 1024 * 1024
 
-    module_function
+  module_function
 
     def content_types = CONTENT_TYPES
 

@@ -20,12 +20,16 @@ module Bible270
 
     layout :bible270_layout
 
-    helper_method :current_reader, :signed_in?, :b270_config
+    helper_method :current_reader, :signed_in?, :b270_config, :enrollment_closed?
 
   private
 
     def bible270_layout
       Bible270.config.layout
+    end
+
+    def enrollment_closed?
+      Setting.enrollment_closed?
     end
 
     def b270_config

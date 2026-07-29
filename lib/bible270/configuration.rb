@@ -6,6 +6,7 @@
 # URI.encode_www_form_component produces byte-identical output to CGI.escape.
 require 'uri'
 require 'bible270/plan'
+require 'bible270/avatars'
 
 module Bible270
   class Configuration
@@ -108,7 +109,6 @@ module Bible270
 
     # Simple abuse guard: at most N links per address per window (seconds).
     attr_accessor :email_sign_in_window
-    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline
 
     # Whether a reader may type the display name shown beside their reflections
     # when signing in by email (otherwise it's derived from the address).
@@ -136,9 +136,9 @@ module Bible270
     # Largest avatar a reader may upload, in bytes. Uploading needs Active
     # Storage in the host app; without it the field is hidden and readers keep
     # whatever avatar their sign-in provider gave them.
-    attr_accessor :avatar_max_bytes
-
-    attr_accessor :chapter_breaks
+    # Whether new readers may join this run of the plan. An admin can close it
+    # from the panel at runtime; setting this to false launches closed.
+    attr_accessor :enrollment_open
 
     # Optional YAML file holding the same thing, re-read whenever it changes so
     # breaks can be tuned without restarting:
@@ -147,9 +147,7 @@ module Bible270
     #   Psalm 35: []
     #   Psalm 78: [20, 39, 55]
     attr_accessor :chapter_breaks_path
-
-    attr_accessor :admin_emails
-    attr_accessor :admin_resolver
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver
 
     def admin?(reader)
       return false if reader.nil?
@@ -253,6 +251,7 @@ module Bible270
       @email_sign_in_ask_name = true
       @email_sign_in_require_name = true
       @email_sign_in_log_link = nil
+      @enrollment_open = true
       @avatar_max_bytes = Avatars::DEFAULT_MAX_BYTES
       @chapter_breaks = {}
       @chapter_breaks_path = nil
