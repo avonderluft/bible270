@@ -106,6 +106,14 @@ module Bible270
       [first_name, last_name].map { |n| n.to_s.strip }.reject(&:empty?).join(' ').presence
     end
 
+    # Shorter than the full name, for lists where a surname is more than needed.
+    # Falls back to the display name for readers who arrived with only one.
+    def first_with_last_initial
+      return display_name if first_name.blank?
+
+      Names.first_with_last_initial(first_name, last_name).presence || display_name
+    end
+
     def sort_name
       [last_name, first_name].map { |n| n.to_s.strip.downcase }.join(' ').strip.presence || display_name.to_s.downcase
     end

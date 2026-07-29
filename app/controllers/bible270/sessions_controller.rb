@@ -35,7 +35,7 @@ module Bible270
       session[:bible270_reader_id] = reader.id
       @current_reader = reader
 
-      redirect_to destination, notice: "Welcome, #{reader.display_name}."
+      redirect_to destination, notice: "Welcome #{reader.first_name}."
     end
 
     def destroy
@@ -71,7 +71,7 @@ module Bible270
       names = Names.normalize(params[:first_name], params[:last_name])
 
       _record, raw = SignInToken.issue!(address, first_name: names&.dig(:first_name),
-                                                last_name: names&.dig(:last_name))
+                                                 last_name: names&.dig(:last_name))
 
       if raw && enrollment_closed? && !Reader.email_reader_exists?(address)
         Rails.logger.info("[bible270] enrolment closed; no link sent to #{address}")
@@ -102,7 +102,7 @@ module Bible270
       end
 
       reader = Reader.from_email(token.email, first_name: token.first_name,
-                                 last_name: token.last_name, display_name: token.display_name)
+                                              last_name: token.last_name, display_name: token.display_name)
       redirect_to(sign_in_path, alert: "We couldn't set up your reader profile.") and return unless reader&.persisted?
 
       destination = safe_origin(params[:origin]) || after_sign_in_path
@@ -117,7 +117,7 @@ module Bible270
         return
       end
 
-      redirect_to destination, notice: "Welcome, #{reader.display_name}."
+      redirect_to destination, notice: "Welcome #{reader.first_name}."
     end
 
   private

@@ -23,11 +23,30 @@ module Bible270
       last_name  = squish(last)
       return nil if first_name.empty? || last_name.empty?
 
+      # Only persisted columns belong here — this hash is assigned straight onto
+      # the model. Anything derived (see first_with_last_initial) is computed on
+      # demand, so it can't go stale when a name is edited.
       {
         first_name: first_name,
         last_name: last_name,
         display_name: "#{first_name} #{last_name}"
       }
+    end
+
+    # "Andrew vonderLuft" -> "Andrew v."
+    # Particles are kept out of the initial: "von der Luft" gives "L.", not "v.",
+    # since the last word is the one people are known by.
+    def first_with_last_initial(first, last)
+      first_name = squish(first)
+      surname    = squish(last)
+      return first_name if surname.empty?
+
+      initial = surname.split.last[0]
+      return first_name if initial.nil?
+
+      # Not upcased: a lowercase surname is usually deliberate (vonderLuft), and
+      # forcing "V." would override how someone writes their own name.
+      "#{first_name} #{initial}.".strip
     end
 
     def valid?(first, last)

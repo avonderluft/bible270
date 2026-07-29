@@ -84,5 +84,8 @@ Style/OptionalBooleanParameter:
 Style/SafeNavigation:
   Enabled: false
 
+Style/StringChars:
+  Enabled: false
+
 Style/RegexpLiteral:
   EnforcedStyle: percent_r
