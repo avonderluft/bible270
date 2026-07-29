@@ -20,6 +20,18 @@ module Bible270
 
     # The signed-in reader's translation, falling back to the site default for
     # visitors who aren't signed in.
+    # Applies to every page the engine's layout renders, i.e. everything under
+    # the mount point. Pages rendered inside a host layout need this in that
+    # layout's <head> instead.
+    def b270_favicon_tag
+      favicon = Bible270.config.favicon
+      return if favicon == false
+
+      href = favicon.presence || Favicon.data_uri
+      type = href.start_with?('data:image/svg+xml', 'http') || href.end_with?('.svg') ? 'image/svg+xml' : nil
+      tag.link(rel: 'icon', type: type, href: href)
+    end
+
     def b270_bible_version
       current_reader&.effective_bible_version || Translations.resolve(nil)
     end

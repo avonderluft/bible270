@@ -8,6 +8,7 @@ require 'uri'
 require 'bible270/plan'
 require 'bible270/avatars'
 require 'bible270/translations'
+require 'bible270/favicon'
 
 module Bible270
   class Configuration
@@ -141,6 +142,11 @@ module Bible270
     # from the panel at runtime; setting this to false launches closed.
     attr_accessor :enrollment_open
 
+    # Favicon for the engine's pages. nil uses the built-in loaf, false renders
+    # no link tag at all (so the host's own favicon applies), and a string is
+    # used as the href — a path, a URL, or your own data URI.
+    attr_accessor :favicon
+
     # Optional YAML file holding the same thing, re-read whenever it changes so
     # breaks can be tuned without restarting:
     #
@@ -258,6 +264,7 @@ module Bible270
       @email_sign_in_require_name = true
       @email_sign_in_log_link = nil
       @enrollment_open = true
+      @favicon = nil
       @avatar_max_bytes = Avatars::DEFAULT_MAX_BYTES
       @chapter_breaks = {}
       @chapter_breaks_path = nil
