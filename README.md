@@ -1,6 +1,6 @@
 # Bible 270
 
-[![Gem Version](https://badge.fury.io/rb/bible270.svg?refresh=1)](https://badge.fury.io/rb/bible270) [![Gem Downloads](https://img.shields.io/gem/dt/bible270.svg?style=flat)](http://rubygems.org/gems/bible270) [![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/avonderluft/bible270?label=last%20release&color=seagreen)](https://github.com/avonderluft/bible270/releases)
+[![Gem Version](https://img.shields.io/gem/v/bible270)](https://rubygems.org/gems/bible270) [![Downloads](https://img.shields.io/gem/dt/bible270)](https://rubygems.org/gems/bible270) [![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/avonderluft/bible270?label=last%20release&color=seagreen)](https://github.com/avonderluft/bible270/releases)
 
 A mountable **Rails engine** that drops a 270-day (9 month) interactive Bible reading plan into any Rails app, built with [ComfortableMediaSurfer](https://github.com/shakacode/comfortable-media-surfer) CMS in mind. Readers tick off each day's readings, post reflections, and see how everyone else is getting on, much like the social plans on Bible.com.
 
