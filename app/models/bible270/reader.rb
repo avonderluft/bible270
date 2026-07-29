@@ -114,6 +114,22 @@ module Bible270
       Names.first_with_last_initial(first_name, last_name).presence || display_name
     end
 
+    # The translation this reader reads in. Null means "whatever the site default
+    # is", so changing config.bible_version moves everyone who hasn't chosen.
+    def effective_bible_version
+      Translations.resolve(bible_version)
+    end
+
+    def bible_version_label
+      Translations.label(effective_bible_version)
+    end
+
+    def update_bible_version(code)
+      return false unless Translations.valid?(code)
+
+      update(bible_version: Translations.normalize(code))
+    end
+
     def sort_name
       [last_name, first_name].map { |n| n.to_s.strip.downcase }.join(' ').strip.presence || display_name.to_s.downcase
     end
@@ -209,7 +225,7 @@ module Bible270
     def suggested_names
       return { first_name: first_name, last_name: last_name } if full_name
 
-      Names.split(display_name) || { first_name: display_name, last_name: nil }
+      Names.split_display_name(display_name) || { first_name: display_name, last_name: nil }
     end
 
     # ---- administrative adjustments --------------------------------------

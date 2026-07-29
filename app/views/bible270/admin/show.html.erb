@@ -1,4 +1,5 @@
 <% content_for :title, "#{@reader.display_name} — Admin" %>
+<% content_for :hide_day_index, true %><%# this page has its own grid %>
 <p class="b270-eyebrow"><%= link_to 'Admin', admin_path %></p>
 <h1><%= @reader.display_name %></h1>
 <p class="lede">

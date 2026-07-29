@@ -11,7 +11,7 @@
     <% end %>
     <div class="b270-rbody">
       <div class="b270-cat"><%= t[:label] %></div>
-      <div class="b270-ref"><%= link_to ref, b270_passage_url(ref), target: "_blank", rel: "noopener" %></div>
+      <div class="b270-ref"><%= link_to ref, b270_passage_url(ref), target: "_blank", rel: "noopener" %> <%= b270_version_tag %></div>
     </div>
   </div>
 <% else %>

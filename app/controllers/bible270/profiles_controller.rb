@@ -14,6 +14,9 @@ module Bible270
       problems = []
       problems << 'both a first and last name' unless current_reader.update_names(params[:first_name],
                                                                                   params[:last_name])
+      if params[:bible_version].present? && !current_reader.update_bible_version(params[:bible_version])
+        problems << 'a translation from the list'
+      end
       if params[:avatar].present? && !current_reader.attach_avatar(params[:avatar])
         problems << (current_reader.errors[:avatar].first || 'a valid image')
       end

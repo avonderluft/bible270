@@ -1,8 +1,12 @@
 <% content_for :title, "#{@reader.display_name} — #{Bible270.config.app_name}" %>
+<% content_for :hide_day_index, true %><%# this page has its own grid %>
 <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
   <%= b270_avatar(@reader, size: 56) %>
   <div>
     <h1 style="margin:0"><%= @reader.display_name %></h1>
+    <% if signed_in? && current_reader.id == @reader.id %>
+      <p style="margin:2px 0 0"><%= link_to 'Edit your name', profile_path, class: 'b270-linkbtn' %></p>
+    <% end %>
     <p style="margin:2px 0 0;color:var(--faint);font-size:14px"><%= @days_completed %> of <%= Bible270::Plan::DAYS %> days complete · <%= @reader.completion_percent %>%</p>
   </div>
 </div>

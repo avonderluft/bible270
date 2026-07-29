@@ -18,14 +18,24 @@ module Bible270
       Bible270.config.label_for_provider(provider)
     end
 
-    def b270_passage_url(reference)
-      return '#' if reference.blank?
-
-      Bible270.config.passage_url_builder.call(reference, Bible270.config.bible_version)
+    # The signed-in reader's translation, falling back to the site default for
+    # visitors who aren't signed in.
+    def b270_bible_version
+      current_reader&.effective_bible_version || Translations.resolve(nil)
     end
 
-    # An uploaded avatar wins over whatever the sign-in provider gave us.
-    # Active Storage routes live in the host app, hence main_app.
+    def b270_passage_url(reference, version = nil)
+      return '#' if reference.blank?
+
+      Bible270.config.passage_url_builder.call(reference, version || b270_bible_version)
+    end
+
+    # Small grey "(NKJV)" after a reading, so it's clear which translation the
+    # link opens in.
+    def b270_version_tag(version = nil)
+      content_tag :span, "(#{version || b270_bible_version})", class: 'b270-version'
+    end
+
     def b270_avatar_src(reader)
       return main_app.rails_blob_path(reader.avatar, only_path: true) if reader.avatar_uploaded?
 

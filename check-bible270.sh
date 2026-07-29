@@ -2,6 +2,7 @@
 # Run from the root of your bible270 checkout. Reports which expected symbols are
 # present in which files, so a partially-applied update is visible in one pass
 # instead of one 500 at a time.
+
 status=0
 check() { # file, pattern, label
   if [ ! -f "$1" ]; then printf '  MISSING FILE  %s\n' "$1"; status=1
@@ -58,6 +59,24 @@ check app/views/bible270/sessions/new.html.erb        'enrollment_closed?'     '
 check app/models/bible270/reader.rb                   'email_reader_exists?'   'existence checks'
 check config/routes.rb                                'admin_enrollment'       'enrollment route'
 check lib/bible270/configuration.rb                   'enrollment_open'        'config flag'
+
+echo "profile extras (avatars, translations):"
+check lib/bible270/avatars.rb                         'module Avatars'         'Avatars module'
+check lib/bible270/translations.rb                    'module Translations'    'Translations module'
+check lib/bible270.rb                                 "bible270/avatars"       'require avatars'
+check lib/bible270.rb                                 "bible270/translations"  'require translations'
+check lib/bible270/configuration.rb                   'bible_versions'         'bible_versions'
+check lib/bible270/configuration.rb                   'gateway_code'           'gateway mapping in url builder'
+check db/migrate/20260101000008_add_bible_version_to_bible270_readers.rb 'bible_version' 'translation migration'
+check app/models/bible270/reader.rb                   'effective_bible_version' 'reader preference'
+check app/helpers/bible270/plan_helper.rb              'b270_version_tag'       'version tag helper'
+check app/controllers/bible270/profiles_controller.rb  'update_bible_version'   'profile accepts it'
+check app/views/bible270/profiles/edit.html.erb        'bible_version'          'translation select'
+check app/views/bible270/days/_reading.html.erb        'b270_version_tag'       'tag after each reading'
+check app/views/bible270/shared/_styles.html.erb       'b270-version'           'version styling'
+check app/views/layouts/bible270/application.html.erb  'hide_day_index'         'day-index opt-out'
+check app/views/bible270/readers/show.html.erb         'hide_day_index'         'progress page opts out'
+check app/views/bible270/admin/show.html.erb           'hide_day_index'         'admin page opts out'
 
 echo
 [ $status -eq 0 ] && echo "All present." || echo "Some files are stale or missing (see above)."

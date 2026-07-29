@@ -7,6 +7,7 @@
 require 'uri'
 require 'bible270/plan'
 require 'bible270/avatars'
+require 'bible270/translations'
 
 module Bible270
   class Configuration
@@ -147,7 +148,6 @@ module Bible270
     #   Psalm 35: []
     #   Psalm 78: [20, 39, 55]
     attr_accessor :chapter_breaks_path
-    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver
 
     def admin?(reader)
       return false if reader.nil?
@@ -202,7 +202,11 @@ module Bible270
     end
 
     # Default Bible translation and a builder for external passage links.
-    attr_accessor :bible_version
+    # Which translations readers may choose from. Defaults to all of
+    # Bible270::Translations::VERSIONS; narrow it to offer fewer.
+    attr_accessor :bible_versions
+
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version
 
     # Public labels.
     attr_accessor :app_name
@@ -230,9 +234,11 @@ module Bible270
       @after_sign_in_path = nil
       @after_sign_out_path = nil
       @bible_version = 'NKJV'
+      @bible_versions = Translations::VERSIONS.keys
       @passage_url_builder = ->(reference, version) do
         search  = URI.encode_www_form_component(reference)
-        version = URI.encode_www_form_component(version)
+        # Translations.gateway_code maps 'NASB95' to Bible Gateway's 'NASB1995'.
+        version = URI.encode_www_form_component(Translations.gateway_code(version))
         "https://www.biblegateway.com/passage/?search=#{search}&version=#{version}"
       end
       @app_name = 'Daily Bread'

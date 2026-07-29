@@ -18,9 +18,13 @@
     <% if flash[:alert] %><div class="b270-flash alert"><%= flash[:alert] %></div><% end %>
     <% if flash[:notice] %><div class="b270-flash notice"><%= flash[:notice] %></div><% end %>
     <%= yield %>
-    <%= render 'bible270/shared/day_index' %>
+    <%# Pages with their own day grid opt out with content_for :hide_day_index %>
+    <%= render 'bible270/shared/day_index' unless content_for?(:hide_day_index) %>
     <footer class="b270-footer">
-      <p>The Old Testament, New Testament and Psalms/Proverbs are each read once across the 270 days. Long chapters are divided so the readings fill each day evenly, e.g. Psalm 119 comes in eleven sections.</p>
+      <p>The Old Testament and New Testament are each read once across the 270 days, with a
+         reading from all three tracks every day. Alongside them the Psalms run once and
+         Proverbs twice; the longest chapters are divided so the readings fill each day
+         evenly, and Psalm 119 comes in eleven sections.</p>
     </footer>
   </div>
 </body>

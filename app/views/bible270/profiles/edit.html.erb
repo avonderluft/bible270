@@ -27,6 +27,14 @@
       <span>Last name</span>
       <%= text_field_tag :last_name, @names[:last_name], required: true, autocomplete: "family-name" %>
     </label>
+    <label class="b270-field">
+      <span>Bible translation</span>
+      <%= select_tag :bible_version,
+            options_for_select(Bible270::Translations.options, current_reader.effective_bible_version),
+            class: "b270-select" %>
+      <span class="b270-hint" style="margin:0">Reading links open in this translation.</span>
+    </label>
+
     <%= submit_tag "Save", class: "b270-btn" %>
   <% end %>
 
