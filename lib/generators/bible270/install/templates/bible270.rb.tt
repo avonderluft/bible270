@@ -41,6 +41,14 @@ Bible270.configure do |config|
   # config.admin_emails = %w[andrew@example.org]
   # or
   # config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@example.org') }
+  #
+  # --- Notify admin of new user sign-ins -------------------------------------
+  # Who to email when someone new joins. :admins follows admin_emails, or give an
+  # explicit list. Leave empty for no notices.
+  # config.registration_notice_emails = :admins              # everyone in admin_emails
+  # config.registration_notice_emails = %w[admin@example.com]  # or an explicit list
+  # config.mailer_host = 'example.com'                          # lets the notice link to the reader
+  # config.registration_notice_deliver_later = true          # needs Active Job
 
   # --- Start date ------------------------------------------------------------
   # Community-wide start date (Date, Time, or "YYYY-MM-DD"), or nil for undated.

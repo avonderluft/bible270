@@ -6,11 +6,52 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.12.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.14.0...main)**
+
+
+## [0.14.0] - 2026-07-30
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.13.1...v0.14.0)**
+
+### Added
+
+- **Registration notices.** `config.registration_notice_emails` takes an explicit list or `:admins`
+  (following `admin_emails`); off unless set. The notice names the reader, their email, how they
+  signed in, when they joined and the running total, and links to their admin page when
+  `config.mailer_host` is set. Hooked to reader creation rather than to a controller, so email
+  sign-in, OmniAuth and bridged host users are all covered. Failures are logged, never raised —
+  nobody is blocked from joining by an SMTP problem. `registration_notice_deliver_later` moves
+  delivery off the request.
+
+### Fixed
+
+- The installer's `bible270.rb` template was missing its closing `end`, so `generate bible270:install`
+  wrote an initializer that crashed the host app on boot. A test now renders every generator template
+  and compiles the result, across three mount points.
+
+## [0.13.1] — 2026-07-29
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.13.0...v0.13.1)**
+
+Nothing consequential.
+
+## [0.13.0] — 2026-07-29
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.12.0...v0.13.0)**
+
+### Added
+
+- favicon support
+- admin ability to update any user's profile, including avatar
+- custom footer options, to replace standard footer, or append to it
+
+### Fixed
+
+- Correct verb for reading prompt: 'Start' and 'Continue
 
 ## [0.12.0] — 2026-07-29
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.11.0...v0.12.0)** 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.11.0...v0.12.0)**
 
 ### Added
 
@@ -249,6 +290,8 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[0.13.1]: https://github.com/avonderluft/bible270/releases/tag/v0.13.1
+[0.13.0]: https://github.com/avonderluft/bible270/releases/tag/v0.13.0
 [0.12.0]: https://github.com/avonderluft/bible270/releases/tag/v0.12.0
 [0.11.0]: https://github.com/avonderluft/bible270/releases/tag/v0.11.0
 [0.10.0]: https://github.com/avonderluft/bible270/releases/tag/v0.10.0

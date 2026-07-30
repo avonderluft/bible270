@@ -211,6 +211,20 @@ module Bible270
       Array(admin_emails).map { |e| e.to_s.downcase }.include?(reader.email.to_s.downcase)
     end
 
+    # The addresses to notify, normalised and de-duplicated. :admins follows
+    # admin_emails, the common case — but an explicit list wins, so a secretary
+    # who isn't an admin can still be told.
+    def registration_notice_recipients
+      requested = registration_notice_emails
+      requested = admin_emails if requested.to_s == 'admins'
+
+      Array(requested).map { |address| EmailSignIn.normalize_email(address) }.compact.uniq
+    end
+
+    def notify_on_registration?
+      registration_notice_recipients.any?
+    end
+
     def admin_configured?
       admin_resolver.respond_to?(:call) || Array(admin_emails).any?
     end
@@ -260,6 +274,23 @@ module Bible270
     # Which translations readers may choose from. Defaults to all of
     # Bible270::Translations::VERSIONS; narrow it to offer fewer.
     attr_accessor :bible_versions
+
+    # Who to email when someone new joins. Three forms:
+    #
+    #   config.registration_notice_emails = %w[andrew@example.org]  # an explicit list
+    #   config.registration_notice_emails = :admins                 # everyone in admin_emails
+    #   config.registration_notice_emails = []                      # off (default)
+    #
+    # An explicit list is used as given, so you can notify someone who isn't an admin.
+    attr_accessor :registration_notice_emails
+
+    # Send the notice through Active Job rather than inline: registration happens
+    # during a request, so inline delivery makes the new reader wait for SMTP.
+    attr_accessor :registration_notice_deliver_later
+
+    # Host for links in notification mail. A mailer has no request to derive it
+    # from, so without this the notice names the reader but cannot link to them.
+    attr_accessor :mailer_host
 
     attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version
 
@@ -321,6 +352,9 @@ module Bible270
       @avatar_max_bytes = Avatars::DEFAULT_MAX_BYTES
       @chapter_breaks = {}
       @chapter_breaks_path = nil
+      @registration_notice_emails = []
+      @registration_notice_deliver_later = false
+      @mailer_host = nil
       @admin_emails = []
       @admin_resolver = nil
       @email_sign_in_deliver_later = false

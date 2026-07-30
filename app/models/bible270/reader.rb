@@ -18,6 +18,12 @@ module Bible270
 
     def self.avatar_uploads? = AVATAR_UPLOADS
 
+    # Fires for every way a reader comes into existence — email sign-in, OmniAuth,
+    # or a bridged host user — rather than in each controller, so no path can
+    # quietly skip it. after_create_commit, so nothing is sent for a reader whose
+    # transaction rolls back.
+    after_create_commit :notify_of_registration
+
     validates :display_name, presence: true
     validates :uid, uniqueness: { scope: :provider }, allow_nil: true
 
@@ -275,6 +281,25 @@ module Bible270
 
       update!(started_on: Plan.to_date(on) - (day - 1))
     end
+
+    # Delivery problems must never stop someone joining, so this logs rather than
+    # raises. Registration happens mid-request, hence the deliver_later option.
+    def notify_of_registration
+      recipients = Bible270.config.registration_notice_recipients
+      return if recipients.empty?
+
+      notice = NoticeMailer.new_reader(reader_id: id, recipients: recipients)
+      if Bible270.config.registration_notice_deliver_later
+        notice.deliver_later
+      else
+        notice.deliver_now
+      end
+    rescue StandardError => e
+      Rails.logger.error("[bible270] could not send the registration notice for #{id}: #{e.class}: #{e.message}")
+    end
+    # Private, but declared this way rather than with a `private` section: methods
+    # defined below here are called from controllers and views.
+    private :notify_of_registration
 
     def reload_progress
       @checked_counts = nil
