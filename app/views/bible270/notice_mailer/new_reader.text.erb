@@ -1,0 +1,11 @@
+<%= @reader.display_name %> has joined <%= @app_name %>.
+
+  Name:        <%= @reader.display_name %>
+  Email:       <%= @reader.email.presence || '(none given)' %>
+  Signed in with: <%= @reader.provider.presence || 'the host application' %>
+  Joined:      <%= @reader.created_at.strftime('%B %-d, %Y at %-I:%M %p') %>
+
+That makes <%= @total %> reader<%= 's' unless @total == 1 %> taking part.
+<% if @admin_url %>
+Manage them: <%= @admin_url %>
+<% end %>
