@@ -56,7 +56,13 @@ module Bible270
     # Best effort at splitting a single name, for readers who arrived through
     # OmniAuth with only a display name. Everything after the first word is the
     # surname, so "Andrew von der Luft" keeps its particles together.
-    def split(display_name)
+    #
+    # Deliberately not called `split`: a module method with the same name as
+    # String#split invites a bare `split(...)` inside this module to resolve here
+    # instead, and RuboCop's Style/StringChars autocorrect has been known to
+    # rewrite `split` calls into a receiverless `chars`, which then resolves
+    # against the module and fails confusingly.
+    def split_display_name(display_name)
       parts = squish(display_name).split
       return nil if parts.size < 2
 

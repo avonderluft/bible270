@@ -49,9 +49,10 @@ That's the whole install. The generator is interactive and walks you through it:
 
 1. asks where to mount the plan;
 2. asks which sign-in methods you want — email link, OmniAuth, or both — and adds any OmniAuth strategy gems to your `Gemfile`;
-3. copies the four migrations into your `db/migrate` and offers to run them;
-4. writes `config/initializers/bible270.rb` (and `omniauth.rb` if you chose social sign-in); and
-5. adds `mount Bible270::Engine, at: Bible270.config.mount_at` to `config/routes.rb`.
+3. Prompts to install ActiveStorage for user avatars
+4. copies migrations into your `db/migrate` and offers to run them;
+5. writes `config/initializers/bible270.rb` (and `omniauth.rb` if you chose social sign-in); and
+6. adds `mount Bible270::Engine, at: Bible270.config.mount_at` to `config/routes.rb`.
 
 (Migrations run before the config is written, so a problem in a generated initializer can't block the database work.)
 
@@ -76,6 +77,7 @@ bin/rails generate bible270:install --defaults \
 | `--mailer-from=ADDR` | From: address for sign-in emails |
 | `--bundle` / `--no-bundle` | Run `bundle install` after adding strategy gems |
 | `--migrate` / `--no-migrate` | Run `db:migrate` at the end |
+| `--active-storage` / `--no-active-storage` | Install Active Storage if missing (for picture uploads) |
 
 The installer is safe to re-run: it leaves an existing `mount` line alone, skips strategy gems already in your Gemfile, and Rails prompts before overwriting an initializer.
 

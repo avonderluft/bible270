@@ -37,6 +37,11 @@ Bible270.configure do |config|
   # config.after_sign_in_path  = "<%= mount_at %>"
   # config.after_sign_out_path = "/"
 
+  # --- Admin ----------------------------------------------------------------
+  # config.admin_emails = %w[andrew@example.org]
+  # or
+  # config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@example.org') }
+
   # --- Start date ------------------------------------------------------------
   # Community-wide start date (Date, Time, or "YYYY-MM-DD"), or nil for undated.
   # config.start_date = Date.new(2026, 9, 6)
@@ -44,4 +49,23 @@ Bible270.configure do |config|
 
   # --- Reading links ---------------------------------------------------------
   config.bible_version = "NKJV"
-end
+
+  # --- Custom chapter breaks -------------------------------------------------
+  # config.chapter_breaks = { 'Psalm 78' => [20, 39, 55] }
+  #
+  # or YAML file:
+  # config.chapter_breaks_path = Rails.root.join('config/bible270_breaks.yml')
+  # config/bible270_breaks.yml — re-read whenever it changes
+  # Psalm 35: []
+  # Psalm 78: [20, 39, 55]
+
+  # --- Custom footer options -------------------------------------------------
+  # The engine's pages end with a short note about how the plan works. Replace it with your own
+  # - a partial in your app at /app/views/layouts/_bible270_footer.html.erb
+  # config.footer_partial = 'layouts/bible270_footer'  
+  # config.footer_html    = '<p>&copy; 2026 …</p>'
+  # config.footer         = false                # no footer at all
+  #_
+  # config.footer_placement = :after    # engine's note, then yours
+  # config.footer_placement = :before   # yours, then the engine's note
+  # config.footer_placement = :replace  # default

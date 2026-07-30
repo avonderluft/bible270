@@ -39,6 +39,8 @@ module Bible270
       class_option :email,       type: :boolean, desc: 'Enable passwordless email sign-in'
       class_option :mailer_from, type: :string,  desc: 'From: address for sign-in emails'
       class_option :migrate,     type: :boolean, desc: 'Run db:migrate at the end'
+      class_option :active_storage, type: :boolean,
+                                    desc: 'Install Active Storage if missing (needed for picture uploads)'
       class_option :bundle,      type: :boolean, desc: 'Run bundle install after adding strategy gems'
       class_option :defaults,    type: :boolean, default: false, desc: 'Accept all defaults, ask nothing'
 
@@ -112,7 +114,41 @@ module Bible270
         run 'bundle install' if @bundled
       end
 
-      # ---- 5. migrations ----------------------------------------------------
+      # ---- 5. Active Storage ------------------------------------------------
+      #
+      # Picture uploads need it. `rails new` enables the framework but the tables
+      # come from a migration that must be installed, so check for that migration
+      # rather than assuming a fresh app has it.
+
+      def ensure_active_storage
+        return if skip_rails_commands?
+
+        unless active_storage_enabled?
+          @active_storage = :unavailable
+          say ''
+          say '  Active Storage is not enabled here, so picture uploads will be off.', :yellow
+          say '  (Was this app generated with --skip-active-storage?)'
+          return
+        end
+
+        if active_storage_installed?
+          @active_storage = :present
+          say '  Active Storage already installed.', :green
+          return
+        end
+
+        unless decide(:active_storage, 'Install Active Storage, so readers can upload a picture?', true)
+          @active_storage = :declined
+          return
+        end
+
+        say ''
+        say 'Installing Active Storage', :yellow
+        rails_command 'active_storage:install'
+        @active_storage = :installed
+      end
+
+      # ---- 6. migrations ----------------------------------------------------
 
       # Migrations run before the initializers are written, so a problem in the
       # generated config can never block the database work.
@@ -139,7 +175,7 @@ module Bible270
         end
       end
 
-      # ---- 6. initializers ---------------------------------------------------
+      # ---- 7. initializers ---------------------------------------------------
 
       def create_engine_initializer
         create_file 'config/initializers/bible270.rb', engine_initializer
@@ -151,7 +187,7 @@ module Bible270
         create_file 'config/initializers/omniauth.rb', omniauth_initializer
       end
 
-      # ---- 7. routing -------------------------------------------------------
+      # ---- 8. routing -------------------------------------------------------
 
       def add_route
         if routes_mounted?
@@ -175,7 +211,7 @@ module Bible270
         end
       end
 
-      # ---- 8. what is left to do -------------------------------------------
+      # ---- 9. what is left to do -------------------------------------------
 
       def summary
         say ''
@@ -185,6 +221,7 @@ module Bible270
         say "  Sign-in           #{auth_summary}"
         say "  Initializers      #{initializer_summary}"
         say "  Migrations        #{@migrated ? 'copied and run' : 'copied (not yet run)'}"
+        say "  Picture uploads   #{active_storage_summary}"
         say ''
 
         remaining = outstanding_steps
@@ -215,6 +252,20 @@ module Bible270
         say '    bin/rails bible270:install:migrations'
         say '    bin/rails db:migrate'
         true
+      end
+
+      # config/storage.yml is written by `rails new` unless --skip-active-storage.
+      def active_storage_enabled?
+        return true if File.exist?(File.join(destination_root, 'config', 'storage.yml'))
+
+        application = File.join(destination_root, 'config', 'application.rb')
+        File.exist?(application) && File.read(application).include?('active_storage')
+      rescue StandardError
+        false
+      end
+
+      def active_storage_installed?
+        Dir.glob(File.join(destination_root, 'db', 'migrate', '*create_active_storage_tables*')).any?
       end
 
       # ---- prompting --------------------------------------------------------
@@ -383,6 +434,16 @@ module Bible270
         body.include?('path_prefix') && !body.include?('Bible270.config.auth_path_prefix')
       end
 
+      def active_storage_summary
+        case @active_storage
+        when :installed then 'Active Storage installed'
+        when :present then 'Active Storage already present'
+        when :declined then 'off — Active Storage not installed'
+        when :unavailable then 'off — Active Storage not enabled in this app'
+        else 'unchanged'
+        end
+      end
+
       def outstanding_steps
         steps = []
         steps << "Add to config/routes.rb: #{MOUNT_LINE}" if @route_failed
@@ -395,6 +456,9 @@ module Bible270
         steps << 'bundle install' if @providers.any? && !@bundled
         steps << 'bin/rails bible270:install:migrations' if skip_rails_commands?
         steps << 'bin/rails db:migrate' unless @migrated
+        if @active_storage == :declined
+          steps << 'bin/rails active_storage:install && bin/rails db:migrate — for picture uploads'
+        end
 
         if @providers.any?
           steps << 'Set each provider\'s client id/secret in credentials or ENV'

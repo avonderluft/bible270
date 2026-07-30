@@ -31,14 +31,14 @@ class NamesTest < Minitest::Test
   end
 
   def test_splitting_a_display_name_keeps_the_surname_together
-    assert_equal({ first_name: 'Andrew', last_name: 'von der Luft' }, N.split('Andrew von der Luft'))
-    assert_equal({ first_name: 'Andrew', last_name: 'vonderLuft' }, N.split('Andrew vonderLuft'))
+    assert_equal({ first_name: 'Andrew', last_name: 'von der Luft' }, N.split_display_name('Andrew von der Luft'))
+    assert_equal({ first_name: 'Andrew', last_name: 'vonderLuft' }, N.split_display_name('Andrew vonderLuft'))
   end
 
   def test_a_single_word_cannot_be_split
-    assert_nil N.split('Madonna')
-    assert_nil N.split('')
-    assert_nil N.split(nil)
+    assert_nil N.split_display_name('Madonna')
+    assert_nil N.split_display_name('')
+    assert_nil N.split_display_name(nil)
   end
 end
 
@@ -60,7 +60,7 @@ class NamesInitialTest < Minitest::Test
   end
 
   def test_whitespace_is_squished
-    assert_equal 'andrew v.', N.first_with_last_initial('  andrew  ', ' vonderLuft ')
+    assert_equal 'andrew L.', N.first_with_last_initial('  andrew  ', ' Luft ')
   end
 
   def test_a_missing_surname_leaves_just_the_first_name
