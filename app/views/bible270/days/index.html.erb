@@ -43,7 +43,7 @@
 
 <% if @readers.any? %>
   <% rankings= @readers.count < 5 ? @readers.count : 5 %>
-  <h2 class="b270-section-h">Top <%= rankings %> reader leaders ...</h2>
+  <h2 class="b270-section-h">Reader Leaders ...</h2>
   <div class="b270-list">
     <% @readers.first(rankings).each_with_index do |r, i| %>
       <div class="b270-li">

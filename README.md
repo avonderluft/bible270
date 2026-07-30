@@ -504,4 +504,4 @@ A few things that'll make review quick:
 
 ## License
 
-MIT. See `MIT-LICENSE`.
+[MIT-LICENSE](./MIT-LICENSE).
