@@ -83,6 +83,11 @@ check app/views/bible270/admin/show.html.erb           'multipart: true'        
 check lib/bible270/favicon.rb                          'module Favicon'         'favicon module'
 check lib/bible270.rb                                  "bible270/favicon"       'require favicon'
 check app/views/layouts/bible270/application.html.erb  'b270_favicon_tag'       'favicon in layout'
+check lib/bible270/configuration.rb                    'footer_placement'       'footer placement config'
+check lib/bible270/configuration.rb                    'def footer_partial='    'partial name normalising'
+check app/helpers/bible270/plan_helper.rb              'b270_custom_footer'     'footer helper'
+check app/views/bible270/shared/_footer.html.erb       'b270-footer'            'default footer partial'
+check app/views/layouts/bible270/application.html.erb  'b270_footer'            'footer in layout'
 
 echo
 [ $status -eq 0 ] && echo "All present." || echo "Some files are stale or missing (see above)."

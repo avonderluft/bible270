@@ -27,9 +27,9 @@ Bible270::Engine.routes.draw do
   patch  'admin/comments/:id/unhide',    to: 'admin#unhide_comment',   as: :admin_unhide_comment
   delete 'admin/comments/:id',           to: 'admin#destroy_comment',  as: :admin_comment
 
-  get   'profile',                       to: 'profiles#edit',   as: :profile
+  get   'profile',                       to: 'profiles#edit', as: :profile
   patch 'profile',                       to: 'profiles#update'
-  delete 'profile/avatar',                to: 'profiles#remove_avatar', as: :profile_avatar
+  delete 'profile/avatar', to: 'profiles#remove_avatar', as: :profile_avatar
 
   get 'community', to: 'readers#index', as: :community
   get 'readers/:id', to: 'readers#show', as: :reader

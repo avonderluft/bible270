@@ -322,6 +322,42 @@ Bible270.configure do |config|
   }
 end
 ```
+### Footer
+ 
+The engine's pages end with a short note about how the plan works. Replace it with your own:
+ 
+```ruby
+config.footer_partial = 'shared/footer'      # a partial in your app
+config.footer_html    = '<p>&copy; 2026 …</p>'
+config.footer         = false                # no footer at all
+```
+ 
+By default yours replaces the engine's. To keep both:
+ 
+```ruby
+config.footer_placement = :after    # engine's note, then yours
+config.footer_placement = :before   # yours, then the engine's note
+config.footer_placement = :replace  # default
+```
+ 
+A partial is looked up in your app's view paths as well as the engine's, so `'shared/footer'` finds
+`app/views/shared/_footer.html.erb`. Keep it reasonably self-contained: engine controllers include
+the engine's helpers, not your app's, so a partial calling your own helpers needs
+`helper ::ApplicationHelper` adding to the engine's controller — or just inline the markup.
+ 
+### Favicon
+ 
+Pages under the mount point carry their own favicon — a rustic loaf, inlined as an SVG data URI, so
+there's nothing to add to your asset pipeline.
+ 
+```ruby
+config.favicon = nil                        # built-in loaf (default)
+config.favicon = '/icons/my-icon.svg'       # your own
+config.favicon = false                      # none; the host's favicon applies
+```
+ 
+It's emitted by the engine's layout, so if you point `config.layout` at your own layout, add
+`<%= b270_favicon_tag %>` to its `<head>`.
 
 References link to Bible Gateway by default — point `passage_url_builder` at your another reader if you wish, or your own reader if you host one.
 

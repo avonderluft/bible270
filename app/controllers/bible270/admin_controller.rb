@@ -99,9 +99,9 @@ module Bible270
     # themselves on their own profile.
     def update_profile
       problems = []
-      if params[:first_name].present? || params[:last_name].present?
-        problems << 'both a first and last name' unless @reader.update_names(params[:first_name],
-                                                                            params[:last_name])
+      if (params[:first_name].present? || params[:last_name].present?) && !@reader.update_names(params[:first_name],
+                                                                                                params[:last_name])
+        problems << 'both a first and last name'
       end
       if params[:avatar].present? && !@reader.attach_avatar(params[:avatar])
         problems << (@reader.errors[:avatar].first || 'a valid image')

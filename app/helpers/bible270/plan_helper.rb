@@ -23,6 +23,34 @@ module Bible270
     # Applies to every page the engine's layout renders, i.e. everything under
     # the mount point. Pages rendered inside a host layout need this in that
     # layout's <head> instead.
+    # The footer, from whichever source the host configured. A partial is looked
+    # up in the host's view paths as well as the engine's, so 'shared/footer'
+    # finds app/views/shared/_footer.html.erb.
+    # The footer, from whichever source the host configured. A partial is looked
+    # up in the host's view paths as well as the engine's, so 'shared/footer'
+    # finds app/views/shared/_footer.html.erb. config.footer_placement decides
+    # whether a custom footer replaces the engine's or sits alongside it.
+    def b270_footer
+      config = Bible270.config
+      return if config.footer_style == :none
+      return render('bible270/shared/footer') if config.footer_style == :default
+
+      parts = [b270_custom_footer]
+      if config.keep_default_footer?
+        default = render('bible270/shared/footer')
+        config.resolved_footer_placement == :after ? parts.unshift(default) : parts.push(default)
+      end
+
+      safe_join(parts)
+    end
+
+    def b270_custom_footer
+      case Bible270.config.footer_style
+      when :partial then render(Bible270.config.footer_partial)
+      when :html then content_tag(:footer, Bible270.config.footer_html.html_safe, class: 'b270-footer')
+      end
+    end
+
     def b270_favicon_tag
       favicon = Bible270.config.favicon
       return if favicon == false

@@ -6,6 +6,7 @@
 # URI.encode_www_form_component produces byte-identical output to CGI.escape.
 require 'uri'
 require 'bible270/plan'
+require 'bible270/email_sign_in'
 require 'bible270/avatars'
 require 'bible270/translations'
 require 'bible270/favicon'
@@ -145,7 +146,55 @@ module Bible270
     # Favicon for the engine's pages. nil uses the built-in loaf, false renders
     # no link tag at all (so the host's own favicon applies), and a string is
     # used as the href — a path, a URL, or your own data URI.
-    attr_accessor :favicon
+    # Footer for the engine's pages. Three ways to set it, and they're checked in
+    # this order:
+    #
+    #   config.footer_partial = 'shared/footer'   # a partial in your app
+    #   config.footer_html    = '<p>…</p>'        # raw HTML, marked safe
+    #   config.footer         = false             # no footer at all
+    #
+    # With none of them set you get the engine's own note about how the plan works.
+    # Rails adds the leading underscore when looking a partial up, so
+    # 'layouts/_bible270_footer' would search for '__bible270_footer' and raise
+    # MissingTemplate. Accept either spelling and normalise.
+    attr_reader :footer_partial
+
+    def footer_partial=(path)
+      @footer_partial =
+        if path.nil?
+          nil
+        else
+          segments = path.to_s.strip.split('/')
+          segments[-1] = segments[-1].sub(%r{\A_}, '') unless segments.empty?
+          segments.join('/')
+        end
+    end
+
+    # Where your footer goes relative to the engine's own: :replace (default),
+    # :after, or :before. Anything else is treated as :replace.
+    attr_accessor :footer_placement
+
+    PLACEMENTS = %i[replace after before].freeze
+
+    def resolved_footer_placement
+      placement = footer_placement.to_s.downcase.to_sym
+      PLACEMENTS.include?(placement) ? placement : :replace
+    end
+
+    # Whether the engine's own footer is shown alongside yours.
+    def keep_default_footer?
+      footer_style != :none && %i[after before].include?(resolved_footer_placement)
+    end
+
+    # :none, :partial, :html or :default.
+    def footer_style
+      # Plain Ruby, not present?: this file has to load without ActiveSupport.
+      return :none if footer == false
+      return :partial unless footer_partial.to_s.strip.empty?
+      return :html unless footer_html.to_s.strip.empty?
+
+      :default
+    end
 
     # Optional YAML file holding the same thing, re-read whenever it changes so
     # breaks can be tuned without restarting:
@@ -212,7 +261,7 @@ module Bible270
     # Bible270::Translations::VERSIONS; narrow it to offer fewer.
     attr_accessor :bible_versions
 
-    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version
 
     # Public labels.
     attr_accessor :app_name
@@ -264,6 +313,10 @@ module Bible270
       @email_sign_in_require_name = true
       @email_sign_in_log_link = nil
       @enrollment_open = true
+      @footer_partial = nil
+      @footer_placement = :replace
+      @footer_html = nil
+      @footer = nil
       @favicon = nil
       @avatar_max_bytes = Avatars::DEFAULT_MAX_BYTES
       @chapter_breaks = {}

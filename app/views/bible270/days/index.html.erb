@@ -42,9 +42,10 @@
 </div>
 
 <% if @readers.any? %>
-  <h2 class="b270-section-h">The community</h2>
+  <% rankings= @readers.count < 5 ? @readers.count : 5 %>
+  <h2 class="b270-section-h">Top <%= rankings %> reader leaders ...</h2>
   <div class="b270-list">
-    <% @readers.first(5).each_with_index do |r, i| %>
+    <% @readers.first(rankings).each_with_index do |r, i| %>
       <div class="b270-li">
         <span class="rank"><%= i + 1 %></span>
         <%= b270_avatar(r) %>
