@@ -5,17 +5,17 @@
    <%= link_to 'Moderate reflections →', admin_comments_path %></p>
 
 <div class="b270-panel">
-  <h2 class="b270-subhead">This run of the plan</h2>
+  <h2 class="b270-subhead">This run of the plan is <%= @enrollment_closed ? 'closed' : 'open' %> to new readers.</h2> 
   <% if @enrollment_closed %>
-    <p class="b270-startline"><strong>Closed to new readers</strong><% if @enrollment_closed_at %>
-      since <%= @enrollment_closed_at.strftime('%B %-d, %Y') %><% end %>.
+    <% if @enrollment_closed_at %>
+      <p class="b270-startline">Enrollment closed
+      on <%= @enrollment_closed_at.strftime('%B %-d, %Y') %><% end %>.
       The <%= @readers.size %> reader<%= 's' unless @readers.size == 1 %> already taking part can
       still sign in and carry on.</p>
     <%= button_to 'Open to new readers', admin_enrollment_path, method: :patch,
           params: { state: 'open' }, class: 'b270-btn' %>
   <% else %>
-    <p class="b270-startline"><strong>Open to new readers.</strong> Anyone signing in for the first
-      time joins this run.</p>
+    <p class="b270-startline">Anyone signing in for the first time joins this run.</p>
     <%= button_to 'Close to new readers', admin_enrollment_path, method: :patch,
           params: { state: 'closed' }, class: 'b270-btn',
           form: { data: { turbo_confirm: 'Close this run? Existing readers keep their access.' } } %>
@@ -28,7 +28,9 @@
       <div class="b270-li">
         <%= b270_avatar(reader, size: 34) %>
         <div>
-          <div class="name"><%= link_to reader.display_name, admin_reader_path(reader), style: 'text-decoration:none' %></div>
+          <div class="name"><%= link_to reader.display_name, admin_reader_path(reader), style: 'text-decoration:none' %>
+          <% if Bible270.config.admin?(reader) %> <span class="sub"><strong>[admin]</strong></span> <% end %>
+          </div>
           <div class="sub">
             <%= reader.email.presence || reader.provider %>
             · <%= @days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days

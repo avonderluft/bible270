@@ -336,6 +336,20 @@ module Bible270
     end
 
     # Raw, unclamped — lets callers distinguish "not started yet" / "finished".
+    # The plan day that today actually is, or nil when today falls outside the
+    # plan's window. calendar_day clamps, so before the start date it reports day
+    # 1 — which made day 1 claim to be "today" for anyone whose plan hadn't begun.
+    def today_day
+      raw = raw_calendar_day
+      return nil if raw.nil?
+
+      Plan.valid_day?(raw) ? raw : nil
+    end
+
+    def today?(day)
+      today_day == day
+    end
+
     def raw_calendar_day
       Plan.day_for(Date.current, effective_start_date, clamp: false)
     end

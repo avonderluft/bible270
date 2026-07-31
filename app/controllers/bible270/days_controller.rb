@@ -13,7 +13,8 @@ module Bible270
       @readers = @readers.sort_by { |r| -@days_completed[r.id] }
 
       @start_day = current_reader&.current_day || 1
-      @today_day = current_reader&.calendar_day
+      # nil outside the plan's window, so no "Go to today" before it begins
+      @today_day = current_reader&.today_day
       @community_start_date = Bible270.config.start_date
       @allow_reader_start_date = Bible270.config.allow_reader_start_date
     end

@@ -6,7 +6,7 @@
     <% if signed_in? && current_reader.dated? %>
       <div class="date">
         <%= current_reader.date_for_day(@day).strftime("%A, %B %-d, %Y") %>
-        <% if current_reader.calendar_day == @day %><span class="b270-badge">Today</span><% end %>
+        <% if current_reader.today?(@day) %><span class="b270-badge">Today</span><% end %>
       </div>
     <% end %>
   </div>

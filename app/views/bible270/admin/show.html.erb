@@ -6,7 +6,9 @@
   <%= @reader.email.presence || @reader.provider %> ·
   <%= @days_completed %> of <%= Bible270::Plan::DAYS %> days ·
   <%= @reader.completion_percent %>%
-  <% if @reader.dated? %>· day <%= @reader.calendar_day %> today<% end %>
+  <% if @reader.today_day %>· day <%= @reader.today_day %> today
+  <% elsif @reader.not_started_yet? %>· starts <%= @reader.effective_start_date.strftime('%b %-d, %Y') %>
+  <% elsif @reader.past_end_date? %>· finished <%= @reader.plan_end_date.strftime('%b %-d, %Y') %><% end %>
 </p>
 
 <div class="b270-panel">
