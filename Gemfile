@@ -5,6 +5,11 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
 gemspec
 
+# CI varies the Rails version through the matrix rather than a gemfiles/
+# directory, so there is one Gemfile to keep in step instead of five.
+rails_version = ENV.fetch('RAILS_VERSION', nil)
+gem 'rails', "~> #{rails_version}.0" if rails_version
+
 group :development, :test do
   gem 'gem-release'
 end

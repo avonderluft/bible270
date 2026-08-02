@@ -1,0 +1,88 @@
+name: "Rails CI"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # Curated pairs rather than a full grid: Rails 8 needs Ruby >= 3.2, Rails 7.0
+    # predates Ruby 3.4, and most of a 4x5 matrix would be combinations nobody
+    # runs. These are the ones a host app might plausibly have.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { ruby: "3.2", rails: "7.0" }
+          - { ruby: "3.2", rails: "7.1" }
+          - { ruby: "3.2", rails: "8.0" }
+          - { ruby: "3.3", rails: "7.2" }
+          - { ruby: "3.3", rails: "8.0" }
+          - { ruby: "3.4", rails: "8.0" }
+          - { ruby: "3.4", rails: "8.1" }
+          # Ruby 4.0 is new enough that a failure here is information, not a
+          # broken build — hence the only allow-failure entry.
+          - { ruby: "4.0", rails: "8.1", experimental: true }
+
+    name: ${{ format('Ruby {0}, Rails {1}', matrix.ruby, matrix.rails) }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
+
+    env:
+      RAILS_ENV: test
+      RAILS_VERSION: ${{ matrix.rails }}
+      SKIP_COV: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ruby ${{ matrix.ruby }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+
+      - name: Run the test suite
+        run: bundle exec rake test
+
+  lint:
+    name: RuboCop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - run: bundle exec rubocop --parallel
+
+  build:
+    name: Gem builds and loads
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      # Catches a file left out of the gemspec's file list — the packaged gem
+      # missing a template is invisible to the test suite, which reads the
+      # working tree.
+      - name: Build the gem
+        run: gem build bible270.gemspec
+
+      - name: Install it and require it in isolation
+        run: |
+          gem install ./bible270-*.gem
+          ruby -e "require 'bible270'; puts Bible270::VERSION"
+
+      - name: Every view and migration is packaged
+        run: |
+          ruby -rrubygems -e '
+            spec = Gem::Specification.load("bible270.gemspec")
+            missing = Dir.glob("{app,db,lib,config}/**/*").select { |f| File.file?(f) } - spec.files
+            abort("not packaged:\n  #{missing.join("\n  ")}") if missing.any?
+            puts "all #{spec.files.size} files packaged"
+          '
