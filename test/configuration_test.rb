@@ -10,9 +10,30 @@ class ConfigurationTest < Minitest::Test
     @config = Bible270::Configuration.new
   end
 
-  def test_does_not_load_the_cgi_library
-    refute $LOADED_FEATURES.any? { |f| f =~ %r{/cgi(/util)?\.rb\z} },
-           'bible270 must not require the cgi library (removed from default gems in Ruby 4.0)'
+  # Ruby 4.0 moved a batch of libraries out of the default gems. Requiring one
+  # from a gem that doesn't declare it passes everywhere except 4.0, so it
+  # surfaces only on the newest CI row — or in production.
+  #
+  # Checked against the source rather than $LOADED_FEATURES: anything else in the
+  # suite that loads ERB drags cgi/util in with it, which made the old version of
+  # this test fail for reasons having nothing to do with the gem.
+  MOVED_OUT_OF_STDLIB = %w[cgi rexml csv base64 bigdecimal drb observer abbrev
+                           matrix prime rss getoptlong mutex_m].freeze
+
+  def test_does_not_require_libraries_ruby_4_dropped
+    root = File.expand_path('..', __dir__)
+    pattern = %r{^\s*require\s+['"](#{MOVED_OUT_OF_STDLIB.join('|')})(?:/[\w/]+)?['"]}
+
+    offenders = Dir.glob(File.join(root, '{app,lib,test}/**/*.rb')).filter_map do |path|
+      line = File.readlines(path).find { |l| l.match?(pattern) }
+      "#{path.sub("#{root}/", '')}: #{line.strip}" if line
+    end
+
+    assert_empty offenders, <<~MSG
+      These require libraries that are no longer default gems in Ruby 4.0:
+
+      #{offenders.join("\n      ")}
+    MSG
   end
 
   def test_default_passage_url_escapes_references
@@ -208,5 +229,241 @@ class ConfigurationCompletenessTest < Minitest::Test
 
       #{missing.join("\n      ")}
     MSG
+  end
+end
+
+class FooterConfigTest < Minitest::Test
+  def setup
+    @config = Bible270::Configuration.new
+  end
+
+  def test_the_engines_own_footer_by_default
+    assert_equal :default, @config.footer_style
+  end
+
+  def test_a_partial_wins_over_html
+    @config.footer_html = '<p>html</p>'
+    @config.footer_partial = 'shared/footer'
+    assert_equal :partial, @config.footer_style
+  end
+
+  def test_raw_html_when_no_partial_is_given
+    @config.footer_html = '<p>html</p>'
+    assert_equal :html, @config.footer_style
+  end
+
+  def test_false_suppresses_the_footer_entirely
+    @config.footer_partial = 'shared/footer'
+    @config.footer = false
+    assert_equal :none, @config.footer_style
+  end
+
+  def test_blank_values_are_ignored
+    @config.footer_partial = '   '
+    @config.footer_html = ''
+    assert_equal :default, @config.footer_style
+  end
+
+  # Rails adds the underscore itself, so a configured '_footer' would be looked
+  # up as '__footer' and raise MissingTemplate.
+  def test_a_leading_underscore_is_stripped_from_the_partial_name
+    @config.footer_partial = 'layouts/_bible270_footer'
+    assert_equal 'layouts/bible270_footer', @config.footer_partial
+
+    @config.footer_partial = '_footer'
+    assert_equal 'footer', @config.footer_partial
+  end
+
+  def test_only_the_last_segment_is_touched
+    @config.footer_partial = '_odd/dir/_footer'
+    assert_equal '_odd/dir/footer', @config.footer_partial
+  end
+
+  def test_the_partial_name_is_trimmed_and_nil_stays_nil
+    @config.footer_partial = '  shared/footer  '
+    assert_equal 'shared/footer', @config.footer_partial
+
+    @config.footer_partial = nil
+    assert_nil @config.footer_partial
+  end
+
+  def test_placement_defaults_to_replacing
+    assert_equal :replace, @config.resolved_footer_placement
+    refute @config.keep_default_footer?
+  end
+
+  def test_after_and_before_keep_the_engines_footer
+    @config.footer_html = '<p>mine</p>'
+    %i[after before].each do |placement|
+      @config.footer_placement = placement
+      assert_equal placement, @config.resolved_footer_placement
+      assert @config.keep_default_footer?, "#{placement} should keep the default footer"
+    end
+  end
+
+  def test_placement_accepts_a_string
+    @config.footer_html = '<p>mine</p>'
+    @config.footer_placement = 'after'
+    assert_equal :after, @config.resolved_footer_placement
+  end
+
+  def test_an_unknown_placement_falls_back_to_replacing
+    @config.footer_html = '<p>mine</p>'
+    @config.footer_placement = :sideways
+    assert_equal :replace, @config.resolved_footer_placement
+    refute @config.keep_default_footer?
+  end
+
+  def test_no_footer_wins_over_any_placement
+    @config.footer_html = '<p>mine</p>'
+    @config.footer_placement = :after
+    @config.footer = false
+    assert_equal :none, @config.footer_style
+    refute @config.keep_default_footer?
+  end
+end
+
+class MailerFromCheckTest < Minitest::Test
+  def setup
+    @config = Bible270::Configuration.new
+  end
+
+  def test_the_shipped_default_is_flagged
+    # The generator writes a reserved-domain address on purpose; it must be
+    # changed, and nothing used to check that it had been.
+    assert_match(%r{placeholder}, @config.mailer_from_problem)
+  end
+
+  def test_a_real_address_passes
+    @config.mailer_from = 'no-reply@gknt.org'
+    assert_nil @config.mailer_from_problem
+  end
+
+  def test_blank_and_malformed_addresses_are_flagged
+    @config.mailer_from = ''
+    assert_match(%r{blank}, @config.mailer_from_problem)
+
+    @config.mailer_from = 'not-an-address'
+    assert_match(%r{not a valid address}, @config.mailer_from_problem)
+  end
+
+  def test_every_reserved_domain_is_flagged
+    Bible270::Configuration::PLACEHOLDER_DOMAINS.each do |domain|
+      @config.mailer_from = "no-reply@#{domain}"
+      refute_nil @config.mailer_from_problem, "#{domain} should be flagged"
+    end
+  end
+
+  def test_nothing_is_flagged_when_email_sign_in_is_off
+    @config.email_sign_in = false
+    assert_nil @config.mailer_from_problem
+  end
+end
+
+class EnrollmentConfigTest < Minitest::Test
+  def test_runs_are_open_by_default
+    assert Bible270::Configuration.new.enrollment_open
+  end
+
+  def test_it_can_be_configured_to_launch_closed
+    config = Bible270::Configuration.new
+    config.enrollment_open = false
+    refute config.enrollment_open
+  end
+end
+
+class RegistrationNoticeConfigTest < Minitest::Test
+  def setup
+    @config = Bible270::Configuration.new
+  end
+
+  def test_notifications_are_off_by_default
+    assert_empty @config.registration_notice_recipients
+    refute @config.notify_on_registration?
+  end
+
+  def test_an_explicit_list_is_used_as_given
+    @config.admin_emails = %w[admin@example.org]
+    @config.registration_notice_emails = %w[secretary@example.org]
+
+    # Deliberately not the admins: someone who isn't an admin can still be told.
+    assert_equal %w[secretary@example.org], @config.registration_notice_recipients
+  end
+
+  def test_admins_follows_the_admin_list
+    @config.admin_emails = ['Andrew@Example.org', 'second@x.io']
+    @config.registration_notice_emails = :admins
+
+    assert_equal %w[andrew@example.org second@x.io], @config.registration_notice_recipients
+  end
+
+  def test_admins_works_as_a_string_too
+    @config.admin_emails = %w[a@b.io]
+    @config.registration_notice_emails = 'admins'
+    assert_equal %w[a@b.io], @config.registration_notice_recipients
+  end
+
+  def test_addresses_are_normalised_and_deduplicated
+    @config.registration_notice_emails = ['Sec@Example.org', 'sec@example.org', ' sec@example.org ']
+    assert_equal %w[sec@example.org], @config.registration_notice_recipients
+  end
+
+  def test_unusable_addresses_are_dropped_rather_than_mailed
+    @config.registration_notice_emails = ['good@example.org', 'not-an-address', nil, '']
+    assert_equal %w[good@example.org], @config.registration_notice_recipients
+  end
+
+  def test_a_bare_string_is_accepted
+    @config.registration_notice_emails = 'one@x.io'
+    assert_equal %w[one@x.io], @config.registration_notice_recipients
+  end
+
+  def test_admins_with_no_admins_configured_notifies_nobody
+    @config.registration_notice_emails = :admins
+    assert_empty @config.registration_notice_recipients
+    refute @config.notify_on_registration?
+  end
+
+  def test_delivery_is_inline_unless_asked_otherwise
+    refute @config.registration_notice_deliver_later
+    assert_nil @config.mailer_host
+  end
+end
+
+class AdminAccessTest < Minitest::Test
+  Reader = Struct.new(:email)
+
+  def setup
+    @config = Bible270::Configuration.new
+  end
+
+  def test_nobody_is_an_admin_until_configured
+    refute @config.admin_configured?
+    refute @config.admin?(Reader.new('anyone@example.org'))
+  end
+
+  def test_an_email_list_grants_access_case_insensitively
+    @config.admin_emails = ['Andrew@Example.org']
+
+    assert @config.admin_configured?
+    assert @config.admin?(Reader.new('andrew@example.org'))
+    assert @config.admin?(Reader.new('ANDREW@EXAMPLE.ORG'))
+    refute @config.admin?(Reader.new('someone@example.org'))
+  end
+
+  def test_a_resolver_takes_precedence_over_the_list
+    @config.admin_emails = %w[listed@example.org]
+    @config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@gknt.org') }
+
+    assert @config.admin?(Reader.new('anyone@gknt.org'))
+    refute @config.admin?(Reader.new('listed@example.org')), 'the resolver decides, not the list'
+  end
+
+  def test_a_nil_reader_is_never_an_admin
+    @config.admin_emails = %w[andrew@example.org]
+    refute @config.admin?(nil)
+
+    @config.admin_resolver = ->(_reader) { true }
+    refute @config.admin?(nil), 'a permissive resolver must still not admit nobody'
   end
 end

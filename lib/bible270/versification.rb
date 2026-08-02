@@ -93,7 +93,17 @@ module Bible270
 
   module_function
 
-    def verses(book, chapter) = VERSES.fetch(book)[chapter - 1]
+    # Guarded rather than indexing straight in: chapter 0 would become index -1
+    # and silently return the *last* chapter's verse count, and an over-large
+    # chapter would return nil for callers that expect a number. An unknown book
+    # still raises, since that is a programming error rather than bad data.
+    def verses(book, chapter)
+      counts = VERSES.fetch(book)
+      return 0 unless chapter.is_a?(Integer) && chapter.positive? && chapter <= counts.size
+
+      counts[chapter - 1]
+    end
+
     def chapter_count(book) = VERSES.fetch(book).size
     def total_verses(book) = VERSES.fetch(book).sum
   end

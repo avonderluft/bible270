@@ -382,3 +382,111 @@ class ChapterBreakSourcesTest < Minitest::Test
     assert_match(%r{must look like}, assert_raises(ArgumentError) { P.pp_readings }.message)
   end
 end
+
+# Per-chapter check-offs: an Old Testament reading of several whole chapters is
+# ticked one chapter at a time.
+class ReadingPartsTest < Minitest::Test
+  P = Bible270::Plan
+
+  def setup
+    skip 'per-chapter check-offs not implemented yet'
+  end
+
+  def test_an_ot_reading_has_one_part_per_chapter
+    assert_equal ['Genesis 1', 'Genesis 2', 'Genesis 3'], P.parts_for(1, 'ot')
+    assert_equal 3, P.part_count(1, 'ot')
+  end
+
+  def test_the_other_tracks_have_exactly_one_part
+    (1..P::DAYS).each do |day|
+      %w[nt pp].each do |track|
+        assert_equal 1, P.part_count(day, track), "#{track} on day #{day}"
+      end
+    end
+  end
+
+  def test_every_ot_chapter_is_its_own_part
+    total = (1..P::DAYS).sum { |day| P.part_count(day, 'ot') }
+    assert_equal 748, total, 'every Old Testament chapter should be separately tickable'
+  end
+
+  def test_total_parts_covers_all_three_tracks
+    assert_equal 5, P.total_parts(1) # Genesis 1-3 + Matthew 1 + Psalm 1
+    assert_equal(748 + 270 + 270, (1..P::DAYS).sum { |day| P.total_parts(day) })
+  end
+
+  def test_parts_are_bounded_by_the_reading
+    assert P.valid_part?(1, 'ot', 0)
+    assert P.valid_part?(1, 'ot', 2)
+    refute P.valid_part?(1, 'ot', 3), 'day 1 has only three OT chapters'
+    refute P.valid_part?(1, 'nt', 1), 'a single-chapter reading has only part 0'
+    refute P.valid_part?(1, 'ot', -1)
+    refute P.valid_part?(1, 'ot', nil)
+  end
+
+  def test_part_labels_are_readable_references
+    labels = P.parts_for(270, 'ot')
+    assert_equal ['Zechariah 14', 'Malachi 1', 'Malachi 2', 'Malachi 3', 'Malachi 4'], labels
+  end
+
+  def test_unknown_tracks_and_days_have_no_parts
+    assert_empty P.parts_for(1, 'xx')
+    assert_empty P.parts_for(0, 'ot')
+    assert_empty P.parts_for(271, 'ot')
+  end
+end
+
+# Small pieces of the plan's public surface that the bigger tests exercise only
+# incidentally.
+class PlanSurfaceTest < Minitest::Test
+  P = Bible270::Plan
+
+  def test_every_day_carries_all_three_tracks
+    (1..P::DAYS).each do |day|
+      assert_equal %w[nt ot pp], P.present_tracks(day).sort, "day #{day}"
+      assert_equal 3, P.required_track_count(day)
+    end
+  end
+
+  def test_blank_tracks_normalise_to_nil
+    # A select's blank option submits "", not nil, which is what broke posting a
+    # reflection about the whole day.
+    assert_nil P.normalize_track('')
+    assert_nil P.normalize_track('   ')
+    assert_nil P.normalize_track(nil)
+  end
+
+  def test_real_tracks_survive_normalisation
+    P::TRACKS.each_key { |track| assert_equal track, P.normalize_track(track) }
+    assert_equal 'ot', P.normalize_track(' ot ')
+  end
+
+  def test_valid_track_accepts_blank_and_the_three_tracks
+    assert P.valid_track?('')
+    assert P.valid_track?(nil)
+    P::TRACKS.each_key { |track| assert P.valid_track?(track) }
+    refute P.valid_track?('xx')
+  end
+
+  def test_divided_proverbs_reports_what_was_split
+    divided = P.divided_proverbs
+    assert divided.is_a?(Hash)
+    divided.each do |chapter, parts|
+      assert_includes 1..31, chapter
+      assert_operator parts, :>, 1, "Proverbs #{chapter} is listed as divided"
+    end
+  end
+
+  def test_grouping_keeps_consecutive_chapters_together
+    grouped = P.group_by_chapter([%w[Psalm] + [1], %w[Psalm] + [1], %w[Psalm] + [2]])
+    assert_equal 2, grouped.size
+    assert_equal 2, grouped.first.size
+  end
+
+  def test_totals_are_self_consistent
+    totals = P.totals
+    assert_equal totals[:ot], P.ot_groups.sum(&:size)
+    assert_equal totals[:psalms] + totals[:proverbs], totals[:pp]
+    assert_equal P::DAYS, totals[:days]
+  end
+end

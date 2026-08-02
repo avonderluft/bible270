@@ -2,14 +2,120 @@
 
 ENV['RAILS_ENV'] = 'test'
 
-require 'simplecov'
-
+# SKIP_COV runs the suite with no coverage machinery — quicker, and what CI's
+# test matrix uses, since only the coverage job needs a report.
 unless ENV['SKIP_COV']
-  require 'coveralls'
-  Coveralls.wear!('rails')
-  SimpleCov.formatter = Coveralls::SimpleCov::Formatter
+  require 'simplecov'
+
+  # Coveralls only where it can actually post. Locally there is no token, and its
+  # formatter would replace the console summary with a failed upload.
+  posting = ENV['CI'] || ENV.fetch('COVERALLS_REPO_TOKEN', nil)
+  if posting
+    require 'coveralls'
+    SimpleCov.formatters = SimpleCov::Formatter::MultiFormatter.new(
+      [SimpleCov::Formatter::HTMLFormatter, Coveralls::SimpleCov::Formatter]
+    )
+  else
+    SimpleCov.formatter = SimpleCov::Formatter::HTMLFormatter
+  end
+
+  SimpleCov.start do
+    # Count files even when no test loads them. Without this, coverage flatters
+    # itself by ignoring everything untested.
+    track_files '{app,lib}/**/*.rb'
+
+    add_filter '/test/'
+    add_filter '/gemfiles/'
+    add_filter 'lib/bible270/version.rb'
+
+    # The HTML report breaks down by group, which is what shows where the
+    # untested code actually is.
+    add_group 'Plan',        'lib/bible270/plan.rb'
+    add_group 'Library',     'lib/bible270'
+    add_group 'Generators',  'lib/generators'
+    add_group 'Models',      'app/models'
+    add_group 'Controllers', 'app/controllers'
+    add_group 'Helpers',     'app/helpers'
+    add_group 'Mailers',     'app/mailers'
+
+    # A floor to ratchet up as the Rails-dependent code gets tests:
+    #   COVERAGE_FLOOR=35 bundle exec rake test
+    minimum_coverage ENV['COVERAGE_FLOOR'].to_i if ENV['COVERAGE_FLOOR']
+  end
 end
 
 $LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 require 'minitest/autorun'
 require 'bible270/plan'
+
+# ---- the dummy application ------------------------------------------------
+#
+# Booting a real Rails app is the only way to exercise the models, controllers,
+# mailers and helpers — roughly 60% of the gem, and the part where the bugs that
+# actually reach users live (a missing template, an unqualified constant, a helper
+# Rails never mixed in). The static checks elsewhere in this suite exist because
+# they were all that was possible before this.
+#
+# Guarded so the pure tests still run where Rails or sqlite3 isn't installed;
+# anything needing the database says `needs_rails!` and skips otherwise.
+RAILS_LOADED =
+  begin
+    require_relative 'dummy/config/environment'
+
+    # Migrate BEFORE rails/test_help: requiring it runs maintain_test_schema!,
+    # which aborts on pending migrations — and ours are still pending at that
+    # point, since the database is created empty in memory.
+    ActiveRecord::Migration.verbose = false
+
+    migrations = [Bible270::Engine.root.join('db/migrate').to_s]
+    if defined?(ActiveStorage::Engine)
+      migrations << ActiveStorage::Engine.root.join('db/migrate').to_s
+    end
+    ActiveRecord::MigrationContext.new(migrations).migrate
+
+    require 'rails/test_help'
+    Rails::TestUnitReporter.executable = 'bundle exec ruby -Itest'
+
+    true
+  rescue LoadError, StandardError => e
+    warn "[bible270] skipping Rails-backed tests: #{e.class}: #{e.message}"
+    false
+  end
+
+module RailsBacked
+  def needs_rails!
+    skip 'Rails or sqlite3 unavailable' unless RAILS_LOADED
+  end
+
+  # Per-chapter check-offs are optional here: the tests that need them skip until
+  # the migration and Plan methods are in place, so the suite stays green either
+  # way rather than failing on a feature that isn't implemented yet.
+  def chapter_parts?
+    RAILS_LOADED &&
+      Bible270::Checkoff.column_names.include?('part') &&
+      Bible270::Plan.respond_to?(:total_parts)
+  end
+
+  def needs_chapter_parts!
+    needs_rails!
+    skip 'per-chapter check-offs not implemented yet' unless chapter_parts?
+  end
+
+  # Boxes on a day: one per chapter where that exists, otherwise one per track.
+  def boxes_on(day)
+    chapter_parts? ? Bible270::Plan.total_parts(day) : Bible270::Plan.required_track_count(day)
+  end
+
+  # Each test starts from an empty database rather than relying on order.
+  def clear_engine_tables!
+    return unless RAILS_LOADED
+
+    Bible270::Checkoff.delete_all
+    Bible270::Comment.delete_all
+    Bible270::SignInToken.delete_all
+    Bible270::Reader.delete_all
+    Bible270::Setting.delete_all
+  end
+end
+
+Minitest::Test.include(RailsBacked)

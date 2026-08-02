@@ -22,4 +22,5 @@ group :test do
   gem 'rubocop-minitest'
   gem 'rubocop-rails'
   gem 'simplecov', '~> 0.22.0', require: false
+  gem 'sqlite3' # the dummy app's database
 end

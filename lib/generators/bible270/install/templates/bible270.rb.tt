@@ -73,7 +73,8 @@ Bible270.configure do |config|
   # config.footer_partial = 'layouts/bible270_footer'  
   # config.footer_html    = '<p>&copy; 2026 …</p>'
   # config.footer         = false                # no footer at all
-  #_
+  #
   # config.footer_placement = :after    # engine's note, then yours
   # config.footer_placement = :before   # yours, then the engine's note
   # config.footer_placement = :replace  # default
+end
