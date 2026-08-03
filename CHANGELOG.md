@@ -6,8 +6,35 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.14.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.0...main)**
 
+## [0.15.0] - 2026-07-30
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.14.1...v0.15.0)**
+
+### Added
+
+- per-chapter checkoffs for reading with multiple chapters
+- github actions for Rails CI, and Coverage reporting
+- add dummy app in /test to test Rails functions with gem
+
+### Fixed
+
+- mobile session requiring sign-in every time: use persistent sessions using 'remember-me' cookie
+
+## [0.14.1] - 2026-07-30
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.14.0...v0.14.1)**
+
+### Changed
+
+- update Admin panel display verbage on plan run status
+
+### Fixed
+
+- don't display 'Today' badge unless it really is
+- display 'Start' not 'Continue' if reader is on day 1
+- adjust badge vertical alignment in styles
 
 ## [0.14.0] - 2026-07-30
 
