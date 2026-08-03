@@ -1,18 +1,58 @@
-<% t = b270_track(track); ref = readings[track]; done = reader_tracks.include?(track) %>
+<%
+  t = b270_track(track)
+  ref = readings[track]
+  parts = Bible270::Plan.parts_for(day, track)
+  read_parts = signed_in? ? current_reader.read_parts_for(day, track) : []
+  done = ref.present? && read_parts.size >= parts.size
+%>
 <% if ref %>
-  <div class="b270-reading <%= track %> <%= 'done' if done %>" id="reading_<%= day %>_<%= track %>">
-    <% if signed_in? %>
-      <%= button_to toggle_checkoff_path(day, track), class: "b270-toggle", form: { data: { turbo_stream: true } },
-            aria: { label: (done ? "Mark #{t[:label]} unread" : "Mark #{t[:label]} read") } do %>
+  <div class="b270-reading <%= track %> <%= 'multi' if parts.size > 1 %> <%= 'done' if done %>"
+       id="reading_<%= day %>_<%= track %>">
+    <%# One box per chapter. A reading of a single chapter keeps the original
+        single-box layout; only multi-chapter Old Testament readings split. The
+        multi layout is a block, not a flex row, so each chapter's box sits in the
+        same column as the single box on the other tracks. %>
+    <% if parts.size > 1 %>
+      <div class="b270-rbody">
+        <div class="b270-cat"><%= t[:label] %></div>
+        <ul class="b270-parts">
+          <% parts.each_with_index do |part_ref, index| %>
+            <% part_done = read_parts.include?(index) %>
+            <li class="b270-part <%= 'done' if part_done %>">
+              <% if signed_in? %>
+                <%= button_to toggle_checkoff_part_path(day, track, index), class: "b270-toggle",
+                      form: { data: { turbo_stream: true } },
+                      aria: { label: (part_done ? "Mark #{part_ref} unread" : "Mark #{part_ref} read") } do %>
+                  <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <% end %>
+              <% else %>
+                <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <% end %>
+              <span class="b270-ref">
+                <%= link_to part_ref, b270_passage_url(part_ref), target: "_blank", rel: "noopener" %>
+              </span>
+            </li>
+          <% end %>
+        </ul>
+        <div class="b270-parts-meta">
+          <%= read_parts.size %> of <%= parts.size %> chapters <%= b270_version_tag %>
+        </div>
+      </div>
+    <% else %>
+      <% if signed_in? %>
+        <%= button_to toggle_checkoff_part_path(day, track, 0), class: "b270-toggle",
+              form: { data: { turbo_stream: true } },
+              aria: { label: (done ? "Mark #{t[:label]} unread" : "Mark #{t[:label]} read") } do %>
+          <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <% end %>
+      <% else %>
         <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
       <% end %>
-    <% else %>
-      <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+      <div class="b270-rbody">
+        <div class="b270-cat"><%= t[:label] %></div>
+        <div class="b270-ref"><%= link_to ref, b270_passage_url(ref), target: "_blank", rel: "noopener" %> <%= b270_version_tag %></div>
+      </div>
     <% end %>
-    <div class="b270-rbody">
-      <div class="b270-cat"><%= t[:label] %></div>
-      <div class="b270-ref"><%= link_to ref, b270_passage_url(ref), target: "_blank", rel: "noopener" %> <%= b270_version_tag %></div>
-    </div>
   </div>
 <% else %>
   <div class="b270-reading <%= track %> rest" id="reading_<%= day %>_<%= track %>">

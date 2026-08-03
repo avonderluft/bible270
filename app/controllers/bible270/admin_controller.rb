@@ -31,7 +31,7 @@ module Bible270
       @readers = Reader.all.to_a.sort_by(&:sort_name)
       counts = Checkoff.group(:reader_id, :day).count
       @days_completed = Hash.new(0)
-      counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.required_track_count(day) }
+      counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.total_parts(day) }
     end
 
     def show

@@ -183,28 +183,44 @@ module Bible270
       done = checked_count(day)
       return :none if done.zero?
 
-      done >= Plan.required_track_count(day) ? :complete : :partial
+      done >= Plan.total_parts(day) ? :complete : :partial
     end
 
     def read_tracks_for(day)
-      checkoffs.where(day: day).pluck(:track)
+      checkoffs.where(day: day).pluck(:track).uniq
     end
 
-    def read?(day, track)
-      read_tracks_for(day).include?(track.to_s)
+    # Which chapters of a track the reader has ticked on this day.
+    def read_parts_for(day, track)
+      checkoffs.where(day: day, track: track.to_s).pluck(:part)
+    end
+
+    def read?(day, track, part = nil)
+      return read_parts_for(day, track).include?(part) if part
+
+      # No part given: the track counts as read only when every chapter is.
+      read_parts_for(day, track).size >= Plan.part_count(day, track)
+    end
+
+    def track_partially_read?(day, track)
+      done = read_parts_for(day, track).size
+      done.positive? && done < Plan.part_count(day, track)
     end
 
     def day_complete?(day)
       n = checked_counts[day].to_i
-      n.positive? && n >= Plan.required_track_count(day)
+      n.positive? && n >= Plan.total_parts(day)
     end
 
     def days_completed
-      checked_counts.count { |day, n| n >= Plan.required_track_count(day) }
+      checked_counts.count { |day, n| n >= Plan.total_parts(day) }
     end
 
+    # Days on which this track is *finished*. Counting rows would count chapters
+    # now that an Old Testament reading has one per chapter.
     def days_read_in(track)
-      checkoffs.where(track: track.to_s).count
+      checkoffs.where(track: track.to_s).group(:day).count
+        .count { |day, done| done >= Plan.part_count(day, track) }
     end
 
     def completion_percent
@@ -240,11 +256,35 @@ module Bible270
     def mark_day_complete!(day)
       return false unless Plan.valid_day?(day)
 
-      Plan.present_tracks(day).each do |track|
-        checkoffs.find_or_create_by!(day: day, track: track)
-      end
+      # Deliberately not find_or_create_by!: since Rails 8.1 that creates first
+      # and rescues RecordNotUnique, but Checkoff validates uniqueness, so a
+      # duplicate raises RecordInvalid before the database is reached and is
+      # never rescued. Reading what exists first is also one query per day rather
+      # than one per chapter.
+      missing = missing_parts_on(day)
+      insert_checkoffs(day, missing) if missing.any?
+
       reload_progress
       true
+    end
+
+    # [[track, part], ...] not yet ticked on this day.
+    def missing_parts_on(day)
+      wanted = Plan.present_tracks(day).flat_map do |track|
+        Array.new(Plan.part_count(day, track)) { |part| [track, part] }
+      end
+      have = checkoffs.where(day: day).pluck(:track, :part)
+
+      wanted - have
+    end
+
+    def insert_checkoffs(day, pairs)
+      now = Time.current
+      Checkoff.insert_all(
+        pairs.map do |track, part|
+          { reader_id: id, day: day, track: track, part: part, created_at: now, updated_at: now }
+        end
+      )
     end
 
     def clear_day!(day)
@@ -261,13 +301,12 @@ module Bible270
 
     # Mark everything up to and including `day` complete, and clear anything after.
     def mark_through!(day)
-      return false unless day.to_i.between?(0, Plan::DAYS)
+      day = day.to_i
+      return false unless day.between?(0, Plan::DAYS)
 
       transaction do
-        checkoffs.where(day: (day.to_i + 1)..).destroy_all
-        (1..day.to_i).each do |d|
-          Plan.present_tracks(d).each { |t| checkoffs.find_or_create_by!(day: d, track: t) }
-        end
+        checkoffs.where(day: (day + 1)..).delete_all
+        (1..day).each { |d| mark_day_complete!(d) }
       end
       reload_progress
       true
@@ -300,6 +339,7 @@ module Bible270
     # Private, but declared this way rather than with a `private` section: methods
     # defined below here are called from controllers and views.
     private :notify_of_registration
+    private :missing_parts_on, :insert_checkoffs
 
     def reload_progress
       @checked_counts = nil

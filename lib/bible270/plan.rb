@@ -558,6 +558,42 @@ module Bible270
 
     def required_track_count(day) = present_tracks(day).size
 
+    # ---- parts of a reading -------------------------------------------------
+    #
+    # An Old Testament reading is usually several whole chapters (260 of the 270
+    # days, up to six), which readers get through one at a time. Each chapter is
+    # a separately tickable part. A New Testament or Psalms/Proverbs reading is a
+    # single chapter or a portion of one, so it has exactly one part.
+    #
+    # Parts are identified by position, so part 0 is always the first chapter of
+    # that day's reading.
+
+    def parts_for(day, track)
+      return [] unless valid_day?(day)
+
+      case track.to_s
+      when 'ot'
+        groups = ot_groups[day - 1]
+        groups.nil? ? [] : groups.map { |book, chapter| format_reference([[book, chapter]]) }
+      when 'nt', 'pp'
+        reading = readings_for(day)[track.to_s]
+        reading.nil? ? [] : [reading]
+      else
+        []
+      end
+    end
+
+    def part_count(day, track) = parts_for(day, track).size
+
+    def valid_part?(day, track, part)
+      part.is_a?(Integer) && part >= 0 && part < part_count(day, track)
+    end
+
+    # Every tickable box on a day, across all three tracks.
+    def total_parts(day)
+      memo(:"total_parts_#{day}") { present_tracks(day).sum { |track| part_count(day, track) } }
+    end
+
     def valid_day?(day) = day.is_a?(Integer) && day >= 1 && day <= DAYS
 
     # Blank means "the whole day", which is stored as NULL. Select fields submit

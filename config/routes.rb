@@ -5,6 +5,9 @@ Bible270::Engine.routes.draw do
 
   get 'day/:day', to: 'days#show', as: :day, constraints: { day: %r{\d+} }
 
+  # :part is the chapter within the reading; omitted means the first.
+  post   'day/:day/toggle/:track/:part', to: 'checkoffs#toggle', as: :toggle_checkoff_part,
+                                         constraints: { day: %r{\d+}, part: %r{\d+} }
   post   'day/:day/toggle/:track', to: 'checkoffs#toggle', as: :toggle_checkoff,
                                    constraints: { day: %r{\d+} }
   post   'day/:day/comments',      to: 'comments#create',  as: :day_comments,

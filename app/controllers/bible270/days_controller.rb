@@ -9,7 +9,7 @@ module Bible270
       @readers = Reader.order(updated_at: :desc).to_a
       counts = Checkoff.group(:reader_id, :day).count
       @days_completed = Hash.new(0)
-      counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.required_track_count(day) }
+      counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.total_parts(day) }
       @readers = @readers.sort_by { |r| -@days_completed[r.id] }
 
       @start_day = current_reader&.current_day || 1
@@ -28,10 +28,13 @@ module Bible270
       @new_comment = Comment.new(day: @day)
       @reader_tracks = current_reader ? current_reader.read_tracks_for(@day) : []
 
-      req = Plan.required_track_count(@day)
+      # Every box on the day, not every track: an Old Testament reading of three
+      # chapters is three rows, so counting tracks would call someone finished
+      # who had only read the Old Testament.
+      required = Plan.total_parts(@day)
       completer_ids = Checkoff.where(day: @day)
         .group(:reader_id)
-        .having('COUNT(*) >= ?', req)
+        .having('COUNT(*) >= ?', required)
         .pluck(:reader_id)
       @completers = Reader.where(id: completer_ids).order(:display_name)
 

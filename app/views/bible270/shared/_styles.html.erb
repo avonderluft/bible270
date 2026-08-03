@@ -108,6 +108,25 @@
   .b270-rbody{flex:1;min-width:0}
   .b270-cat{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);font-weight:600}
   .b270-ref{font-family:"Spectral",serif;font-size:19px;font-weight:500;margin-top:1px}
+  /* per-chapter check-offs: a smaller box per chapter, listed under the track */
+  /* A multi-chapter reading is laid out as a block rather than a flex row, so
+     each chapter's box sits in the same column as the single box on the other
+     tracks. The label is indented by that column's width (26px) plus the row
+     gap (15px) to stay level with the other tracks' labels. */
+  .b270-reading.multi{display:block}
+  .b270-reading.multi .b270-cat{margin-left:41px}
+  .b270-reading.multi .b270-parts-meta{margin-left:41px}
+  .b270-parts{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .b270-part{display:flex;align-items:center;gap:15px}
+  .b270-part .b270-ref{font-size:19px}
+  /* A ticked chapter looks exactly like a ticked single reading: the box fills
+     in the track's colour and the tick appears. No strikethrough — the other
+     tracks don't strike their references either. */
+  .b270-reading.ot .b270-part.done .b270-check{background:var(--teal);border-color:var(--teal)}
+  .b270-reading.nt .b270-part.done .b270-check{background:var(--oxblood);border-color:var(--oxblood)}
+  .b270-reading.pp .b270-part.done .b270-check{background:var(--gold);border-color:var(--gold)}
+  .b270-part.done .b270-check svg{opacity:1}
+  .b270-parts-meta{margin-top:10px;font-size:12.5px;color:var(--faint)}
   .b270-version{font-size:11.5px;color:var(--faint);font-weight:400;letter-spacing:.02em;white-space:nowrap}
   .b270-select{font:inherit;font-size:14px;padding:10px 30px 10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);width:100%;max-width:100%;text-overflow:ellipsis}
   .b270-ref a{text-decoration:none;border-bottom:1px solid transparent}
@@ -156,5 +175,5 @@
   .b270-footer p{margin:0;line-height:1.5}
   details.b270-index summary{cursor:pointer;font-family:"Spectral",serif;font-size:18px;font-weight:600;list-style:none;margin-top:30px}
   details.b270-index summary::-webkit-details-marker{display:none}
-  @media (max-width:480px){ .b270-tm{grid-template-columns:104px 1fr auto} .b270-reading{padding:14px 15px;gap:12px} }
+  @media (max-width:480px){ .b270-tm{grid-template-columns:104px 1fr auto} .b270-reading{padding:14px 15px;gap:12px} .b270-reading.multi .b270-cat,.b270-reading.multi .b270-parts-meta{margin-left:38px} .b270-part{gap:12px} }
 </style>

@@ -120,6 +120,20 @@ class ViewsTest < Minitest::Test
     MSG
   end
 
+  # An Old Testament reading is several rows now, so a "who finished this day"
+  # query that counts against required_track_count credits someone who has read
+  # only the Old Testament.
+  def test_the_completers_query_counts_boxes_not_tracks
+    offenders = Dir.glob(File.expand_path('../app/controllers/**/*.rb', __dir__)).select do |path|
+      File.readlines(path)
+        .reject { |line| line.strip.start_with?('#') }
+        .any? { |line| line.include?('required_track_count') }
+    end
+
+    assert_empty offenders.map { |path| File.basename(path) },
+                 'counting tracks calls a partly-read day finished; count total_parts'
+  end
+
   def test_templates_do_not_call_removed_plan_methods
     removed = %w[
       nt_groups nt_days_per_pass nt_second_pass_start_day

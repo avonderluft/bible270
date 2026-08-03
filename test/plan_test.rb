@@ -389,7 +389,7 @@ class ReadingPartsTest < Minitest::Test
   P = Bible270::Plan
 
   def setup
-    skip 'per-chapter check-offs not implemented yet'
+    # skip 'per-chapter check-offs not implemented yet'
   end
 
   def test_an_ot_reading_has_one_part_per_chapter
