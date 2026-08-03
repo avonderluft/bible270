@@ -1,0 +1,271 @@
+day,old_testament,ot_verses,new_testament,nt_verses,psalms_proverbs,pp_verses,total_verses
+1,Genesis 1–3,80,Matthew 1,25,Psalm 1,6,111
+2,Genesis 4–5,58,Matthew 2,22,Psalm 2,12,92
+3,Genesis 6–8,68,Matthew 3,17,Psalm 3,8,93
+4,Genesis 9–11,93,Matthew 4,25,Psalm 4,8,126
+5,Genesis 12–14,62,Matthew 5,48,Psalm 5,12,122
+6,Genesis 15–17,64,Matthew 6,34,Proverbs 1:1–7,7,105
+7,Genesis 18–20,89,Matthew 7,29,Proverbs 1:8–19,12,130
+8,Genesis 21–23,78,Matthew 8,34,Proverbs 1:20–33,14,126
+9,Genesis 24,67,Matthew 9,38,Psalm 6,10,115
+10,Genesis 25–26,69,Matthew 10,42,Psalm 7,17,128
+11,Genesis 27–28,68,Matthew 11,30,Psalm 8,9,107
+12,Genesis 29–30,78,Matthew 12,50,Psalm 9,20,148
+13,Genesis 31–32,87,Matthew 13,58,Psalm 10,18,163
+14,Genesis 33–34,51,Matthew 14,36,Proverbs 2:1–11,11,98
+15,Genesis 35–36,72,Matthew 15,39,Proverbs 2:12–22,11,122
+16,Genesis 37–39,89,Matthew 16,28,Psalm 11,7,124
+17,Genesis 40–41,80,Matthew 17,27,Psalm 12,8,115
+18,Genesis 42–43,72,Matthew 18,35,Psalm 13,6,113
+19,Genesis 44–45,62,Matthew 19,30,Psalm 14,7,99
+20,Genesis 46–48,87,Matthew 20,34,Psalm 15,5,126
+21,Genesis 49–50,59,Matthew 21,46,Proverbs 3:1–12,12,117
+22,Exodus 1–3,69,Matthew 22,45,Proverbs 3:13–24,12,126
+23,Exodus 4–6,84,Matthew 23,39,Proverbs 3:25–35,11,134
+24,Exodus 7–8,57,Matthew 24,51,Psalm 16,11,119
+25,Exodus 9–11,74,Matthew 25,46,Psalm 17,15,135
+26,Exodus 12–13,73,Matthew 26:1–35,35,Psalm 18:1–24,24,132
+27,Exodus 14–16,94,Matthew 26:36–74,39,Psalm 18:25–50,26,159
+28,Exodus 17–19,68,Matthew 27:1–31,31,Psalm 19,14,113
+29,Exodus 20–21,62,Matthew 27:32–66,35,Psalm 20,9,106
+30,Exodus 22–24,82,Matthew 28,20,Proverbs 4:1–9,9,111
+31,Exodus 25–26,77,Mark 1,45,Proverbs 4:10–19,10,132
+32,Exodus 27–28,64,Mark 2,28,Proverbs 4:20–27,8,100
+33,Exodus 29–30,84,Mark 3,35,Psalm 21,13,132
+34,Exodus 31–33,76,Mark 4,40,Psalm 22:1–21,21,137
+35,Exodus 34–35,70,Mark 5,43,Psalm 22:22–31,10,123
+36,Exodus 36–37,67,Mark 6,56,Psalm 23,6,129
+37,Exodus 38–39,74,Mark 7,36,Psalm 24,10,120
+38,"Exodus 40, Leviticus 1–2",71,Mark 8,37,Psalm 25,22,130
+39,Leviticus 3–5,71,Mark 9,50,Proverbs 5:1–14,14,135
+40,Leviticus 6–7,68,Mark 10,52,Proverbs 5:15–23,9,129
+41,Leviticus 8–10,80,Mark 11,33,Psalm 26,12,125
+42,Leviticus 11–12,55,Mark 12,44,Psalm 27,14,113
+43,Leviticus 13–14,116,Mark 13,37,Psalm 28,9,162
+44,Leviticus 15–16,67,Mark 14:1–31,31,Psalm 29,11,109
+45,Leviticus 17–18,46,Mark 14:32–72,41,Psalm 30,12,99
+46,Leviticus 19–21,88,Mark 15,47,Proverbs 6:1–19,19,154
+47,Leviticus 22–23,77,Mark 16,20,Proverbs 6:20–35,16,113
+48,Leviticus 24–25,78,Luke 1:1–25,25,Psalm 31,24,127
+49,Leviticus 26–27,80,Luke 1:26–56,31,Psalm 32,11,122
+50,Numbers 1,54,Luke 1:57–80,24,Psalm 33,22,100
+51,Numbers 2–3,85,Luke 2,52,Psalm 34,22,159
+52,Numbers 4,49,Luke 3,38,Proverbs 7:1–5,5,92
+53,Numbers 5–6,58,Luke 4,44,Proverbs 7:6–23,18,120
+54,Numbers 7–8,115,Luke 5,39,Proverbs 7:24–27,4,158
+55,Numbers 9–10,59,Luke 6,49,Psalm 35:1–10,10,118
+56,Numbers 11–13,84,Luke 7,50,Psalm 35:11–18,8,142
+57,Numbers 14,45,Luke 8,56,Psalm 35:19–28,10,111
+58,Numbers 15–16,91,Luke 9:1–36,36,Psalm 36,12,139
+59,Numbers 17–19,67,Luke 9:37–62,26,Psalm 37:1–20,20,113
+60,Numbers 20–21,64,Luke 10,42,Psalm 37:21–40,20,126
+61,Numbers 22–24,96,Luke 11:1–26,26,Psalm 38,22,144
+62,Numbers 25–26,83,Luke 11:27–54,28,Psalm 39,13,124
+63,Numbers 27–28,54,Luke 12,59,Proverbs 8:1–11,11,124
+64,Numbers 29–30,56,Luke 13,35,Proverbs 8:12–21,10,101
+65,Numbers 31–32,96,Luke 14,35,Proverbs 8:22–36,15,146
+66,Numbers 33–34,85,Luke 15,32,Psalm 40,17,134
+67,Numbers 35–36,47,Luke 16,31,Psalm 41,13,91
+68,Deuteronomy 1–2,83,Luke 17,37,Psalm 42,11,131
+69,Deuteronomy 3–4,78,Luke 18,43,Psalm 43,5,126
+70,Deuteronomy 5–7,84,Luke 19,48,Psalm 44,26,158
+71,Deuteronomy 8–10,71,Luke 20,47,Proverbs 9:1–6,6,124
+72,Deuteronomy 11–12,64,Luke 21,38,Proverbs 9:7–12,6,108
+73,Deuteronomy 13–15,70,Luke 22:1–38,38,Proverbs 9:13–18,6,114
+74,Deuteronomy 16–19,85,Luke 22:39–71,33,Psalm 45,17,135
+75,Deuteronomy 20–22,73,Luke 23,56,Psalm 46,11,140
+76,Deuteronomy 23–25,66,Luke 24,53,Psalm 47,9,128
+77,Deuteronomy 26–27,45,John 1,51,Psalm 48,14,110
+78,Deuteronomy 28–29,97,John 2,25,Psalm 49,20,142
+79,Deuteronomy 30–31,50,John 3,36,Proverbs 10:1–11,11,97
+80,Deuteronomy 32–34,93,John 4,54,Proverbs 10:12–22,11,158
+81,Joshua 1–4,83,John 5,47,Proverbs 10:23–32,10,140
+82,Joshua 5–7,68,John 6:1–40,40,Psalm 50,23,131
+83,Joshua 8–9,62,John 6:41–71,31,Psalm 51,19,112
+84,Joshua 10–12,90,John 7,53,Psalm 52,9,152
+85,Joshua 13–14,48,John 8,59,Psalm 53,6,113
+86,Joshua 15–17,91,John 9,41,Psalm 54,7,139
+87,Joshua 18–19,79,John 10,42,Proverbs 11:1–11,11,132
+88,Joshua 20–21,54,John 11,57,Proverbs 11:12–21,10,121
+89,Joshua 22–24,83,John 12,50,Proverbs 11:22–31,10,143
+90,Judges 1–3,90,John 13,38,Psalm 55,23,151
+91,Judges 4–5,55,John 14,31,Psalm 56,13,99
+92,Judges 6–7,65,John 15,27,Psalm 57,11,103
+93,Judges 8–9,92,John 16,33,Psalm 58,11,136
+94,Judges 10–12,73,John 17,26,Psalm 59,17,116
+95,Judges 13–15,65,John 18,40,Proverbs 12:1–10,10,115
+96,Judges 16–18,75,John 19,42,Proverbs 12:11–19,9,126
+97,Judges 19–20,78,John 20,31,Proverbs 12:20–28,9,118
+98,"Judges 21, Ruth 1–2",70,John 21,25,Psalm 60,12,107
+99,"Ruth 3–4, 1 Samuel 1",68,Acts 1,26,Psalm 61,8,102
+100,1 Samuel 2–4,79,Acts 2,47,Psalm 62,12,138
+101,1 Samuel 5–8,72,Acts 3,26,Psalm 63,11,109
+102,1 Samuel 9–11,69,Acts 4,37,Proverbs 13:1–9,9,115
+103,1 Samuel 12–14,100,Acts 5,42,Proverbs 13:10–17,8,150
+104,1 Samuel 15–16,58,Acts 6,15,Proverbs 13:18–25,8,81
+105,1 Samuel 17,58,Acts 7:1–36,36,Psalm 64,10,104
+106,1 Samuel 18–20,97,Acts 7:37–60,24,Psalm 65,13,134
+107,1 Samuel 21–23,67,Acts 8,40,Psalm 66,20,127
+108,1 Samuel 24–25,66,Acts 9,43,Psalm 67,7,116
+109,1 Samuel 26–29,73,Acts 10,48,Psalm 68:1–18,18,139
+110,"1 Samuel 30–31, 2 Samuel 1",71,Acts 11,30,Psalm 68:19–35,17,118
+111,2 Samuel 2–4,83,Acts 12,25,Proverbs 14:1–12,12,120
+112,2 Samuel 5–7,77,Acts 13,52,Proverbs 14:13–24,12,141
+113,2 Samuel 8–11,77,Acts 14,28,Proverbs 14:25–35,11,116
+114,2 Samuel 12–13,70,Acts 15,41,Psalm 69:1–18,18,129
+115,2 Samuel 14–15,70,Acts 16,40,Psalm 69:19–36,18,128
+116,2 Samuel 16–17,52,Acts 17,34,Psalm 70,5,91
+117,2 Samuel 18–19,76,Acts 18,28,Psalm 71,24,128
+118,2 Samuel 20–22,99,Acts 19,41,Psalm 72,20,160
+119,2 Samuel 23–24,64,Acts 20,38,Psalm 73:1–14,14,116
+120,1 Kings 1,53,Acts 21,40,Psalm 73:15–28,14,107
+121,1 Kings 2–3,74,Acts 22,30,Proverbs 15:1–11,11,115
+122,1 Kings 4–6,90,Acts 23,35,Proverbs 15:12–22,11,136
+123,1 Kings 7,51,Acts 24,27,Proverbs 15:23–33,11,89
+124,1 Kings 8–9,94,Acts 25,27,Psalm 74,23,144
+125,1 Kings 10–11,72,Acts 26,32,Psalm 75,10,114
+126,1 Kings 12–13,67,Acts 27,44,Psalm 76,12,123
+127,1 Kings 14–15,65,Acts 28,31,Psalm 77,20,116
+128,1 Kings 16–18,104,Romans 1,32,Psalm 78:1–39,39,175
+129,1 Kings 19–20,64,Romans 2,29,Psalm 78:40–72,33,126
+130,1 Kings 21–22,83,Romans 3,31,Proverbs 16:1–11,11,125
+131,2 Kings 1–3,70,Romans 4,25,Proverbs 16:12–22,11,106
+132,2 Kings 4–5,71,Romans 5,21,Proverbs 16:23–33,11,103
+133,2 Kings 6–7,53,Romans 6,23,Psalm 79,13,89
+134,2 Kings 8–9,66,Romans 7,25,Psalm 80,19,110
+135,2 Kings 10–12,78,Romans 8,39,Psalm 81,16,133
+136,2 Kings 13–15,92,Romans 9,33,Psalm 82,8,133
+137,2 Kings 16–17,61,Romans 10,21,Psalm 83,18,100
+138,2 Kings 18–19,74,Romans 11,36,Proverbs 17:1–10,10,120
+139,2 Kings 20–22,67,Romans 12,21,Proverbs 17:11–19,9,97
+140,2 Kings 23–25,87,Romans 13,14,Proverbs 17:20–28,9,110
+141,1 Chronicles 1,54,Romans 14,23,Psalm 84,12,89
+142,1 Chronicles 2–3,79,Romans 15,33,Psalm 85,13,125
+143,1 Chronicles 4–5,69,Romans 16,27,Psalm 86,17,113
+144,1 Chronicles 6,81,1 Corinthians 1,31,Psalm 87,7,119
+145,1 Chronicles 7–8,80,1 Corinthians 2,16,Psalm 88,18,114
+146,1 Chronicles 9–10,58,1 Corinthians 3,23,Proverbs 18:1–8,8,89
+147,1 Chronicles 11–12,87,1 Corinthians 4,21,Proverbs 18:9–16,8,116
+148,1 Chronicles 13–15,60,1 Corinthians 5,13,Proverbs 18:17–24,8,81
+149,1 Chronicles 16–18,87,1 Corinthians 6,20,Psalm 89:1–18,18,125
+150,1 Chronicles 19–22,76,1 Corinthians 7,40,Psalm 89:19–37,19,135
+151,1 Chronicles 23–24,63,1 Corinthians 8,13,Psalm 89:38–52,15,91
+152,1 Chronicles 25–27,97,1 Corinthians 9,27,Psalm 90,17,141
+153,1 Chronicles 28–29,51,1 Corinthians 10,33,Psalm 91,16,100
+154,2 Chronicles 1–4,74,1 Corinthians 11,34,Psalm 92,15,123
+155,2 Chronicles 5–7,78,1 Corinthians 12,31,Proverbs 19:1–10,10,119
+156,2 Chronicles 8–10,68,1 Corinthians 13,13,Proverbs 19:11–20,10,91
+157,2 Chronicles 11–14,76,1 Corinthians 14,40,Proverbs 19:21–29,9,125
+158,2 Chronicles 15–18,86,1 Corinthians 15,58,Psalm 93,5,149
+159,2 Chronicles 19–21,68,1 Corinthians 16,24,Psalm 94,23,115
+160,2 Chronicles 22–24,60,2 Corinthians 1,24,Psalm 95,11,95
+161,2 Chronicles 25–28,87,2 Corinthians 2,17,Psalm 96,13,117
+162,2 Chronicles 29–30,63,2 Corinthians 3,18,Psalm 97,12,93
+163,2 Chronicles 31–33,79,2 Corinthians 4,18,Proverbs 20:1–10,10,107
+164,2 Chronicles 34–36,83,2 Corinthians 5,21,Proverbs 20:11–20,10,114
+165,Ezra 1–2,81,2 Corinthians 6,18,Proverbs 20:21–30,10,109
+166,Ezra 3–5,54,2 Corinthians 7,16,Psalm 98,9,79
+167,Ezra 6–8,86,2 Corinthians 8,24,Psalm 99,9,119
+168,Ezra 9–10,59,2 Corinthians 9,15,Psalm 100,5,79
+169,Nehemiah 1–4,86,2 Corinthians 10,18,Psalm 101,8,112
+170,Nehemiah 5–6,38,2 Corinthians 11,33,Psalm 102:1–11,11,82
+171,Nehemiah 7–8,91,2 Corinthians 12,21,Psalm 102:12–28,17,129
+172,Nehemiah 9–10,77,2 Corinthians 13,14,Proverbs 21:1–11,11,102
+173,Nehemiah 11–12,83,Galatians 1,24,Proverbs 21:12–21,10,117
+174,"Nehemiah 13, Esther 1–2",76,Galatians 2,21,Proverbs 21:22–31,10,107
+175,Esther 3–6,60,Galatians 3,29,Psalm 103,22,111
+176,"Esther 7–10, Job 1",84,Galatians 4,31,Psalm 104:1–18,18,133
+177,Job 2–4,60,Galatians 5,26,Psalm 104:19–35,17,103
+178,Job 5–7,78,Galatians 6,18,Psalm 105:1–15,15,111
+179,Job 8–10,79,Ephesians 1,23,Psalm 105:16–25,10,112
+180,Job 11–13,73,Ephesians 2,22,Psalm 105:26–45,20,115
+181,Job 14–16,79,Ephesians 3,21,Psalm 106:1–12,12,112
+182,Job 17–19,66,Ephesians 4,32,Psalm 106:13–33,21,119
+183,Job 20–21,63,Ephesians 5,33,Psalm 106:34–48,15,111
+184,Job 22–25,78,Ephesians 6,24,Psalm 107:1–16,16,118
+185,Job 26–28,65,Philippians 1,30,Psalm 107:17–32,16,111
+186,Job 29–31,96,Philippians 2,30,Psalm 107:33–43,11,137
+187,Job 32–33,55,Philippians 3,21,Proverbs 22:1–10,10,86
+188,Job 34–36,86,Philippians 4,23,Proverbs 22:11–20,10,119
+189,Job 37–38,65,Colossians 1,29,Proverbs 22:21–29,9,103
+190,Job 39–41,88,Colossians 2,23,Psalm 108,13,124
+191,"Job 42, Ecclesiastes 1–2",61,Colossians 3,25,Psalm 109:1–20,20,106
+192,Ecclesiastes 3–6,70,Colossians 4,18,Psalm 109:21–31,11,99
+193,Ecclesiastes 7–10,84,1 Thessalonians 1,10,Psalm 110,7,101
+194,"Ecclesiastes 11–12, Song of Solomon 1–3",69,1 Thessalonians 2,20,Psalm 111,10,99
+195,Song of Solomon 4–8,72,1 Thessalonians 3,13,Psalm 112,10,95
+196,Isaiah 1–3,79,1 Thessalonians 4,18,Proverbs 23:1–12,12,109
+197,Isaiah 4–7,74,1 Thessalonians 5,28,Proverbs 23:13–24,12,114
+198,Isaiah 8–10,77,2 Thessalonians 1,12,Proverbs 23:25–35,11,100
+199,Isaiah 11–14,76,2 Thessalonians 2,17,Psalm 113,9,102
+200,Isaiah 15–19,69,2 Thessalonians 3,18,Psalm 114,8,95
+201,Isaiah 20–23,66,1 Timothy 1,20,Psalm 115,18,104
+202,Isaiah 24–27,69,1 Timothy 2,15,Psalm 116,19,103
+203,Isaiah 28–30,86,1 Timothy 3,16,Psalm 117,2,104
+204,Isaiah 31–33,53,1 Timothy 4,16,Proverbs 24:1–12,12,81
+205,Isaiah 34–37,87,1 Timothy 5,25,Proverbs 24:13–23,11,123
+206,Isaiah 38–40,61,1 Timothy 6,21,Proverbs 24:24–34,11,93
+207,Isaiah 41–43,82,2 Timothy 1,18,Psalm 118:1–18,18,118
+208,Isaiah 44–46,66,2 Timothy 2,26,Psalm 118:19–29,11,103
+209,Isaiah 47–50,74,2 Timothy 3,17,Psalm 119:1–16,16,107
+210,Isaiah 51–55,80,2 Timothy 4,22,Psalm 119:17–32,16,118
+211,Isaiah 56–59,68,Titus 1,16,Psalm 119:33–48,16,100
+212,Isaiah 60–64,76,Titus 2,15,Psalm 119:49–64,16,107
+213,"Isaiah 65–66, Jeremiah 1",68,Titus 3,15,Psalm 119:65–80,16,99
+214,Jeremiah 2–4,93,Philemon 1,25,Psalm 119:81–96,16,134
+215,Jeremiah 5–6,61,Hebrews 1,14,Psalm 119:97–112,16,91
+216,Jeremiah 7–9,82,Hebrews 2,18,Psalm 119:113–128,16,116
+217,Jeremiah 10–12,65,Hebrews 3,19,Psalm 119:129–144,16,100
+218,Jeremiah 13–15,70,Hebrews 4,16,Psalm 119:145–160,16,102
+219,Jeremiah 16–18,71,Hebrews 5,14,Psalm 119:161–176,16,101
+220,Jeremiah 19–22,77,Hebrews 6,20,Psalm 120,7,104
+221,Jeremiah 23–25,88,Hebrews 7,28,Psalm 121,8,124
+222,Jeremiah 26–28,63,Hebrews 8,13,Proverbs 25:1–10,10,86
+223,Jeremiah 29–30,56,Hebrews 9,28,Proverbs 25:11–19,9,93
+224,Jeremiah 31–32,84,Hebrews 10,39,Proverbs 25:20–28,9,132
+225,Jeremiah 33–35,67,Hebrews 11,40,Psalm 122,9,116
+226,Jeremiah 36–38,81,Hebrews 12,29,Psalm 123,4,114
+227,Jeremiah 39–42,74,Hebrews 13,25,Psalm 124,8,107
+228,Jeremiah 43–46,76,James 1,27,Psalm 125,5,108
+229,Jeremiah 47–48,54,James 2,26,Psalm 126,6,86
+230,Jeremiah 49–50,85,James 3,18,Proverbs 26:1–10,10,113
+231,Jeremiah 51,64,James 4,17,Proverbs 26:11–19,9,90
+232,"Jeremiah 52, Lamentations 1–2",78,James 5,20,Proverbs 26:20–28,9,107
+233,Lamentations 3–4,88,1 Peter 1,25,Psalm 127,5,118
+234,"Lamentations 5, Ezekiel 1–2",60,1 Peter 2,25,Psalm 128,6,91
+235,Ezekiel 3–6,75,1 Peter 3,22,Psalm 129,8,105
+236,Ezekiel 7–10,78,1 Peter 4,19,Psalm 130,8,105
+237,Ezekiel 11–13,76,1 Peter 5,14,Psalm 131,3,93
+238,Ezekiel 14–16,94,2 Peter 1,21,Proverbs 27:1–9,9,124
+239,Ezekiel 17–18,56,2 Peter 2,22,Proverbs 27:10–18,9,87
+240,Ezekiel 19–20,63,2 Peter 3,18,Proverbs 27:19–27,9,90
+241,Ezekiel 21–22,63,1 John 1,10,Psalm 132,18,91
+242,Ezekiel 23–25,93,1 John 2,29,Psalm 133,3,125
+243,Ezekiel 26–27,57,1 John 3,24,Psalm 134,3,84
+244,Ezekiel 28–31,91,1 John 4,21,Psalm 135,21,133
+245,Ezekiel 32–33,65,1 John 5,21,Psalm 136,26,112
+246,Ezekiel 34–36,84,2 John 1,13,Proverbs 28:1–10,10,107
+247,Ezekiel 37–38,51,3 John 1,15,Proverbs 28:11–19,9,75
+248,Ezekiel 39–40,78,Jude 1,25,Proverbs 28:20–28,9,112
+249,Ezekiel 41–43,73,Revelation 1,20,Psalm 137,9,102
+250,Ezekiel 44–46,80,Revelation 2,29,Psalm 138,8,117
+251,"Ezekiel 47–48, Daniel 1",79,Revelation 3,22,Psalm 139,24,125
+252,Daniel 2–3,79,Revelation 4,11,Psalm 140,13,103
+253,Daniel 4–5,68,Revelation 5,14,Psalm 141,10,92
+254,Daniel 6–7,56,Revelation 6,17,Proverbs 29:1–9,9,82
+255,Daniel 8–10,75,Revelation 7,17,Proverbs 29:10–18,9,101
+256,"Daniel 11–12, Hosea 1–2",92,Revelation 8,13,Proverbs 29:19–27,9,114
+257,Hosea 3–7,66,Revelation 9,21,Psalm 142,7,94
+258,Hosea 8–12,72,Revelation 10,11,Psalm 143,12,95
+259,"Hosea 13–14, Joel 1–2",77,Revelation 11,19,Psalm 144,15,111
+260,"Joel 3, Amos 1–3",67,Revelation 12,18,Psalm 145,21,106
+261,Amos 4–7,71,Revelation 13,18,Psalm 146,10,99
+262,"Amos 8–9, Obadiah 1, Jonah 1–2",77,Revelation 14,20,Proverbs 30:1–9,9,106
+263,"Jonah 3–4, Micah 1–4",75,Revelation 15,8,Proverbs 30:10–16,7,90
+264,"Micah 5–7, Nahum 1",66,Revelation 16,21,Proverbs 30:17–33,17,104
+265,"Nahum 2–3, Habakkuk 1–3",88,Revelation 17,18,Psalm 147,20,126
+266,"Zephaniah 1–3, Haggai 1",68,Revelation 18,24,Psalm 148,14,106
+267,"Haggai 2, Zechariah 1–3",67,Revelation 19,21,Psalm 149,9,97
+268,Zechariah 4–8,77,Revelation 20,15,Psalm 150,6,98
+269,Zechariah 9–13,69,Revelation 21,27,Proverbs 31:1–9,9,105
+270,"Zechariah 14, Malachi 1–4",76,Revelation 22,21,Proverbs 31:10–31,22,119
