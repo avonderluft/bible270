@@ -30,6 +30,11 @@ Gem::Specification.new do |spec|
   # Built-in sign-in. OmniAuth 2.0+ is required: it disallows GET on the request
   # phase (CVE-2015-9284), which is what the engine's POST sign-in forms assume.
   # The provider strategy gems (omniauth-github etc.) are the host app's choice.
+  # The engine ships .turbo_stream.erb templates and responds to turbo_stream in
+  # its controllers, so this is a real dependency, not an optional enhancement:
+  # without it, checking off a reading or posting a reflection raises.
+  spec.add_dependency 'turbo-rails', '>= 1.0'
+
   spec.add_dependency 'omniauth', '>= 2.0'
   spec.add_dependency 'omniauth-rails_csrf_protection', '>= 1.0'
 end

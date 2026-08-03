@@ -14,6 +14,10 @@ require 'action_controller/railtie'
 require 'action_view/railtie'
 require 'action_mailer/railtie'
 
+# The engine responds with turbo_stream and ships .turbo_stream.erb templates,
+# so the dummy needs Turbo just as a real host app does.
+require 'turbo-rails'
+
 require 'bible270'
 
 module Dummy

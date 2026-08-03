@@ -180,6 +180,10 @@ module Bible270
       return nil if value.include?('//')   # protocol-relative URL
       return nil if value.include?('\\')   # browsers may normalise \ to /
       return nil if value.include?('/auth/')
+      # Never return someone to sign-in or sign-out after signing in: harmless,
+      # but it reads as though the sign-in failed. Matched by path so it holds
+      # wherever the engine is mounted.
+      return nil if value.match?(%r{/sign_(in|out)(/|\z|\?)})
 
       value
     end

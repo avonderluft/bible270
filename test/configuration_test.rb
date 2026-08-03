@@ -20,6 +20,23 @@ class ConfigurationTest < Minitest::Test
   MOVED_OUT_OF_STDLIB = %w[cgi rexml csv base64 bigdecimal drb observer abbrev
                            matrix prime rss getoptlong mutex_m].freeze
 
+  # The engine may only lean on gems it declares. turbo_stream was used in nine
+  # files while turbo-rails was undeclared, so any host without Turbo got a 500
+  # on the first check-off.
+  def test_frameworks_the_code_uses_are_declared_dependencies
+    root = File.expand_path('..', __dir__)
+    spec = Gem::Specification.load(File.join(root, 'bible270.gemspec'))
+    declared = spec.dependencies.map(&:name)
+
+    sources = Dir.glob(File.join(root, '{app,lib}/**/*.{rb,erb}')).map { |f| File.read(f) }.join
+
+    { 'turbo-rails' => %r{turbo_stream}, 'omniauth' => %r{OmniAuth} }.each do |gem_name, pattern|
+      next unless sources.match?(pattern)
+
+      assert_includes declared, gem_name, "#{gem_name} is used but not declared in the gemspec"
+    end
+  end
+
   def test_does_not_require_libraries_ruby_4_dropped
     root = File.expand_path('..', __dir__)
     pattern = %r{^\s*require\s+['"](#{MOVED_OUT_OF_STDLIB.join('|')})(?:/[\w/]+)?['"]}
