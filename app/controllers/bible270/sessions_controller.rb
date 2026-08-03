@@ -33,12 +33,17 @@ module Bible270
       # Rotate the session id to avoid session fixation, then sign in.
       reset_session
       session[:bible270_reader_id] = reader.id
+      remember_reader!(reader)
       @current_reader = reader
 
       redirect_to destination, notice: "Welcome #{reader.first_name}."
     end
 
     def destroy
+      # Clear the long-lived cookie too, or the next request would sign them
+      # straight back in. The stored token is left alone so their other devices
+      # stay signed in; Reader#forget! is what revokes those.
+      forget_reader!
       reset_session
       @current_reader = nil
       redirect_to(after_sign_out_path, notice: 'Signed out.')
@@ -109,6 +114,7 @@ module Bible270
 
       reset_session
       session[:bible270_reader_id] = reader.id
+      remember_reader!(reader)
       @current_reader = reader
 
       if name_needed?(reader)

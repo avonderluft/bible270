@@ -292,7 +292,7 @@ module Bible270
     # from, so without this the notice names the reader but cannot link to them.
     attr_accessor :mailer_host
 
-    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :require_sign_in_to_participate
 
     # Public labels.
     attr_accessor :app_name
@@ -311,7 +311,18 @@ module Bible270
     attr_accessor :allow_reader_start_date
 
     # Only signed-in readers may check off and comment (viewing is always open).
-    attr_accessor :require_sign_in_to_participate
+    # How long a reader stays signed in on a device, in seconds. The plan runs
+    # 270 days and most people read it on a phone, where a browser-session cookie
+    # is discarded within days — so this defaults to a year. Set nil or false to
+    # keep sign-in to the browser session only.
+    #
+    # Expressed in seconds rather than 1.year because this file has to load
+    # without ActiveSupport.
+    attr_accessor :remember_for
+
+    def remember_signed_in?
+      remember_for.to_i.positive?
+    end
 
     def initialize
       @parent_controller = 'ActionController::Base'
@@ -329,6 +340,7 @@ module Bible270
       end
       @app_name = 'Daily Bread'
       @tagline = 'Journeying through Scripture in 9 months'
+      @remember_for = 365 * 24 * 60 * 60
       @require_sign_in_to_participate = true
       self.mount_at = '/daily-bread'
       @start_date = nil

@@ -140,6 +140,36 @@ module Bible270
       [last_name, first_name].map { |n| n.to_s.strip.downcase }.join(' ').strip.presence || display_name.to_s.downcase
     end
 
+    # ---- staying signed in -------------------------------------------------
+
+    # Generated on first use rather than at sign-up, so readers who never stay
+    # signed in never carry one.
+    def remember_token!
+      return remember_token if remember_token.present?
+
+      token = SecureRandom.urlsafe_base64(32)
+      update_column(:remember_token, token)
+      token
+    end
+
+    # Rotating the token invalidates every device at once.
+    def forget!
+      update_column(:remember_token, nil)
+      true
+    end
+
+    def self.from_remember_cookie(reader_id, token)
+      return nil if reader_id.blank? || token.blank?
+
+      reader = find_by(id: reader_id)
+      return nil if reader.nil? || reader.remember_token.blank?
+
+      # Constant-time comparison: the token is a credential.
+      return nil unless ActiveSupport::SecurityUtils.secure_compare(reader.remember_token, token.to_s)
+
+      reader
+    end
+
     def avatar_uploaded?
       self.class.avatar_uploads? && avatar.attached?
     end

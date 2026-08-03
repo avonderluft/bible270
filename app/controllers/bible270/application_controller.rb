@@ -22,6 +22,8 @@ module Bible270
 
     helper_method :current_reader, :signed_in?, :b270_config, :enrollment_closed?
 
+    REMEMBER_COOKIE = :bible270_remember
+
   private
 
     def bible270_layout
@@ -44,7 +46,45 @@ module Bible270
           resolver.call(self)
         elsif (id = session[:bible270_reader_id])
           Reader.find_by(id: id)
+        else
+          reader_from_remember_cookie
         end
+    end
+
+    # A session cookie dies when the browser restarts, which on a phone can be
+    # daily. This restores the session from a long-lived signed cookie carrying
+    # the reader id and a rotating token, so the reader stays signed in.
+    def reader_from_remember_cookie
+      return nil unless Bible270.config.remember_signed_in?
+
+      payload = cookies.encrypted[REMEMBER_COOKIE]
+      return nil if payload.blank?
+
+      id, token = payload.to_s.split(':', 2)
+      reader = Reader.from_remember_cookie(id, token)
+      return forget_reader! if reader.nil?
+
+      # Re-establish the session so the rest of the request behaves as normal.
+      session[:bible270_reader_id] = reader.id
+      reader
+    end
+
+    # Encrypted, so the payload can be neither read nor forged by the client.
+    def remember_reader!(reader)
+      return unless Bible270.config.remember_signed_in?
+
+      cookies.encrypted[REMEMBER_COOKIE] = {
+        value: "#{reader.id}:#{reader.remember_token!}",
+        expires: Bible270.config.remember_for.to_i.seconds.from_now,
+        httponly: true,
+        same_site: :lax,
+        secure: request.ssl?
+      }
+    end
+
+    def forget_reader!
+      cookies.delete(REMEMBER_COOKIE)
+      nil
     end
 
     def signed_in?
