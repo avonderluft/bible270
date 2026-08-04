@@ -14,7 +14,7 @@ Three readings a day, sized by **verse count** so each day takes roughly the sam
 - **New Testament** — once through, a reading every day. 260 chapters over 270 days, long chapters are divided to even out the daily reading
 - **Psalms & Proverbs** — once each, interleaved in one track. 181 chapters have to cover 270 days, so some are divided, shared between the two books by verse load. **A psalm of 25 verses or fewer is never divided**, keeping 131 of the 150 whole; longer psalms and Proverbs chapters break at their turns of thought (see `CHAPTER_BREAKS`). **Psalm 119 is 11 sections of 16 verses** — two of its eight-verse acrostic stanzas each. Proverbs lands on 89 days, near its proportional share. **A divided chapter is always read on consecutive days**, so nothing is inserted between the parts of a split psalm.
 
-Genesis → Malachi and Revelation 22 both land on day 270, as does the second Proverbs 31 — the first falls on day 135, the midpoint. Psalm 150 comes in on day 269. Every day carries all three tracks. A typical day is ~119 verses (range 76–175).
+Genesis → Malachi and Revelation 22 both land on day 270, as does the second part of Proverbs 31.  Every day carries all three tracks. A typical day is ~119 verses (range 76–175).
 
 The schedule is pure deterministic Ruby (`Bible270::Plan`) — none of it is stored. Portions come from per-chapter verse counts in `Bible270::Versification`. The DB only holds readers, check-offs, comments, and sign-in tokens.
 
