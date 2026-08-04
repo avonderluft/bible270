@@ -134,6 +134,25 @@ class ViewsTest < Minitest::Test
                  'counting tracks calls a partly-read day finished; count total_parts'
   end
 
+  # An ERB comment ends at the first %>, so an example containing <%= ... %>
+  # closes it early and the remainder becomes live template code. A doc comment in
+  # _progress.html.erb once made the partial render itself.
+  def test_no_erb_tags_inside_erb_comments
+    offenders = templates.flat_map do |path|
+      body = File.read(path)
+      # Each <%# ... %> block: flag one whose body contains an opening ERB tag.
+      body.scan(%r{<%#(.*?)%>}m).flatten.filter_map do |comment|
+        "#{path.sub("#{VIEW_ROOT}/", '')}: #{comment.strip[0, 60]}" if comment.include?('<%')
+      end
+    end
+
+    assert_empty offenders, <<~MSG
+      An ERB comment ends at the first %>, so these leak code into the template:
+
+      #{offenders.join("\n      ")}
+    MSG
+  end
+
   def test_templates_do_not_call_removed_plan_methods
     removed = %w[
       nt_groups nt_days_per_pass nt_second_pass_start_day

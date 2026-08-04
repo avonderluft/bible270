@@ -1,0 +1,55 @@
+<%# locals: (reader: nil, start_day: nil, today_day: nil, community_start_date: :unset) %>
+<%#
+  The progress panel.
+
+  Every value is derived here rather than read from controller instance
+  variables, so it can be rendered from any page. @start_day, @today_day and
+  @community_start_date were set only by DaysController#index; anywhere else they
+  would silently have been nil.
+
+  Render it with no locals to describe the signed-in reader, or pass
+  reader: @reader to describe someone else.
+
+  community_start_date defaults to :unset rather than nil, so that passing nil
+  explicitly can mean "do not mention a community date".
+
+  NB: no ERB tags in this comment. The first close tag would close it, and everything
+  after would become live template code — which is exactly how this partial once
+  came to render itself.
+%>
+<%
+  panel_reader = reader || current_reader
+  panel_start_day = start_day || panel_reader&.current_day || 1
+  panel_today_day = today_day || panel_reader&.today_day
+  panel_community_date = community_start_date == :unset ? Bible270.config.start_date : community_start_date
+  day_verb = panel_start_day == 1 ? 'Start' : 'Continue'
+%>
+<div class="b270-panel">
+  <% if panel_reader %>
+    <div class="b270-bignum">
+      <span class="n"><%= panel_reader.days_completed %></span>
+      <span class="of">of <%= Bible270::Plan::DAYS %> days complete</span>
+      <span class="pct"><%= panel_reader.completion_percent %>%</span>
+    </div>
+
+    <%= render "bible270/shared/track_bars", reader: panel_reader %>
+
+    <p style="margin:16px 0 0">
+      <%= link_to "#{day_verb} reading — Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
+      <% if panel_today_day && panel_today_day != panel_start_day %>
+        <%= link_to "Go to today (Day #{panel_today_day})", day_path(panel_today_day), style: "margin-left:12px" %>
+      <% end %>
+    </p>
+
+    <%= render "bible270/days/start_date", reader: panel_reader %>
+  <% else %>
+    <p class="b270-signedout"><%= link_to "Sign in", sign_in_path %> to track your progress and join
+       the conversation. You can browse the whole plan and read others' reflections without an account.</p>
+    <% if panel_community_date %>
+      <p class="b270-startline">This community plan runs from
+         <strong><%= panel_community_date.strftime("%B %-d, %Y") %></strong> to
+         <strong><%= Bible270::Plan.end_date_for(panel_community_date).strftime("%B %-d, %Y") %></strong>.</p>
+    <% end %>
+    <p style="margin:14px 0 0"><%= link_to "Start at Day 1 →", day_path(1), class: "b270-btn" %></p>
+  <% end %>
+</div>

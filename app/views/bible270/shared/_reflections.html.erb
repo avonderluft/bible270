@@ -1,0 +1,44 @@
+<%# locals: (comments:, title: "Their reflections", moderate: false, empty_text: "None yet.") %>
+<%#
+  A reader's reflections. Three views showed near-identical markup: the admin
+  page, a reader's public page, and the progress page, differing only in whether
+  hide/restore controls appeared.
+
+  moderate: true adds those controls, and shows a Hidden badge. They are only
+  meaningful for an admin, so the caller decides — the partial does not check
+  permissions itself.
+
+  No ERB tags in this comment: the first close-tag would end it and the rest
+  would become live template code.
+%>
+<h2 class="b270-subhead"><%= title %></h2>
+
+<% if comments.any? %>
+  <% comments.each do |comment| %>
+    <div class="b270-comment">
+      <div style="flex:1">
+        <div class="b270-cmeta">
+          <%= link_to "Day #{comment.day}", day_path(comment.day) %>
+          · <%= comment.created_at.strftime("%b %-d, %Y") %>
+          <% if moderate && comment.hidden? %><span class="b270-badge">Hidden</span><% end %>
+        </div>
+
+        <p class="b270-cbody"><%= comment.body %></p>
+
+        <% if moderate %>
+          <div style="display:flex;gap:10px;margin-top:6px">
+            <% if comment.hidden? %>
+              <%= button_to "Restore", admin_unhide_comment_path(comment), method: :patch,
+                    params: { return_to: request.fullpath }, class: "b270-linkbtn" %>
+            <% else %>
+              <%= button_to "Hide", admin_hide_comment_path(comment), method: :patch,
+                    params: { return_to: request.fullpath }, class: "b270-linkbtn" %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+<% else %>
+  <p class="b270-hint" style="margin-top:0"><%= empty_text %></p>
+<% end %>

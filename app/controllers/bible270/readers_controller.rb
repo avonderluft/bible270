@@ -10,6 +10,15 @@ module Bible270
       @readers.sort_by! { |r| [-@days_completed[r.id], r.display_name.to_s] }
     end
 
+    # The reader's own progress. Deliberately open to visitors: the panel shows an
+    # invitation to sign in rather than an error, and every value it needs comes
+    # from the reader it is given.
+    def progress
+      @reader = current_reader
+      # An empty relation rather than nil, so the view needs no safe navigation.
+      @recent_comments = @reader ? @reader.comments.recent.limit(5) : Comment.none
+    end
+
     def show
       @reader = Reader.find_by(id: params[:id])
       redirect_to(community_path, alert: 'Reader not found.') and return unless @reader

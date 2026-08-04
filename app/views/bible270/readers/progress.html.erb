@@ -1,0 +1,33 @@
+<% content_for :title, "Your progress — #{Bible270.config.app_name}" %>
+<% content_for :hide_day_index, true %><%# the panel is followed by its own grid below %>
+
+<p class="b270-eyebrow">Your progress</p>
+<h1><%= @reader ? @reader.display_name : "Your progress" %></h1>
+
+<%= render "bible270/shared/progress" %>
+
+<div class="b270-panel">
+  <%= render "bible270/shared/reflections", comments: @recent_comments,
+        title: "Your recent reflections",
+        empty_text: "You have not written any reflections yet." %>
+</div>
+
+<% if @reader %>
+  <div class="b270-panel">
+    <h2 class="b270-subhead">Every day at a glance</h2>
+    <div class="b270-grid">
+      <% today = @reader.today_day %>
+      <% (1..Bible270::Plan::DAYS).each do |d| %>
+        <%= link_to d, day_path(d),
+              class: "b270-cell #{b270_day_status_class(@reader, d)} #{'now' if d == today}" %>
+      <% end %>
+    </div>
+    <p class="b270-hint">Filled squares are days you have finished; a lighter square means you have
+       read some of that day but not all of it.</p>
+  </div>
+
+  <p style="margin-top:18px">
+    <%= link_to "How others are doing →", community_path %>
+    · <%= link_to "Your profile", profile_path %>
+  </p>
+<% end %>

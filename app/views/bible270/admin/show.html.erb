@@ -88,32 +88,7 @@
 </div>
 
 <div class="b270-panel">
-  <h2 class="b270-subhead">Their reflections</h2>
-  <% if @comments.any? %>
-    <% @comments.each do |comment| %>
-      <div class="b270-comment">
-        <div style="flex:1">
-          <div class="b270-cmeta">
-            <%= link_to "day #{comment.day}", day_path(comment.day) %>
-            · <%= comment.created_at.strftime('%b %-d, %Y') %>
-            <% if comment.hidden? %><span class="b270-badge">Hidden</span><% end %>
-          </div>
-          <p class="b270-cbody"><%= comment.body %></p>
-          <div style="display:flex;gap:10px;margin-top:6px">
-            <% if comment.hidden? %>
-              <%= button_to 'Restore', admin_unhide_comment_path(comment), method: :patch,
-                    params: { return_to: request.fullpath }, class: 'b270-linkbtn' %>
-            <% else %>
-              <%= button_to 'Hide', admin_hide_comment_path(comment), method: :patch,
-                    params: { return_to: request.fullpath }, class: 'b270-linkbtn' %>
-            <% end %>
-          </div>
-        </div>
-      </div>
-    <% end %>
-  <% else %>
-    <p class="b270-hint" style="margin-top:0">None yet.</p>
-  <% end %>
+  <%= render "bible270/shared/reflections", comments: @comments, moderate: true %>
 </div>
 
 <div class="b270-panel">

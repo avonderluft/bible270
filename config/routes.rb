@@ -34,6 +34,8 @@ Bible270::Engine.routes.draw do
   patch 'profile',                       to: 'profiles#update'
   delete 'profile/avatar', to: 'profiles#remove_avatar', as: :profile_avatar
 
+  get 'progress', to: 'readers#progress', as: :progress
+
   get 'community', to: 'readers#index', as: :community
   get 'readers/:id', to: 'readers#show', as: :reader
 
