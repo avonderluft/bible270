@@ -6,7 +6,36 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.2...main)**
+
+## [0.15.2] - 2026-08-04
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.1...v0.15.2)**
+
+### Added 
+
+- app icon to shared header partial
+
+### Changed
+
+- consistent reader sort order by first name in 'People' and 'Admin'
+
+## [0.15.1] - 2026-08-03
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.0...v0.15.1)**
+
+### Added
+
+- CSV file with versification by day
+
+### Changed
+
+- refactor 'progress' and 'reflections' into partials to be more DRY
+- update Coverage badge to be less cached
+
+### Removed
+
+- old zip file of tests
 
 ## [0.15.0] - 2026-08-02
 
@@ -317,6 +346,11 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[0.15.2]: https://github.com/avonderluft/bible270/releases/tag/v0.15.2
+[0.15.1]: https://github.com/avonderluft/bible270/releases/tag/v0.15.1
+[0.15.0]: https://github.com/avonderluft/bible270/releases/tag/v0.15.0
+[0.14.1]: https://github.com/avonderluft/bible270/releases/tag/v0.14.1
+[0.14.0]: https://github.com/avonderluft/bible270/releases/tag/v0.14.0
 [0.13.1]: https://github.com/avonderluft/bible270/releases/tag/v0.13.1
 [0.13.0]: https://github.com/avonderluft/bible270/releases/tag/v0.13.0
 [0.12.0]: https://github.com/avonderluft/bible270/releases/tag/v0.12.0
