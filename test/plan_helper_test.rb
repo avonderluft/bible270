@@ -20,6 +20,7 @@ if RAILS_LOADED
       Bible270.config.favicon = nil
       Bible270.config.footer = nil
       Bible270.config.footer_html = nil
+      Bible270.config.header_mark = nil
     end
 
     # The helper asks current_reader for the translation; in a view test there is
@@ -81,6 +82,30 @@ if RAILS_LOADED
 
       Bible270.config.favicon = false
       assert_nil b270_favicon_tag
+    end
+
+    def test_the_header_mark_is_the_built_in_loaf_by_default
+      mark = b270_mark
+
+      assert_includes mark, '<svg'
+      assert_includes mark, 'b270-mark'
+      refute_includes mark, '%23', 'inline SVG must not be percent-encoded'
+    end
+
+    def test_the_header_mark_takes_a_size
+      assert_includes b270_mark(size: 48), "width='48'"
+    end
+
+    def test_a_host_can_supply_its_own_mark
+      Bible270.config.header_mark = '/logo.png'
+
+      assert_includes b270_mark, '/logo.png'
+      assert_includes b270_mark, 'b270-mark'
+    end
+
+    def test_a_host_can_remove_the_mark
+      Bible270.config.header_mark = false
+      assert_nil b270_mark
     end
 
     def test_the_avatar_falls_back_to_initials

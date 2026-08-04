@@ -54,6 +54,22 @@ if RAILS_LOADED
       assert_match(%r{R Reader}, response.body)
     end
 
+    # The community page lists people by first name, so the admin list should too:
+    # surname order read oddly beside names displayed first-name-first.
+    def test_the_reader_list_is_ordered_by_first_name
+      Bible270::Reader.create!(provider: 'email', uid: 'z@example.org', email: 'z@example.org',
+                               display_name: 'Aaron Zebedee', first_name: 'Aaron', last_name: 'Zebedee')
+      Bible270::Reader.create!(provider: 'email', uid: 'y@example.org', email: 'y@example.org',
+                               display_name: 'Zeke Aaronson', first_name: 'Zeke', last_name: 'Aaronson')
+      sign_in_as_admin
+
+      get "#{mount}/admin"
+
+      assert_response :success
+      assert_operator response.body.index('Aaron Zebedee'), :<, response.body.index('Zeke Aaronson'),
+                      'Aaron should precede Zeke, despite Zebedee following Aaronson'
+    end
+
     def test_an_admin_sees_a_reader
       sign_in_as_admin
       get "#{mount}/admin/readers/#{@reader.id}"

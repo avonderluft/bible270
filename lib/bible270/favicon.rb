@@ -32,5 +32,16 @@ module Bible270
       compact = SVG.gsub(%r{\s+}, ' ').strip
       "data:image/svg+xml,#{compact.gsub(' ', '%20')}"
     end
+
+    # The same mark for inline use in a page, at whatever size. The percent
+    # encoding above is only correct inside a data URI: inlined into HTML,
+    # '%23231f18' is not a colour, so it is decoded here.
+    def inline_svg(size: nil)
+      markup = SVG.gsub('%23', '#').strip
+      return markup if size.nil?
+
+      pixels = size.to_i
+      markup.sub('<svg ', "<svg width='#{pixels}' height='#{pixels}' ")
+    end
   end
 end

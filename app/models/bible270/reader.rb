@@ -136,8 +136,12 @@ module Bible270
       update(bible_version: Translations.normalize(code))
     end
 
+    # Readers are listed by first name, matching how they are shown — the display
+    # name is "First Last", so sorting on it needs only case folding. Surname
+    # order was inconsistent with the community page and read oddly next to names
+    # displayed first-name-first.
     def sort_name
-      [last_name, first_name].map { |n| n.to_s.strip.downcase }.join(' ').strip.presence || display_name.to_s.downcase
+      display_name.to_s.strip.downcase
     end
 
     # ---- staying signed in -------------------------------------------------

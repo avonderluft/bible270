@@ -42,6 +42,27 @@ class FaviconTest < Minitest::Test
     assert_equal opened.sort, closed.sort, 'every non-self-closing element should be closed'
   end
 
+  # The header shows the same mark larger, inlined straight into the page — where
+  # the data URI's percent encoding would be wrong: '%23231f18' is not a colour.
+  def test_the_inline_form_decodes_the_colours
+    markup = F.inline_svg
+
+    refute_includes markup, '%23', 'percent encoding belongs only in the data URI'
+    assert_includes markup, '#231f18'
+    assert markup.start_with?('<svg')
+  end
+
+  def test_the_inline_form_takes_a_size
+    assert_includes F.inline_svg(size: 38), "width='38'"
+    assert_includes F.inline_svg(size: 38), "height='38'"
+    # The inner rect carries width='32', so check the svg element itself.
+    refute_match(%r{<svg[^>]*width=}, F.inline_svg, 'no size on the svg unless asked')
+  end
+
+  def test_the_data_uri_is_unaffected
+    assert_includes F.data_uri, '%23', 'the data URI must stay encoded'
+  end
+
   def test_it_stays_small_enough_to_inline_on_every_page
     assert F.data_uri.length < 1500, "favicon is #{F.data_uri.length} chars"
   end

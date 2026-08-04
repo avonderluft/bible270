@@ -7,7 +7,8 @@ module Bible270
       counts = Checkoff.group(:reader_id, :day).count
       @days_completed = Hash.new(0)
       counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.total_parts(day) }
-      @readers.sort_by! { |r| [-@days_completed[r.id], r.display_name.to_s] }
+      # Progress first, then by name — the same name ordering the admin list uses.
+      @readers.sort_by! { |r| [-@days_completed[r.id], r.sort_name] }
     end
 
     # The reader's own progress. Deliberately open to visitors: the panel shows an

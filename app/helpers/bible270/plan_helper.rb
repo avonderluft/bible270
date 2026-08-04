@@ -51,6 +51,19 @@ module Bible270
       end
     end
 
+    # The mark beside the title in the header. Larger than the favicon and inlined
+    # as SVG, so it stays crisp at any size and needs no asset pipeline.
+    def b270_mark(size: 38)
+      configured = Bible270.config.header_mark
+      return nil if configured == false
+
+      if configured.is_a?(String) && configured.present?
+        return image_tag(configured, width: size, height: size, alt: '', class: 'b270-mark')
+      end
+
+      content_tag :span, Favicon.inline_svg(size: size).html_safe, class: 'b270-mark'
+    end
+
     def b270_favicon_tag
       favicon = Bible270.config.favicon
       return if favicon == false

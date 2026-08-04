@@ -80,6 +80,15 @@ class ReaderTest < Minitest::Test
     assert_equal 'vonderLuft', @reader.last_name
   end
 
+  def test_readers_sort_by_first_name_case_insensitively
+    @reader.update!(display_name: 'anastasia Fomenko')
+    assert_equal 'anastasia fomenko', @reader.sort_name
+
+    other = Bible270::Reader.create!(provider: 'email', uid: 'z@example.org', email: 'z@example.org',
+                                     display_name: 'Zeke Adams')
+    assert_operator @reader.sort_name, :<, other.sort_name
+  end
+
   def test_an_admin_can_move_a_reader_to_a_given_day
     today = Date.new(2026, 9, 6)
     @reader.restart_on!(day: 42, on: today)
