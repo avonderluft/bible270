@@ -6,7 +6,20 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.2...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.3...main)**
+
+## [0.15.3] - 2026-08-04
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.2...v0.15.2)**
+
+### Added
+
+- `Bible270::Checkoff.reset_column_information` to migrations to prevent `UnknownAttributeError` during backfills.
+- more tests (reader identity, sign-ins, and token management) to increase coverage to > 93%
+
+### Changed
+
+- 'Today' now derived from system time, not UTC
 
 ## [0.15.2] - 2026-08-04
 
@@ -346,6 +359,7 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[0.15.3]: https://github.com/avonderluft/bible270/releases/tag/v0.15.3
 [0.15.2]: https://github.com/avonderluft/bible270/releases/tag/v0.15.2
 [0.15.1]: https://github.com/avonderluft/bible270/releases/tag/v0.15.1
 [0.15.0]: https://github.com/avonderluft/bible270/releases/tag/v0.15.0
