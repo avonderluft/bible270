@@ -329,6 +329,10 @@ module Bible270
     #   config.time_zone = 'America/Los_Angeles'   # a named zone
     attr_accessor :time_zone
 
+    # Email a reader when someone writes "@them" in a reflection. Readers can opt
+    # out individually on their profile; this switches the whole feature off.
+    attr_accessor :mention_notifications
+
     def remember_signed_in?
       remember_for.to_i.positive?
     end
@@ -350,6 +354,7 @@ module Bible270
       @app_name = 'Daily Bread'
       @tagline = 'Journeying through Scripture in 9 months'
       @time_zone = nil
+      @mention_notifications = true
       @header_mark = nil
       @remember_for = 365 * 24 * 60 * 60
       @require_sign_in_to_participate = true

@@ -144,6 +144,48 @@ module Bible270
       display_name.to_s.strip.downcase
     end
 
+    # ---- mentions ----------------------------------------------------------
+
+    # The handle to write when mentioning this reader: their first name, unless
+    # someone else shares it, in which case first.last.
+    def mention_handle
+      first = first_name.presence || display_name.to_s.split.first
+      return nil if first.blank?
+
+      Mentions.preferred_handle(first, last_name, ambiguous: self.class.shared_first_name?(first, self))
+    end
+
+    def self.shared_first_name?(first, except = nil)
+      scope = where('LOWER(first_name) = ?', first.to_s.downcase)
+      scope = scope.where.not(id: except.id) if except&.id
+      scope.exists?
+    end
+
+    # The readers a piece of text mentions. A handle matching more than one reader
+    # resolves to nobody: mailing the wrong person is worse than mailing none, and
+    # the writer sees the mention left unlinked.
+    def self.mentioned_in(text)
+      handles = Mentions.extract(text)
+      return [] if handles.empty?
+
+      candidates = where.not(first_name: [nil, '']).to_a
+      handles.filter_map do |handle|
+        matches = candidates.select { |reader| reader.answers_to?(handle) }
+        matches.first if matches.one?
+      end.uniq
+    end
+
+    def answers_to?(handle)
+      Mentions.handles_for(first_name, last_name).include?(handle)
+    end
+
+    def wants_mention_notices?
+      return false if email.blank?
+      return true unless respond_to?(:notify_on_mention)
+
+      notify_on_mention != false
+    end
+
     # ---- staying signed in -------------------------------------------------
 
     # Generated on first use rather than at sign-up, so readers who never stay

@@ -1,7 +1,16 @@
 <%= turbo_stream.remove "no_comments" %>
-<%= turbo_stream.append "comments" do %>
-  <%= render partial: "bible270/comments/comment", locals: { comment: @comment } %>
+
+<%# A reply belongs under its parent; a new reflection goes at the end. %>
+<% if @comment.reply? %>
+  <%= turbo_stream.append "replies-#{@comment.parent_id}" do %>
+    <%= render partial: "bible270/comments/comment", locals: { comment: @comment, reply: true } %>
+  <% end %>
+<% else %>
+  <%= turbo_stream.append "comments" do %>
+    <%= render partial: "bible270/comments/comment", locals: { comment: @comment, reply: false } %>
+  <% end %>
 <% end %>
+
 <%= turbo_stream.replace "new_comment_form" do %>
   <%= render "bible270/comments/form", day: @day, comment: Bible270::Comment.new(day: @day) %>
 <% end %>

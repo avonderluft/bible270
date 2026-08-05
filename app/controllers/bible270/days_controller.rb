@@ -24,8 +24,11 @@ module Bible270
       redirect_to(root_path, alert: 'That day is outside the plan.') and return unless Plan.valid_day?(@day)
 
       @readings   = Plan.readings_for(@day)
-      @comments   = Comment.for_day(@day).includes(:reader)
-      @new_comment = Comment.new(day: @day)
+      @comments   = Comment.threads_for_day(@day)
+      # Replying prefills the form with the handle rather than needing JavaScript,
+      # so it works with Turbo and without an asset pipeline.
+      parent = reply_parent
+      @new_comment = Comment.new(day: @day, parent_id: parent&.id, body: reply_prefix(parent))
       @reader_tracks = current_reader ? current_reader.read_tracks_for(@day) : []
 
       # Every box on the day, not every track: an Old Testament reading of three
@@ -40,6 +43,25 @@ module Bible270
 
       @prev_day = @day > 1 ? @day - 1 : nil
       @next_day = @day < Plan::DAYS ? @day + 1 : nil
+    end
+
+  private
+
+    # "@handle " for the reflection being replied to, or nothing. Private, but
+    # declared with the keyword rather than trailing the file, so it is obvious
+    # this is not an action.
+    # The reflection being replied to, if the link carried one and it is a
+    # top-level reflection: a reply to a reply is not allowed.
+    def reply_parent
+      parent = Comment.approved.find_by(id: params[:reply_to])
+      parent if parent && parent.day == @day && parent.parent_id.nil?
+    end
+
+    # "@handle " so the author is mentioned — and so gets the email — without the
+    # reader having to type it.
+    def reply_prefix(parent)
+      handle = parent&.reader&.mention_handle
+      handle ? "@#{handle} " : nil
     end
   end
 end

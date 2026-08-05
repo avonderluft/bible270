@@ -44,7 +44,7 @@ module Bible270
     # Everything is visible by default; this lists it all so anything unsuitable
     # can be taken down.
     def comments
-      scope = Comment.includes(:reader).order(created_at: :desc)
+      scope = Comment.includes(:reader, parent: :reader).order(created_at: :desc)
       @filter = params[:filter].to_s
       scope = scope.hidden if @filter == 'hidden'
       scope = scope.approved if @filter == 'visible'

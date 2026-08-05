@@ -19,6 +19,11 @@
       <% end %>
     </div>
 
+    <label class="b270-field" style="flex-direction:row;align-items:center;gap:10px">
+      <%= check_box_tag :notify_on_mention, "1", current_reader.notify_on_mention %>
+      <span style="margin:0">Email me when someone mentions me in a reflection</span>
+    </label>
+
     <label class="b270-field">
       <span>First name</span>
       <%= text_field_tag :first_name, @names[:first_name], required: true, autocomplete: "given-name" %>

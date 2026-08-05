@@ -53,6 +53,38 @@ module Bible270
 
     # The mark beside the title in the header. Larger than the favicon and inlined
     # as SVG, so it stays crisp at any size and needs no asset pipeline.
+    # Renders "@handle" as a link to that reader. An unresolved or ambiguous handle
+    # is left as plain text, which is how a writer discovers it found nobody.
+    #
+    # Built by walking the matches and escaping everything between them, rather
+    # than escaping afterwards: the body is reader-supplied, so the only safe
+    # construction is one where every non-link fragment is escaped by hand.
+    def b270_with_mentions(body)
+      text = body.to_s
+      readers = Bible270::Reader.mentioned_in(text)
+
+      pieces = []
+      cursor = 0
+
+      text.to_enum(:scan, Bible270::Mentions::PATTERN).each do
+        match = Regexp.last_match
+        pieces << ERB::Util.html_escape(text[cursor...match.begin(0)])
+
+        handle = Bible270::Mentions.normalize(match[1])
+        reader = readers.find { |candidate| candidate.answers_to?(handle) }
+        pieces << if reader
+                    link_to(match[0], reader_path(reader), class: 'b270-mention')
+                  else
+                    ERB::Util.html_escape(match[0])
+                  end
+
+        cursor = match.end(0)
+      end
+
+      pieces << ERB::Util.html_escape(text[cursor..].to_s)
+      safe_join(pieces)
+    end
+
     def b270_mark(size: 38)
       configured = Bible270.config.header_mark
       return nil if configured == false

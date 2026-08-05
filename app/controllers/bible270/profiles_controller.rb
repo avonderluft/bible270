@@ -12,6 +12,10 @@ module Bible270
 
     def update
       problems = []
+      # A checkbox sends nothing when unticked, so absence means off. Set before
+      # the name check, so the preference is saved even if a name is rejected.
+      current_reader.update_column(:notify_on_mention, params[:notify_on_mention].present?)
+
       problems << 'both a first and last name' unless current_reader.update_names(params[:first_name],
                                                                                   params[:last_name])
       if params[:bible_version].present? && !current_reader.update_bible_version(params[:bible_version])

@@ -2,6 +2,12 @@
 
 module Bible270
   class ApplicationController < Bible270.config.parent_controller.constantize
+    # The long-lived sign-in cookie. private_constant rather than sitting below
+    # `private`, which does not apply to constants — rubocop is right that the
+    # placement said something it could not do.
+    REMEMBER_COOKIE = :bible270_remember
+    private_constant :REMEMBER_COOKIE
+
     # Rails only auto-includes an isolated engine's helpers when the controller's
     # superclass is *exactly* ActionController::Base:
     #
@@ -21,8 +27,6 @@ module Bible270
     layout :bible270_layout
 
     helper_method :current_reader, :signed_in?, :b270_config, :enrollment_closed?
-
-    REMEMBER_COOKIE = :bible270_remember
 
   private
 
@@ -67,6 +71,12 @@ module Bible270
       # Re-establish the session so the rest of the request behaves as normal.
       session[:bible270_reader_id] = reader.id
       reader
+    rescue StandardError => e
+      # A cookie is attacker-supplied input: a damaged or forged one must sign
+      # nobody in, and must never take the site down. Anything unexpected here is
+      # treated as "not remembered", and the cookie is dropped.
+      Rails.logger.warn("[bible270] ignoring an unusable remember cookie: #{e.class}: #{e.message}")
+      forget_reader!
     end
 
     # Encrypted, so the payload can be neither read nor forged by the client.

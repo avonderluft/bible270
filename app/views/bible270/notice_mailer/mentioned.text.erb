@@ -1,0 +1,12 @@
+<%= @author.display_name %> mentioned you in a reflection on day <%= @comment.day %>.
+
+<%= @comment.body %>
+
+<% if @day_url %>
+Read it and reply: <%= @day_url %>
+<% else %>
+You can find it on day <%= @comment.day %> of <%= @app_name %>.
+<% end %>
+--
+You are getting this because someone wrote your name in a reflection. You can
+turn these off on your profile page.

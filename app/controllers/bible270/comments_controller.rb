@@ -44,7 +44,7 @@ module Bible270
   private
 
     def comment_params
-      params.require(:comment).permit(:body, :track)
+      params.require(:comment).permit(:body, :track, :parent_id)
     end
   end
 end

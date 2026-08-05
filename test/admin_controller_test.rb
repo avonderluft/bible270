@@ -185,6 +185,28 @@ if RAILS_LOADED
       assert_match(%r{On the list}, response.body)
     end
 
+    def test_the_moderation_list_marks_replies
+      thought = @reader.comments.create!(day: 1, body: 'A reflection')
+      @reader.comments.create!(day: 1, body: 'An answer', parent: thought)
+      sign_in_as_admin
+
+      get "#{mount}/admin/comments"
+
+      assert_response :success
+      assert_match(%r{reply to}, response.body)
+    end
+
+    def test_hiding_a_reply_leaves_the_thread
+      thought = @reader.comments.create!(day: 1, body: 'A reflection')
+      reply = @reader.comments.create!(day: 1, body: 'An answer', parent: thought)
+      sign_in_as_admin
+
+      patch "#{mount}/admin/comments/#{reply.id}/hide"
+
+      assert reply.reload.hidden?
+      refute thought.reload.hidden?, 'hiding a reply must not hide what it answered'
+    end
+
     # ---- closing a run -----------------------------------------------------
 
     def test_an_admin_can_close_and_reopen_the_run
