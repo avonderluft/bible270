@@ -110,6 +110,24 @@ if RAILS_LOADED
       assert true
     end
 
+    # The engine resolves its own mount prefix from routes.rb, so the link carries
+    # it without help. An earlier version of this passed script_name from
+    # config.mount_at, which was ignored when blank and wrong when it disagreed
+    # with the real mount.
+    def test_the_link_carries_the_mount_prefix_from_the_real_mount
+      Bible270.config.mailer_host = 'gknt.org'
+      mount = Bible270.config.mount_at.chomp('/')
+
+      assert_match(%r{https://gknt\.org#{Regexp.escape(mount)}/admin/readers/#{@mary.id}},
+                   body_of(notice))
+    end
+
+    def test_the_link_never_doubles_a_slash
+      Bible270.config.mailer_host = 'gknt.org'
+
+      refute_match(%r{gknt\.org//}, body_of(notice))
+    end
+
     # ---- a mention --------------------------------------------------------
 
     def mention_notice(comment)
@@ -140,6 +158,15 @@ if RAILS_LOADED
 
       Bible270.config.mailer_host = 'gknt.org'
       assert_match(%r{https://gknt\.org.*day/7}, body_of(mention_notice(comment)))
+    end
+
+    def test_the_mention_link_carries_the_mount_prefix
+      Bible270.config.mailer_host = 'gknt.org'
+      mount = Bible270.config.mount_at.chomp('/')
+      comment = @mary.comments.create!(day: 7, body: 'Hello @andrew')
+
+      assert_match(%r{https://gknt\.org#{Regexp.escape(mount)}/day/7},
+                   body_of(mention_notice(comment)))
     end
 
     def test_no_mention_notice_when_the_reflection_has_gone

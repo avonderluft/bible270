@@ -35,23 +35,28 @@ module Bible270
 
     # A mailer has no request, so the host is config.mailer_host or nothing. No
     # link is better than a broken one.
+    #
+    # The mount prefix needs no help: a mounted engine's url_helpers already
+    # resolve it from the real mount point in routes.rb. Passing script_name from
+    # config.mount_at was worse than useless — ignored when blank, and overriding
+    # the true prefix when not, so a config that disagreed with routes.rb would
+    # have produced links to nowhere.
     def day_url_for(day)
-      host = Bible270.config.mailer_host
-      return nil if host.blank?
-
-      Bible270::Engine.routes.url_helpers.day_url(
-        day, host: host, protocol: host.start_with?('localhost') ? 'http' : 'https'
-      )
-    rescue StandardError
-      nil
+      engine_url(:day_url, day)
     end
 
     def admin_url_for(reader)
+      engine_url(:admin_reader_url, reader)
+    end
+
+    def engine_url(helper, *)
       host = Bible270.config.mailer_host
       return nil if host.blank?
 
-      Bible270::Engine.routes.url_helpers.admin_reader_url(
-        reader, host: host, protocol: host.start_with?('localhost') ? 'http' : 'https'
+      Bible270::Engine.routes.url_helpers.public_send(
+        helper, *,
+        host: host,
+        protocol: host.start_with?('localhost') ? 'http' : 'https'
       )
     rescue StandardError
       nil
