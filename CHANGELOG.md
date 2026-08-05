@@ -10,7 +10,7 @@ See the changes since the last release:
 
 ## [0.15.3] - 2026-08-04
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.2...v0.15.2)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.2...v0.15.3)**
 
 ### Added
 
