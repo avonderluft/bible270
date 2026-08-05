@@ -176,3 +176,129 @@ if RAILS_LOADED
     end
   end
 end
+
+if RAILS_LOADED
+  # Configuration-driven paths through sign-in that the round-trip tests miss.
+  class SessionsConfiguredBehaviourTest < ActionDispatch::IntegrationTest
+    def setup
+      needs_rails!
+      clear_engine_tables!
+      @previous = {
+        from: Bible270.config.mailer_from,
+        after_out: Bible270.config.after_sign_out_path,
+        log: Bible270.config.email_sign_in_log_link
+      }
+      Bible270.config.mailer_from = 'no-reply@example.org'
+    end
+
+    def teardown
+      Bible270.config.mailer_from = @previous[:from]
+      Bible270.config.after_sign_out_path = @previous[:after_out]
+      Bible270.config.email_sign_in_log_link = @previous[:log]
+      Bible270::Setting.open_enrollment!
+    end
+
+    def mount = Bible270.config.mount_at.chomp('/')
+
+    def sign_in(email = 'r@example.org')
+      _record, raw = Bible270::SignInToken.issue!(email, first_name: 'R', last_name: 'Reader')
+      get "#{mount}/sign_in/email/#{raw}"
+    end
+
+    # Captures the log for the duration of the block. Swapping the logger is more
+    # honest than stubbing a method on it: the code under test is free to log
+    # however it likes.
+    def captured_log
+      previous = Rails.logger
+      buffer = StringIO.new
+      Rails.logger = ActiveSupport::Logger.new(buffer)
+      yield
+      buffer.string
+    ensure
+      Rails.logger = previous
+    end
+
+    def assert_logged(pattern, &) = assert_match(pattern, captured_log(&))
+    def refute_logged(pattern, &) = refute_match(pattern, captured_log(&))
+
+    def test_signing_out_honours_a_configured_destination
+      Bible270.config.after_sign_out_path = '/goodbye'
+      sign_in
+
+      delete "#{mount}/sign_out"
+
+      assert_equal '/goodbye', URI.parse(response.location).path
+    end
+
+    # A closed run must say so rather than failing silently, or the reader will
+    # keep asking for links that can never work.
+    def test_a_closed_run_explains_itself
+      Bible270::Setting.close_enrollment!
+
+      get "#{mount}/sign_in"
+
+      assert_response :success
+      assert_match(%r{closed}i, response.body)
+    end
+
+    # A token is still recorded — the response has to look identical either way, or
+    # it reveals who already has an account. What must not happen is the mail.
+    def test_a_closed_run_sends_no_link_to_a_newcomer
+      Bible270::Setting.close_enrollment!
+      ActionMailer::Base.deliveries.clear
+
+      post "#{mount}/sign_in/email", params: { email: 'newcomer@example.org' }
+
+      assert_empty ActionMailer::Base.deliveries, 'nobody new may be invited into a closed run'
+    end
+
+    def test_a_closed_run_still_sends_a_link_to_an_existing_reader
+      Bible270::Reader.create!(provider: 'email', uid: 'old@example.org', email: 'old@example.org',
+                               display_name: 'Old Hand')
+      Bible270::Setting.close_enrollment!
+      ActionMailer::Base.deliveries.clear
+
+      post "#{mount}/sign_in/email", params: { email: 'old@example.org' }
+
+      assert_equal 1, ActionMailer::Base.deliveries.size
+    end
+
+    # For local development without a working mail server. It defaults on in
+    # development and test, and the flag can force it either way.
+    def test_the_link_can_be_written_to_the_log
+      Bible270.config.email_sign_in_log_link = true
+
+      assert_logged(%r{sign-in link for dev@example\.org}) do
+        post "#{mount}/sign_in/email", params: { email: 'dev@example.org' }
+      end
+    end
+
+    def test_logging_the_link_can_be_turned_off
+      Bible270.config.email_sign_in_log_link = false
+
+      refute_logged(%r{sign-in link for quiet@example\.org}) do
+        post "#{mount}/sign_in/email", params: { email: 'quiet@example.org' }
+      end
+    end
+
+    # Delivery problems must not stop someone signing in — the token is issued
+    # either way, and the failure is logged.
+    def test_a_broken_mailer_does_not_break_the_request
+      # A blank from address is the most realistic way to make delivery fail
+      # without stubbing: Action Mailer raises on an empty sender.
+      Bible270.config.mailer_from = ''
+
+      post "#{mount}/sign_in/email", params: { email: 'unlucky@example.org' }
+
+      assert_response :redirect
+      assert_equal 1, Bible270::SignInToken.where(email: 'unlucky@example.org').count,
+                   'the token is issued even when the mail cannot go out'
+    end
+
+    def test_an_unusable_address_is_refused_without_issuing_anything
+      post "#{mount}/sign_in/email", params: { email: 'not-an-address' }
+
+      assert_equal 0, Bible270::SignInToken.count
+    end
+  end
+end

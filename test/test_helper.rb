@@ -73,8 +73,16 @@ RAILS_LOADED =
     end
     ActiveRecord::MigrationContext.new(migrations).migrate
 
+    # A table for the dummy's own user model. Reader.for_owner takes a polymorphic
+    # owner, which needs a real record rather than a stand-in object.
+    ActiveRecord::Schema.define do
+      create_table :host_users, force: true do |t|
+        t.string :name
+        t.timestamps
+      end
+    end
+
     require 'rails/test_help'
-    Rails::TestUnitReporter.executable = 'bundle exec ruby -Itest'
 
     true
   rescue LoadError, StandardError => e

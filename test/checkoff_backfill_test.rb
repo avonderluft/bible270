@@ -81,6 +81,42 @@ if RAILS_LOADED
       assert_equal 0, Bible270::Checkoff.count
     end
 
+    # The rollback deletes rows, so it deserves testing more than most code that
+    # never runs. It collapses each track back to a single check-off, which is
+    # what the old schema meant, and drops the column.
+    #
+    # The schema is restored in the ensure block: the suite shares one in-memory
+    # database, so leaving it rolled back would break every later test.
+    def test_the_rollback_collapses_chapters_back_to_tracks
+      Bible270::Plan.present_tracks(1).each { |track| legacy_checkoff(1, track) }
+      expand!
+      assert_equal 5, @reader.checkoffs.where(day: 1).count
+
+      @migration.down
+
+      refute_includes Bible270::Checkoff.column_names, 'part'
+      assert_equal 3, @reader.checkoffs.where(day: 1).count, 'one row per track, as before'
+      assert_equal %w[nt ot pp], @reader.checkoffs.where(day: 1).pluck(:track).sort
+    ensure
+      # Restore the schema whatever happened: the suite shares one in-memory
+      # database, so leaving it rolled back would break every later test.
+      @migration.up unless Bible270::Checkoff.column_names.include?('part')
+    end
+
+    def test_the_rollback_and_replay_leave_the_reader_where_they_were
+      Bible270::Plan.present_tracks(1).each { |track| legacy_checkoff(1, track) }
+      expand!
+      before = @reader.reload_progress.day_complete?(1)
+
+      @migration.down
+      @migration.up
+
+      assert_includes Bible270::Checkoff.column_names, 'part'
+      assert_equal before, @reader.reload_progress.day_complete?(1),
+                   'a finished day should survive the round trip'
+      assert_equal 5, @reader.checkoffs.where(day: 1).count
+    end
+
     def test_it_covers_the_longest_reading_in_the_plan
       # Day 270 is Zechariah 14 plus Malachi 1-4: five chapters.
       legacy_checkoff(270, 'ot')

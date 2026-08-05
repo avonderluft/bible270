@@ -348,7 +348,7 @@ module Bible270
 
     # Put this reader on `day` as of `on` — i.e. back-date the start so that the
     # given date lands on the given day of the plan.
-    def restart_on!(day:, on: Date.current)
+    def restart_on!(day:, on: Bible270.today)
       day = day.to_i
       return false unless Plan.valid_day?(day)
 
@@ -406,7 +406,7 @@ module Bible270
 
     # The plan day that today corresponds to (clamped into range), or nil when undated.
     def calendar_day
-      Plan.day_for(Date.current, effective_start_date)
+      Plan.day_for(Bible270.today, effective_start_date)
     end
 
     # Raw, unclamped — lets callers distinguish "not started yet" / "finished".
@@ -425,15 +425,15 @@ module Bible270
     end
 
     def raw_calendar_day
-      Plan.day_for(Date.current, effective_start_date, clamp: false)
+      Plan.day_for(Bible270.today, effective_start_date, clamp: false)
     end
 
     def not_started_yet?
-      Plan.before_start?(Date.current, effective_start_date)
+      Plan.before_start?(Bible270.today, effective_start_date)
     end
 
     def past_end_date?
-      Plan.after_end?(Date.current, effective_start_date)
+      Plan.after_end?(Bible270.today, effective_start_date)
     end
 
     def plan_end_date
@@ -492,7 +492,7 @@ module Bible270
       return if started_on.present?
       return if config.start_date.present?
 
-      update!(started_on: Date.current)
+      update!(started_on: Bible270.today)
     end
   end
 end

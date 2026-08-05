@@ -8,7 +8,7 @@
       <% end %>
       · finishes <%= reader.plan_end_date.strftime("%B %-d, %Y") %>
       <% if reader.not_started_yet? %>
-        · <em>begins in <%= (reader.effective_start_date - Date.current).to_i %> days</em>
+        · <em>begins in <%= (reader.effective_start_date - Bible270.today).to_i %> days</em>
       <% elsif reader.past_end_date? %>
         · <em>the 270 days have elapsed</em>
       <% elsif (off = reader.days_off_pace) %>

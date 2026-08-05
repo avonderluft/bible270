@@ -54,9 +54,15 @@ module Bible270
 
     # Too many outstanding requests for one address in the window.
     def self.rate_limited?(address)
+      # Normalised, because issue! stores a normalised address: querying the raw
+      # one let 'Eager@example.org' and 'eager@example.org' each have their own
+      # allowance, so varying the case bypassed the limit entirely.
+      email = EmailSignIn.normalize_email(address)
+      return false if email.nil?
+
       window = Bible270.config.email_sign_in_window
       max    = Bible270.config.email_sign_in_max_per_window
-      where(email: address).where(created_at: (Time.current - window)..).count >= max
+      where(email: email).where(created_at: (Time.current - window)..).count >= max
     end
 
     # Housekeeping: drop spent and stale rows. Safe to run from a cron/rake task.

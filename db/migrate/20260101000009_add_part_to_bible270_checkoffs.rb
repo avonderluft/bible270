@@ -12,6 +12,11 @@ class AddPartToBible270Checkoffs < ActiveRecord::Migration[7.0]
     add_index :bible270_checkoffs, %i[reader_id day track part], unique: true,
                                    name: 'idx_b270_checkoffs_part_unique'
 
+    # The backfill goes through the model, which caches its columns. If Checkoff
+    # was loaded before this ran — likely, since the app boots first — it does not
+    # know about `part` yet and insert_all raises UnknownAttributeError.
+    Bible270::Checkoff.reset_column_information
+
     expand_existing_checkoffs
   end
 
@@ -28,6 +33,10 @@ class AddPartToBible270Checkoffs < ActiveRecord::Migration[7.0]
     add_index :bible270_checkoffs, %i[reader_id day track], unique: true,
                                    name: 'idx_b270_checkoffs_unique'
     remove_column :bible270_checkoffs, :part
+
+    # Likewise on the way back down: leaving the cached column in place makes the
+    # model try to write one the table no longer has.
+    Bible270::Checkoff.reset_column_information
   end
 
 private

@@ -17,7 +17,7 @@ class ConfigurationTest < Minitest::Test
   # Checked against the source rather than $LOADED_FEATURES: anything else in the
   # suite that loads ERB drags cgi/util in with it, which made the old version of
   # this test fail for reasons having nothing to do with the gem.
-  MOVED_OUT_OF_STDLIB = %w[cgi rexml csv base64 bigdecimal drb observer abbrev
+  MOVED_OUT_OF_STDLIB = %w[cgi rexml csv base64 bigdecimal drb observer abbrev ostruct
                            matrix prime rss getoptlong mutex_m].freeze
 
   # The engine may only lean on gems it declares. turbo_stream was used in nine
@@ -35,6 +35,24 @@ class ConfigurationTest < Minitest::Test
 
       assert_includes declared, gem_name, "#{gem_name} is used but not declared in the gemspec"
     end
+  end
+
+  # Date.current follows Rails' Time.zone, which is UTC unless the host sets it —
+  # so a reader in Los Angeles saw tomorrow's reading from 4pm. Bible270.today
+  # follows the machine instead, and everything that decides a plan date must go
+  # through it. (Timestamps are a different matter: Time.current is right there.)
+  def test_plan_dates_do_not_use_the_rails_zone_directly
+    root = File.expand_path('..', __dir__)
+    offenders = Dir.glob(File.join(root, '{app,lib}/**/*.{rb,erb}')).flat_map do |path|
+      File.readlines(path).each_with_index.filter_map do |line, i|
+        next if line.strip.start_with?('#')
+        next unless line.include?('Date.current')
+
+        "#{path.sub("#{root}/", '')}:#{i + 1}"
+      end
+    end
+
+    assert_empty offenders, "use Bible270.today rather than Date.current: #{offenders.join(', ')}"
   end
 
   def test_does_not_require_libraries_ruby_4_dropped

@@ -292,7 +292,7 @@ module Bible270
     # from, so without this the notice names the reader but cannot link to them.
     attr_accessor :mailer_host
 
-    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :remember_for, :require_sign_in_to_participate
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :header_mark, :remember_for, :require_sign_in_to_participate
 
     # Public labels.
     attr_accessor :app_name
@@ -321,7 +321,13 @@ module Bible270
     # The mark beside the title in the header. nil uses the built-in loaf, false
     # shows none, and a string is used as an image source — so a host can put its
     # own logo there without overriding the partial.
-    attr_accessor :header_mark
+    # Which clock decides what day it is. nil follows the machine's own time zone,
+    # which is what a self-hosted plan usually wants — Rails defaults Time.zone to
+    # UTC, so a reader in Los Angeles saw the next day's reading from 4pm.
+    #
+    #   config.time_zone = nil                     # the system clock (default)
+    #   config.time_zone = 'America/Los_Angeles'   # a named zone
+    attr_accessor :time_zone
 
     def remember_signed_in?
       remember_for.to_i.positive?
@@ -343,6 +349,7 @@ module Bible270
       end
       @app_name = 'Daily Bread'
       @tagline = 'Journeying through Scripture in 9 months'
+      @time_zone = nil
       @header_mark = nil
       @remember_for = 365 * 24 * 60 * 60
       @require_sign_in_to_participate = true

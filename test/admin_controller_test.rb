@@ -108,7 +108,9 @@ if RAILS_LOADED
       patch "#{mount}/admin/readers/#{@reader.id}/start", params: { day: 42 }
 
       refute_nil @reader.reload.started_on
-      assert_equal 42, Bible270::Plan.day_for(Date.current, @reader.started_on)
+      # Bible270.today, not Date.current: the latter is UTC unless the host sets a
+      # zone, so on a machine behind UTC this asserted a day too far ahead.
+      assert_equal 42, Bible270::Plan.day_for(Bible270.today, @reader.started_on)
     end
 
     # allow_reader_start_date governs what a *reader* may change; it must not
