@@ -6,7 +6,16 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.3...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.16.0...main)**
+
+## [0.16.0] - 2026-08-05
+
+### Added
+
+- threaded replies to reflections
+- 'at' mention replies email notify writer of original reflection
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.3...v0.16.0)**
 
 ## [0.15.3] - 2026-08-04
 
@@ -250,7 +259,6 @@ Nothing consequential.
 - Posting a reflection about the whole day failed with "Track is not included in the list": the
   form's blank option submits an empty string, which `allow_nil` rejects. Blank tracks are now
   normalised to NULL before validation.
-
 - `config.email_sign_in_log_link` — tri-state: nil logs the sign-in link in development and test
   only, true forces it on (for smoke-testing a production build locally before mail is wired up),
   false disables it. The log also distinguishes sent, rate-limited and failed delivery, which the
@@ -268,7 +276,7 @@ Nothing consequential.
 
 ### Changed
 
-* **The New Testament now has a reading every day — no days off.** 260 chapters over 270 days is reconciled by dividing the 10 longest chapters in two: Luke 1, Matthew 26 and 27, Mark 14, Luke 9, 12 and 22, John 6 and 8, and Acts 7. Luke 1 reads as 1–40 then 41–80. This drops the longest NT reading from 80 verses to 58 (stdev 14.6 → 11.4) and removes the 10 rest days from 0.8.0, so all three tracks are present on all 270 days and every day needs three check-offs.
+* The New Testament now has a reading every day — no days off.
 * The daily total is now 76–175 verses (was 76–203), averaging ~119.
 
 ### Added
@@ -294,11 +302,7 @@ This is the initial public release.
 * A pure, deterministic Ruby schedule; the database stores readers, check-offs, and comments rather than plan rows.
 * `Bible270::Versification`, providing per-chapter verse counts for all 66 books, generated from a public-domain KJV text and validated against canonical anchors.
 * Verse-balanced daily portions rather than chapter-count balancing, so daily reading time is approximately even.
-* Old Testament days grouped to be even in verses, averaging approximately 73 verses per day.
 * Per-track progress bars based on days read rather than chapter totals.
-* The New Testament read twice, with each pass occupying half of the 270-day plan. Whole chapters are verse-balanced within each pass.
-* A Psalms/Proverbs companion plan resolving to exactly 135 portions, making two complete passes across the 270-day plan.
-* Chapters are generally kept whole; Psalm 119 is divided into two readings, while shorter chapters may be combined with a neighboring psalm.
 * Configurable start dates through `config.start_date` and `config.allow_reader_start_date`, including per-reader date management.
 * Calendar mapping functions on `Bible270::Plan`: `date_for`, `day_for`, `end_date_for`, `before_start?`, `after_end?`, and `to_date`.
 * Calendar-aware day pages, including a **Today** badge, a **Go to today** link, and a pace indicator.
@@ -321,17 +325,13 @@ This is the initial public release.
 * Configuration-driven engine mounting and OmniAuth path prefixes.
 * `spec.email` in the gemspec.
 * Gem metadata pointing to the actual repository for `source_code_uri`, `bug_tracker_uri`, and `changelog_uri`.
-* RubyGems MFA requirement through `rubygems_mfa_required`.
-* This changelog, packaged with the gem.
 * Compatibility notes and tests covering Ruby 4.0 changes, including removal of the `cgi` dependency.
 
 ### Changed
 
 * The project was renamed from `bible_reading_plan` to `bible270`, including the `Bible270` module, database tables, migrations, CSS and helper prefixes, install task, and engine name.
 * The install generator defaults to `/daily-bread`, writes the mount path into the engine initializer, and emits configuration-driven `mount` and `path_prefix` lines.
-* The README documents the mount point, initializer load-order requirements, OAuth callback URLs, and CMS links that may need updating when the mount path changes.
 * The engine's sign-in paths follow the mount point at runtime through `request.script_name`.
-* Author and copyright information now read “Andrew vonderLuft”.
 * The display-name-from-email example uses a neutral address.
 * `sign_out` is `DELETE` only.
 * Guarded actions redirect to the sign-in page.
@@ -348,17 +348,11 @@ This is the initial public release.
 * Ruby 4.0 compatibility issues caused by the removed `cgi` default gem.
 * Progress bars that could not reach the correct totals because they compared checked days with chapter totals.
 
-### Breaking Changes
-
-* The project was renamed from `bible_reading_plan` to `bible270`; this is a fresh install rather than an in-place upgrade because database table names changed.
-* The New Testament schedule changed from a single pass to two verse-balanced passes.
-* The Psalms/Proverbs schedule changed to two complete 135-portion passes.
-* Calendar and reading-plan behavior is based on day numbers rather than stored plan rows.
-
 ### Requirements
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[0.16.0]: https://github.com/avonderluft/bible270/releases/tag/v0.16.0
 [0.15.3]: https://github.com/avonderluft/bible270/releases/tag/v0.15.3
 [0.15.2]: https://github.com/avonderluft/bible270/releases/tag/v0.15.2
 [0.15.1]: https://github.com/avonderluft/bible270/releases/tag/v0.15.1
