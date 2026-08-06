@@ -209,6 +209,29 @@ class ViewsTest < Minitest::Test
     MSG
   end
 
+  # A timestamp formatted straight from the record renders in Rails' Time.zone,
+  # which is UTC unless the host app sets one — so a reflection written at 5pm in
+  # Los Angeles showed as the next day. Bible270.local_time is the same rule
+  # Bible270.today follows. Dates (started_on and the like) carry no zone and are
+  # formatted inline.
+  def test_timestamps_are_rendered_in_the_plans_zone
+    root = File.expand_path('..', __dir__)
+    offenders = Dir.glob(File.join(root, 'app/**/*.erb')).flat_map do |path|
+      File.readlines(path, chomp: true).each_with_index.filter_map do |line, i|
+        next unless line.match?(%r{(?:created_at|updated_at|closed_at)\.strftime})
+
+        "#{path.sub("#{root}/app/views/bible270/", '')}:#{i + 1}"
+      end
+    end
+
+    assert_empty offenders, <<~MSG
+      These format a timestamp without converting it first — use b270_date,
+      b270_datetime, or Bible270.local_time:
+
+      #{offenders.join("\n      ")}
+    MSG
+  end
+
   def test_templates_do_not_call_removed_plan_methods
     removed = %w[
       nt_groups nt_days_per_pass nt_second_pass_start_day

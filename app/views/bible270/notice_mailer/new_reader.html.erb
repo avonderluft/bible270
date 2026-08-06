@@ -11,7 +11,7 @@
         <tr><td style="padding:3px 12px 3px 0;color:#6d6558">Name</td><td><%= @reader.display_name %></td></tr>
         <tr><td style="padding:3px 12px 3px 0;color:#6d6558">Email</td><td><%= @reader.email.presence || '(none given)' %></td></tr>
         <tr><td style="padding:3px 12px 3px 0;color:#6d6558">Signed in with</td><td><%= @reader.provider.presence || 'the host application' %></td></tr>
-        <tr><td style="padding:3px 12px 3px 0;color:#6d6558">Joined</td><td><%= @reader.created_at.strftime('%B %-d, %Y at %-I:%M %p') %></td></tr>
+        <tr><td style="padding:3px 12px 3px 0;color:#6d6558">Joined</td><td><%= Bible270.local_time(@reader.created_at).strftime('%B %-d, %Y at %-I:%M %p') %></td></tr>
       </table>
 
       <p style="margin:18px 0 0;font-size:14px;color:#6d6558">

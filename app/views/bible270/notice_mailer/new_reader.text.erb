@@ -3,7 +3,7 @@
   Name:        <%= @reader.display_name %>
   Email:       <%= @reader.email.presence || '(none given)' %>
   Signed in with: <%= @reader.provider.presence || 'the host application' %>
-  Joined:      <%= @reader.created_at.strftime('%B %-d, %Y at %-I:%M %p') %>
+  Joined:      <%= Bible270.local_time(@reader.created_at).strftime('%B %-d, %Y at %-I:%M %p') %>
 
 That makes <%= @total %> reader<%= 's' unless @total == 1 %> taking part.
 <% if @admin_url %>

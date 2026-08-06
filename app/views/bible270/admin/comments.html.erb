@@ -18,7 +18,7 @@
         <div class="b270-cmeta">
           <strong><%= comment.reader.display_name %></strong>
           · <%= link_to "day #{comment.day}", day_path(comment.day) %>
-          · <%= comment.created_at.strftime('%b %-d, %Y') %>
+          · <%= b270_date(comment.created_at) %>
           <% if comment.reply? %>· reply to <strong><%= comment.parent&.reader&.display_name || 'a deleted reflection' %></strong><% end %>
           <% if comment.hidden? %><span class="b270-badge">Hidden</span><% end %>
         </div>

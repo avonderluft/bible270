@@ -11,9 +11,9 @@
   <div style="flex:1">
     <div class="b270-cmeta">
       <strong><%= link_to comment.reader.display_name, reader_path(comment.reader), style: "text-decoration:none" %></strong>
-      · <%= comment.created_at.strftime("%b %-d, %Y") %>
+      · <%= b270_date(comment.created_at) %>
       <% if comment.track.present? %>· <%= b270_track(comment.track)[:label] %><% end %>
-      <% if comment.edited? %>· <span class="b270-edited" title="<%= comment.updated_at.strftime('%b %-d, %Y at %-I:%M %p') %>">edited</span><% end %>
+      <% if comment.edited? %>· <span class="b270-edited" title="<%= b270_datetime(comment.updated_at) %>">edited</span><% end %>
       <% if b270_can_edit?(comment) %>
         <%= link_to "edit", day_path(comment.day, edit: comment.id, anchor: "comment-#{comment.id}"),
               class: "b270-cedit" %>

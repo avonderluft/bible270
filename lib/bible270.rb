@@ -22,10 +22,24 @@ module_function
   # it; Date.today follows the machine. A self-hosted reading plan wants the
   # latter, so that is the default, with config.time_zone to override.
   def today
-    zone = config.time_zone
-    return Date.today if zone.nil? || zone.to_s.empty?
+    local_time(Time.now).to_date
+  end
 
-    found = Time.respond_to?(:find_zone) ? Time.find_zone(zone) : nil
-    found ? found.today : Date.today
+  # A stored timestamp in the plan's own zone.
+  #
+  # created_at and friends come back in Rails' Time.zone, which is UTC unless the
+  # host app sets it — so a reflection written at 5pm in Los Angeles was being
+  # shown as the next day. This is the same rule Bible270.today follows: the
+  # machine's zone, or config.time_zone when one is given.
+  def local_time(time)
+    return nil if time.nil?
+
+    zone = config.time_zone
+    if zone.to_s.empty?
+      time.getlocal
+    else
+      found = Time.respond_to?(:find_zone) ? Time.find_zone(zone) : nil
+      found ? time.in_time_zone(found) : time.getlocal
+    end
   end
 end

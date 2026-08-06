@@ -11,7 +11,7 @@
         <%= b270_avatar(r, size: 40) %>
         <div>
           <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
-          <div class="sub"><%= @days_completed[r.id] %> of <%= Bible270::Plan::DAYS %> days · joined <%= r.created_at.strftime("%b %Y") %></div>
+          <div class="sub"><%= @days_completed[r.id] %> of <%= Bible270::Plan::DAYS %> days · joined <%= Bible270.local_time(r.created_at).strftime("%b %Y") %></div>
         </div>
         <div class="stat">
           <span class="big"><%= (@days_completed[r.id].to_f / Bible270::Plan::DAYS * 100).round %>%</span>

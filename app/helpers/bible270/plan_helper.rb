@@ -137,6 +137,18 @@ module Bible270
       end
     end
 
+    # Timestamps in the plan's zone rather than UTC. Dates — started_on and the
+    # like — need no conversion and are formatted inline.
+    def b270_date(time)
+      local = Bible270.local_time(time)
+      local&.strftime('%b %-d, %Y')
+    end
+
+    def b270_datetime(time)
+      local = Bible270.local_time(time)
+      local&.strftime('%b %-d, %Y at %-I:%M %p')
+    end
+
     # Only the writer may change their own words. An admin can remove a reflection
     # but not rewrite it: putting words in someone's mouth is worse than taking
     # them away, and taking them away is already the moderator's job.
