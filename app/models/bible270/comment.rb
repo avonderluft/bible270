@@ -3,6 +3,15 @@
 module Bible270
   # A publicly visible reflection attached to a plan day (optionally a track).
   class Comment < ApplicationRecord
+    # One heart for both states. An unliked one is the same emoji shown grey by
+    # CSS, so it cannot drift in size from a real like, and hovering it previews
+    # exactly what clicking will produce.
+    #
+    # The white heart this replaced was legible on white but nearly invisible on
+    # the paper background; an outline glyph like U+2661 is drawn by the font
+    # rather than the emoji set and needs hand-tuning to match.
+    HEART = '❤️'
+
     self.table_name = 'bible270_comments'
 
     belongs_to :reader, class_name: 'Bible270::Reader'
@@ -12,6 +21,7 @@ module Bible270
     belongs_to :parent, class_name: 'Bible270::Comment', optional: true
     has_many :replies, class_name: 'Bible270::Comment', foreign_key: :parent_id,
                        dependent: :destroy, inverse_of: :parent
+    has_many :likes, class_name: 'Bible270::Like', dependent: :destroy, inverse_of: :comment
 
     validates :day, inclusion: { in: 1..Plan::DAYS }
     validates :body, presence: true, length: { maximum: 4000 }
@@ -37,7 +47,9 @@ module Bible270
     # Only the reflections themselves: replies are rendered under their parent, so
     # listing them again at the top level would show each twice.
     scope :for_day,  ->(d) { approved.where(day: d, parent_id: nil).order(created_at: :asc) }
-    scope :threads_for_day, ->(d) { for_day(d).includes(:reader, replies: :reader) }
+    scope :threads_for_day, ->(d) {
+      for_day(d).includes(:reader, { likes: :reader }, { replies: [:reader, { likes: :reader }] })
+    }
     scope :recent, -> { approved.order(created_at: :desc) }
 
     # Every reflection is visible when written; these are the moderation actions.
@@ -46,9 +58,30 @@ module Bible270
     def hidden?  = !approved
     def reply?   = parent_id.present?
 
+    def liked_by?(reader)
+      return false if reader.nil?
+
+      likes.any? { |like| like.reader_id == reader.id }
+    end
+
+    # Toggling returns the new state, so a caller can say what happened without
+    # asking again.
+    def toggle_like!(reader)
+      existing = likes.find { |like| like.reader_id == reader.id }
+      if existing
+        existing.destroy
+        likes.reload
+        false
+      else
+        likes.create(reader: reader)
+        likes.reload
+        true
+      end
+    end
+
     # A second's grace: created_at and updated_at differ by microseconds on
     # insert, which would mark every reflection as edited.
-    def edited?  = updated_at - created_at > 1
+    def edited? = updated_at - created_at > 1
 
     # Visible replies, oldest first: a conversation reads forwards.
     def visible_replies = replies.approved.order(created_at: :asc)

@@ -1,270 +1,160 @@
-Run options: --seed 46113
+Run options: --seed 25195
 
 # Running:
 
-.S........................................................................................................................................................................................................................................................................................E
+..................................................................................................................................................F
+
+Failure:
+OmniAuthSessionsTest#test_the_session_survives_the_redirect [test/omniauth_sessions_test.rb:58]:
+should be signed in
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/omniauth_sessions_test.rb:53
+
+F
+
+Failure:
+OmniAuthSessionsTest#test_signing_in_again_reuses_the_reader [test/omniauth_sessions_test.rb:43]:
+Expected: 1
+  Actual: 0
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/omniauth_sessions_test.rb:40
+
+.F
+
+Failure:
+OmniAuthSessionsTest#test_signing_in_sets_the_remember_cookie [test/omniauth_sessions_test.rb:64]:
+Expected false to be truthy.
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/omniauth_sessions_test.rb:61
+
+F
+
+Failure:
+OmniAuthSessionsTest#test_a_closed_run_still_admits_an_existing_reader [test/omniauth_sessions_test.rb:96]:
+Expected: 1
+  Actual: 0
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/omniauth_sessions_test.rb:94
+
+F
+
+Failure:
+OmniAuthSessionsTest#test_a_new_reader_is_created_from_the_provider [test/omniauth_sessions_test.rb:32]:
+Expected: 1
+  Actual: 0
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/omniauth_sessions_test.rb:27
+
+F
+
+Failure:
+OmniAuthSessionsTest#test_the_reader_returns_to_where_they_started [test/omniauth_sessions_test.rb:74]:
+Expected: "/daily-bread/day/7"
+  Actual: "/daily-bread/sign_in"
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/omniauth_sessions_test.rb:69
+
+F
+
+Failure:
+OmniAuthSessionsTest#test_the_reader_is_welcomed_by_name [test/omniauth_sessions_test.rb:50]:
+Expected /Welcome Andrew/ to match # encoding: US-ASCII
+#    valid: true
+"".
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/omniauth_sessions_test.rb:46
+
+..F
+
+Failure:
+OmniAuthSessionsTest#test_the_callback_without_an_auth_hash_is_handled [test/omniauth_sessions_test.rb:138]:
+Expected /didn't complete/ to match "We couldn't set up your reader profile.".
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/omniauth_sessions_test.rb:134
+
+.F
+
+Failure:
+OmniAuthSessionsTest#test_a_closed_run_turns_away_someone_new [test/omniauth_sessions_test.rb:91]:
+Expected /closed/i to match "Sign in failed (Forbidden).".
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/omniauth_sessions_test.rb:85
+
+........................................................................................................................................................................................................................................S.....E
 
 Error:
-EngineIntegrationTest#test_the_admin_panel_is_invisible_without_configuration:
-ActionController::RoutingError: Not Found
-    app/controllers/bible270/admin_controller.rb:146:in 'Bible270::AdminController#require_admin!'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:362:in 'block in ActiveSupport::Callbacks::CallTemplate::MethodCall#make_lambda'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:179:in 'block in ActiveSupport::Callbacks::Filters::Before#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/abstract_controller/callbacks.rb:36:in 'block (2 levels) in <module:Callbacks>'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:180:in 'ActiveSupport::Callbacks::Filters::Before#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:560:in 'block in ActiveSupport::Callbacks::CallbackSequence#invoke_before'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:560:in 'Array#each'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:560:in 'ActiveSupport::Callbacks::CallbackSequence#invoke_before'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:119:in 'block in ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/turbo-rails-2.0.23/lib/turbo-rails.rb:24:in 'Turbo.with_request_id'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/turbo-rails-2.0.23/app/controllers/concerns/turbo/request_id_tracking.rb:10:in 'Turbo::RequestIdTracking#turbo_tracking_request_id'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:130:in 'block in ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:141:in 'ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activerecord-8.1.3.1/lib/active_record/railties/controller_runtime.rb:39:in 'ActiveRecord::Railties::ControllerRuntime#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionview-8.1.3.1/lib/action_view/rendering.rb:40:in 'ActionView::Rendering#process'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'Array#each'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine.rb:534:in 'Rails::Engine#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/railtie.rb:225:in 'Kernel#public_send'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'Array#each'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/etag.rb:29:in 'Rack::ETag#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/head.rb:15:in 'Rack::Head#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-session-2.1.2/lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-session-2.1.2/lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine.rb:534:in 'Rails::Engine#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-test-2.2.0/lib/rack/test.rb:360:in 'Rack::Test::Session#process_request'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-test-2.2.0/lib/rack/test.rb:153:in 'Rack::Test::Session#request'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/testing/integration.rb:298:in 'ActionDispatch::Integration::Session#process'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/testing/integration.rb:19:in 'ActionDispatch::Integration::RequestHelpers#get'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/testing/integration.rb:389:in 'ActionDispatch::Integration::Runner#get'
-    test/engine_integration_test.rb:66:in 'EngineIntegrationTest#test_the_admin_panel_is_invisible_without_configuration'
+InstallGeneratorTest#test_declining_social_sign_in_writes_no_omniauth_initializer:
+NoMethodError: undefined method 'stub' for module Thor::LineEditor
+    test/install_generator_test.rb:154:in 'InstallGeneratorTest#run_generator_answering'
+    test/install_generator_test.rb:185:in 'InstallGeneratorTest#test_declining_social_sign_in_writes_no_omniauth_initializer'
 
-bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/engine_integration_test.rb:65
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/install_generator_test.rb:183
 
-...........................................E
+.E
 
 Error:
-AdminControllerTest#test_the_panel_is_hidden_from_a_visitor:
-ActionController::RoutingError: Not Found
-    app/controllers/bible270/admin_controller.rb:146:in 'Bible270::AdminController#require_admin!'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:362:in 'block in ActiveSupport::Callbacks::CallTemplate::MethodCall#make_lambda'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:179:in 'block in ActiveSupport::Callbacks::Filters::Before#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/abstract_controller/callbacks.rb:36:in 'block (2 levels) in <module:Callbacks>'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:180:in 'ActiveSupport::Callbacks::Filters::Before#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:560:in 'block in ActiveSupport::Callbacks::CallbackSequence#invoke_before'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:560:in 'Array#each'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:560:in 'ActiveSupport::Callbacks::CallbackSequence#invoke_before'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:119:in 'block in ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/turbo-rails-2.0.23/lib/turbo-rails.rb:24:in 'Turbo.with_request_id'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/turbo-rails-2.0.23/app/controllers/concerns/turbo/request_id_tracking.rb:10:in 'Turbo::RequestIdTracking#turbo_tracking_request_id'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:130:in 'block in ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:141:in 'ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activerecord-8.1.3.1/lib/active_record/railties/controller_runtime.rb:39:in 'ActiveRecord::Railties::ControllerRuntime#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionview-8.1.3.1/lib/action_view/rendering.rb:40:in 'ActionView::Rendering#process'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'Array#each'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine.rb:534:in 'Rails::Engine#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/railtie.rb:225:in 'Kernel#public_send'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'Array#each'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/etag.rb:29:in 'Rack::ETag#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/head.rb:15:in 'Rack::Head#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-session-2.1.2/lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-session-2.1.2/lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine.rb:534:in 'Rails::Engine#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-test-2.2.0/lib/rack/test.rb:360:in 'Rack::Test::Session#process_request'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-test-2.2.0/lib/rack/test.rb:153:in 'Rack::Test::Session#request'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/testing/integration.rb:298:in 'ActionDispatch::Integration::Session#process'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/testing/integration.rb:19:in 'ActionDispatch::Integration::RequestHelpers#get'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/testing/integration.rb:389:in 'ActionDispatch::Integration::Runner#get'
-    test/admin_controller_test.rb:38:in 'AdminControllerTest#test_the_panel_is_hidden_from_a_visitor'
+InstallGeneratorTest#test_a_mount_point_can_be_typed:
+NoMethodError: undefined method 'stub' for module Thor::LineEditor
+    test/install_generator_test.rb:154:in 'InstallGeneratorTest#run_generator_answering'
+    test/install_generator_test.rb:170:in 'InstallGeneratorTest#test_a_mount_point_can_be_typed'
 
-bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/admin_controller_test.rb:37
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/install_generator_test.rb:169
 
-............E
+E
 
 Error:
-AdminControllerTest#test_the_panel_is_hidden_from_an_ordinary_reader:
-ActionController::RoutingError: Not Found
-    app/controllers/bible270/admin_controller.rb:146:in 'Bible270::AdminController#require_admin!'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:362:in 'block in ActiveSupport::Callbacks::CallTemplate::MethodCall#make_lambda'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:179:in 'block in ActiveSupport::Callbacks::Filters::Before#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/abstract_controller/callbacks.rb:36:in 'block (2 levels) in <module:Callbacks>'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:180:in 'ActiveSupport::Callbacks::Filters::Before#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:560:in 'block in ActiveSupport::Callbacks::CallbackSequence#invoke_before'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:560:in 'Array#each'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:560:in 'ActiveSupport::Callbacks::CallbackSequence#invoke_before'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:119:in 'block in ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/turbo-rails-2.0.23/lib/turbo-rails.rb:24:in 'Turbo.with_request_id'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/turbo-rails-2.0.23/app/controllers/concerns/turbo/request_id_tracking.rb:10:in 'Turbo::RequestIdTracking#turbo_tracking_request_id'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:130:in 'block in ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:141:in 'ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/abstract_controller/callbacks.rb:266:in 'AbstractController::Callbacks#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/rescue.rb:36:in 'ActionController::Rescue#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/instrumentation.rb:76:in 'block in ActionController::Instrumentation#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/notifications.rb:210:in 'block in ActiveSupport::Notifications.instrument'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/notifications/instrumenter.rb:58:in 'ActiveSupport::Notifications::Instrumenter#instrument'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/notifications.rb:210:in 'ActiveSupport::Notifications.instrument'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/instrumentation.rb:75:in 'ActionController::Instrumentation#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal/params_wrapper.rb:259:in 'ActionController::ParamsWrapper#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activerecord-8.1.3.1/lib/active_record/railties/controller_runtime.rb:39:in 'ActiveRecord::Railties::ControllerRuntime#process_action'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/abstract_controller/base.rb:154:in 'AbstractController::Base#process'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionview-8.1.3.1/lib/action_view/rendering.rb:40:in 'ActionView::Rendering#process'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal.rb:252:in 'ActionController::Metal#dispatch'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_controller/metal.rb:335:in 'ActionController::Metal.dispatch'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:65:in 'ActionDispatch::Routing::RouteSet::Dispatcher#dispatch'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:50:in 'ActionDispatch::Routing::RouteSet::Dispatcher#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:86:in 'block in ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'Array#each'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine.rb:534:in 'Rails::Engine#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/railtie.rb:225:in 'Kernel#public_send'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/railtie.rb:225:in 'Rails::Railtie.method_missing'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/mapper.rb:33:in 'block in <class:Constraints>'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/mapper.rb:62:in 'ActionDispatch::Routing::Mapper::Constraints#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:35:in 'block in ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:92:in 'block in ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'Array#each'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:66:in 'ActionDispatch::Journey::Router#recognize'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/journey/router.rb:31:in 'ActionDispatch::Journey::Router#serve'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/routing/route_set.rb:906:in 'ActionDispatch::Routing::RouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine/lazy_route_set.rb:60:in 'Rails::Engine::LazyRouteSet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/tempfile_reaper.rb:20:in 'Rack::TempfileReaper#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/etag.rb:29:in 'Rack::ETag#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/conditional_get.rb:31:in 'Rack::ConditionalGet#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/head.rb:15:in 'Rack::Head#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/http/content_security_policy.rb:38:in 'ActionDispatch::ContentSecurityPolicy::Middleware#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-session-2.1.2/lib/rack/session/abstract/id.rb:274:in 'Rack::Session::Abstract::Persisted#context'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-session-2.1.2/lib/rack/session/abstract/id.rb:268:in 'Rack::Session::Abstract::Persisted#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/cookies.rb:708:in 'ActionDispatch::Cookies#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/callbacks.rb:31:in 'block in ActionDispatch::Callbacks#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activesupport-8.1.3.1/lib/active_support/callbacks.rb:101:in 'ActiveSupport::Callbacks#run_callbacks'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/callbacks.rb:30:in 'ActionDispatch::Callbacks#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/actionable_exceptions.rb:18:in 'ActionDispatch::ActionableExceptions#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/debug_exceptions.rb:31:in 'ActionDispatch::DebugExceptions#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/show_exceptions.rb:32:in 'ActionDispatch::ShowExceptions#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/rack/logger.rb:41:in 'Rails::Rack::Logger#call_app'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/rack/logger.rb:29:in 'Rails::Rack::Logger#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/remote_ip.rb:98:in 'ActionDispatch::RemoteIp#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/request_id.rb:34:in 'ActionDispatch::RequestId#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/method_override.rb:28:in 'Rack::MethodOverride#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/runtime.rb:24:in 'Rack::Runtime#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/executor.rb:20:in 'ActionDispatch::Executor#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/middleware/static.rb:27:in 'ActionDispatch::Static#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-3.2.6/lib/rack/sendfile.rb:131:in 'Rack::Sendfile#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/railties-8.1.3.1/lib/rails/engine.rb:534:in 'Rails::Engine#call'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-test-2.2.0/lib/rack/test.rb:360:in 'Rack::Test::Session#process_request'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/rack-test-2.2.0/lib/rack/test.rb:153:in 'Rack::Test::Session#request'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/testing/integration.rb:298:in 'ActionDispatch::Integration::Session#process'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/testing/integration.rb:19:in 'ActionDispatch::Integration::RequestHelpers#get'
-    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/actionpack-8.1.3.1/lib/action_dispatch/testing/integration.rb:389:in 'ActionDispatch::Integration::Runner#get'
-    test/admin_controller_test.rb:44:in 'AdminControllerTest#test_the_panel_is_hidden_from_an_ordinary_reader'
+InstallGeneratorTest#test_the_summary_names_what_it_did:
+NameError: undefined local variable or method 'output' for an instance of InstallGeneratorTest
+    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activerecord-8.1.3.1/lib/active_record/test_fixtures.rb:305:in 'ActiveRecord::TestFixtures#method_missing'
+    test/install_generator_test.rb:203:in 'InstallGeneratorTest#test_the_summary_names_what_it_did'
 
-bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/admin_controller_test.rb:42
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/install_generator_test.rb:200
 
-..........................................................................................................................................................
+E
 
-Finished in 7.880411s, 62.6871 runs/s, 696.2835 assertions/s.
-494 runs, 5487 assertions, 0 failures, 3 errors, 1 skips
+Error:
+InstallGeneratorTest#test_an_unusable_mount_point_is_asked_again:
+NoMethodError: undefined method 'stub' for module Thor::LineEditor
+    test/install_generator_test.rb:154:in 'InstallGeneratorTest#run_generator_answering'
+    test/install_generator_test.rb:178:in 'InstallGeneratorTest#test_an_unusable_mount_point_is_asked_again'
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/install_generator_test.rb:177
+
+..E
+
+Error:
+InstallGeneratorTest#test_providers_can_be_typed:
+NoMethodError: undefined method 'stub' for module Thor::LineEditor
+    test/install_generator_test.rb:154:in 'InstallGeneratorTest#run_generator_answering'
+    test/install_generator_test.rb:192:in 'InstallGeneratorTest#test_providers_can_be_typed'
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/install_generator_test.rb:191
+
+E
+
+Error:
+InstallGeneratorTest#test_pressing_enter_at_every_prompt_gives_the_defaults:
+NoMethodError: undefined method 'stub' for module Thor::LineEditor
+    test/install_generator_test.rb:154:in 'InstallGeneratorTest#run_generator_answering'
+    test/install_generator_test.rb:161:in 'InstallGeneratorTest#test_pressing_enter_at_every_prompt_gives_the_defaults'
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/install_generator_test.rb:159
+
+E
+
+Error:
+InstallGeneratorTest#test_it_lists_the_commands_it_could_not_run:
+NameError: undefined local variable or method 'output' for an instance of InstallGeneratorTest
+    /home/wonder/.rbenv/versions/4.0.6/lib/ruby/gems/4.0.0/gems/activerecord-8.1.3.1/lib/active_record/test_fixtures.rb:305:in 'ActiveRecord::TestFixtures#method_missing'
+    test/install_generator_test.rb:211:in 'InstallGeneratorTest#test_it_lists_the_commands_it_could_not_run'
+
+bin/rails test /home/wonder/Dropbox/dev.local/bible270/test/install_generator_test.rb:207
+
+.....................................................................................................................................................................
+
+Finished in 9.941059s, 57.5391 runs/s, 568.0482 assertions/s.
+572 runs, 5647 assertions, 9 failures, 7 errors, 1 skips
 
 You have skipped tests. Run with --verbose for details.
 Coverage report generated for Unit Tests to /home/wonder/Dropbox/dev.local/bible270/coverage.
-Line Coverage: 94.29% (1817 / 1927)
+Line Coverage: 94.83% (1891 / 1994)

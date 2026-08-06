@@ -161,6 +161,17 @@
   .b270-replying strong{color:var(--ink)}
   .b270-mention{color:var(--teal);font-weight:600;text-decoration:none}
   .b270-mention:hover{text-decoration:underline}
+  .b270-cactions{display:flex;align-items:center;gap:12px;margin-top:6px;flex-wrap:wrap}
+  .b270-likes{display:inline-flex;align-items:center;gap:2px}
+  .b270-heart{font-size:13px;line-height:1;cursor:default}
+  /* Same size as a heart in the row: the button is one of the hearts, not a
+     control sitting beside them. Unliked, it is the same emoji desaturated —
+     visible against the paper, and hovering shows what clicking will give. */
+  .b270-likebtn{background:none;border:0;padding:0 2px;font-size:13px;line-height:1;cursor:pointer;
+                filter:grayscale(1);opacity:.5;transition:filter .12s,opacity .12s}
+  .b270-likebtn:hover{filter:none;opacity:1}
+  .b270-likebtn.liked{filter:none;opacity:1}
+  .b270-likecount{font-size:11.5px;color:var(--faint);margin-left:2px}
   .b270-creply{margin-top:6px}
   .b270-cbody{margin:3px 0 0;white-space:pre-wrap}
   .b270-editform{margin-top:6px}

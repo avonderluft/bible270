@@ -18,6 +18,11 @@ require 'action_mailer/railtie'
 # so the dummy needs Turbo just as a real host app does.
 require 'turbo-rails'
 
+# OmniAuth, so sessions#create and #failure can be exercised for real rather than
+# by poking at request.env. The developer strategy comes with OmniAuth itself, so
+# no provider gem is needed — under test mode the strategy is bypassed anyway.
+require 'omniauth'
+
 require 'bible270'
 
 module Dummy
@@ -34,6 +39,12 @@ module Dummy
     config.active_job.queue_adapter = :test
     config.action_mailer.delivery_method = :test
     config.action_mailer.default_url_options = { host: 'example.com' }
+
+    # The engine's routes expect the callback under its own mount point, so the
+    # middleware has to agree about the prefix.
+    config.middleware.use OmniAuth::Builder do
+      provider :developer, fields: %i[name email]
+    end
 
     # Keep the suite's output to test results.
     config.logger = ActiveSupport::Logger.new(File::NULL)

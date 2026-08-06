@@ -1,0 +1,3 @@
+<%= turbo_stream.replace "likes-#{@comment.id}" do %>
+  <%= render partial: "bible270/likes/likes", locals: { comment: @comment } %>
+<% end %>

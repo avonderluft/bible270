@@ -144,6 +144,86 @@ if RAILS_LOADED
       refute_includes self.class.shell_outs, 'db:migrate'
     end
 
+    # ---- answering the questions -------------------------------------------
+    #
+    # Everything above runs with --defaults, which is not how a first-time user
+    # meets the installer. Rails::Generators::TestCase feeds stdin, so the
+    # prompts can be answered.
+
+    def run_generator_answering(answers, args = %w[--no-bundle])
+      Thor::LineEditor.stub(:readline, ->(*) { answers.shift.to_s }) do
+        run_generator(args)
+      end
+    end
+
+    def test_pressing_enter_at_every_prompt_gives_the_defaults
+      # Empty answers mean "take the default" at each question.
+      run_generator_answering(Array.new(12, ''))
+
+      assert_file 'config/initializers/bible270.rb' do |content|
+        assert_match(%r{config\.mount_at\s*=\s*'/daily-bread'}, content)
+        RubyVM::InstructionSequence.compile(content)
+      end
+    end
+
+    def test_a_mount_point_can_be_typed
+      run_generator_answering(['/manna'] + Array.new(11, ''))
+
+      assert_file 'config/initializers/bible270.rb', %r{config\.mount_at\s*=\s*'/manna'}
+    end
+
+    # A path with a space cannot be a mount point; the installer asks again rather
+    # than writing something that will not route.
+    def test_an_unusable_mount_point_is_asked_again
+      run_generator_answering(['not a path', '/second-try'] + Array.new(11, ''))
+
+      assert_file 'config/initializers/bible270.rb', %r{config\.mount_at\s*=\s*'/second-try'}
+    end
+
+    def test_declining_social_sign_in_writes_no_omniauth_initializer
+      # mount, email?, from, social? -> no
+      run_generator_answering(['', '', '', 'n'] + Array.new(9, ''))
+
+      assert_no_file 'config/initializers/omniauth.rb'
+      assert_file 'config/initializers/bible270.rb'
+    end
+
+    def test_providers_can_be_typed
+      run_generator_answering(['', '', '', 'y', 'github'] + Array.new(8, ''))
+
+      assert_file 'config/initializers/omniauth.rb', %r{provider :github}
+      assert_file 'Gemfile', %r{omniauth-github}
+    end
+
+    # ---- what it tells you afterwards --------------------------------------
+
+    def test_the_summary_names_what_it_did
+      run_generator %w[--defaults --no-bundle]
+
+      assert_match(%r{Plan mounted at}, output)
+      assert_match(%r{/daily-bread}, output)
+    end
+
+    def test_it_lists_the_commands_it_could_not_run
+      run_generator %w[--defaults --no-bundle]
+
+      # It added a gem it has not bundled, so it cannot migrate for you.
+      assert_match(%r{bundle install}, output)
+      assert_match(%r{db:migrate}, output)
+    end
+
+    # The initializer reads credentials first and falls back to the environment,
+    # so a host can use either without editing the file.
+    def test_the_omniauth_initializer_names_both_credential_sources
+      run_generator %w[--defaults --no-bundle --providers=github]
+
+      assert_file 'config/initializers/omniauth.rb' do |content|
+        assert_match(%r{credentials\.dig\(:github, :client_id\)}, content)
+        assert_match(%r{GITHUB_CLIENT_ID}, content)
+        assert_match(%r{GITHUB_CLIENT_SECRET}, content)
+      end
+    end
+
     def test_running_it_twice_does_not_duplicate_the_mount_line
       run_generator %w[--defaults --no-bundle]
       run_generator %w[--defaults --no-bundle --force]

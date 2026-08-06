@@ -82,6 +82,13 @@ RAILS_LOADED =
       end
     end
 
+    # The engine is mounted somewhere, and OmniAuth has to look for its callbacks
+    # in the same place, or the request phase 404s.
+    if defined?(OmniAuth)
+      OmniAuth.config.path_prefix = "#{Bible270.config.mount_at.chomp('/')}/auth"
+      OmniAuth.config.logger = Logger.new(File::NULL)
+    end
+
     require 'rails/test_help'
 
     true
@@ -89,6 +96,43 @@ RAILS_LOADED =
     warn "[bible270] skipping Rails-backed tests: #{e.class}: #{e.message}"
     false
   end
+
+# Signing in through OmniAuth, without an external provider. Test mode makes the
+# strategy return the mock rather than talking to anyone.
+module OmniAuthTesting
+  def with_omniauth(provider: :developer, uid: '12345', name: 'Andrew vonderLuft',
+                    email: 'andrew@example.org', origin: nil)
+    return skip('OmniAuth unavailable') unless defined?(OmniAuth)
+
+    previous_test_mode = OmniAuth.config.test_mode
+    OmniAuth.config.test_mode = true
+    OmniAuth.config.mock_auth[provider] = OmniAuth::AuthHash.new(
+      'provider' => provider.to_s, 'uid' => uid,
+      'info' => { 'name' => name, 'email' => email }
+    )
+    OmniAuth.config.before_callback_phase = ->(env) { env['omniauth.origin'] = origin } if origin
+
+    yield provider
+  ensure
+    OmniAuth.config.mock_auth[provider] = nil
+    OmniAuth.config.before_callback_phase = nil
+    OmniAuth.config.test_mode = previous_test_mode
+  end
+
+  # Fails the next callback, the way a provider does when someone declines.
+  def with_failed_omniauth(provider: :developer, reason: :invalid_credentials)
+    return skip('OmniAuth unavailable') unless defined?(OmniAuth)
+
+    previous_test_mode = OmniAuth.config.test_mode
+    OmniAuth.config.test_mode = true
+    OmniAuth.config.mock_auth[provider] = reason
+
+    yield provider
+  ensure
+    OmniAuth.config.mock_auth[provider] = nil
+    OmniAuth.config.test_mode = previous_test_mode
+  end
+end
 
 module RailsBacked
   def needs_rails!
@@ -127,3 +171,4 @@ module RailsBacked
 end
 
 Minitest::Test.include(RailsBacked)
+Minitest::Test.include(OmniAuthTesting)

@@ -92,7 +92,9 @@ module Bible270
       end
 
       ids = roots.sort_by { |_root, at| -at.to_i }.first(wanted).map(&:first)
-      threads = Comment.approved.where(id: ids).includes(:reader, replies: :reader).index_by(&:id)
+      threads = Comment.approved.where(id: ids)
+        .includes(:reader, { likes: :reader }, { replies: [:reader, { likes: :reader }] })
+        .index_by(&:id)
       ids.filter_map { |id| threads[id] }
     end
 

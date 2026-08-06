@@ -8,6 +8,7 @@ module Bible270
 
     has_many :checkoffs, class_name: 'Bible270::Checkoff', dependent: :destroy
     has_many :comments,  class_name: 'Bible270::Comment',  dependent: :destroy
+    has_many :likes,     class_name: 'Bible270::Like',     dependent: :destroy, inverse_of: :reader
     belongs_to :owner, polymorphic: true, optional: true
 
     # Active Storage is optional: an app may have it disabled, and the engine has

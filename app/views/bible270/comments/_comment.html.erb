@@ -37,13 +37,16 @@
 
     <%# Only a top-level reflection can be replied to: one level deep, so a reply
         offers no Reply of its own. %>
-    <% unless reply %>
-      <% if signed_in? && comment.reader_id != current_reader.id %>
-        <div class="b270-creply">
-          <%= link_to "Reply", day_path(comment.day, reply_to: comment.id, anchor: "new_comment_form"),
-                class: "b270-linkbtn" %>
-        </div>
+    <div class="b270-cactions">
+      <%= render partial: "bible270/likes/likes", locals: { comment: comment } %>
+      <%# A reply may be liked but not replied to: one level deep. %>
+      <% if !reply && signed_in? && comment.reader_id != current_reader.id %>
+        <%= link_to "Reply", day_path(comment.day, reply_to: comment.id, anchor: "new_comment_form"),
+              class: "b270-linkbtn" %>
       <% end %>
+    </div>
+
+    <% unless reply %>
 
       <div class="b270-replies" id="replies-<%= comment.id %>">
         <%= render partial: "bible270/comments/comment",
