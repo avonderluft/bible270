@@ -12,7 +12,7 @@
     <!--<%= link_to "Plan", root_path %>-->
     <%= link_to "People", community_path %>
     <%# Public, like the community page: anyone may read reflections. %>
-    <%= link_to "Reflections", reflections_path %>
+    <%= link_to "Posts", reflections_path %>
     <% if signed_in? %>
       <% if Bible270.config.admin?(current_reader) %><%= link_to "Admin", admin_path %><% end %>
       <%= link_to "Progress", progress_path %>
