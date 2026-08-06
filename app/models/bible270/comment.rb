@@ -28,6 +28,9 @@ module Bible270
     # Fires once the reflection is really saved, so nothing is sent for one whose
     # transaction rolls back.
     after_create_commit :notify_mentioned_readers
+    # Only the people newly named: editing a reflection five times must not mail
+    # the same reader five times.
+    after_update_commit :notify_newly_mentioned_readers
 
     scope :approved, -> { where(approved: true) }
     scope :hidden,   -> { where(approved: false) }
@@ -42,6 +45,10 @@ module Bible270
     def unhide!  = update!(approved: true,  moderated_at: Time.current)
     def hidden?  = !approved
     def reply?   = parent_id.present?
+
+    # A second's grace: created_at and updated_at differ by microseconds on
+    # insert, which would mark every reflection as edited.
+    def edited?  = updated_at - created_at > 1
 
     # Visible replies, oldest first: a conversation reads forwards.
     def visible_replies = replies.approved.order(created_at: :asc)
@@ -70,11 +77,19 @@ module Bible270
 
     # A mention emails the person named. Failures are logged rather than raised:
     # nobody should lose a reflection because the mail server is down.
-    def notify_mentioned_readers
+    def notify_newly_mentioned_readers
+      return unless saved_change_to_body?
+
+      already = Reader.mentioned_in(body_before_last_save).map(&:id)
+      notify_mentioned_readers(except: already)
+    end
+
+    def notify_mentioned_readers(except: [])
       return unless Bible270.config.mention_notifications
 
       Reader.mentioned_in(body).each do |mentioned|
         next if mentioned.id == reader_id
+        next if except.include?(mentioned.id)
         next unless mentioned.wants_mention_notices?
 
         notice = NoticeMailer.mentioned(comment_id: id, reader_id: mentioned.id)

@@ -1,0 +1,7 @@
+<%# locals: (comment:) %>
+<div class="b270-comment b270-editing" id="comment-<%= comment.id %>">
+  <%= b270_avatar(comment.reader) %>
+  <div style="flex:1">
+    <%= render partial: "bible270/comments/edit_fields", locals: { comment: comment } %>
+  </div>
+</div>

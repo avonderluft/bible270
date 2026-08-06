@@ -1,0 +1,4 @@
+<%= turbo_stream.replace "comment-#{@comment.id}" do %>
+  <%= render partial: "bible270/comments/comment",
+        locals: { comment: @comment, reply: @comment.reply? } %>
+<% end %>

@@ -153,6 +153,32 @@ class ViewsTest < Minitest::Test
     MSG
   end
 
+  # The engine inlines its stylesheet, so every class name it defines appears in
+  # every response body. A test asserting on a bare /b270-something/ is really
+  # asserting that the stylesheet exists — it passes whether or not the markup is
+  # there. Assertions must match the class attribute instead.
+  def test_no_test_asserts_on_a_bare_engine_class_name
+    styles = File.read(File.expand_path('../app/views/bible270/shared/_styles.html.erb', __dir__))
+    defined_classes = styles.scan(%r{\.(b270-[a-z-]+)}).flatten.uniq
+
+    offenders = Dir.glob(File.expand_path('*_test.rb', __dir__)).flat_map do |path|
+      File.readlines(path, chomp: true).each_with_index.filter_map do |line, i|
+        next unless line.match?(%r{(?:assert|refute)_match})
+
+        bare = line.scan(%r{(?:/|%r\{)(b270-[a-z-]+)(?:/|\})}).flatten
+        hit = bare.find { |name| defined_classes.include?(name) }
+        "#{File.basename(path)}:#{i + 1}  #{hit}" if hit
+      end
+    end
+
+    assert_empty offenders, <<~MSG
+      These assert on a class name the stylesheet defines, so they match the
+      inlined CSS rather than the markup:
+
+      #{offenders.join("\n      ")}
+    MSG
+  end
+
   def test_templates_do_not_call_removed_plan_methods
     removed = %w[
       nt_groups nt_days_per_pass nt_second_pass_start_day

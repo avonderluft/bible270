@@ -84,7 +84,9 @@ if RAILS_LOADED
       get "#{mount}/day/1"
 
       assert_response :success
-      assert_match(%r{b270-reply}, response.body)
+      # The class attribute, not the bare name: the inlined stylesheet contains
+      # .b270-reply on every page, so a bare match proves nothing.
+      assert_match(%r{class="b270-comment b270-reply"}, response.body)
       assert_operator response.body.index('My reflection'), :<, response.body.index('Quite so'),
                       'the reply should follow the reflection it answers'
     end

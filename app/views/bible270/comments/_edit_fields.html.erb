@@ -1,0 +1,25 @@
+<%# locals: (comment:) %>
+<%#
+  The edit form for one reflection. Reached by ?edit=<id> on the day page, which
+  needs no JavaScript — the same approach as ?reply_to=. Turbo will upgrade the
+  save to a stream when it is driving the page, and fall back to a redirect when
+  it is not.
+%>
+<%= form_with model: comment, url: comment_path(comment), method: :patch,
+      class: "b270-form b270-editform", data: { turbo_stream: true } do |f| %>
+  <% if comment.errors.any? %>
+    <p class="b270-editerror"><%= comment.errors.full_messages.to_sentence %></p>
+  <% end %>
+
+  <%= f.text_area :body %>
+  <div class="row">
+    <% unless comment.reply? %>
+      <%= f.select :track,
+            options_for_select([["The whole day", ""]] + Bible270::Plan::TRACKS.map { |k, v| [v[:label], k] },
+                               comment.track.to_s),
+            {}, class: "b270-select", style: "width:auto" %>
+    <% end %>
+    <%= f.submit "Save", class: "b270-btn" %>
+    <%= link_to "Cancel", day_path(comment.day, anchor: "comment-#{comment.id}"), class: "b270-linkbtn" %>
+  </div>
+<% end %>

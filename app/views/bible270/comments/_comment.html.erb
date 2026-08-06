@@ -1,4 +1,11 @@
 <%# locals: (comment:, reply: false) %>
+<%#
+  Whether this reflection is being edited comes from the controller rather than a
+  local, so it works for a reply as well as a top-level reflection without the day
+  view having to thread a flag through the collection. It is nil everywhere else
+  the partial is rendered.
+%>
+<% editing = @editing_comment_id.present? && @editing_comment_id == comment.id %>
 <div class="b270-comment <%= 'b270-reply' if reply %>" id="comment-<%= comment.id %>">
   <%= b270_avatar(comment.reader, size: reply ? 28 : 34) %>
   <div style="flex:1">
@@ -6,13 +13,20 @@
       <strong><%= link_to comment.reader.display_name, reader_path(comment.reader), style: "text-decoration:none" %></strong>
       · <%= comment.created_at.strftime("%b %-d, %Y") %>
       <% if comment.track.present? %>· <%= b270_track(comment.track)[:label] %><% end %>
+      <% if comment.edited? %>· <span class="b270-edited" title="<%= comment.updated_at.strftime('%b %-d, %Y at %-I:%M %p') %>">edited</span><% end %>
       <% if signed_in? && comment.reader_id == current_reader.id %>
+        <%= link_to "edit", day_path(comment.day, edit: comment.id, anchor: "comment-#{comment.id}"),
+              class: "b270-cedit" %>
         <%= button_to "delete", comment_path(comment), method: :delete, class: "b270-cdel",
               form: { style: "display:inline", data: { turbo_stream: true } } %>
       <% end %>
     </div>
 
-    <p class="b270-cbody"><%= b270_with_mentions(comment.body) %></p>
+    <% if editing %>
+      <%= render partial: "bible270/comments/edit_fields", locals: { comment: comment } %>
+    <% else %>
+      <p class="b270-cbody"><%= b270_with_mentions(comment.body) %></p>
+    <% end %>
 
     <%# Only a top-level reflection can be replied to: one level deep, so a reply
         offers no Reply of its own. %>

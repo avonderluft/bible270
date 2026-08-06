@@ -12,6 +12,7 @@ Bible270::Engine.routes.draw do
                                    constraints: { day: %r{\d+} }
   post   'day/:day/comments',      to: 'comments#create',  as: :day_comments,
                                    constraints: { day: %r{\d+} }
+  patch  'comments/:id',           to: 'comments#update'
   delete 'comments/:id',           to: 'comments#destroy', as: :comment
 
   # Admin panel — 404s unless config.admin_emails / admin_resolver allows you.
