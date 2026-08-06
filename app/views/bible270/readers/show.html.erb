@@ -22,7 +22,8 @@
 
 <div class="b270-grid">
   <% (1..Bible270::Plan::DAYS).each do |d| %>
-    <%= link_to d, day_path(d), class: "b270-cell #{b270_day_status_class(@reader, d)}" %>
+    <%= b270_day_cell(d, reader: @reader) %>
   <% end %>
 </div>
+<p class="b270-gridnote">Dot indicates days with reflections.</p>
 

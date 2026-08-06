@@ -1,0 +1,52 @@
+<% content_for :title, "Reflections — #{Bible270.config.app_name}" %>
+<% content_for :hide_day_index, true %><%# this page has its own, filtered grid %>
+
+<p class="b270-eyebrow">Reflections</p>
+<h1>What people are saying</h1>
+
+<% if @days_with_reflections.any? %>
+  <div class="b270-panel">
+    <h2 class="b270-subhead">Days with reflections</h2>
+    <p class="b270-hint" style="margin-top:0">
+      <%= @days_with_reflections.size %>
+      of <%= Bible270::Plan::DAYS %> days have been written about.
+    </p>
+
+    <%# Only the days that have something on them, so the grid is a map of the
+        conversation rather than of the plan. Squares keep their usual meaning:
+        the fill is reading progress, and hovering shows that day's readings. %>
+    <div class="b270-grid">
+      <% @days_with_reflections.each do |day| %>
+        <%= b270_day_cell(day, reader: current_reader) %>
+      <% end %>
+    </div>
+  </div>
+
+  <h2 class="b270-section-h">Most recent</h2>
+  <div id="comments">
+    <% @threads.each do |thread| %>
+      <div class="b270-thread">
+        <p class="b270-threadday">
+          <%= link_to "Day #{thread.day}", day_path(thread.day) %>
+          · <%= b270_day_reading_links(thread.day) %>
+        </p>
+        <%= render partial: "bible270/comments/comment", locals: { comment: thread, reply: false } %>
+      </div>
+    <% end %>
+  </div>
+
+  <p style="margin-top:18px">
+    <%= link_to "Browse the whole plan →", root_path %>
+  </p>
+<% else %>
+  <div class="b270-panel">
+    <p class="b270-signedout" style="margin:0">
+      No one has written a reflection yet.
+      <% if signed_in? %>
+        <%= link_to "Be the first", day_path(current_reader.current_day) %>.
+      <% else %>
+        <%= link_to "Sign in", sign_in_path %> to add one.
+      <% end %>
+    </p>
+  </div>
+<% end %>

@@ -14,11 +14,18 @@
       · <%= comment.created_at.strftime("%b %-d, %Y") %>
       <% if comment.track.present? %>· <%= b270_track(comment.track)[:label] %><% end %>
       <% if comment.edited? %>· <span class="b270-edited" title="<%= comment.updated_at.strftime('%b %-d, %Y at %-I:%M %p') %>">edited</span><% end %>
-      <% if signed_in? && comment.reader_id == current_reader.id %>
+      <% if b270_can_edit?(comment) %>
         <%= link_to "edit", day_path(comment.day, edit: comment.id, anchor: "comment-#{comment.id}"),
               class: "b270-cedit" %>
+      <% end %>
+      <% if b270_can_delete?(comment) %>
+        <%# The confirm goes on the form, since button_to renders one and that is
+            where Turbo looks. Only when removing someone else's: confirming your
+            own deletion every time would be nagging. %>
         <%= button_to "delete", comment_path(comment), method: :delete, class: "b270-cdel",
-              form: { style: "display:inline", data: { turbo_stream: true } } %>
+              form: { style: "display:inline",
+                      data: { turbo_stream: true,
+                              turbo_confirm: (b270_can_edit?(comment) ? nil : "Delete #{comment.reader.display_name}'s reflection?") } } %>
       <% end %>
     </div>
 

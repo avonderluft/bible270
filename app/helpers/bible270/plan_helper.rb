@@ -137,6 +137,77 @@ module Bible270
       end
     end
 
+    # Only the writer may change their own words. An admin can remove a reflection
+    # but not rewrite it: putting words in someone's mouth is worse than taking
+    # them away, and taking them away is already the moderator's job.
+    def b270_can_edit?(comment)
+      signed_in? && comment.reader_id == current_reader.id
+    end
+
+    def b270_can_delete?(comment)
+      return false unless signed_in?
+
+      comment.reader_id == current_reader.id || Bible270.config.admin?(current_reader)
+    end
+
+    # One cell of the 270-day grid. Four views drew this by hand in four slightly
+    # different ways; now they all call this.
+    #
+    # The title attribute carries the readings, so hovering a square says what is
+    # on that day — no JavaScript, and it works for keyboard focus too.
+    def b270_day_cell(day, reader: nil, today: nil)
+      link_to day, day_path(day),
+              class: b270_day_cell_classes(day, reader: reader, today: today),
+              title: b270_day_readings(day)
+    end
+
+    # Shared with the admin grid, which is a button_to rather than a link because
+    # it toggles the day rather than navigating to it.
+    def b270_day_cell_classes(day, reader: nil, today: nil)
+      classes = ['b270-cell', b270_day_status_class(reader, day)]
+      classes << 'talk' if b270_days_with_reflections.include?(day)
+      classes << 'now' if today && day == today
+
+      classes.reject(&:blank?).join(' ')
+    end
+
+    # "Genesis 1-3 · Matthew 1 · Psalm 1" as plain text, for a title attribute.
+    def b270_day_readings(day)
+      readings = Bible270::Plan.readings_for(day)
+      Bible270::Plan::TRACKS.keys.filter_map { |track| readings[track] }.join(' · ')
+    end
+
+    # The same references as links to the passage, in the reader's own translation
+    # when they have chosen one — b270_passage_url falls back to the site default
+    # for a visitor.
+    def b270_day_reading_links(day)
+      readings = Bible270::Plan.readings_for(day)
+
+      links = Bible270::Plan::TRACKS.keys.filter_map do |track|
+        reference = readings[track]
+        next if reference.blank?
+
+        link_to reference, b270_passage_url(reference),
+                class: 'b270-reflink', target: '_blank', rel: 'noopener'
+      end
+
+      safe_join(links, ' · ')
+    end
+
+    # The days that have at least one visible reflection, fetched once per request.
+    # Called from the layout's grid, which no controller sets up, so it cannot be an
+    # instance variable assigned in an action.
+    def b270_days_with_reflections
+      @b270_days_with_reflections ||=
+        if defined?(Bible270::Comment)
+          Bible270::Comment.approved.distinct.pluck(:day).to_set
+        else
+          Set.new
+        end
+    rescue StandardError
+      Set.new
+    end
+
     def b270_day_status_class(reader, day)
       return '' unless reader
 

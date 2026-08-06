@@ -11,11 +11,12 @@
   <nav class="b270-nav">
     <!--<%= link_to "Plan", root_path %>-->
     <%= link_to "People", community_path %>
+    <%# Public, like the community page: anyone may read reflections. %>
+    <%= link_to "Reflections", reflections_path %>
     <% if signed_in? %>
       <% if Bible270.config.admin?(current_reader) %><%= link_to "Admin", admin_path %><% end %>
       <%= link_to "Progress", progress_path %>
       <%= link_to "Profile", profile_path %>
-      <%= link_to "Reflections", '' %>
       <%= button_to "Sign out", sign_out_path, method: :delete, class: "b270-linkbtn",
             form: { style: "display:inline" } %>
     <% elsif Bible270.config.any_sign_in_method? %>

@@ -2,6 +2,11 @@
 
 module Bible270
   class CommentsController < ApplicationController
+    def index
+      @days_with_reflections = Comment.approved.distinct.pluck(:day).sort
+      @threads = recent_threads
+    end
+
     def create
       return unless require_reader!
 
@@ -54,7 +59,7 @@ module Bible270
     def destroy
       return unless require_reader!
 
-      @comment = current_reader.comments.find_by(id: params[:id])
+      @comment = deletable_comment
       head :not_found and return unless @comment
 
       @day = @comment.day
@@ -67,14 +72,46 @@ module Bible270
 
   private
 
+    # The most recently active conversations, newest first. A reply counts as
+    # activity, so answering an old reflection brings the whole thread back up —
+    # otherwise a lively discussion on day 3 would stay buried while quieter, newer
+    # reflections sat above it.
+    def recent_threads
+      wanted = Bible270.config.reflections_page_size.to_i
+      wanted = 10 unless wanted.positive?
+
+      # Look at rather more messages than threads, since several may belong to one.
+      recent = Comment.approved.order(created_at: :desc).limit(wanted * 5)
+        .pluck(:id, :parent_id, :created_at)
+
+      roots = {}
+      recent.each do |id, parent_id, created_at|
+        root = parent_id || id
+        roots[root] ||= created_at
+        roots[root] = created_at if created_at > roots[root]
+      end
+
+      ids = roots.sort_by { |_root, at| -at.to_i }.first(wanted).map(&:first)
+      threads = Comment.approved.where(id: ids).includes(:reader, replies: :reader).index_by(&:id)
+      ids.filter_map { |id| threads[id] }
+    end
+
     def comment_params
       params.require(:comment).permit(:body, :track, :parent_id)
     end
 
     # Scoped to the reader, so someone else's reflection is simply not found —
-    # the same shape as destroy, and it reveals nothing about what exists.
+    # it reveals nothing about what exists.
     def own_comment
       current_reader.comments.find_by(id: params[:id])
+    end
+
+    # An admin may remove any reflection; everyone else only their own. Editing
+    # stays with the writer either way.
+    def deletable_comment
+      return own_comment unless Bible270.config.admin?(current_reader)
+
+      Comment.find_by(id: params[:id])
     end
   end
 end

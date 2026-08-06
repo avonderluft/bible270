@@ -292,7 +292,7 @@ module Bible270
     # from, so without this the notice names the reader but cannot link to them.
     attr_accessor :mailer_host
 
-    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :header_mark, :remember_for, :require_sign_in_to_participate
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :header_mark, :remember_for, :require_sign_in_to_participate, :mention_notifications
 
     # Public labels.
     attr_accessor :app_name
@@ -331,7 +331,9 @@ module Bible270
 
     # Email a reader when someone writes "@them" in a reflection. Readers can opt
     # out individually on their profile; this switches the whole feature off.
-    attr_accessor :mention_notifications
+    # How many recent threads the Reflections page shows. A thread resurfaces when
+    # someone replies to it, so this is a count of conversations, not of messages.
+    attr_accessor :reflections_page_size
 
     def remember_signed_in?
       remember_for.to_i.positive?
@@ -354,6 +356,7 @@ module Bible270
       @app_name = 'Daily Bread'
       @tagline = 'Journeying through Scripture in 9 months'
       @time_zone = nil
+      @reflections_page_size = 10
       @mention_notifications = true
       @header_mark = nil
       @remember_for = 365 * 24 * 60 * 60

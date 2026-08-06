@@ -89,6 +89,26 @@ if RAILS_LOADED
       assert Bible270::Comment.exists?(theirs.id), 'it should still be there'
     end
 
+    # Only admins get that power; an ordinary reader still cannot.
+    def test_an_ordinary_reader_still_cannot_delete_someone_elses
+      theirs = @other.comments.create!(day: 1, body: 'Theirs')
+      sign_in_as(@reader)
+
+      delete "#{mount}/comments/#{theirs.id}"
+
+      assert_response :not_found
+      assert Bible270::Comment.exists?(theirs.id)
+    end
+
+    def test_an_ordinary_reader_sees_no_delete_on_someone_elses
+      @other.comments.create!(day: 1, body: 'Theirs')
+      sign_in_as(@reader)
+
+      get "#{mount}/day/1"
+
+      refute_match(%r{class="b270-cdel"}, response.body)
+    end
+
     def test_hidden_reflections_do_not_appear_on_the_day
       visible = @reader.comments.create!(day: 1, body: 'Visible one')
       hidden  = @reader.comments.create!(day: 1, body: 'Hidden one')

@@ -179,6 +179,36 @@ class ViewsTest < Minitest::Test
     MSG
   end
 
+  # A view reading an instance variable its controller never assigns renders nil,
+  # and the failure arrives as whatever nil cannot do — "undefined method 'any?'
+  # for nil" from somewhere in the middle of a template.
+  #
+  # The lookbehind keeps email placeholders like "you@example.com" out of it.
+  def test_views_only_read_instance_variables_their_controller_assigns
+    root = File.expand_path('..', __dir__)
+    offenders = []
+
+    Dir.glob(File.join(root, 'app/views/bible270/*/*.erb')).each do |view|
+      next if File.basename(view).start_with?('_')
+
+      controller = File.join(root, "app/controllers/bible270/#{File.basename(File.dirname(view))}_controller.rb")
+      next unless File.exist?(controller)
+
+      used = File.read(view).scan(%r{(?<![\w.])@([a-z_][a-z0-9_]*)}).flatten.uniq
+      assigned = File.read(controller).scan(%r{@([a-z_][a-z0-9_]*)\s*(?:\|\|)?=}).flatten.uniq
+
+      (used - assigned).each do |name|
+        offenders << "#{view.sub("#{root}/app/views/bible270/", '')}: @#{name}"
+      end
+    end
+
+    assert_empty offenders, <<~MSG
+      These views read instance variables their controller does not assign:
+
+      #{offenders.join("\n      ")}
+    MSG
+  end
+
   def test_templates_do_not_call_removed_plan_methods
     removed = %w[
       nt_groups nt_days_per_pass nt_second_pass_start_day

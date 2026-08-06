@@ -1,0 +1,16 @@
+<%# locals: (reflections: true) %>
+<%#
+  Six states need saying out loud: three degrees of progress, each of which may
+  also have reflections. Hovering a square shows that day's readings.
+
+  reflections: false on the Reflections page, where every square has them by
+  definition and the entry would explain nothing.
+%>
+<p class="b270-legend">
+  <span><i></i> not yet read</span>
+  <span><i class="partial"></i> partly read</span>
+  <span><i class="complete"></i> finished</span>
+  <% if reflections %>
+    <span><i class="talk"></i> has reflections</span>
+  <% end %>
+</p>

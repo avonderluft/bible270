@@ -54,7 +54,7 @@
   .b270-flash.notice{background:#e7efe6;color:#2f5d34;border:1px solid #c6dcc6}
 
   .b270-eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:600;margin:0 0 10px}
-  .b270 h1{font-family:"Spectral",serif;font-weight:600;font-size:clamp(28px,6vw,42px);line-height:1.03;letter-spacing:-.01em;margin:0 0 6px}
+  .b270 h1{font-family:"Spectral",serif;font-weight:600;font-size:clamp(22px,6vw,33px);line-height:1.03;letter-spacing:-.01em;margin:0 0 6px}
   .b270 h1 em{font-style:italic;color:var(--muted);font-weight:400}
   .b270 .lede{color:var(--muted);max-width:77ch;margin:0 0 24px;font-size:15px}
 
@@ -76,7 +76,7 @@
   .b270-startform{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
   .b270-startform input[type=date]{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
   .b270-linkbtn{background:none;border:none;padding:0;margin-top:8px;font:inherit;font-size:12.5px;color:var(--oxblood);cursor:pointer;text-decoration:underline}
-  .b270-hint{margin:8px 0 0;font-size:12px;color:var(--faint);max-width:52ch}
+  .b270-hint{margin:8px 0 0;font-size:12px;color:var(--faint);max-width:111ch}
   .b270-tracks{margin-top:16px;display:grid;gap:11px}
   .b270-tm{display:grid;grid-template-columns:130px 1fr auto;align-items:center;gap:12px;font-size:12.5px}
   .b270-tm .lab{color:var(--muted);display:flex;align-items:center;gap:8px}
@@ -193,7 +193,26 @@
   .b270-cell:hover{border-color:var(--gold);color:var(--gold)}
   .b270-cell.partial{background:linear-gradient(135deg,var(--card) 50%,rgba(165,129,44,.35) 50%);color:var(--muted)}
   .b270-cell.complete{background:var(--teal);border-color:var(--teal);color:#eef3f2;font-weight:600}
+  /* Days that have reflections carry a dot and nothing else: the fill stays
+     free to mean reading progress, so the two facts never compete. On a finished
+     square the dot goes pale, since oxblood on teal is hard to pick out. */
+  .b270-cell.talk{position:relative}
+  .b270-cell.talk::after{content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--oxblood)}
+  .b270-cell.talk.complete::after{background:#f4efe6}
   .b270-cell.now{box-shadow:0 0 0 2px var(--gold)}
+
+  /* On the Reflections page each thread carries the day it belongs to, since
+     there is no day heading above it. */
+  .b270-thread{margin-bottom:8px}
+  .b270-threadday{margin:0;font-size:12px;letter-spacing:.04em;color:var(--faint)}
+  .b270-threadday a{color:var(--gold);font-weight:600;text-decoration:none}
+  .b270-threadday a:hover{text-decoration:underline}
+  /* Scripture references stay undecorated, hover included, so a line of three of
+     them does not read as a row of buttons. */
+  .b270-threadday .b270-reflink,
+  .b270-threadday .b270-reflink:hover{color:var(--muted);font-weight:400;text-decoration:none}
+  .b270-threadday .b270-reflink:hover{color:var(--ink)}
+  .b270-gridnote{margin:10px 0 0;font-size:11.5px;color:var(--faint)}
 
   .b270-footer{margin-top:20px;padding-top:11px;border-top:1px solid var(--line-soft);color:var(--faint);font-size:13px}
   .b270-footer p{margin:0;line-height:1.5}

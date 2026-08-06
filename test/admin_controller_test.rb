@@ -207,6 +207,57 @@ if RAILS_LOADED
       refute thought.reload.hidden?, 'hiding a reply must not hide what it answered'
     end
 
+    # ---- moderating from the page itself -----------------------------------
+
+    def test_an_admin_sees_delete_on_someone_elses_reflection
+      @reader.comments.create!(day: 1, body: 'Not the admin\'s')
+      sign_in_as_admin
+
+      get "#{mount}/day/1"
+
+      assert_response :success
+      assert_match(%r{class="b270-cdel"}, response.body)
+    end
+
+    def test_an_admin_can_delete_someone_elses_reflection
+      comment = @reader.comments.create!(day: 1, body: 'Questionable')
+      sign_in_as_admin
+
+      delete "#{mount}/comments/#{comment.id}"
+
+      refute Bible270::Comment.exists?(comment.id)
+    end
+
+    # Removing someone's words is the moderator's job; rewriting them is not.
+    def test_an_admin_cannot_edit_someone_elses_reflection
+      comment = @reader.comments.create!(day: 1, body: 'Their words')
+      sign_in_as_admin
+
+      patch "#{mount}/comments/#{comment.id}", params: { comment: { body: 'My words' } }
+
+      assert_response :not_found
+      assert_equal 'Their words', comment.reload.body
+    end
+
+    def test_an_admin_sees_no_edit_link_on_someone_elses
+      @reader.comments.create!(day: 1, body: 'Their words')
+      sign_in_as_admin
+
+      get "#{mount}/day/1"
+
+      refute_match(%r{edit=}, response.body)
+    end
+
+    # Deleting another person's reflection asks first; deleting your own does not.
+    def test_removing_someone_elses_asks_for_confirmation
+      @reader.comments.create!(day: 1, body: 'Theirs')
+      sign_in_as_admin
+
+      get "#{mount}/day/1"
+
+      assert_match(%r{turbo-confirm}, response.body)
+    end
+
     # ---- closing a run -----------------------------------------------------
 
     def test_an_admin_can_close_and_reopen_the_run

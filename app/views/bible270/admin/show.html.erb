@@ -80,7 +80,8 @@
   <div class="b270-grid" style="margin-top:16px">
     <% (1..Bible270::Plan::DAYS).each do |d| %>
       <%= button_to d, admin_reader_day_path(@reader, d), method: :post,
-            class: "b270-cell #{b270_day_status_class(@reader, d)}",
+            class: b270_day_cell_classes(d, reader: @reader),
+            title: b270_day_readings(d),
             form: { style: 'display:contents', id: "day-#{d}" } %>
     <% end %>
   </div>

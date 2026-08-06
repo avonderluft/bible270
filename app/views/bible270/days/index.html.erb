@@ -15,8 +15,8 @@
         <%= b270_avatar(r) %>
         <div>
           <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
-          <% @day_number = @days_completed[r.id] == 1 ? "day" : "days" %>
-          <div class="sub"><%= @days_completed[r.id] %> <%= @day_number %> read</div>
+          <% day_word = @days_completed[r.id] == 1 ? "day" : "days" %>
+          <div class="sub"><%= @days_completed[r.id] %> <%= day_word %> read</div>
         </div>
         <div class="stat"><span class="big"><%= (@days_completed[r.id].to_f / Bible270::Plan::DAYS * 100).round %>%</span></div>
       </div>
