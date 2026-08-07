@@ -45,9 +45,36 @@ module Bible270
       image = first_present(dig_auth(info, :image), dig_auth(info, :avatar_url))
       reader.email      = email if email.present?
       reader.avatar_url = image if image.present?
+      assign_names_from(reader, info)
       reader.save
       reader
     end
+
+    # Providers hand back one display name far more often than two fields, so the
+    # name is split when they do not. Without this an OmniAuth reader had no
+    # first_name — which made the greeting read "Welcome ." and, more seriously,
+    # made them unmentionable: Reader.mentioned_in only considers readers who have
+    # one.
+    #
+    # Only filled in when empty, so a reader who has since corrected their name on
+    # their profile does not have it overwritten at every sign-in.
+    def self.assign_names_from(reader, info)
+      return if reader.first_name.present?
+
+      given = dig_auth(info, :first_name)
+      family = dig_auth(info, :last_name)
+
+      if given.present?
+        reader.first_name = given
+        reader.last_name = family
+        return
+      end
+
+      split = Names.split_display_name(reader.display_name)
+      reader.first_name = split ? split[:first_name] : reader.display_name.to_s.split.first
+      reader.last_name = split ? split[:last_name] : nil
+    end
+    private_class_method :assign_names_from
 
     # Find or create the reader behind a verified email address. Uses the same
     # provider/uid identity columns as OmniAuth, with provider "email", so an

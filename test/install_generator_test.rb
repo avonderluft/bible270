@@ -197,19 +197,22 @@ if RAILS_LOADED
 
     # ---- what it tells you afterwards --------------------------------------
 
+    # run_generator captures the generator's printing and returns it — wrapping it
+    # in another capture gets an empty string, since there is nothing left to
+    # catch by then.
     def test_the_summary_names_what_it_did
-      run_generator %w[--defaults --no-bundle]
+      printed = run_generator %w[--defaults --no-bundle]
 
-      assert_match(%r{Plan mounted at}, output)
-      assert_match(%r{/daily-bread}, output)
+      assert_match(%r{Plan mounted at}, printed)
+      assert_match(%r{/daily-bread}, printed)
     end
 
     def test_it_lists_the_commands_it_could_not_run
-      run_generator %w[--defaults --no-bundle]
-
       # It added a gem it has not bundled, so it cannot migrate for you.
-      assert_match(%r{bundle install}, output)
-      assert_match(%r{db:migrate}, output)
+      printed = run_generator %w[--defaults --no-bundle]
+
+      assert_match(%r{bundle install}, printed)
+      assert_match(%r{db:migrate}, printed)
     end
 
     # The initializer reads credentials first and falls back to the environment,

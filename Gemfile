@@ -17,6 +17,7 @@ end
 group :test do
   gem 'coveralls_reborn',         '~> 0.29.0', require: false
   gem 'minitest',                 '~> 6.0'
+  gem 'minitest-mock'
   gem 'minitest-reporters',       '>= 1.6.1'
   gem 'rubocop',                  '~> 1.88.2', require: false
   gem 'rubocop-minitest'

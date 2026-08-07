@@ -36,7 +36,9 @@ module Bible270
       remember_reader!(reader)
       @current_reader = reader
 
-      redirect_to destination, notice: "Welcome #{reader.first_name}."
+      # first_name is filled in for every route now, but a bridged host user may
+      # still arrive without one.
+      redirect_to destination, notice: "Welcome #{reader.first_name.presence || reader.display_name}."
     end
 
     def destroy

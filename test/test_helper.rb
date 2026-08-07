@@ -46,6 +46,7 @@ end
 
 $LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 require 'minitest/autorun'
+require 'minitest/mock'
 require 'bible270/plan'
 
 # ---- the dummy application ------------------------------------------------
@@ -105,6 +106,12 @@ module OmniAuthTesting
     return skip('OmniAuth unavailable') unless defined?(OmniAuth)
 
     previous_test_mode = OmniAuth.config.test_mode
+    previous_validation = OmniAuth.config.request_validation_phase
+    # omniauth-rails_csrf_protection guards the request phase with an authenticity
+    # token, which an integration test has no way to supply — the request came
+    # back as "Sign in failed (Forbidden)". That check belongs to OmniAuth, not to
+    # this engine, so it is stood down here and restored afterwards.
+    OmniAuth.config.request_validation_phase = ->(_env) {}
     OmniAuth.config.test_mode = true
     OmniAuth.config.mock_auth[provider] = OmniAuth::AuthHash.new(
       'provider' => provider.to_s, 'uid' => uid,
@@ -116,6 +123,7 @@ module OmniAuthTesting
   ensure
     OmniAuth.config.mock_auth[provider] = nil
     OmniAuth.config.before_callback_phase = nil
+    OmniAuth.config.request_validation_phase = previous_validation
     OmniAuth.config.test_mode = previous_test_mode
   end
 
@@ -124,12 +132,15 @@ module OmniAuthTesting
     return skip('OmniAuth unavailable') unless defined?(OmniAuth)
 
     previous_test_mode = OmniAuth.config.test_mode
+    previous_validation = OmniAuth.config.request_validation_phase
+    OmniAuth.config.request_validation_phase = ->(_env) {}
     OmniAuth.config.test_mode = true
     OmniAuth.config.mock_auth[provider] = reason
 
     yield provider
   ensure
     OmniAuth.config.mock_auth[provider] = nil
+    OmniAuth.config.request_validation_phase = previous_validation
     OmniAuth.config.test_mode = previous_test_mode
   end
 end

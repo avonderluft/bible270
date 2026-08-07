@@ -65,6 +65,49 @@ if RAILS_LOADED
       refute_empty reader.display_name.to_s, 'a blank display name would render as an empty link'
     end
 
+    # Providers usually give one display name. Without splitting it the reader had
+    # no first_name, which made the greeting read "Welcome ." and left them
+    # unmentionable — Reader.mentioned_in only considers readers who have one.
+    def test_a_display_name_is_split_into_first_and_last
+      reader = Bible270::Reader.from_omniauth(auth)
+
+      assert_equal 'Andrew', reader.first_name
+      assert_equal 'vonderLuft', reader.last_name
+    end
+
+    def test_a_single_word_name_still_gives_a_first_name
+      reader = Bible270::Reader.from_omniauth(auth('info' => { 'name' => 'Madonna' }))
+
+      assert_equal 'Madonna', reader.first_name
+      assert_nil reader.last_name
+    end
+
+    def test_explicit_name_fields_are_preferred_when_given
+      reader = Bible270::Reader.from_omniauth(
+        auth('info' => { 'name' => 'ignored', 'first_name' => 'Mary', 'last_name' => 'Smith' })
+      )
+
+      assert_equal 'Mary', reader.first_name
+      assert_equal 'Smith', reader.last_name
+    end
+
+    # A reader who corrects their name on their profile keeps it.
+    def test_signing_in_again_does_not_overwrite_a_corrected_name
+      reader = Bible270::Reader.from_omniauth(auth)
+      reader.update_names('Andy', 'vonderLuft')
+
+      Bible270::Reader.from_omniauth(auth)
+
+      assert_equal 'Andy', reader.reload.first_name
+    end
+
+    def test_an_omniauth_reader_can_be_mentioned
+      Bible270::Reader.from_omniauth(auth)
+
+      assert_equal ['Andrew vonderLuft'],
+                   Bible270::Reader.mentioned_in('thanks @andrew').map(&:display_name)
+    end
+
     def test_existing_omniauth_readers_can_be_recognised
       Bible270::Reader.from_omniauth(auth)
 
