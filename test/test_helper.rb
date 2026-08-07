@@ -76,6 +76,8 @@ RAILS_LOADED =
 
     true
   rescue LoadError, StandardError => e
+    raise if ENV['CI'] && !ENV['SKIP_COV']
+
     warn "[bible270] skipping Rails-backed tests: #{e.class}: #{e.message}"
     false
   end

@@ -20,9 +20,7 @@ jobs:
           - { ruby: "3.3", rails: "8.0" }
           - { ruby: "3.4", rails: "8.0" }
           - { ruby: "3.4", rails: "8.1" }
-          # Ruby 4.0 is new enough that a failure here is information, not a
-          # broken build — hence the only allow-failure entry.
-          - { ruby: "4.0", rails: "8.1", experimental: true }
+          - { ruby: "4.0", rails: "8.1" }
 
     name: ${{ format('Ruby {0}, Rails {1}', matrix.ruby, matrix.rails) }}
     runs-on: ubuntu-latest
