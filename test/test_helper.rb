@@ -6,11 +6,6 @@ ENV['RAILS_ENV'] = 'test'
 # test matrix uses, since only the coverage job needs a report.
 unless ENV['SKIP_COV']
   require 'simplecov'
-  require 'coveralls'
-
-  Coveralls.wear_merged!
-
-  SimpleCov.formatter = SimpleCov::Formatter::HTMLFormatter
 
   SimpleCov.start do
     track_files '{app,lib}/**/*.rb'
