@@ -24,11 +24,8 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: true
 
-      - name: Run tests
+      - name: Run tests and report coverage
         run: bundle exec rake test
-
-      - name: Report coverage to Coveralls
-        run: bundle exec rake coveralls:push
 
       - name: Keep the report as an artifact
         if: always()

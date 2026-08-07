@@ -6,19 +6,19 @@ ENV['RAILS_ENV'] = 'test'
 # test matrix uses, since only the coverage job needs a report.
 unless ENV['SKIP_COV']
   require 'simplecov'
+  require 'coveralls'
+
+  Coveralls.wear_merged!
+
   SimpleCov.formatter = SimpleCov::Formatter::HTMLFormatter
 
   SimpleCov.start do
-    # Count files even when no test loads them. Without this, coverage flatters
-    # itself by ignoring everything untested.
     track_files '{app,lib}/**/*.rb'
 
     add_filter '/test/'
     add_filter '/gemfiles/'
     add_filter 'lib/bible270/version.rb'
 
-    # The HTML report breaks down by group, which is what shows where the
-    # untested code actually is.
     add_group 'Plan',        'lib/bible270/plan.rb'
     add_group 'Library',     'lib/bible270'
     add_group 'Generators',  'lib/generators'
@@ -27,8 +27,6 @@ unless ENV['SKIP_COV']
     add_group 'Helpers',     'app/helpers'
     add_group 'Mailers',     'app/mailers'
 
-    # A floor to ratchet up as the Rails-dependent code gets tests:
-    #   COVERAGE_FLOOR=35 bundle exec rake test
     minimum_coverage ENV['COVERAGE_FLOOR'].to_i if ENV['COVERAGE_FLOOR']
   end
 end
