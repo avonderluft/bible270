@@ -6,18 +6,7 @@ ENV['RAILS_ENV'] = 'test'
 # test matrix uses, since only the coverage job needs a report.
 unless ENV['SKIP_COV']
   require 'simplecov'
-
-  # Coveralls only where it can actually post. Locally there is no token, and its
-  # formatter would replace the console summary with a failed upload.
-  posting = ENV['CI'] || ENV.fetch('COVERALLS_REPO_TOKEN', nil)
-  if posting
-    require 'coveralls'
-    SimpleCov.formatters = SimpleCov::Formatter::MultiFormatter.new(
-      [SimpleCov::Formatter::HTMLFormatter, Coveralls::SimpleCov::Formatter]
-    )
-  else
-    SimpleCov.formatter = SimpleCov::Formatter::HTMLFormatter
-  end
+  SimpleCov.formatter = SimpleCov::Formatter::HTMLFormatter
 
   SimpleCov.start do
     # Count files even when no test loads them. Without this, coverage flatters

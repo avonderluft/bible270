@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'coveralls/rake/task'
+Coveralls::RakeTask.new
+
 require 'bundler/gem_tasks' # provides build / install / release
 require 'rake/testtask'
 
