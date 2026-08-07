@@ -27,6 +27,17 @@ jobs:
       - name: Run tests
         run: bundle exec rake test
 
+      - name: Inspect coverage
+        run: |
+          ruby -rjson -e '
+            r = JSON.parse(File.read("coverage/.resultset.json"))
+            result = r.values.first
+            files = result["coverage"]
+            total = files.values.sum { |f| f["lines"].compact.count }
+            covered = files.values.sum { |f| f["lines"].compact.count { |n| n && n > 0 } }
+            puts "CI COVERAGE: #{covered} / #{total} = #{(covered.to_f / total * 100).round(2)}%"
+          '
+
       - name: Report coverage to Coveralls
         run: bundle exec rake coveralls:push
 
