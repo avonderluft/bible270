@@ -31,6 +31,16 @@ require 'minitest/autorun'
 require 'minitest/mock'
 require 'bible270/plan'
 
+# ---- clean dummy application ---------------------------------------------
+
+dummy_root = File.expand_path('dummy', __dir__)
+
+FileUtils.mkdir_p File.join(dummy_root, 'log')
+FileUtils.mkdir_p File.join(dummy_root, 'tmp', 'storage')
+
+FileUtils.rm_f File.join(dummy_root, 'log', 'test.log')
+FileUtils.rm_rf Dir[File.join(dummy_root, 'tmp', 'storage', '*')]
+
 # ---- the dummy application ------------------------------------------------
 #
 # Booting a real Rails app is the only way to exercise the models, controllers,

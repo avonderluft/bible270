@@ -5,4 +5,4 @@
 Gemfile.lock
 
 coverage/
-test/dummy/log/*
+test/dummy/log/*.log
