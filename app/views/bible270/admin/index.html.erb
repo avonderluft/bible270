@@ -47,4 +47,31 @@
   <p style="color:var(--faint)">No readers yet.</p>
 <% end %>
 
+<div class="b270-panel">
+  <h2 class="b270-subhead">Write to everyone</h2>
+
+  <% if @reachable.zero? %>
+    <p class="b270-hint" style="margin-top:0">No reader has an email address yet.</p>
+  <% else %>
+    <p class="b270-hint" style="margin-top:0">
+      Goes to <strong><%= @reachable %></strong>
+      <%= @reachable == 1 ? 'reader' : 'readers' %> individually, not as one message with
+      everyone in bcc — so each is greeted by name.
+      <% if @last_broadcast_at.present? %>
+        <br>Last sent <%= b270_datetime(@last_broadcast_at) %><%
+          %><% if @last_broadcast_subject.present? %>: <em><%= @last_broadcast_subject %></em><% end %>.
+      <% end %>
+    </p>
+
+    <%= form_with url: admin_broadcast_path, method: :post, class: "b270-form",
+          data: { turbo_confirm: "Send this to #{@reachable} #{@reachable == 1 ? 'reader' : 'readers'}?" } do %>
+      <%= text_field_tag :subject, params[:subject], placeholder: "Subject", class: "b270-input" %>
+      <%= text_area_tag :body, params[:body], placeholder: "What would you like to say?", rows: 6 %>
+      <div class="row">
+        <%= submit_tag "Send", class: "b270-btn" %>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
 <p style="margin-top:18px"><%= link_to '← Back to the plan', root_path %></p>

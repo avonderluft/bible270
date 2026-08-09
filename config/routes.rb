@@ -22,10 +22,12 @@ Bible270::Engine.routes.draw do
   delete 'admin/readers/:id',            to: 'admin#destroy'
   patch  'admin/readers/:id/profile',    to: 'admin#update_profile',   as: :admin_reader_profile
   delete 'admin/readers/:id/avatar',     to: 'admin#remove_avatar',    as: :admin_reader_avatar
+  patch  'admin/readers/:id/version',    to: 'admin#update_bible_version', as: :admin_reader_version
   patch  'admin/readers/:id/start',      to: 'admin#update_start',     as: :admin_reader_start
   patch  'admin/readers/:id/through',    to: 'admin#complete_through', as: :admin_reader_through
   post   'admin/readers/:id/days/:day',  to: 'admin#toggle_day',       as: :admin_reader_day
 
+  post   'admin/broadcast',              to: 'admin#broadcast',        as: :admin_broadcast
   patch  'admin/enrollment',             to: 'admin#update_enrollment', as: :admin_enrollment
   get    'admin/comments',               to: 'admin#comments',         as: :admin_comments
   patch  'admin/comments/:id/hide',      to: 'admin#hide_comment',     as: :admin_hide_comment

@@ -31,6 +31,22 @@ module Bible270
            subject: "#{@app_name}: #{@author.display_name} mentioned you on day #{@comment.day}"
     end
 
+    # A message from whoever runs the plan to one reader. Sent individually rather
+    # than as one email with everyone in bcc: a bcc list of a hundred addresses is
+    # a spam signal, and it means nobody can be greeted by name or unsubscribe
+    # meaningfully.
+    def broadcast(reader_id:, subject:, body:)
+      @reader = Reader.find_by(id: reader_id)
+      return message.perform_deliveries = false if @reader.nil? || @reader.email.blank?
+      return message.perform_deliveries = false if subject.to_s.strip.empty? || body.to_s.strip.empty?
+
+      @body = body.to_s
+      @app_name = Bible270.config.app_name
+      @plan_url = plan_url
+
+      mail to: @reader.email, subject: subject.to_s.strip
+    end
+
   private
 
     # A mailer has no request, so the host is config.mailer_host or nothing. No
@@ -41,6 +57,10 @@ module Bible270
     # config.mount_at was worse than useless — ignored when blank, and overriding
     # the true prefix when not, so a config that disagreed with routes.rb would
     # have produced links to nowhere.
+    def plan_url
+      engine_url(:root_url)
+    end
+
     def day_url_for(day)
       engine_url(:day_url, day)
     end

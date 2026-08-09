@@ -93,6 +93,28 @@
 </div>
 
 <div class="b270-panel">
+  <h2 class="b270-subhead">Which translation they read</h2>
+  <p class="b270-hint" style="margin-top:0">
+    Reading links open in this translation.
+    <% if @reader.bible_version.blank? %>
+      They have expressed no preference, so they follow the site default
+      (<%= Bible270.config.bible_version %>).
+    <% end %>
+  </p>
+
+  <%= form_with url: admin_reader_version_path(@reader), method: :patch, class: "b270-form" do %>
+    <div class="row">
+      <%= select_tag :bible_version,
+            options_for_select([["Site default (#{Bible270.config.bible_version})", ""]] +
+                               Bible270::Translations.options,
+                               @reader.bible_version.to_s),
+            class: "b270-select", style: "width:auto" %>
+      <%= submit_tag "Save", class: "b270-btn" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="b270-panel">
   <h2 class="b270-subhead">Remove</h2>
   <p class="b270-hint" style="margin-top:0">Deletes the reader together with every check-off and
      reflection they have written. This cannot be undone.</p>

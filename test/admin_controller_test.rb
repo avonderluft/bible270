@@ -207,6 +207,87 @@ if RAILS_LOADED
       refute thought.reload.hidden?, 'hiding a reply must not hide what it answered'
     end
 
+    # ---- which translation a reader gets ------------------------------------
+
+    def test_the_page_shows_a_readers_translation
+      @reader.update_bible_version('KJV')
+      sign_in_as_admin
+
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      assert_response :success
+      assert_match(%r{Which translation they read}, response.body)
+      assert_match(%r{<option selected="selected" value="KJV">}, response.body)
+    end
+
+    def test_it_says_when_a_reader_has_no_preference
+      sign_in_as_admin
+
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      assert_match(%r{no preference}, response.body)
+      assert_match(%r{Site default}, response.body)
+    end
+
+    def test_an_admin_can_set_a_readers_translation
+      sign_in_as_admin
+
+      patch "#{mount}/admin/readers/#{@reader.id}/version", params: { bible_version: 'LSB' }
+
+      assert_equal 'LSB', @reader.reload.bible_version
+      assert_equal 'LSB', @reader.effective_bible_version
+    end
+
+    # Blank is not the same as picking today's default: it means follow whatever
+    # the site uses, including after the site changes it.
+    def test_clearing_it_returns_them_to_the_site_default
+      @reader.update_bible_version('KJV')
+      sign_in_as_admin
+
+      patch "#{mount}/admin/readers/#{@reader.id}/version", params: { bible_version: '' }
+
+      assert_nil @reader.reload.bible_version
+      assert_equal Bible270.config.bible_version, @reader.effective_bible_version
+    end
+
+    def test_an_unknown_translation_is_refused
+      @reader.update_bible_version('KJV')
+      sign_in_as_admin
+
+      patch "#{mount}/admin/readers/#{@reader.id}/version", params: { bible_version: 'NIV' }
+
+      assert_equal 'KJV', @reader.reload.bible_version, 'unchanged'
+      assert_match(%r{not a translation}, flash[:alert].to_s)
+    end
+
+    def test_an_ordinary_reader_cannot_set_someone_elses_translation
+      sign_in_as(@reader)
+
+      patch "#{mount}/admin/readers/#{@admin.id}/version", params: { bible_version: 'KJV' }
+
+      refute_equal 200, response.status
+      assert_nil @admin.reload.bible_version
+    end
+
+    def test_a_visitor_cannot_either
+      patch "#{mount}/admin/readers/#{@reader.id}/version", params: { bible_version: 'KJV' }
+
+      assert_nil @reader.reload.bible_version
+    end
+
+    # The point of the setting: reading links open in their translation.
+    def test_the_choice_reaches_the_readers_day_page
+      sign_in_as_admin
+      patch "#{mount}/admin/readers/#{@reader.id}/version", params: { bible_version: 'KJV' }
+      reset!
+
+      _record, raw = Bible270::SignInToken.issue!(@reader.email)
+      get "#{mount}/sign_in/email/#{raw}"
+      get "#{mount}/day/1"
+
+      assert_match(%r{version=KJV}, response.body)
+    end
+
     # ---- moderating from the page itself -----------------------------------
 
     def test_an_admin_sees_delete_on_someone_elses_reflection
@@ -256,6 +337,104 @@ if RAILS_LOADED
       get "#{mount}/day/1"
 
       assert_match(%r{turbo-confirm}, response.body)
+    end
+
+    # ---- writing to everyone ------------------------------------------------
+
+    def test_the_panel_offers_to_write_to_everyone
+      sign_in_as_admin
+
+      get "#{mount}/admin"
+
+      assert_response :success
+      assert_match(%r{Write to everyone}, response.body)
+      assert_match(%r{2 readers}, response.body, 'says how many it will reach')
+    end
+
+    def test_a_message_goes_to_every_reader_with_an_address
+      ActionMailer::Base.deliveries.clear
+      sign_in_as_admin
+
+      post "#{mount}/admin/broadcast", params: { subject: 'A word', body: 'Grace and peace.' }
+
+      assert_equal 2, ActionMailer::Base.deliveries.size
+      assert_equal [@admin.email, @reader.email].sort,
+                   ActionMailer::Base.deliveries.map { |mail| mail.to.first }.sort
+    end
+
+    # One message each, not one message with everyone in bcc.
+    def test_each_reader_gets_their_own_message
+      ActionMailer::Base.deliveries.clear
+      sign_in_as_admin
+
+      post "#{mount}/admin/broadcast", params: { subject: 'A word', body: 'Grace and peace.' }
+
+      ActionMailer::Base.deliveries.each do |mail|
+        assert_equal 1, mail.to.size
+        assert_nil mail.bcc
+      end
+    end
+
+    def test_the_message_greets_the_reader_by_name
+      ActionMailer::Base.deliveries.clear
+      sign_in_as_admin
+
+      post "#{mount}/admin/broadcast", params: { subject: 'A word', body: 'Grace and peace.' }
+
+      to_reader = ActionMailer::Base.deliveries.find { |mail| mail.to == [@reader.email] }
+      body = to_reader.multipart? ? to_reader.all_parts.map { |p| p.body.to_s }.join : to_reader.body.to_s
+
+      assert_match(%r{\bR\b}, body, 'their first name')
+      assert_match(%r{Grace and peace}, body)
+      assert_equal 'A word', to_reader.subject
+    end
+
+    def test_a_reader_without_an_address_is_skipped
+      Bible270::Reader.create!(provider: 'owner', uid: 'host-1', display_name: 'No Email')
+      ActionMailer::Base.deliveries.clear
+      sign_in_as_admin
+
+      post "#{mount}/admin/broadcast", params: { subject: 'A word', body: 'Something' }
+
+      assert_equal 2, ActionMailer::Base.deliveries.size, 'the two with addresses'
+    end
+
+    def test_an_empty_message_is_refused
+      ActionMailer::Base.deliveries.clear
+      sign_in_as_admin
+
+      post "#{mount}/admin/broadcast", params: { subject: '', body: 'Something' }
+      post "#{mount}/admin/broadcast", params: { subject: 'A word', body: '   ' }
+
+      assert_empty ActionMailer::Base.deliveries
+      assert_match(%r{subject}, flash[:alert].to_s)
+    end
+
+    def test_it_remembers_when_it_last_wrote
+      sign_in_as_admin
+      post "#{mount}/admin/broadcast", params: { subject: 'A word', body: 'Something' }
+
+      get "#{mount}/admin"
+
+      assert_match(%r{Last sent}, response.body)
+      assert_match(%r{A word}, response.body)
+    end
+
+    def test_an_ordinary_reader_cannot_write_to_everyone
+      ActionMailer::Base.deliveries.clear
+      sign_in_as(@reader)
+
+      post "#{mount}/admin/broadcast", params: { subject: 'Spam', body: 'Buy things' }
+
+      assert_empty ActionMailer::Base.deliveries
+    end
+
+    def test_a_visitor_cannot_either
+      ActionMailer::Base.deliveries.clear
+
+      post "#{mount}/admin/broadcast", params: { subject: 'Spam', body: 'Buy things' }
+
+      assert_empty ActionMailer::Base.deliveries
     end
 
     # ---- closing a run -----------------------------------------------------
