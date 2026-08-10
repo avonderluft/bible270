@@ -6,7 +6,51 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.16.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.17.2...main)**
+
+## [0.17.2] - 2026-08-08
+
+### Added
+
+- reader Bible translation preferences editable by admin users
+- admin broadcast email tools
+
+### Changed
+
+- extract first and last names from OmniAuth display names
+- expand CI coverage reporting and add Ruby 4.0 coverage
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.17.1...v0.17.2)**
+
+## [0.17.1] - 2026-08-06
+
+### Added
+
+- likes for reflections
+
+### Changed
+
+- display timestamps using the local time zone
+- rename reflections to 'posts' in UI headers, because we like alliteration
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.17.0...v0.17.1)**
+
+## [0.17.0] - 2026-08-05
+
+### Added
+
+- a reflections page for browsing recent comments
+- the ability for readers to edit their reflections
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.16.1...v0.17.0)**
+
+## [0.16.1] - 2026-08-05
+
+### Changed
+
+- refactor mailer URL helpers to use the engine's routes
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.16.0...v0.16.1)**
 
 ## [0.16.0] - 2026-08-05
 
@@ -19,8 +63,6 @@ See the changes since the last release:
 
 ## [0.15.3] - 2026-08-04
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.2...v0.15.3)**
-
 ### Added
 
 - `Bible270::Checkoff.reset_column_information` to migrations to prevent `UnknownAttributeError` during backfills.
@@ -30,9 +72,9 @@ See the changes since the last release:
 
 - 'Today' now derived from system time, not UTC
 
-## [0.15.2] - 2026-08-04
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.2...v0.15.3)**
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.1...v0.15.2)**
+## [0.15.2] - 2026-08-04
 
 ### Added 
 
@@ -42,9 +84,9 @@ See the changes since the last release:
 
 - consistent reader sort order by first name in 'People' and 'Admin'
 
-## [0.15.1] - 2026-08-03
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.1...v0.15.2)**
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.0...v0.15.1)**
+## [0.15.1] - 2026-08-03
 
 ### Added
 
@@ -59,9 +101,9 @@ See the changes since the last release:
 
 - old zip file of tests
 
-## [0.15.0] - 2026-08-02
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.15.0...v0.15.1)**
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.14.1...v0.15.0)**
+## [0.15.0] - 2026-08-02
 
 ### Added
 
@@ -73,9 +115,9 @@ See the changes since the last release:
 
 - mobile session requiring sign-in every time: use persistent sessions using 'remember-me' cookie
 
-## [0.14.1] - 2026-07-30
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.14.1...v0.15.0)**
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.14.0...v0.14.1)**
+## [0.14.1] - 2026-07-30
 
 ### Changed
 
@@ -87,9 +129,9 @@ See the changes since the last release:
 - display 'Start' not 'Continue' if reader is on day 1
 - adjust badge vertical alignment in styles
 
-## [0.14.0] - 2026-07-30
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.14.0...v0.14.1)**
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.13.1...v0.14.0)**
+## [0.14.0] - 2026-07-30
 
 ### Added
 
@@ -107,15 +149,9 @@ See the changes since the last release:
   wrote an initializer that crashed the host app on boot. A test now renders every generator template
   and compiles the result, across three mount points.
 
-## [0.13.1] — 2026-07-29
-
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.13.0...v0.13.1)**
-
-Nothing consequential.
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.13.0...v0.14.0)**
 
 ## [0.13.0] — 2026-07-29
-
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.12.0...v0.13.0)**
 
 ### Added
 
@@ -127,9 +163,9 @@ Nothing consequential.
 
 - Correct verb for reading prompt: 'Start' and 'Continue
 
-## [0.12.0] — 2026-07-29
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.12.0...v0.13.0)**
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.11.0...v0.12.0)**
+## [0.12.0] — 2026-07-29
 
 ### Added
 
@@ -141,9 +177,9 @@ Nothing consequential.
 - Top menu shows 'Progress' in place of user display name
 - Dependabot gem updates to minitest and rubocop
 
-## [0.11.0] — 2026-07-28
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.11.0...v0.12.0)**
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.10.0...v0.11.0)** 
+## [0.11.0] — 2026-07-28
 
 ### Added
 
@@ -195,9 +231,9 @@ Nothing consequential.
 - Migrations: `20260101000007` (settings). Active Storage tables are the host app's
   (`bin/rails active_storage:install`).
 
-## [0.10.0] — 2026-07-26
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.10.0...v0.11.0)** 
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.9.0...v0.10.0)**
+## [0.10.0] — 2026-07-26
 
 ### Reading plan
 
@@ -270,9 +306,9 @@ Nothing consequential.
 
 - Table names changed from `bible_reading_plan_*` in the 0.9.0 line; this is a fresh install.
 
-## [0.9.0] — 2026-07-25
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.9.0...v0.10.0)**
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.6.2...v0.9.0)**
+## [0.9.0] — 2026-07-25
 
 ### Changed
 
@@ -289,6 +325,8 @@ Nothing consequential.
 
 * `Plan.nt_groups`, `format_pp_segment`, `pp_segment_length` (superseded by the shared `format_segment` and `segment_length`), and `totals[:nt_rest_days]`.
 * `nt_rest_days` remains but now always returns an empty array.
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.6.2...v0.9.0)**
 
 ## [0.6.2] — 2026-07-25
 
@@ -352,6 +390,10 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[0.17.2]: https://github.com/avonderluft/bible270/releases/tag/v0.17.2
+[0.17.1]: https://github.com/avonderluft/bible270/releases/tag/v0.17.1
+[0.17.0]: https://github.com/avonderluft/bible270/releases/tag/v0.17.0
+[0.16.1]: https://github.com/avonderluft/bible270/releases/tag/v0.16.1
 [0.16.0]: https://github.com/avonderluft/bible270/releases/tag/v0.16.0
 [0.15.3]: https://github.com/avonderluft/bible270/releases/tag/v0.15.3
 [0.15.2]: https://github.com/avonderluft/bible270/releases/tag/v0.15.2
@@ -359,7 +401,6 @@ This is the initial public release.
 [0.15.0]: https://github.com/avonderluft/bible270/releases/tag/v0.15.0
 [0.14.1]: https://github.com/avonderluft/bible270/releases/tag/v0.14.1
 [0.14.0]: https://github.com/avonderluft/bible270/releases/tag/v0.14.0
-[0.13.1]: https://github.com/avonderluft/bible270/releases/tag/v0.13.1
 [0.13.0]: https://github.com/avonderluft/bible270/releases/tag/v0.13.0
 [0.12.0]: https://github.com/avonderluft/bible270/releases/tag/v0.12.0
 [0.11.0]: https://github.com/avonderluft/bible270/releases/tag/v0.11.0
