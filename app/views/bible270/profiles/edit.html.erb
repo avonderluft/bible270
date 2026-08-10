@@ -39,6 +39,7 @@
             class: "b270-select" %>
       <span class="b270-hint" style="margin:0">Reading links open in this translation.</span>
     </label>
+    <%= render "bible270/shared/passage_source", reader: current_reader %>
 
     <%= submit_tag "Save", class: "b270-btn" %>
   <% end %>

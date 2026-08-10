@@ -218,6 +218,10 @@ if RAILS_LOADED
       assert_response :success
       assert_match(%r{Which translation they read}, response.body)
       assert_match(%r{<option selected="selected" value="KJV">}, response.body)
+      assert_match(%r{name="bible_version".*class="b270-source-choices"}m, response.body,
+                   'reader choice belongs immediately below the translation selector')
+      assert_equal 2, response.body.scan(%r{name="passage_source"}).size
+      assert_match(%r{value="bible_gateway" checked="checked"}, response.body)
     end
 
     def test_it_says_when_a_reader_has_no_preference
@@ -236,6 +240,34 @@ if RAILS_LOADED
 
       assert_equal 'LSB', @reader.reload.bible_version
       assert_equal 'LSB', @reader.effective_bible_version
+    end
+
+    def test_an_admin_can_choose_blue_letter_bible_for_a_reader
+      sign_in_as_admin
+
+      patch "#{mount}/admin/readers/#{@reader.id}/version",
+            params: { bible_version: 'LSB', passage_source: 'blue_letter_bible' }
+
+      assert_equal 'blue_letter_bible', @reader.reload.passage_source
+    end
+
+    def test_an_admin_cannot_set_an_unknown_passage_source
+      sign_in_as_admin
+
+      patch "#{mount}/admin/readers/#{@reader.id}/version",
+            params: { bible_version: 'LSB', passage_source: 'unknown' }
+
+      assert_equal 'bible_gateway', @reader.reload.passage_source
+      assert_match(%r{not a reading-link source}, flash[:alert].to_s)
+    end
+
+    def test_an_admin_can_return_a_reader_to_bible_gateway
+      @reader.update!(passage_source: 'blue_letter_bible')
+      sign_in_as_admin
+
+      patch "#{mount}/admin/readers/#{@reader.id}/version", params: { bible_version: 'LSB' }
+
+      assert_equal 'bible_gateway', @reader.reload.passage_source
     end
 
     # Blank is not the same as picking today's default: it means follow whatever
@@ -286,6 +318,19 @@ if RAILS_LOADED
       get "#{mount}/day/1"
 
       assert_match(%r{version=KJV}, response.body)
+    end
+
+    def test_the_blue_letter_bible_choice_reaches_the_readers_day_page
+      sign_in_as_admin
+      patch "#{mount}/admin/readers/#{@reader.id}/version",
+            params: { bible_version: 'KJV', passage_source: 'blue_letter_bible' }
+      reset!
+
+      _record, raw = Bible270::SignInToken.issue!(@reader.email)
+      get "#{mount}/sign_in/email/#{raw}"
+      get "#{mount}/day/1"
+
+      assert_match(%r{blueletterbible\.org/kjv/gen/1/1/s_1001}, response.body)
     end
 
     # ---- moderating from the page itself -----------------------------------

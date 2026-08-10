@@ -59,6 +59,27 @@ if RAILS_LOADED
       assert_includes b270_passage_url('Genesis 1'), 'NASB1995'
     end
 
+    def test_blue_letter_bible_links_follow_the_readers_choice
+      @reader.update_bible_version('KJV')
+      @reader.update!(passage_source: 'blue_letter_bible')
+      @current_reader = @reader
+
+      assert_equal 'https://www.blueletterbible.org/kjv/gen/1/1/s_1001',
+                   b270_passage_url("Genesis 1\u20133")
+      assert_equal 'https://www.blueletterbible.org/kjv/mat/1/1/s_930001',
+                   b270_passage_url('Matthew 1')
+    end
+
+    def test_original_language_links_follow_the_readers_choice
+      @reader.update_bible_version('HEB/GRK')
+      @current_reader = @reader
+
+      assert_equal 'https://www.blueletterbible.org/wlc/gen/1/1/s_1001',
+                   b270_passage_url("Genesis 1\u20133")
+      assert_equal 'https://www.blueletterbible.org/mgnt/mat/1/1/s_930001',
+                   b270_passage_url('Matthew 1')
+    end
+
     def test_a_blank_reference_produces_no_link
       assert_equal '#', b270_passage_url('')
       assert_equal '#', b270_passage_url(nil)
@@ -70,6 +91,15 @@ if RAILS_LOADED
 
       assert_includes tag, Bible270.config.bible_version
       assert_includes tag, 'b270-version'
+    end
+
+    def test_original_language_version_tags_name_the_track_language
+      @reader.update_bible_version('HEB/GRK')
+      @current_reader = @reader
+
+      assert_includes b270_version_tag(track: 'ot'), '(Hebrew)'
+      assert_includes b270_version_tag(track: 'pp'), '(Hebrew)'
+      assert_includes b270_version_tag(track: 'nt'), '(Greek)'
     end
 
     def test_the_favicon_is_a_data_uri_by_default

@@ -105,16 +105,22 @@ module Bible270
       return redirect_to(admin_path, alert: 'No such reader.') if reader.nil?
 
       code = params[:bible_version].to_s
+      source = params[:passage_source].presence || Reader::DEFAULT_PASSAGE_SOURCE
+      unless Reader::PASSAGE_SOURCES.include?(source)
+        return redirect_to admin_reader_path(reader), alert: 'That is not a reading-link source on the list.'
+      end
+
       # Blank means "no preference": the reader follows the site default, which is
       # not the same as choosing whichever translation the site happens to use now.
       if code.empty?
-        reader.update(bible_version: nil)
+        reader.update(bible_version: nil, passage_source: source)
         return redirect_to admin_reader_path(reader),
                            notice: "#{reader.display_name} now follows the site default " \
                                    "(#{Bible270.config.bible_version})."
       end
 
       if reader.update_bible_version(code)
+        reader.update_column(:passage_source, source)
         redirect_to admin_reader_path(reader),
                     notice: "#{reader.display_name} now reads the #{reader.bible_version_label}."
       else

@@ -112,13 +112,24 @@ module Bible270
     def b270_passage_url(reference, version = nil)
       return '#' if reference.blank?
 
-      Bible270.config.passage_url_builder.call(reference, version || b270_bible_version)
+      selected_version = version || b270_bible_version
+      if selected_version != Translations::ORIGINAL_LANGUAGES && current_reader&.blue_letter_bible?
+        return Translations.passage_url(reference, selected_version, blue_letter: true)
+      end
+
+      Bible270.config.passage_url_builder.call(reference, selected_version)
     end
 
     # Small grey "(NKJV)" after a reading, so it's clear which translation the
-    # link opens in.
-    def b270_version_tag(version = nil)
-      content_tag :span, "(#{version || b270_bible_version})", class: 'b270-version'
+    # link opens in. The original-language preference names the actual language
+    # used for each track rather than repeating the combined preference code.
+    def b270_version_tag(version = nil, track: nil)
+      label = version || b270_bible_version
+      if label == Translations::ORIGINAL_LANGUAGES && track
+        label = track.to_s == 'nt' ? 'Greek' : 'Hebrew'
+      end
+
+      content_tag :span, "(#{label})", class: 'b270-version'
     end
 
     def b270_avatar_src(reader)

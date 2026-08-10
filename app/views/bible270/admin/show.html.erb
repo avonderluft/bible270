@@ -109,8 +109,9 @@
                                Bible270::Translations.options,
                                @reader.bible_version.to_s),
             class: "b270-select", style: "width:auto" %>
-      <%= submit_tag "Save", class: "b270-btn" %>
     </div>
+    <%= render "bible270/shared/passage_source", reader: @reader %>
+    <%= submit_tag "Save", class: "b270-btn" %>
   <% end %>
 </div>
 

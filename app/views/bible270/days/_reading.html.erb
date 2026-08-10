@@ -35,7 +35,7 @@
           <% end %>
         </ul>
         <div class="b270-parts-meta">
-          <%= read_parts.size %> of <%= parts.size %> chapters <%= b270_version_tag %>
+          <%= read_parts.size %> of <%= parts.size %> chapters <%= b270_version_tag(track: track) %>
         </div>
       </div>
     <% else %>
@@ -50,7 +50,7 @@
       <% end %>
       <div class="b270-rbody">
         <div class="b270-cat"><%= t[:label] %></div>
-        <div class="b270-ref"><%= link_to ref, b270_passage_url(ref), target: "_blank", rel: "noopener" %> <%= b270_version_tag %></div>
+        <div class="b270-ref"><%= link_to ref, b270_passage_url(ref), target: "_blank", rel: "noopener" %> <%= b270_version_tag(track: track) %></div>
       </div>
     <% end %>
   </div>

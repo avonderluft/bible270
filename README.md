@@ -117,6 +117,29 @@ bin/rails bible270:install:migrations   # skips ones you already have
 bin/rails db:migrate
 ```
 
+### Reconciling a copied database
+
+A copied database can contain the Bible270 tables while its `schema_migrations` versions do not match
+the timestamped migration copies in the local app. In that case, preview the reconciliation:
+
+```bash
+bin/rails bible270:migrations:reconcile
+```
+
+The task recognizes Bible270 migrations—and the related generated Active Storage migration used for
+reader avatars—by name, then verifies their tables, columns, current indexes, and foreign keys. It
+does not treat an existing table alone as sufficient. After reviewing the list and backing up the
+database, record only the migrations already reflected in the schema:
+
+```bash
+APPLY=1 bin/rails bible270:migrations:reconcile
+bin/rails db:migrate
+```
+
+Preview mode never writes to the database. Apply mode only inserts verified local versions into
+`schema_migrations`; it does not create, remove, or alter application tables. Migrations whose changes
+are missing remain pending for the final `db:migrate` command.
+
 ## Bible270 Mount point in your Rails app
 
 The path lives in exactly **one** place, `config.mount_at`:
@@ -361,7 +384,10 @@ config.favicon = false                      # none; the host's favicon applies
 It's emitted by the engine's layout, so if you point `config.layout` at your own layout, add
 `<%= b270_favicon_tag %>` to its `<head>`.
 
-References link to Bible Gateway by default — point `passage_url_builder` at your another reader if you wish, or your own reader if you host one.
+References link to Bible Gateway by default. Readers choose Bible Gateway or Blue Letter Bible from
+their profile, and an admin can set the same source for any reader. The `HEB/GRK` option always uses
+Blue Letter Bible: WLC for Old Testament, Psalms, and Proverbs readings, and mGNT for New Testament
+readings. Set `passage_url_builder` to use another default reader, or a reader you host yourself.
 
 ## With ComfortableMediaSurfer
 
@@ -371,7 +397,7 @@ The CMS serves your content; this is a separate mounted app. Either **just link 
 
 | Table | Holds |
 |-------|-------|
-| `bible270_readers` | identity: display name, avatar, provider/uid or polymorphic `owner`, `started_on` |
+| `bible270_readers` | identity, avatar, provider/uid or polymorphic `owner`, start date, translation and passage-reader preferences |
 | `bible270_checkoffs` | one row per reader per day per track (`ot`/`nt`/`pp`), unique-indexed |
 | `bible270_comments` | a reflection on a day, optionally scoped to a track, public to all |
 | `bible270_sign_in_tokens` | magic-link tokens: email, **digest only**, expiry, consumed-at |

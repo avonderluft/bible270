@@ -347,12 +347,7 @@ module Bible270
       @after_sign_out_path = nil
       @bible_version = 'NKJV'
       @bible_versions = Translations::VERSIONS.keys
-      @passage_url_builder = ->(reference, version) do
-        search  = URI.encode_www_form_component(reference)
-        # Translations.gateway_code maps 'NASB95' to Bible Gateway's 'NASB1995'.
-        version = URI.encode_www_form_component(Translations.gateway_code(version))
-        "https://www.biblegateway.com/passage/?search=#{search}&version=#{version}"
-      end
+      @passage_url_builder = ->(reference, version) { Translations.passage_url(reference, version) }
       @app_name = 'Daily Bread'
       @tagline = 'Journeying through Scripture in 9 months'
       @time_zone = nil

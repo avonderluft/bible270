@@ -25,8 +25,12 @@ module Bible270
     # transaction rolls back.
     after_create_commit :notify_of_registration
 
+    PASSAGE_SOURCES = %w[bible_gateway blue_letter_bible].freeze
+    DEFAULT_PASSAGE_SOURCE = 'bible_gateway'
+
     validates :display_name, presence: true
     validates :uid, uniqueness: { scope: :provider }, allow_nil: true
+    validates :passage_source, inclusion: { in: PASSAGE_SOURCES }
 
     # Build/refresh a reader from an OmniAuth auth hash. Tolerant of the various
     # shapes strategies return (OmniAuth::AuthHash, plain Hash, missing info).
@@ -163,6 +167,16 @@ module Bible270
 
       update(bible_version: Translations.normalize(code))
     end
+
+    def update_passage_source(source)
+      source = source.to_s
+      return false unless PASSAGE_SOURCES.include?(source)
+
+      update(passage_source: source)
+    end
+
+    def bible_gateway? = passage_source == 'bible_gateway'
+    def blue_letter_bible? = passage_source == 'blue_letter_bible'
 
     # Readers are listed by first name, matching how they are shown — the display
     # name is "First Last", so sorting on it needs only case folding. Surname

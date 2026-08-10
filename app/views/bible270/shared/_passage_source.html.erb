@@ -1,0 +1,13 @@
+<% original_languages = reader.effective_bible_version == Bible270::Translations::ORIGINAL_LANGUAGES %>
+<div class="b270-source-choices" role="radiogroup" aria-label="Reading link source">
+  <label class="b270-source-choice <%= 'disabled' if original_languages %>">
+    <%= radio_button_tag :passage_source, "bible_gateway",
+          !original_languages && reader.bible_gateway?, disabled: original_languages %>
+    <span>Bible Gateway</span>
+  </label>
+  <label class="b270-source-choice <%= 'disabled' if original_languages %>">
+    <%= radio_button_tag :passage_source, "blue_letter_bible",
+          original_languages || reader.blue_letter_bible?, disabled: original_languages %>
+    <span>Blue Letter Bible</span>
+  </label>
+</div>

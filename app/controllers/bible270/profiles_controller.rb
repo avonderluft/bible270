@@ -21,6 +21,8 @@ module Bible270
       if params[:bible_version].present? && !current_reader.update_bible_version(params[:bible_version])
         problems << 'a translation from the list'
       end
+      source = params[:passage_source].presence || Reader::DEFAULT_PASSAGE_SOURCE
+      problems << 'a reading-link source from the list' unless current_reader.update_passage_source(source)
       if params[:avatar].present? && !current_reader.attach_avatar(params[:avatar])
         problems << (current_reader.errors[:avatar].first || 'a valid image')
       end

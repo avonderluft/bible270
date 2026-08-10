@@ -33,6 +33,23 @@ if RAILS_LOADED
       assert_response :success
       assert_match(%r{first_name}, response.body)
       assert_match(%r{last_name}, response.body)
+      assert_match(%r{name="bible_version".*class="b270-source-choices"}m, response.body,
+                   'reader choice belongs immediately below the translation selector')
+      assert_equal 2, response.body.scan(%r{name="passage_source"}).size
+      assert_match(%r{value="bible_gateway" checked="checked"}, response.body)
+    end
+
+    def test_original_languages_fix_the_source_to_blue_letter_bible
+      @reader.update_bible_version('HEB/GRK')
+      sign_in_as(@reader)
+      get "#{mount}/profile"
+
+      blue_letter = response.body.match(%r{<input[^>]*value="blue_letter_bible"[^>]*>}).to_s
+      gateway = response.body.match(%r{<input[^>]*value="bible_gateway"[^>]*>}).to_s
+      assert_includes blue_letter, 'checked="checked"'
+      assert_includes blue_letter, 'disabled="disabled"'
+      refute_includes gateway, 'checked="checked"'
+      assert_includes gateway, 'disabled="disabled"'
     end
 
     def test_a_name_can_be_changed
@@ -62,6 +79,33 @@ if RAILS_LOADED
       assert_equal 'LSB', @reader.effective_bible_version
     end
 
+    def test_blue_letter_bible_can_be_chosen
+      sign_in_as(@reader)
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', bible_version: 'LSB', passage_source: 'blue_letter_bible'
+      }
+
+      assert_equal 'blue_letter_bible', @reader.reload.passage_source
+    end
+
+    def test_an_unknown_passage_source_is_refused
+      sign_in_as(@reader)
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', bible_version: 'LSB', passage_source: 'unknown'
+      }
+
+      assert_response :unprocessable_entity
+      assert_equal 'bible_gateway', @reader.reload.passage_source
+    end
+
+    def test_omitting_the_passage_source_returns_to_the_default
+      @reader.update!(passage_source: 'blue_letter_bible')
+      sign_in_as(@reader)
+      patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader', bible_version: 'LSB' }
+
+      assert_equal 'bible_gateway', @reader.reload.passage_source
+    end
+
     def test_an_unknown_translation_is_refused
       sign_in_as(@reader)
       patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader', bible_version: 'NIV' }
@@ -78,6 +122,19 @@ if RAILS_LOADED
 
       assert_response :success
       assert_match(%r{\(KJV\)}, response.body)
+      assert_match(%r{biblegateway\.com}, response.body)
+    end
+
+    def test_the_blue_letter_bible_choice_reaches_the_day_page
+      sign_in_as(@reader)
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', bible_version: 'KJV', passage_source: 'blue_letter_bible'
+      }
+      get "#{mount}/day/1"
+
+      assert_response :success
+      assert_match(%r{blueletterbible\.org/kjv/gen/1/1/s_1001}, response.body)
+      refute_match(%r{biblegateway\.com}, response.body)
     end
 
     def test_a_picture_can_be_removed

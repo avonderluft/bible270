@@ -18,12 +18,12 @@ class TranslationsTest < Minitest::Test
   end
 
   def test_the_offered_translations
-    assert_equal %w[NKJV NASB95 LSB ESV KJV], T::VERSIONS.keys
+    assert_equal %w[NKJV NASB95 LSB ESV KJV HEB/GRK], T::VERSIONS.keys
   end
 
   def test_every_translation_declares_what_the_code_needs
     T::VERSIONS.each do |code, entry|
-      %i[label short gateway].each do |key|
+      %i[label short gateway blue_letter].each do |key|
         refute_nil entry[key], "#{code} is missing :#{key}"
         refute_empty entry[key].to_s, "#{code} has an empty :#{key}"
       end
@@ -46,6 +46,11 @@ class TranslationsTest < Minitest::Test
     assert_equal 'NKJV', T.gateway_code('NKJV')
     assert_equal 'ESV',  T.gateway_code('ESV')
     assert_equal 'LSB',  T.gateway_code('LSB')
+  end
+
+  def test_original_languages_is_a_valid_option
+    assert T.valid?('heb/grk')
+    assert_equal 'Hebrew and Greek', T.label('HEB/GRK')
   end
 
   def test_codes_are_case_and_whitespace_insensitive
@@ -104,5 +109,47 @@ class TranslationsTest < Minitest::Test
   def test_select_options_stay_short_enough_for_the_box
     longest = T.options.map(&:first).max_by(&:length)
     assert longest.length <= 40, "option too long for the select: #{longest.inspect}"
+  end
+
+  def test_other_translations_can_link_to_blue_letter_bible
+    {
+      'NKJV' => 'nkjv', 'NASB95' => 'nasb95', 'LSB' => 'lsb', 'ESV' => 'esv', 'KJV' => 'kjv'
+    }.each do |version, reader|
+      assert_equal "https://www.blueletterbible.org/#{reader}/gen/1/1/s_1001",
+                   T.passage_url('Genesis 1', version, blue_letter: true)
+    end
+  end
+
+  def test_other_translations_still_default_to_bible_gateway
+    url = T.passage_url('Genesis 1', 'KJV')
+
+    assert_includes url, 'biblegateway.com'
+    assert_includes url, 'version=KJV'
+  end
+
+  def test_original_language_ot_links_to_wlc
+    assert_equal 'https://www.blueletterbible.org/wlc/gen/1/1/s_1001',
+                 T.passage_url("Genesis 1\u20133", 'HEB/GRK')
+  end
+
+  def test_original_language_psalms_and_proverbs_link_to_wlc
+    assert_equal 'https://www.blueletterbible.org/wlc/psa/1/1/s_479001',
+                 T.passage_url('Psalm 1', 'HEB/GRK')
+    assert_equal 'https://www.blueletterbible.org/wlc/pro/31/10/s_659010',
+                 T.passage_url("Proverbs 31:10\u201331", 'HEB/GRK')
+  end
+
+  def test_original_language_nt_links_to_mgnt
+    assert_equal 'https://www.blueletterbible.org/mgnt/mat/1/1/s_930001',
+                 T.passage_url('Matthew 1', 'HEB/GRK')
+  end
+
+  def test_original_language_split_readings_start_at_the_first_verse
+    assert_equal 'https://www.blueletterbible.org/wlc/psa/119/17/s_597017',
+                 T.passage_url("Psalm 119:17\u201332", 'HEB/GRK')
+  end
+
+  def test_an_unrecognised_original_language_reference_links_to_blb
+    assert_equal 'https://www.blueletterbible.org/', T.passage_url('Unknown 1', 'HEB/GRK')
   end
 end

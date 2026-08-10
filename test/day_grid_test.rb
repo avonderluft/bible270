@@ -45,6 +45,16 @@ if RAILS_LOADED
       assert_equal Bible270::Plan::DAYS, cells, 'all 270 squares should say what is on that day'
     end
 
+    def test_original_language_labels_name_each_passages_language
+      @reader.update_bible_version('HEB/GRK')
+      sign_in_as(@reader)
+      get "#{mount}/day/1"
+
+      assert_equal 2, response.body.scan('(Hebrew)').size
+      assert_equal 1, response.body.scan('(Greek)').size
+      refute_includes response.body, '(HEB/GRK)'
+    end
+
     # ---- reflections -------------------------------------------------------
 
     def test_a_day_with_no_reflections_is_not_marked
