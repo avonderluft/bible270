@@ -12,9 +12,7 @@ jobs:
 
     env:
       RAILS_ENV: test
-      # No SKIP_COV here: test_helper only loads simplecov/coveralls without it.
-      COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # No SKIP_COV here: this job must produce SimpleCov's resultset.
 
     steps:
       - uses: actions/checkout@v4
@@ -38,8 +36,14 @@ jobs:
             puts "CI COVERAGE: #{covered} / #{total} = #{(covered.to_f / total * 100).round(2)}%"
           '
 
+      # Upload the exact report inspected above. The former coveralls_reborn Rake
+      # task reinterpreted it and reported 77% while SimpleCov measured 96%.
       - name: Report coverage to Coveralls
-        run: bundle exec rake coveralls:push
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage/.resultset.json
+          format: simplecov
 
       - name: Keep the report as an artifact
         if: always()
