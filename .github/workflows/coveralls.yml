@@ -36,14 +36,19 @@ jobs:
             puts "CI COVERAGE: #{covered} / #{total} = #{(covered.to_f / total * 100).round(2)}%"
           '
 
-      # Upload the exact report inspected above. The former coveralls_reborn Rake
-      # task reinterpreted it and reported 77% while SimpleCov measured 96%.
+      # Coveralls' SimpleCov parser counted this resultset as 24%, despite the
+      # executable-line calculation above being 96%. LCOV represents only the
+      # executable lines, removing that ambiguity. The converter prints its own
+      # independently calculated total so the two numbers can be compared in CI.
+      - name: Convert coverage to LCOV
+        run: ruby script/simplecov_to_lcov.rb
+
       - name: Report coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          file: coverage/.resultset.json
-          format: simplecov
+          file: coverage/lcov.info
+          format: lcov
 
       - name: Keep the report as an artifact
         if: always()
