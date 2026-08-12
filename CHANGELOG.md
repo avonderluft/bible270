@@ -6,7 +6,15 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 See the changes since the last release:
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.18.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.18.1...main)**
+
+## [0.18.1] - 2026-08-12
+
+### Changed
+
+- increase reader avatar sizes across community, profile, admin, and reflection views
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.18.0...v0.18.1)**
 
 ## [0.18.0] - 2026-08-10
 
@@ -405,6 +413,7 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[0.18.1]: https://github.com/avonderluft/bible270/releases/tag/v0.18.1
 [0.18.0]: https://github.com/avonderluft/bible270/releases/tag/v0.18.0
 [0.17.2]: https://github.com/avonderluft/bible270/releases/tag/v0.17.2
 [0.17.1]: https://github.com/avonderluft/bible270/releases/tag/v0.17.1
