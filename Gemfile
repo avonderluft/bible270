@@ -15,8 +15,7 @@ group :development, :test do
 end
 
 group :test do
-
-  gem 'minitest',                 '~> 6.0'
+  gem 'minitest', '~> 6.0'
   gem 'minitest-mock'
   gem 'minitest-reporters',       '>= 1.6.1'
   gem 'rubocop',                  '~> 1.88.2', require: false
