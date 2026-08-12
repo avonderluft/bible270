@@ -1,7 +1,7 @@
 <% content_for :title, "#{@reader.display_name} — #{Bible270.config.app_name}" %>
 <% content_for :hide_day_index, true %><%# this page has its own grid %>
 <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
-  <%= b270_avatar(@reader, size: 56) %>
+  <%= b270_avatar(@reader, size: 72) %>
   <div>
     <h1 style="margin:0"><%= @reader.display_name %></h1>
     <% if signed_in? && current_reader.id == @reader.id %>
@@ -26,4 +26,3 @@
   <% end %>
 </div>
 <p class="b270-gridnote">Dot indicates days with reflections.</p>
-

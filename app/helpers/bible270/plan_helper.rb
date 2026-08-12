@@ -138,7 +138,7 @@ module Bible270
       reader.avatar_url.presence
     end
 
-    def b270_avatar(reader, size: 34)
+    def b270_avatar(reader, size: 72)
       src = b270_avatar_src(reader)
       if src
         image_tag src, class: 'b270-avatar', width: size, height: size, alt: reader.display_name

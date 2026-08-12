@@ -8,7 +8,7 @@
     <% @readers.each_with_index do |r, i| %>
       <div class="b270-li">
         <span class="rank"><%= i + 1 %></span>
-        <%= b270_avatar(r, size: 40) %>
+        <%= b270_avatar(r, size: 72) %>
         <div>
           <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
           <div class="sub"><%= @days_completed[r.id] %> of <%= Bible270::Plan::DAYS %> days · joined <%= Bible270.local_time(r.created_at).strftime("%b %Y") %></div>

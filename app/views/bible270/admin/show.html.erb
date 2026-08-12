@@ -16,7 +16,7 @@
   <%= form_with url: admin_reader_profile_path(@reader), method: :patch, class: "b270-emailform",
                 html: { multipart: true } do %>
     <div class="b270-avatarrow">
-      <%= b270_avatar(@reader, size: 64) %>
+      <%= b270_avatar(@reader, size: 72) %>
       <% if Bible270::Reader.avatar_uploads? %>
         <label class="b270-field" style="flex:1">
           <span>Picture</span>
