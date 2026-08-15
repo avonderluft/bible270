@@ -173,8 +173,8 @@
   .b270-cactions{display:flex;align-items:center;gap:12px;margin-top:6px;flex-wrap:wrap}
   .b270-likes{display:inline-flex;align-items:center;gap:3px;position:relative}
   .b270-heart{font-size:13px;line-height:1;cursor:default}
-  /* The single heart is also the toggle for signed-in readers. Unliked, it is
-     desaturated so the reader can still tell whether their own like is active. */
+  /* The single heart is also the toggle for signed-in readers. It stays red
+     while anyone likes the reflection and returns to grey only at zero likes. */
   .b270-likebtn{background:none;border:0;padding:0 2px;font-size:13px;line-height:1;cursor:pointer;
                 filter:grayscale(1);opacity:.5;transition:filter .12s,opacity .12s}
   .b270-likebtn:hover{filter:none;opacity:1}

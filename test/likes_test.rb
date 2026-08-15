@@ -141,31 +141,31 @@ if RAILS_LOADED
       assert_equal 1, response.body.scan(%r{❤️}).size, 'one heart altogether'
     end
 
-    # Unliked is the same heart greyed by CSS, not a different character — so the
-    # two states cannot differ in size, whatever the platform's emoji font does.
-    def test_the_unliked_button_is_the_single_heart
+    def test_the_heart_stays_red_when_one_of_two_likers_removes_their_like
+      @thought.toggle_like!(@mary)
       @thought.toggle_like!(@andrew)
       sign_in_as(@mary)
 
+      post "#{mount}/comments/#{@thought.id}/like"
       get "#{mount}/day/1"
 
-      assert_match(%r{class="b270-likebtn"[^>]*>}, response.body, 'not the liked variant')
-      assert_match(%r{Like this reflection}, response.body)
       assert_match(%r{class="b270-likecount">1</span>}, response.body)
+      assert_match(%r{class="b270-likebtn liked"}, response.body)
+      assert_match(%r{aria-label="Like this reflection"}, response.body)
       assert_equal 1, response.body.scan(%r{❤️}).size
     end
 
-    def test_the_liked_button_carries_the_liked_class
-      @thought.toggle_like!(@mary)
+    def test_the_heart_is_grey_only_when_there_are_no_likes
       sign_in_as(@mary)
 
       get "#{mount}/day/1"
 
-      assert_match(%r{class="b270-likebtn liked"}, response.body)
+      assert_match(%r{class="b270-likebtn"[^>]*>}, response.body)
+      refute_match(%r{class="b270-likebtn liked"}, response.body)
     end
 
-    # The grey distinguishes the reader's own inactive state. The tooltip rows
-    # are block-level so every liker appears on a separate line.
+    # The grey distinguishes an empty like count. The tooltip rows are
+    # block-level so every liker appears on a separate line.
     def test_the_stylesheet_styles_the_button_and_liker_rows
       styles = File.read(File.expand_path('../app/views/bible270/shared/_styles.html.erb', __dir__))
 
