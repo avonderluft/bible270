@@ -19,6 +19,7 @@ module Bible270
       'LSB' => { label: 'Legacy Standard Bible', short: 'Legacy Standard Version', gateway: 'LSB', blue_letter: 'lsb' },
       'ESV' => { label: 'English Standard Version', short: 'English Standard Version', gateway: 'ESV', blue_letter: 'esv' },
       'KJV' => { label: 'King James Version', short: 'King James Version', gateway: 'KJV', blue_letter: 'kjv' },
+      'YLT' => { label: 'Young\'s Literal Translation', short: 'Young\'s Literal Translation', gateway: 'YLT', blue_letter: 'ylt' },
       'HEB/GRK' => { label: 'Hebrew and Greek', short: 'Hebrew and Greek', gateway: 'WLC', blue_letter: 'wlc/mgnt' }
     }.freeze
 

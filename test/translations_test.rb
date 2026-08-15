@@ -18,7 +18,7 @@ class TranslationsTest < Minitest::Test
   end
 
   def test_the_offered_translations
-    assert_equal %w[NKJV NASB95 LSB ESV KJV HEB/GRK], T::VERSIONS.keys
+    assert_equal %w[NKJV NASB95 LSB ESV KJV YLT HEB/GRK], T::VERSIONS.keys
   end
 
   def test_every_translation_declares_what_the_code_needs
@@ -113,7 +113,7 @@ class TranslationsTest < Minitest::Test
 
   def test_other_translations_can_link_to_blue_letter_bible
     {
-      'NKJV' => 'nkjv', 'NASB95' => 'nasb95', 'LSB' => 'lsb', 'ESV' => 'esv', 'KJV' => 'kjv'
+      'NKJV' => 'nkjv', 'NASB95' => 'nasb95', 'LSB' => 'lsb', 'ESV' => 'esv', 'KJV' => 'kjv', 'YLT' => 'ylt'
     }.each do |version, reader|
       assert_equal "https://www.blueletterbible.org/#{reader}/gen/1/1/s_1001",
                    T.passage_url('Genesis 1', version, blue_letter: true)
