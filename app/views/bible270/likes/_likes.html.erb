@@ -1,27 +1,37 @@
 <%# locals: (comment:) %>
 <%#
-  One heart per like, each carrying its giver's name — so a row of hearts is both
-  the count and, on hover, the list of who.
-
-  Your own like is not drawn in the row: the button is your heart, filled, and
-  saying so. Drawing both gave a reader two hearts for one like.
+  Likes are summarized as a count followed by one heart. Hovering or focusing
+  the summary reveals every liker on a separate line.
 %>
 <%
   liked = signed_in? && comment.liked_by?(current_reader)
-  others = signed_in? ? comment.likes.reject { |like| like.reader_id == current_reader.id } : comment.likes
+  likes = comment.likes
+  tooltip_id = "likers-#{comment.id}"
 %>
 <span class="b270-likes" id="likes-<%= comment.id %>">
-  <% others.each do |like| %><span class="b270-heart"
-      title="<%= like.reader.display_name %>"><%= Bible270::Comment::HEART %></span><% end %>
+  <% if likes.any? %>
+    <span class="b270-likecount"><%= likes.size %></span>
+  <% end %>
 
   <% if signed_in? %>
     <%= button_to like_comment_path(comment), method: :post, class: "b270-likebtn#{' liked' if liked}",
           form: { style: "display:inline", data: { turbo_stream: true } },
-          aria: { label: liked ? "Take back your like" : "Like this reflection" },
-          title: liked ? "You liked this — tap to take it back" : "Like this reflection" do %>
+          aria: {
+            label: liked ? "Take back your like" : "Like this reflection",
+            describedby: (tooltip_id if likes.any?)
+          } do %>
       <%= Bible270::Comment::HEART %>
     <% end %>
-  <% elsif comment.likes.any? %>
-    <span class="b270-likecount"><%= comment.likes.size %></span>
+  <% elsif likes.any? %>
+    <span class="b270-heart" tabindex="0" aria-label="<%= pluralize(likes.size, 'like') %>"
+          aria-describedby="<%= tooltip_id %>"><%= Bible270::Comment::HEART %></span>
+  <% end %>
+
+  <% if likes.any? %>
+    <span class="b270-liketooltip" id="<%= tooltip_id %>" role="tooltip">
+      <% likes.each do |like| %>
+        <span class="b270-liker"><%= like.reader.display_name %></span>
+      <% end %>
+    </span>
   <% end %>
 </span>
