@@ -221,13 +221,6 @@ module Bible270
       Mentions.handles_for(first_name, last_name).include?(handle)
     end
 
-    def wants_mention_notices?
-      return false if email.blank?
-      return true unless respond_to?(:notify_on_mention)
-
-      notify_on_mention != false
-    end
-
     # ---- staying signed in -------------------------------------------------
 
     # Generated on first use rather than at sign-up, so readers who never stay

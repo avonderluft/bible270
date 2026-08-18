@@ -8,22 +8,19 @@
       </span>
     <% end %>
   </div>
-  <nav class="b270-nav">
-    <!--<%= link_to "Plan", root_path %>-->
-    <%= link_to "People", community_path %>
-    <%# Public, like the community page: anyone may read reflections. %>
-    <%= link_to "Posts", reflections_path %>
-    <% if signed_in? %>
-      <%= link_to "Progress", progress_path %>
-      <%= link_to "Profile", profile_path %>
-      <% if Bible270.config.admin?(current_reader) %><%= link_to "Admin", admin_path %><% end %>
-      <%= button_to "Sign out", sign_out_path, method: :delete, class: "b270-linkbtn",
-            form: { style: "display:inline" } %>
-    <% elsif Bible270.config.any_sign_in_method? %>
-      <%# Always route to the sign-in page: it offers email as well as any
-          social providers, so nobody is shut out. OmniAuth's own request phase
-          rejects GET, so its buttons live on that page as POST forms. %>
-      <%= link_to "Sign in", sign_in_path(origin: request.fullpath), class: "b270-signin" %>
-    <% end %>
+  <nav class="b270-nav" aria-label="Primary navigation">
+    <div class="b270-desktopnav">
+      <%= render "bible270/shared/nav_links" %>
+    </div>
+    <details class="b270-navmenu">
+      <summary class="b270-navtoggle" aria-label="Menu">
+        <span class="b270-menuicon" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+      </summary>
+      <div class="b270-navlinks">
+        <%= render "bible270/shared/nav_links" %>
+      </div>
+    </details>
   </nav>
 </header>

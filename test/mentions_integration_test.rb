@@ -77,12 +77,25 @@ if RAILS_LOADED
       assert_equal [@andrew.email], ActionMailer::Base.deliveries.last.to
     end
 
-    def test_a_reader_can_opt_out
+    def test_a_previous_opt_out_does_not_suppress_an_explicit_mention
       @andrew.update!(notify_on_mention: false)
 
       post_reflection('Are you there @Andrew', as: @mary)
 
-      assert_empty ActionMailer::Base.deliveries
+      assert_equal 1, ActionMailer::Base.deliveries.size
+      assert_equal [@andrew.email], ActionMailer::Base.deliveries.last.to
+    end
+
+    def test_a_reply_mention_always_emails_the_original_reflection_author
+      original = @andrew.comments.create!(day: 1, body: 'My thought')
+      @andrew.update!(notify_on_mention: false)
+      sign_in_as(@mary)
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: 'Thank you @Andrew', parent_id: original.id } }
+
+      assert_equal 1, ActionMailer::Base.deliveries.size
+      assert_equal [@andrew.email], ActionMailer::Base.deliveries.last.to
     end
 
     def test_the_feature_can_be_switched_off_entirely

@@ -34,12 +34,12 @@
 
     <%= render "bible270/shared/track_bars", reader: panel_reader %>
 
-    <p style="margin:16px 0 0">
+    <div class="b270-progress-actions">
       <%= link_to "#{day_verb} reading — Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
       <% if panel_today_day && panel_today_day != panel_start_day %>
-        <%= link_to "Go to today (Day #{panel_today_day})", day_path(panel_today_day), style: "margin-left:12px" %>
+        <%= link_to "Go to today (Day #{panel_today_day})", day_path(panel_today_day), class: "b270-todaylink" %>
       <% end %>
-    </p>
+    </div>
 
     <%= render "bible270/days/start_date", reader: panel_reader %>
   <% else %>

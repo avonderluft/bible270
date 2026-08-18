@@ -24,6 +24,33 @@ if RAILS_LOADED
       assert_match(%r{270}, response.body)
     end
 
+    def test_navigation_uses_clear_labels_and_a_mobile_menu
+      get "#{mount}/"
+
+      assert_select 'nav.b270-nav[aria-label="Primary navigation"]' do
+        assert_select 'div.b270-desktopnav' do
+          assert_select 'a', text: 'Community'
+          assert_select 'a', text: 'Reflections'
+        end
+        assert_select 'details.b270-navmenu' do
+          assert_select 'summary.b270-navtoggle[aria-label="Menu"]' do
+            assert_select 'span.b270-menuicon[aria-hidden="true"] > span', count: 3
+          end
+        end
+      end
+    end
+
+    def test_signed_in_navigation_labels_personal_progress_clearly
+      reader = Bible270::Reader.create!(provider: 'email', uid: 'r@example.org', email: 'r@example.org',
+                                        display_name: 'R Reader', first_name: 'R', last_name: 'Reader')
+      _record, raw = Bible270::SignInToken.issue!(reader.email)
+      get "#{mount}/sign_in/email/#{raw}"
+
+      get "#{mount}/"
+
+      assert_select 'nav.b270-nav a', text: 'My Progress'
+    end
+
     def test_a_day_page_renders_all_three_readings
       get "#{mount}/day/1"
 

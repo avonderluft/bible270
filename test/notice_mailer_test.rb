@@ -144,11 +144,12 @@ if RAILS_LOADED
       assert_match(%r{Good point}, body_of(mail))
     end
 
-    def test_the_mention_notice_explains_how_to_stop_them
+    def test_the_mention_notice_explains_why_it_was_sent
       comment = @mary.comments.create!(day: 1, body: 'Hello @andrew')
+      body = body_of(mention_notice(comment))
 
-      assert_match(%r{profile}i, body_of(mention_notice(comment)),
-                   'should say where to turn these off')
+      assert_match(%r{someone wrote your name in a reflection}i, body)
+      refute_match(%r{profile}i, body)
     end
 
     def test_the_mention_notice_links_to_the_day_when_a_host_is_set

@@ -1,6 +1,6 @@
-<% content_for :title, "Your profile — #{Bible270.config.app_name}" %>
-<p class="b270-eyebrow">Your details</p>
-<h1>Your profile</h1>
+<% content_for :title, "Profile — #{Bible270.config.app_name}" %>
+<p class="b270-eyebrow">Profile</p>
+<h1>Your details</h1>
 <p class="lede">This is how you appear beside your reflections and on the community page.</p>
 
 <div class="b270-panel">
@@ -19,10 +19,6 @@
       <% end %>
     </div>
 
-    <label class="b270-field" style="flex-direction:row;align-items:center;gap:10px">
-      <%= check_box_tag :notify_on_mention, "1", current_reader.notify_on_mention %>
-      <span style="margin:0">Email me when someone mentions me in a reflection</span>
-    </label>
 
     <label class="b270-field">
       <span>First name</span>

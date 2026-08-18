@@ -108,8 +108,9 @@ module Bible270
       errors.add(:parent, "is on day #{parent.day}, not #{day}")
     end
 
-    # A mention emails the person named. Failures are logged rather than raised:
-    # nobody should lose a reflection because the mail server is down.
+    # A mention always emails the person named. There is no per-reader opt-out;
+    # failures are logged rather than raised so nobody loses a reflection because
+    # the mail server is down.
     def notify_newly_mentioned_readers
       return unless saved_change_to_body?
 
@@ -123,7 +124,6 @@ module Bible270
       Reader.mentioned_in(body).each do |mentioned|
         next if mentioned.id == reader_id
         next if except.include?(mentioned.id)
-        next unless mentioned.wants_mention_notices?
 
         notice = NoticeMailer.mentioned(comment_id: id, reader_id: mentioned.id)
         Bible270.config.registration_notice_deliver_later ? notice.deliver_later : notice.deliver_now

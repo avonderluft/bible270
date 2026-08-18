@@ -24,6 +24,8 @@ if RAILS_LOADED
       get "#{mount}/community"
 
       assert_response :success
+      assert_select 'p.b270-eyebrow', text: 'Community'
+      assert_select 'h1', text: 'Reading together'
       assert_match(%r{R Reader}, response.body)
       assert_match(%r{Other Reader}, response.body)
     end
@@ -54,9 +56,10 @@ if RAILS_LOADED
       get "#{mount}/progress"
 
       assert_response :success
+      assert_select 'p.b270-eyebrow', text: 'My Progress'
+      assert_select 'h1', text: 'Your reading journey'
       assert_match(%r{4}, response.body)
       assert_match(%r{days complete}, response.body)
-      assert_match(%r{R Reader}, response.body)
     end
 
     def test_the_progress_page_offers_the_next_day
@@ -68,6 +71,17 @@ if RAILS_LOADED
       # Day 3 is next, so it should say Continue rather than Start.
       assert_match(%r{Continue reading}, response.body)
       assert_match(%r{/day/3}, response.body)
+    end
+
+    def test_go_to_today_is_a_secondary_row_below_continue_reading
+      @reader.set_start_date!(Bible270.today - 9)
+      sign_in_as(@reader)
+
+      get "#{mount}/progress"
+
+      assert_match(%r{class="b270-progress-actions">.*class="b270-btn".*class="b270-todaylink"}m,
+                   response.body)
+      assert_match(%r{Go to today \(Day 10\)}, response.body)
     end
 
     def test_the_progress_page_lists_recent_reflections

@@ -1,0 +1,15 @@
+<%= link_to "Community", community_path %>
+<%# Public, like the community page: anyone may read reflections. %>
+<%= link_to "Reflections", reflections_path %>
+<% if signed_in? %>
+  <%= link_to "My Progress", progress_path %>
+  <%= link_to "Profile", profile_path %>
+  <% if Bible270.config.admin?(current_reader) %><%= link_to "Admin", admin_path %><% end %>
+  <%= button_to "Sign out", sign_out_path, method: :delete, class: "b270-linkbtn",
+        form: { style: "display:inline" } %>
+<% elsif Bible270.config.any_sign_in_method? %>
+  <%# Always route to the sign-in page: it offers email as well as any
+      social providers, so nobody is shut out. OmniAuth's own request phase
+      rejects GET, so its buttons live on that page as POST forms. %>
+  <%= link_to "Sign in", sign_in_path(origin: request.fullpath), class: "b270-signin" %>
+<% end %>

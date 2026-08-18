@@ -31,8 +31,12 @@ if RAILS_LOADED
       get "#{mount}/profile"
 
       assert_response :success
+      assert_select 'p.b270-eyebrow', text: 'Profile'
+      assert_select 'h1', text: 'Your details'
       assert_match(%r{first_name}, response.body)
       assert_match(%r{last_name}, response.body)
+      refute_match(%r{Email me when someone mentions}, response.body)
+      refute_match(%r{name="notify_on_mention"}, response.body)
       assert_match(%r{name="bible_version".*class="b270-source-choices"}m, response.body,
                    'reader choice belongs immediately below the translation selector')
       assert_equal 2, response.body.scan(%r{name="passage_source"}).size
@@ -61,6 +65,15 @@ if RAILS_LOADED
       assert_equal 'Andrew', @reader.first_name
       assert_equal 'vonderLuft', @reader.last_name
       assert_equal 'Andrew vonderLuft', @reader.display_name
+    end
+
+    def test_saving_the_profile_preserves_the_existing_mention_notice_setting
+      @reader.update!(notify_on_mention: false)
+      sign_in_as(@reader)
+
+      patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader' }
+
+      refute @reader.reload.notify_on_mention
     end
 
     def test_half_a_name_is_refused_and_the_form_comes_back
