@@ -1,0 +1,39 @@
+<%# locals: (day:, reader:) %>
+<%
+  previous_day = day > 1 ? day - 1 : nil
+  next_day = day < Bible270::Plan::DAYS ? day + 1 : nil
+  total_parts = Bible270::Plan.total_parts(day)
+  complete = reader&.day_complete?(day)
+%>
+<div id="day_progress_<%= day %>">
+  <div class="b270-daynav">
+    <%= link_to "‹", (previous_day ? day_path(previous_day) : "#"),
+          class: "b270-arrow #{'disabled' unless previous_day}", "aria-label": "Previous day" %>
+    <div class="b270-dayhead">
+      <div class="k">Day <%= day %><% if complete %><span class="b270-badge">Complete</span><% end %></div>
+      <% if reader&.dated? %>
+        <div class="date">
+          <%= reader.date_for_day(day).strftime("%A, %B %-d, %Y") %>
+          <% if reader.today?(day) %><span class="b270-badge">Today</span><% end %>
+        </div>
+      <% end %>
+    </div>
+    <%= link_to "›", (next_day ? day_path(next_day) : "#"),
+          class: "b270-arrow #{'disabled' unless next_day}", "aria-label": "Next day" %>
+  </div>
+
+
+  <% if complete %>
+    <div class="b270-day-complete" role="status" aria-live="polite">
+      <div>
+        <strong>Day <%= day %> complete</strong>
+        <span>All <%= total_parts %> portions are checked off.</span>
+      </div>
+      <% if next_day %>
+        <%= link_to "Continue to Day #{next_day} →", day_path(next_day), class: "b270-btn" %>
+      <% else %>
+        <%= link_to "View My Progress →", progress_path, class: "b270-btn" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

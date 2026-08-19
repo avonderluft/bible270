@@ -313,6 +313,38 @@ Bible270::Plan.day_for(date, start, clamp: false) # => -3 or 271, to spot out-of
 Bible270::Plan.before_start?(date, start)
 ```
 
+## Daily reading reminders
+
+Daily reminders are optional at both levels: the host enables the feature, then each reader chooses
+whether to receive it and at what local time from their profile. The feature and reader opt-in both
+default to off; each reader's time defaults to `08:00`.
+
+```ruby
+# config/initializers/bible270.rb
+Bible270.configure do |config|
+  config.daily_reminders = true
+  config.mailer_from = "no-reply@yourdomain.com"
+  config.mailer_host = "yourdomain.com" # builds links back to the day and profile
+end
+```
+
+After upgrading, copy and run migration `20260101000016`, which adds the reader opt-in, preferred
+time, and last-sent date. Bible270 does not install a scheduler. The host application should run this
+task periodically—every 15 minutes is recommended—using its existing cron, platform scheduler, or
+recurring-job system:
+
+```bash
+bin/rails bible270:reminders:send
+```
+
+Each run converts `Time.now` through `Bible270.local_time`, waits until each reader's chosen `HH:MM`
+time, sends inline with `deliver_now`, and prints the number delivered. Set `config.time_zone` when the
+plan should not follow the server's local clock. Running periodically is safe because delivery is
+idempotent once per local date: readers already marked for that date are skipped. Undated readers,
+calendar dates before or after their plan, completed days, blank email addresses, and readers who have
+not opted in are also skipped. A failure for one reader is logged and does not stop the rest. The sent
+date is recorded only after delivery succeeds.
+
 ## Configuration reference
 
 ```ruby
@@ -325,6 +357,9 @@ Bible270.configure do |config|
   config.start_date = nil       # community start date, or nil for undated
   # config.start_date = Date.new(2026, 9, 6)  
   config.allow_reader_start_date = true
+
+  config.daily_reminders = false             # schedule reminders:send every 15 minutes
+  config.mailer_host = "example.com"          # links in reminder/notice email
 
   config.parent_controller = "ActionController::Base"   # or "::ApplicationController"
   config.layout            = "bible270/application"
@@ -397,7 +432,7 @@ The CMS serves your content; this is a separate mounted app. Either **just link 
 
 | Table | Holds |
 |-------|-------|
-| `bible270_readers` | identity, avatar, provider/uid or polymorphic `owner`, start date, translation and passage-reader preferences |
+| `bible270_readers` | identity, avatar, provider/uid or polymorphic `owner`, start date, translation, passage-reader, and reminder preferences |
 | `bible270_checkoffs` | one row per reader per day per track (`ot`/`nt`/`pp`), unique-indexed |
 | `bible270_comments` | a reflection on a day, optionally scoped to a track, public to all |
 | `bible270_sign_in_tokens` | magic-link tokens: email, **digest only**, expiry, consumed-at |

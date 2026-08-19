@@ -11,6 +11,7 @@ require 'bible270/avatars'
 require 'bible270/translations'
 require 'bible270/favicon'
 require 'bible270/configuration'
+require 'bible270/daily_reminders'
 require 'bible270/engine' if defined?(Rails::Engine)
 
 module Bible270

@@ -512,6 +512,12 @@ module Bible270
             # config.start_date = Date.new(#{Date.today.year}, 1, 1)
             config.allow_reader_start_date = true
 
+            # --- Daily reading reminders -----------------------------------------------
+            # Readers choose an opt-in time only when enabled. This application owns
+            # scheduling: run `bin/rails bible270:reminders:send` every 15 minutes.
+            config.daily_reminders = false
+            # config.mailer_host = 'example.com' # links back to the day and profile
+
             # --- Reading links --------------------------------------------------------
             config.bible_version = 'NKJV'
           end

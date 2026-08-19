@@ -10,9 +10,14 @@ if RAILS_LOADED
     def setup
       needs_rails!
       clear_engine_tables!
-      @previous = { from: Bible270.config.mailer_from, host: Bible270.config.mailer_host }
+      @previous = {
+        from: Bible270.config.mailer_from,
+        host: Bible270.config.mailer_host,
+        daily_reminders: Bible270.config.daily_reminders
+      }
       Bible270.config.mailer_from = 'no-reply@example.org'
       Bible270.config.mailer_host = nil
+      Bible270.config.daily_reminders = false
 
       @andrew = Bible270::Reader.create!(provider: 'email', uid: 'a@example.org', email: 'a@example.org',
                                          display_name: 'Andrew vonderLuft',
@@ -24,6 +29,7 @@ if RAILS_LOADED
     def teardown
       Bible270.config.mailer_from = @previous[:from]
       Bible270.config.mailer_host = @previous[:host]
+      Bible270.config.daily_reminders = @previous[:daily_reminders]
     end
 
     # Both mailers are multipart, so the content is in the parts rather than the
@@ -126,6 +132,47 @@ if RAILS_LOADED
       Bible270.config.mailer_host = 'gknt.org'
 
       refute_match(%r{gknt\.org//}, body_of(notice))
+    end
+
+    # ---- a daily reading reminder ----------------------------------------
+
+    def daily_reminder
+      Bible270::NoticeMailer.daily_reminder(reader_id: @andrew.id, day: 7, on: Date.new(2026, 9, 12))
+    end
+
+    def test_daily_reminder_is_multipart_and_lists_the_days_readings
+      Bible270.config.daily_reminders = true
+      @andrew.update!(daily_reminders: true)
+      mail = daily_reminder
+
+      assert mail.multipart?
+      assert_equal [@andrew.email], mail.to
+      assert_match(%r{day 7}i, mail.subject)
+      body = body_of(mail)
+      Bible270::Plan.readings_for(7).each_value { |reading| assert_match(%r{#{Regexp.escape(reading)}}, body) }
+    end
+
+    def test_daily_reminder_includes_day_and_profile_urls
+      Bible270.config.daily_reminders = true
+      Bible270.config.mailer_host = 'gknt.org'
+      @andrew.update!(daily_reminders: true)
+      mount = Bible270.config.mount_at.chomp('/')
+      body = body_of(daily_reminder)
+
+      assert_match(%r{https://gknt\.org#{Regexp.escape(mount)}/day/7}, body)
+      assert_match(%r{https://gknt\.org#{Regexp.escape(mount)}/profile}, body)
+    end
+
+    def test_daily_reminder_rechecks_the_global_switch
+      @andrew.update!(daily_reminders: true)
+
+      refute daily_reminder.perform_deliveries
+    end
+
+    def test_daily_reminder_rechecks_the_readers_opt_in
+      Bible270.config.daily_reminders = true
+
+      refute daily_reminder.perform_deliveries
     end
 
     # ---- a mention --------------------------------------------------------

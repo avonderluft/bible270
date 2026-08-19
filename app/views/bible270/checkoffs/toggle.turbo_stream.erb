@@ -2,3 +2,11 @@
   <%= render partial: "bible270/days/reading", locals: {
         track: @track, day: @day, readings: @readings, reader_tracks: @reader_tracks } %>
 <% end %>
+
+<%= turbo_stream.replace "day_progress_#{@day}" do %>
+  <%= render "bible270/days/day_progress", day: @day, reader: @reader %>
+<% end %>
+
+<%= turbo_stream.replace "completers_#{@day}" do %>
+  <%= render "bible270/days/completers", day: @day, completers: @completers %>
+<% end %>

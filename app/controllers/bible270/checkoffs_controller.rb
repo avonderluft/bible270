@@ -23,9 +23,16 @@ module Bible270
         current_reader.checkoffs.create(day: @day, track: @track, part: @part)
       end
 
-      @reader = current_reader.reload
+      @reader = current_reader.reload.reload_progress
       @reader_tracks = @reader.read_tracks_for(@day)
       @readings = Plan.readings_for(@day)
+
+      required = Plan.total_parts(@day)
+      completer_ids = Checkoff.where(day: @day)
+        .group(:reader_id)
+        .having('COUNT(*) >= ?', required)
+        .pluck(:reader_id)
+      @completers = Reader.where(id: completer_ids).order(:display_name)
 
       respond_to do |format|
         format.turbo_stream

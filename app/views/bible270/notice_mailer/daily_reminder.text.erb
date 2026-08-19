@@ -1,0 +1,14 @@
+Day <%= @day %> is ready, <%= @reader.first_name.presence || @reader.display_name %>.
+<%= @on.strftime("%A, %B %-d, %Y") %> · <%= @app_name %>
+
+<% @readings.each do |track, reference| %>
+<%= Bible270::Plan::TRACKS.fetch(track).fetch(:label) %>: <%= reference %>
+<% end %>
+<% if @day_url %>
+Open day <%= @day %>: <%= @day_url %>
+<% end %>
+--
+You opted in to daily reading reminders.
+<% if @profile_url %>
+Change this in your profile: <%= @profile_url %>
+<% end %>

@@ -37,6 +37,23 @@
     </label>
     <%= render "bible270/shared/passage_source", reader: current_reader %>
 
+    <% if Bible270.config.daily_reminders? %>
+      <div class="b270-field">
+        <span>Daily reading reminder</span>
+        <label>
+          <%= check_box_tag :daily_reminders, "1", @daily_reminders %>
+          Email me each day's readings
+        </label>
+        <label>
+          Send at
+          <%= time_field_tag :daily_reminder_time, @daily_reminder_time, required: true, step: 60 %>
+        </label>
+        <span class="b270-hint" style="margin:0">
+          Uses the plan's configured time zone. You can turn reminders off here at any time.
+        </span>
+      </div>
+    <% end %>
+
     <%= submit_tag "Save", class: "b270-btn" %>
   <% end %>
 

@@ -17,6 +17,58 @@ class ReaderTest < Minitest::Test
     assert_equal 0, @reader.days_completed
     refute @reader.day_complete?(1)
     assert_equal :none, @reader.day_status(1)
+    refute @reader.daily_reminders
+    assert_equal '08:00', @reader.daily_reminder_time
+    assert_nil @reader.last_daily_reminder_sent_on
+  end
+
+  def test_daily_reminder_scope_only_returns_opted_in_reachable_readers_not_sent_that_day
+    on = Date.new(2026, 9, 6)
+    due = Bible270::Reader.create!(
+      provider: 'email', uid: 'due@example.org', email: 'due@example.org',
+      display_name: 'Due Reader', daily_reminders: true
+    )
+    Bible270::Reader.create!(
+      provider: 'email', uid: 'out@example.org', email: 'out@example.org',
+      display_name: 'Opted Out', daily_reminders: false
+    )
+    Bible270::Reader.create!(
+      provider: 'owner', uid: 'no-email', display_name: 'No Email', daily_reminders: true
+    )
+    Bible270::Reader.create!(
+      provider: 'email', uid: 'sent@example.org', email: 'sent@example.org',
+      display_name: 'Already Sent', daily_reminders: true, last_daily_reminder_sent_on: on
+    )
+
+    assert_equal [due.id], Bible270::Reader.daily_reminder_recipients(on: on).pluck(:id)
+  end
+
+  def test_daily_reminder_time_requires_strict_24_hour_hours_and_minutes
+    %w[00:00 08:00 12:34 23:59].each do |value|
+      @reader.daily_reminder_time = value
+      assert @reader.valid?, "#{value.inspect} should be valid"
+    end
+
+    ['8:00', '08:0', '24:00', '12:60', '12:34:00', '', nil].each do |value|
+      @reader.daily_reminder_time = value
+      refute @reader.valid?, "#{value.inspect} should be invalid"
+      assert_includes @reader.errors[:daily_reminder_time], 'must use 24-hour HH:MM format'
+    end
+  end
+
+  def test_daily_reminder_is_due_at_or_after_the_chosen_local_time
+    @reader.update!(daily_reminders: true, daily_reminder_time: '08:00')
+
+    refute @reader.daily_reminder_due_at?(Time.utc(2026, 9, 6, 7, 59))
+    assert @reader.daily_reminder_due_at?(Time.utc(2026, 9, 6, 8, 0))
+    assert @reader.daily_reminder_due_at?(Time.utc(2026, 9, 6, 17, 30))
+    refute @reader.daily_reminder_due_at?(nil)
+  end
+
+  def test_daily_reminder_is_not_due_when_the_reader_is_opted_out
+    @reader.update!(daily_reminders: false, daily_reminder_time: '00:00')
+
+    refute @reader.daily_reminder_due_at?(Time.utc(2026, 9, 6, 23, 59))
   end
 
   def test_marking_a_day_complete_ticks_every_box

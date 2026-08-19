@@ -1,17 +1,5 @@
 <% content_for :title, "Day #{@day} — #{Bible270.config.app_name}" %>
-<div class="b270-daynav">
-  <%= link_to "‹", (@prev_day ? day_path(@prev_day) : "#"), class: "b270-arrow #{'disabled' unless @prev_day}", "aria-label": "Previous day" %>
-  <div class="b270-dayhead">
-    <div class="k">Day <%= @day %><% if signed_in? && current_reader.day_complete?(@day) %><span class="b270-badge">Complete</span><% end %></div>
-    <% if signed_in? && current_reader.dated? %>
-      <div class="date">
-        <%= current_reader.date_for_day(@day).strftime("%A, %B %-d, %Y") %>
-        <% if current_reader.today?(@day) %><span class="b270-badge">Today</span><% end %>
-      </div>
-    <% end %>
-  </div>
-  <%= link_to "›", (@next_day ? day_path(@next_day) : "#"), class: "b270-arrow #{'disabled' unless @next_day}", "aria-label": "Next day" %>
-</div>
+<%= render "bible270/days/day_progress", day: @day, reader: current_reader %>
 
 <div id="readings" class="b270-readings">
   <%= render partial: "bible270/days/reading", collection: %w[ot nt pp],
@@ -22,15 +10,7 @@
   <p class="b270-signin-hint" style="margin-top:12px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to check off these readings.</p>
 <% end %>
 
-<div class="b270-completers" id="completers_<%= @day %>">
-  <% if @completers.any? %>
-    <span>Finished this day:</span>
-    <% @completers.first(12).each { |r| %><%= link_to b270_avatar(r), reader_path(r), title: r.display_name %><% } %>
-    <% if @completers.size > 12 %><span><%= @completers.size - 12 %> more</span><% end %>
-  <% else %>
-    <span>No one has finished this day yet — be the first.</span>
-  <% end %>
-</div>
+<%= render "bible270/days/completers", day: @day, completers: @completers %>
 
 <h2 class="b270-section-h">Reflections</h2>
 <div id="comments">

@@ -69,6 +69,9 @@ if RAILS_LOADED
       assert_file 'config/initializers/bible270.rb' do |content|
         assert_match(%r{Bible270\.configure do \|config\|}, content)
         assert_match(%r{config\.mount_at\s*=}, content)
+        assert_match(%r{config\.daily_reminders\s*=\s*false}, content)
+        assert_match(%r{bible270:reminders:send}, content)
+        assert_match(%r{every 15 minutes}, content)
         RubyVM::InstructionSequence.compile(content) # raises SyntaxError if not
       end
     end

@@ -7,9 +7,15 @@ if RAILS_LOADED
     def setup
       needs_rails!
       clear_engine_tables!
+      @previous_daily_reminders = Bible270.config.daily_reminders
+      Bible270.config.daily_reminders = false
       @reader = Bible270::Reader.create!(provider: 'email', uid: 'r@example.org',
                                          email: 'r@example.org', display_name: 'R Reader',
                                          first_name: 'R', last_name: 'Reader')
+    end
+
+    def teardown
+      Bible270.config.daily_reminders = @previous_daily_reminders
     end
 
     def mount = Bible270.config.mount_at.chomp('/')
@@ -37,6 +43,8 @@ if RAILS_LOADED
       assert_match(%r{last_name}, response.body)
       refute_match(%r{Email me when someone mentions}, response.body)
       refute_match(%r{name="notify_on_mention"}, response.body)
+      refute_match(%r{name="daily_reminders"}, response.body)
+      refute_match(%r{name="daily_reminder_time"}, response.body)
       assert_match(%r{name="bible_version".*class="b270-source-choices"}m, response.body,
                    'reader choice belongs immediately below the translation selector')
       assert_equal 2, response.body.scan(%r{name="passage_source"}).size
@@ -65,6 +73,79 @@ if RAILS_LOADED
       assert_equal 'Andrew', @reader.first_name
       assert_equal 'vonderLuft', @reader.last_name
       assert_equal 'Andrew vonderLuft', @reader.display_name
+    end
+
+    def test_daily_reminder_checkbox_is_shown_only_when_globally_enabled
+      Bible270.config.daily_reminders = true
+      @reader.update!(daily_reminders: true)
+      sign_in_as(@reader)
+
+      get "#{mount}/profile"
+
+      assert_response :success
+      assert_select 'input[name="daily_reminders"][checked="checked"]'
+      assert_select 'input[type="time"][name="daily_reminder_time"][value="08:00"]'
+      assert_match(%r{Email me each day's readings}, response.body)
+    end
+
+    def test_daily_reminder_preference_is_saved_after_a_valid_profile_update
+      Bible270.config.daily_reminders = true
+      sign_in_as(@reader)
+
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', daily_reminders: '1', daily_reminder_time: '06:45'
+      }
+
+      assert_response :redirect
+      @reader.reload
+      assert @reader.daily_reminders
+      assert_equal '06:45', @reader.daily_reminder_time
+    end
+
+    def test_daily_reminder_preference_is_not_saved_when_the_form_is_invalid
+      Bible270.config.daily_reminders = true
+      sign_in_as(@reader)
+
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: '', daily_reminders: '1', daily_reminder_time: '06:45'
+      }
+
+      assert_response :unprocessable_entity
+      @reader.reload
+      refute @reader.daily_reminders
+      assert_equal '08:00', @reader.daily_reminder_time
+      assert_select 'input[name="daily_reminders"][checked="checked"]'
+      assert_select 'input[name="daily_reminder_time"][value="06:45"]'
+    end
+
+    def test_invalid_daily_reminder_time_rerenders_with_a_useful_error
+      Bible270.config.daily_reminders = true
+      sign_in_as(@reader)
+
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', daily_reminders: '1', daily_reminder_time: '25:00'
+      }
+
+      assert_response :unprocessable_entity
+      assert_match(%r{reminder time in 24-hour HH:MM format}, response.body)
+      @reader.reload
+      refute @reader.daily_reminders
+      assert_equal '08:00', @reader.daily_reminder_time
+      assert_select 'input[name="daily_reminder_time"][value="25:00"]'
+    end
+
+    def test_disabled_daily_reminders_preserve_both_settings_when_parameters_are_posted
+      @reader.update!(daily_reminders: true, daily_reminder_time: '06:30')
+      sign_in_as(@reader)
+
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', daily_reminders: '0', daily_reminder_time: '25:00'
+      }
+
+      assert_response :redirect
+      @reader.reload
+      assert @reader.daily_reminders
+      assert_equal '06:30', @reader.daily_reminder_time
     end
 
     def test_saving_the_profile_preserves_the_existing_mention_notice_setting

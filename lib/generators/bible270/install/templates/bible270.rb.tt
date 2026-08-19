@@ -55,6 +55,12 @@ Bible270.configure do |config|
   # config.start_date = Date.new(2026, 9, 6)
   config.allow_reader_start_date = true
 
+  # --- Daily reading reminders -----------------------------------------------
+  # Readers choose an opt-in time on their profile only when this is enabled.
+  # The host app owns scheduling: run `bin/rails bible270:reminders:send` every 15 minutes.
+  config.daily_reminders = false
+  # config.mailer_host = "example.com"       # required for day/profile links in email
+
   # --- Reading links ---------------------------------------------------------
   config.bible_version = "NKJV"
 

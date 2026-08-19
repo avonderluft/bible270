@@ -41,9 +41,6 @@ module Bible270
         .having('COUNT(*) >= ?', required)
         .pluck(:reader_id)
       @completers = Reader.where(id: completer_ids).order(:display_name)
-
-      @prev_day = @day > 1 ? @day - 1 : nil
-      @next_day = @day < Plan::DAYS ? @day + 1 : nil
     end
 
   private

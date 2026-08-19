@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Bible270
-  # Notices to whoever runs the plan, as opposed to mail sent to readers.
+  # Transactional mail for readers and notices for whoever runs the plan.
   class NoticeMailer < ApplicationMailer
     def new_reader(reader_id:, recipients:)
       @reader = Reader.find_by(id: reader_id)
@@ -29,6 +29,23 @@ module Bible270
 
       mail to: @reader.email,
            subject: "#{@app_name}: #{@author.display_name} mentioned you on day #{@comment.day}"
+    end
+
+    def daily_reminder(reader_id:, day:, on: Bible270.today)
+      @reader = Reader.find_by(id: reader_id)
+      return message.perform_deliveries = false unless Bible270.config.daily_reminders?
+      return message.perform_deliveries = false if @reader.nil? || !@reader.daily_reminders? || @reader.email.blank?
+
+      @day = day.to_i
+      @on = Plan.to_date(on)
+      return message.perform_deliveries = false unless Plan.valid_day?(@day) && @on
+
+      @readings = Plan.readings_for(@day).select { |_, reference| reference }
+      @app_name = Bible270.config.app_name
+      @day_url = day_url_for(@day)
+      @profile_url = profile_url
+
+      mail to: @reader.email, subject: "#{@app_name}: day #{@day} reading reminder"
     end
 
     # A message from whoever runs the plan to one reader. Sent individually rather
@@ -67,6 +84,10 @@ module Bible270
 
     def admin_url_for(reader)
       engine_url(:admin_reader_url, reader)
+    end
+
+    def profile_url
+      engine_url(:profile_url)
     end
 
     def engine_url(helper, *)

@@ -234,6 +234,7 @@ module Bible270
     attr_accessor :email_sign_in_deliver_later
 
     def email_sign_in? = !!@email_sign_in
+    def daily_reminders? = !!@daily_reminders
 
     # Reserved domains from RFC 2606 — a From: address at one of these will fail
     # SPF for your real domain, and receiving servers routinely drop it without
@@ -241,9 +242,9 @@ module Bible270
     # changed, but nothing was checking that it had been.
     PLACEHOLDER_DOMAINS = %w[example.com example.org example.net example.edu invalid localhost].freeze
 
-    # Why the sign-in mail is likely to vanish, or nil if it looks fine.
+    # Why reader-facing mail is likely to vanish, or nil if it looks fine.
     def mailer_from_problem
-      return nil unless email_sign_in?
+      return nil unless email_sign_in? || daily_reminders?
 
       address = mailer_from.to_s.strip
       return 'config.mailer_from is blank' if address.empty?
@@ -291,6 +292,10 @@ module Bible270
     # Host for links in notification mail. A mailer has no request to derive it
     # from, so without this the notice names the reader but cannot link to them.
     attr_accessor :mailer_host
+
+    # Allow readers to opt in to a daily email with that date's readings. The host
+    # application owns scheduling the bible270:reminders:send task.
+    attr_accessor :daily_reminders
 
     attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :header_mark, :remember_for, :require_sign_in_to_participate, :mention_notifications
 
@@ -381,6 +386,7 @@ module Bible270
       @registration_notice_emails = []
       @registration_notice_deliver_later = false
       @mailer_host = nil
+      @daily_reminders = false
       @admin_emails = []
       @admin_resolver = nil
       @email_sign_in_deliver_later = false

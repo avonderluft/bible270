@@ -92,6 +92,7 @@ class ConfigurationTest < Minitest::Test
     assert_equal 'bible270/application', @config.layout
     assert_equal 'NKJV', @config.bible_version
     assert @config.require_sign_in_to_participate
+    refute @config.daily_reminders?
     assert_nil @config.current_reader_resolver
   end
 end
@@ -389,9 +390,17 @@ class MailerFromCheckTest < Minitest::Test
     end
   end
 
-  def test_nothing_is_flagged_when_email_sign_in_is_off
+  def test_nothing_is_flagged_when_all_email_features_are_off
     @config.email_sign_in = false
     assert_nil @config.mailer_from_problem
+  end
+
+  def test_reminders_still_require_a_real_sender_without_email_sign_in
+    @config.email_sign_in = false
+    @config.daily_reminders = true
+
+    assert @config.daily_reminders?
+    assert_match(%r{placeholder}, @config.mailer_from_problem)
   end
 end
 

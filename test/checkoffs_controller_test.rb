@@ -91,5 +91,57 @@ if RAILS_LOADED
 
       refute_nil @reader.reload.started_on, 'the first check-off should start their clock'
     end
+
+    def test_the_final_turbo_checkoff_shows_completion_and_the_next_day_action
+      @reader.mark_day_complete!(1)
+      @reader.checkoffs.find_by!(day: 1, track: 'pp', part: 0).destroy!
+      sign_in_as(@reader)
+
+      post "#{mount}/day/1/toggle/pp/0", headers: turbo_stream_headers
+
+      assert_response :success
+      assert @reader.reload_progress.day_complete?(1)
+      assert_select 'turbo-stream[action="replace"][target="day_progress_1"]' do
+        assert_select '.b270-badge', text: 'Complete'
+        assert_select '.b270-day-complete[role="status"]', text: %r{Day 1 complete}
+        assert_select "a[href='#{mount}/day/2']", text: %r{Continue to Day 2}
+      end
+      assert_select 'turbo-stream[action="replace"][target="completers_1"]', text: %r{Finished this day}
+    end
+
+    def test_unchecking_a_portion_removes_the_completion_panel
+      @reader.mark_day_complete!(1)
+      sign_in_as(@reader)
+
+      post "#{mount}/day/1/toggle/pp/0", headers: turbo_stream_headers
+
+      assert_select 'turbo-stream[action="replace"][target="day_progress_1"]' do
+        assert_select '.b270-day-complete', count: 0
+        assert_select '.b270-badge', text: 'Complete', count: 0
+      end
+      assert_select 'turbo-stream[action="replace"][target="completers_1"]', text: %r{No one has finished}
+    end
+
+    def test_completing_the_last_day_links_to_progress_not_a_nonexistent_day
+      day = Bible270::Plan::DAYS
+      @reader.mark_day_complete!(day)
+      missing = @reader.checkoffs.where(day: day).first
+      missing.destroy!
+      sign_in_as(@reader)
+
+      post "#{mount}/day/#{day}/toggle/#{missing.track}/#{missing.part}", headers: turbo_stream_headers
+
+      assert_select "turbo-stream[target='day_progress_#{day}']" do
+        assert_select '.b270-day-complete', text: %r{Day #{day} complete}
+        assert_select "a[href='#{mount}/progress']", text: %r{View My Progress}
+        assert_select "a[href='#{mount}/day/#{day + 1}']", count: 0
+      end
+    end
+
+  private
+
+    def turbo_stream_headers
+      { 'Accept' => 'text/vnd.turbo-stream.html' }
+    end
   end
 end
