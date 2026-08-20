@@ -118,6 +118,21 @@ if RAILS_LOADED
       assert_empty ActionMailer::Base.deliveries
     end
 
+    def test_missing_daily_reminder_columns_log_the_required_migration_and_send_nothing
+      messages = []
+      log_error = ->(message) { messages << message }
+
+      Bible270::Reader.stub(:daily_reminder_columns?, false) do
+        Rails.logger.stub(:error, log_error) do
+          assert_equal 0, Bible270::DailyReminders.deliver(at: @at)
+        end
+      end
+
+      assert_includes messages,
+                      '[bible270] daily reminders unavailable: run bible270:install:migrations and db:migrate'
+      assert_empty ActionMailer::Base.deliveries
+    end
+
     def test_skips_readers_who_are_not_opted_in_or_have_no_email
       opted_out = create_reader(day: 1, daily_reminders: false)
       no_email = create_reader(day: 1, email: nil)

@@ -28,12 +28,14 @@ module Bible270
     PASSAGE_SOURCES = %w[bible_gateway blue_letter_bible].freeze
     DEFAULT_PASSAGE_SOURCE = 'bible_gateway'
     DAILY_REMINDER_TIME_FORMAT = %r{\A(?:[01]\d|2[0-3]):[0-5]\d\z}
+    DAILY_REMINDER_COLUMNS = %w[daily_reminders daily_reminder_time last_daily_reminder_sent_on].freeze
 
     validates :display_name, presence: true
     validates :uid, uniqueness: { scope: :provider }, allow_nil: true
     validates :passage_source, inclusion: { in: PASSAGE_SOURCES }
     validates :daily_reminder_time,
-              format: { with: DAILY_REMINDER_TIME_FORMAT, message: 'must use 24-hour HH:MM format' }
+              format: { with: DAILY_REMINDER_TIME_FORMAT, message: 'must use 24-hour HH:MM format' },
+              if: -> { self.class.daily_reminder_columns? }
 
     scope :daily_reminder_recipients, ->(on:) {
       where(daily_reminders: true)
@@ -41,11 +43,18 @@ module Bible270
         .where.not(id: where(last_daily_reminder_sent_on: on).select(:id))
     }
 
+    def self.daily_reminder_columns?
+      (DAILY_REMINDER_COLUMNS - column_names).empty?
+    rescue ActiveRecord::StatementInvalid
+      false
+    end
+
     def self.valid_daily_reminder_time?(value)
       value.to_s.match?(DAILY_REMINDER_TIME_FORMAT)
     end
 
     def daily_reminder_due_at?(local_time)
+      return false unless self.class.daily_reminder_columns?
       return false unless daily_reminders?
       return false unless self.class.valid_daily_reminder_time?(daily_reminder_time)
       return false unless local_time.respond_to?(:hour) && local_time.respond_to?(:min)

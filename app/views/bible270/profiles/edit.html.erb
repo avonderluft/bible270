@@ -37,7 +37,7 @@
     </label>
     <%= render "bible270/shared/passage_source", reader: current_reader %>
 
-    <% if Bible270.config.daily_reminders? %>
+    <% if @daily_reminders_available %>
       <% reminder_hour, reminder_minute = @daily_reminder_time.to_s.split(":", 2) %>
       <div class="b270-field">
         <span>Daily reading reminder</span>
@@ -68,6 +68,10 @@
           </div>
         </div>
       </div>
+    <% elsif Bible270.config.daily_reminders? %>
+      <p class="b270-flash alert" style="margin:0">
+        Daily reminders are temporarily unavailable while this installation finishes a database update.
+      </p>
     <% end %>
 
     <%= submit_tag "Save", class: "b270-btn" %>
@@ -84,4 +88,4 @@
   <% end %>
 </div>
 
-<p style="margin-top:18px"><%= link_to "← Back to your progress", reader_path(current_reader) %></p>
+<p style="margin-top:18px"><%= link_to "← Back to your progress", progress_path %></p>

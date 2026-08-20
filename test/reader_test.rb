@@ -22,6 +22,19 @@ class ReaderTest < Minitest::Test
     assert_nil @reader.last_daily_reminder_sent_on
   end
 
+  def test_daily_reminder_columns_are_available_in_the_migrated_schema
+    assert Bible270::Reader.daily_reminder_columns?
+  end
+
+  def test_missing_daily_reminder_columns_do_not_block_unrelated_updates
+    @reader.update_column(:daily_reminder_time, 'invalid')
+
+    Bible270::Reader.stub(:daily_reminder_columns?, false) do
+      assert @reader.update!(display_name: 'Renamed Reader')
+      refute @reader.daily_reminder_due_at?(Time.utc(2026, 9, 6, 8, 0))
+    end
+  end
+
   def test_daily_reminder_scope_only_returns_opted_in_reachable_readers_not_sent_that_day
     on = Date.new(2026, 9, 6)
     due = Bible270::Reader.create!(

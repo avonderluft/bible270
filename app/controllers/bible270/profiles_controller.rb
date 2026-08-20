@@ -8,11 +8,11 @@ module Bible270
 
     def edit
       @names = current_reader.suggested_names
-      @daily_reminders = current_reader.daily_reminders
-      @daily_reminder_time = current_reader.daily_reminder_time
+      load_daily_reminder_state
     end
 
     def update
+      @daily_reminders_available = daily_reminders_available?
       problems = []
       problems << 'both a first and last name' unless current_reader.update_names(params[:first_name],
                                                                                   params[:last_name])
@@ -27,13 +27,12 @@ module Bible270
 
       requested_daily_reminders = params[:daily_reminders] == '1'
       requested_daily_reminder_time = daily_reminder_time_param
-      if Bible270.config.daily_reminders? &&
-         !Reader.valid_daily_reminder_time?(requested_daily_reminder_time)
+      if @daily_reminders_available && !Reader.valid_daily_reminder_time?(requested_daily_reminder_time)
         problems << 'a reminder time in 24-hour HH:MM format'
       end
 
       if problems.empty?
-        if Bible270.config.daily_reminders?
+        if @daily_reminders_available
           current_reader.update!(daily_reminders: requested_daily_reminders,
                                  daily_reminder_time: requested_daily_reminder_time)
         end
@@ -53,6 +52,21 @@ module Bible270
     end
 
   private
+
+    def load_daily_reminder_state
+      @daily_reminders_available = daily_reminders_available?
+      if @daily_reminders_available
+        @daily_reminders = current_reader.daily_reminders
+        @daily_reminder_time = current_reader.daily_reminder_time
+      else
+        @daily_reminders = false
+        @daily_reminder_time = '08:00'
+      end
+    end
+
+    def daily_reminders_available?
+      Bible270.config.daily_reminders? && Reader.daily_reminder_columns?
+    end
 
     def daily_reminder_time_param
       hour = params[:daily_reminder_hour]

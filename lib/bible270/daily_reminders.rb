@@ -13,6 +13,13 @@ module Bible270
     def deliver(at: Time.now)
       return 0 unless Bible270.config.daily_reminders?
 
+      unless Reader.daily_reminder_columns?
+        Rails.logger.error(
+          '[bible270] daily reminders unavailable: run bible270:install:migrations and db:migrate'
+        )
+        return 0
+      end
+
       local_time = local_time_for(at)
       return 0 unless local_time.respond_to?(:to_date)
 

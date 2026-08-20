@@ -49,6 +49,7 @@ if RAILS_LOADED
                    'reader choice belongs immediately below the translation selector')
       assert_equal 2, response.body.scan(%r{name="passage_source"}).size
       assert_match(%r{value="bible_gateway" checked="checked"}, response.body)
+      assert_select "a[href='#{mount}/progress']", text: '← Back to your progress'
     end
 
     def test_original_languages_fix_the_source_to_blue_letter_bible
@@ -73,6 +74,29 @@ if RAILS_LOADED
       assert_equal 'Andrew', @reader.first_name
       assert_equal 'vonderLuft', @reader.last_name
       assert_equal 'Andrew vonderLuft', @reader.display_name
+    end
+
+    def test_profile_stays_available_while_the_daily_reminder_migration_is_pending
+      Bible270.config.daily_reminders = true
+      sign_in_as(@reader)
+
+      Bible270::Reader.stub(:daily_reminder_columns?, false) do
+        get "#{mount}/profile"
+
+        assert_response :success
+        assert_select 'input[name="daily_reminders"]', count: 0
+        assert_select 'select[name="daily_reminder_hour"]', count: 0
+        assert_select 'select[name="daily_reminder_minute"]', count: 0
+        assert_select '.b270-flash.alert', text: %r{temporarily unavailable.*database update}i
+
+        patch "#{mount}/profile", params: { first_name: 'Ready', last_name: 'Reader' }
+
+        assert_response :redirect
+      end
+
+      @reader.reload
+      assert_equal 'Ready', @reader.first_name
+      assert_equal 'Reader', @reader.last_name
     end
 
     def test_daily_reminder_checkbox_is_shown_only_when_globally_enabled
