@@ -43,8 +43,8 @@
   .b270-field input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(165,129,44,.13)}
   .b270-reminder-row{display:flex;align-items:center;gap:12px;width:100%}
   .b270-reminder-optin,.b270-reminder-time{display:inline-flex;align-items:center;gap:7px;color:var(--muted);white-space:nowrap}
-  .b270-reminder-optin{min-width:0}
-  .b270-reminder-time{margin-left:auto;font-size:12px}
+  .b270-reminder-optin{position:relative;min-width:0}
+  .b270-reminder-time{margin-left:auto;gap:3px;font-size:12px}
   .b270-time-control{position:relative;display:inline-grid}
   .b270-reminder-tooltip{visibility:hidden;opacity:0;position:absolute;z-index:20;right:0;bottom:calc(100% + 7px);
                          width:240px;padding:7px 9px;border:1px solid var(--line-soft);border-radius:7px;
@@ -52,7 +52,9 @@
                          white-space:normal;box-shadow:0 3px 10px rgba(0,0,0,.14);pointer-events:none;
                          transition:opacity .12s}
   .b270-time-control:hover .b270-reminder-tooltip,
-  .b270-time-control:focus-within .b270-reminder-tooltip{visibility:visible;opacity:1}
+  .b270-time-control:focus-within .b270-reminder-tooltip,
+  .b270-reminder-optin:hover .b270-reminder-tooltip,
+  .b270-reminder-optin:focus-within .b270-reminder-tooltip{visibility:visible;opacity:1}
   .b270-field .b270-reminder-optin input[type=checkbox]{width:auto;margin:0;flex:none}
   .b270-time-control{grid-template-columns:48px 5px 48px;align-items:center;gap:2px}
   .b270-field .b270-time-select{width:48px;height:30px;margin:0;padding:4px 2px;border:1px solid var(--line);

@@ -43,8 +43,12 @@
         <span>Daily reading reminder</span>
         <div class="b270-reminder-row">
           <label class="b270-reminder-optin">
-            <%= check_box_tag :daily_reminders, "1", @daily_reminders %>
+            <%= check_box_tag :daily_reminders, "1", @daily_reminders,
+                  aria: { describedby: "daily-reminder-optin-hint" } %>
             <span>Email me each day's readings</span>
+            <span class="b270-reminder-tooltip" id="daily-reminder-optin-hint" role="tooltip">
+              Uses the plan's configured time zone. You can turn reminders off here at any time.
+            </span>
           </label>
           <div class="b270-reminder-time">
             <span>at</span>

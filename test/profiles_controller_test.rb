@@ -84,11 +84,12 @@ if RAILS_LOADED
 
       assert_response :success
       assert_select '.b270-reminder-row' do
-        assert_select 'label.b270-reminder-optin input[name="daily_reminders"][checked="checked"]'
+        assert_select 'label.b270-reminder-optin input[name="daily_reminders"][checked="checked"][aria-describedby="daily-reminder-optin-hint"]'
+        assert_select '#daily-reminder-optin-hint[role="tooltip"]', text: %r{Uses the plan's configured time zone}
         assert_select '.b270-reminder-time .b270-time-control[role="group"][aria-describedby="daily-reminder-time-hint"]' do
           assert_select 'select.b270-time-select[name="daily_reminder_hour"][aria-label="Hour"] option[selected="selected"]', text: '08'
           assert_select 'select.b270-time-select[name="daily_reminder_minute"][aria-label="Minute"] option[selected="selected"]', text: '00'
-          assert_select '#daily-reminder-time-hint[role="tooltip"]', text: /Uses the plan's configured time zone/
+          assert_select '#daily-reminder-time-hint[role="tooltip"]', text: %r{Uses the plan's configured time zone}
         end
       end
       assert_match(%r{Email me each day's readings}, response.body)
