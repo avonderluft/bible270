@@ -10,9 +10,16 @@ module Bible270
       @readers = Reader.all.to_a
       checkoff_activity = Checkoff.group(:reader_id).maximum(:updated_at)
       reflection_activity = Comment.approved.group(:reader_id).maximum(:updated_at)
+      @reader_activity = @readers.to_h do |reader|
+        candidates = [
+          { kind: :joined, at: reader.created_at },
+          { kind: :reading, at: checkoff_activity[reader.id] },
+          { kind: :reflection, at: reflection_activity[reader.id] }
+        ].select { |activity| activity[:at] }
+        [reader.id, candidates.max_by { |activity| activity[:at] }]
+      end
       @readers.sort_by! do |reader|
-        last_active = [checkoff_activity[reader.id], reflection_activity[reader.id], reader.created_at].compact.max
-        [-last_active.to_f, reader.sort_name]
+        [-@reader_activity.fetch(reader.id)[:at].to_f, reader.sort_name]
       end
 
       counts = Checkoff.group(:reader_id, :day).count

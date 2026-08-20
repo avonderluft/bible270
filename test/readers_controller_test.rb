@@ -50,8 +50,39 @@ if RAILS_LOADED
       refute_match(%r{Reader Leaders}, response.body)
       assert_select '.b270-li .rank', count: 0
       assert_select '.b270-li .stat', count: 0
+      assert_select '.b270-community-intro', text: %r{Showing 2 of 2 readers.*recent checkoffs and reflections}m
+      first_reader = css_select('.b270-list .b270-li').first
+      assert_match(%r{R Reader}, first_reader.text)
+      assert_match(%r{1 day read · read .* ago}, first_reader.text.squish)
       assert_operator response.body.index('R Reader'), :<, response.body.index('Other Reader'),
                       'the recently active reader should appear first on the overview'
+    end
+
+    def test_the_overview_explains_reflection_and_join_activity
+      @reader.update_column(:created_at, 2.days.ago)
+      @reader.comments.create!(day: 1, body: 'A recent thought',
+                               created_at: 1.hour.ago, updated_at: 1.hour.ago)
+
+      get "#{mount}/"
+
+      reader_row = css_select('.b270-list .b270-li').find { |row| row.text.include?('R Reader') }
+      other_row = css_select('.b270-list .b270-li').find { |row| row.text.include?('Other Reader') }
+      assert_match(%r{reflected .* ago}, reader_row.text.squish)
+      assert_match(%r{joined .* ago}, other_row.text.squish)
+      assert_select '.b270-reader-activity time[datetime][title]', count: 2
+    end
+
+    def test_the_overview_shows_at_most_five_readers_and_says_so
+      4.times do |number|
+        address = "reader#{number}@example.org"
+        Bible270::Reader.create!(provider: 'email', uid: address, email: address,
+                                 display_name: "Reader #{number}")
+      end
+
+      get "#{mount}/"
+
+      assert_select '.b270-list .b270-li', count: 5
+      assert_select '.b270-community-intro', text: %r{Showing 5 of 6 readers}
     end
 
     # ---- the progress page -------------------------------------------------

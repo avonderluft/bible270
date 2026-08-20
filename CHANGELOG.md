@@ -13,7 +13,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Changed
 
-- replace progress-ranked community lists with recent-participation and alphabetical views that emphasize reading together
+- replace progress-ranked community lists with transparent recent-participation and alphabetical views that emphasize reading together
 - make Progress actionable with partial-day links, a calendar-week summary, and the reader's next milestone
 - improve accessibility with AA text contrast, consistent focus indicators, descriptive day-grid labels, semantic boundary navigation, touch-friendly tooltips, responsive forms, and reduced-motion support
 - keep profiles and scheduled jobs available while a newly installed daily-reminder database migration is pending
