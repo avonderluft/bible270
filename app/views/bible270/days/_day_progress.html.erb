@@ -7,8 +7,12 @@
 %>
 <div id="day_progress_<%= day %>">
   <div class="b270-daynav">
-    <%= link_to "‹", (previous_day ? day_path(previous_day) : "#"),
-          class: "b270-arrow #{'disabled' unless previous_day}", "aria-label": "Previous day" %>
+    <% if previous_day %>
+      <%= link_to "‹", day_path(previous_day), class: "b270-arrow", "aria-label": "Previous day" %>
+    <% else %>
+      <%= button_tag "‹", type: "button", class: "b270-arrow disabled", disabled: true,
+            "aria-label": "Previous day unavailable" %>
+    <% end %>
     <div class="b270-dayhead">
       <div class="k">Day <%= day %><% if complete %><span class="b270-badge">Complete</span><% end %></div>
       <% if reader&.dated? %>
@@ -18,8 +22,12 @@
         </div>
       <% end %>
     </div>
-    <%= link_to "›", (next_day ? day_path(next_day) : "#"),
-          class: "b270-arrow #{'disabled' unless next_day}", "aria-label": "Next day" %>
+    <% if next_day %>
+      <%= link_to "›", day_path(next_day), class: "b270-arrow", "aria-label": "Next day" %>
+    <% else %>
+      <%= button_tag "›", type: "button", class: "b270-arrow disabled", disabled: true,
+            "aria-label": "Next day unavailable" %>
+    <% end %>
   </div>
 
 

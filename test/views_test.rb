@@ -246,4 +246,42 @@ class ViewsTest < Minitest::Test
 
     assert_empty offenders, offenders.join("\n")
   end
+
+  def test_accessibility_styles_cover_focus_touch_mobile_and_reduced_motion
+    styles = File.read(STYLES)
+
+    assert_match(%r{:where\(a,button,input,select,textarea,summary\):focus-visible}, styles)
+    assert_match(%r{\.b270-likes:active \.b270-liketooltip}, styles)
+    assert_match(%r{\.b270-form \.row\{align-items:stretch;flex-direction:column\}}, styles)
+    assert_match(%r{@media \(prefers-reduced-motion:reduce\)}, styles)
+  end
+
+  def test_readable_palette_colours_meet_aa_contrast
+    styles = File.read(STYLES)
+    colours = styles.scan(%r{--([a-z-]+):#([0-9a-f]{6})}).to_h
+
+    %w[muted faint gold].each do |foreground|
+      %w[paper card].each do |background|
+        assert_operator contrast_ratio(colours.fetch(foreground), colours.fetch(background)), :>=, 4.5,
+                        "--#{foreground} must meet AA contrast against --#{background}"
+      end
+    end
+    assert_operator contrast_ratio(colours.fetch('gold-lite'), 'ffffff'), :>=, 4.5,
+                    '--gold-lite must meet AA contrast with its white badge text'
+  end
+
+private
+
+  def contrast_ratio(first, second)
+    lighter, darker = [relative_luminance(first), relative_luminance(second)].sort.reverse
+    (lighter + 0.05) / (darker + 0.05)
+  end
+
+  def relative_luminance(hex)
+    components = hex.scan(%r{..}).map do |pair|
+      value = pair.to_i(16) / 255.0
+      value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055)**2.4
+    end
+    (0.2126 * components[0]) + (0.7152 * components[1]) + (0.0722 * components[2])
+  end
 end

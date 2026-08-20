@@ -71,6 +71,19 @@ if RAILS_LOADED
       assert_match(%r{Genesis 3}, response.body)
     end
 
+    def test_day_navigation_uses_disabled_buttons_at_plan_boundaries
+      get "#{mount}/day/1"
+
+      assert_select 'button.b270-arrow.disabled[disabled][aria-label="Previous day unavailable"]', text: '‹'
+      assert_select 'a.b270-arrow[aria-label="Next day"]'
+      assert_select 'a.b270-arrow[href="#"]', count: 0
+
+      get "#{mount}/day/#{Bible270::Plan::DAYS}"
+
+      assert_select 'a.b270-arrow[aria-label="Previous day"]'
+      assert_select 'button.b270-arrow.disabled[disabled][aria-label="Next day unavailable"]', text: '›'
+    end
+
     def test_the_sign_in_page_renders
       get "#{mount}/sign_in"
 

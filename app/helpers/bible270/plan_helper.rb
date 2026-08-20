@@ -176,12 +176,26 @@ module Bible270
     # One cell of the 270-day grid. Four views drew this by hand in four slightly
     # different ways; now they all call this.
     #
-    # The title attribute carries the readings, so hovering a square says what is
-    # on that day — no JavaScript, and it works for keyboard focus too.
+    # The title attribute carries the readings for pointer users; aria-label also
+    # includes date, progress, today, and reflection state for assistive technology.
     def b270_day_cell(day, reader: nil, today: nil)
       link_to day, day_path(day),
               class: b270_day_cell_classes(day, reader: reader, today: today),
-              title: b270_day_readings(day)
+              title: b270_day_readings(day),
+              aria: { label: b270_day_cell_label(day, reader: reader, today: today) }
+    end
+
+    def b270_day_cell_label(day, reader: nil, today: nil)
+      parts = ["Day #{day}"]
+      parts << reader.date_for_day(day).strftime('%A, %B %-d, %Y') if reader&.dated?
+      if reader
+        status = { complete: 'complete', partial: 'partially read', none: 'not read' }.fetch(reader.day_status(day))
+        parts << status
+      end
+      parts << 'today' if today == day
+      parts << 'has reflections' if b270_days_with_reflections.include?(day)
+      parts << b270_day_readings(day)
+      parts.join('. ')
     end
 
     # Shared with the admin grid, which is a button_to rather than a link because

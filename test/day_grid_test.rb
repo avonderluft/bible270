@@ -45,6 +45,31 @@ if RAILS_LOADED
       assert_equal Bible270::Plan::DAYS, cells, 'all 270 squares should say what is on that day'
     end
 
+    def test_every_square_has_a_descriptive_accessible_name
+      get "#{mount}/day/1"
+
+      assert_select 'a.b270-cell[aria-label]', count: Bible270::Plan::DAYS
+      first = css_select('a.b270-cell').find { |cell| cell.text == '1' }
+      assert_includes first['aria-label'], 'Day 1'
+      assert_includes first['aria-label'], 'Genesis 1–3 · Matthew 1 · Psalm 1'
+    end
+
+    def test_the_accessible_name_includes_date_progress_today_and_reflections
+      @reader.set_start_date!(Bible270.today - 4)
+      @reader.checkoffs.create!(day: 5, track: 'nt', part: 0)
+      @reader.comments.create!(day: 5, body: 'A thought')
+      sign_in_as(@reader)
+
+      get "#{mount}/day/1"
+
+      cell = css_select('a.b270-cell').find { |candidate| candidate.text == '5' }
+      label = cell['aria-label']
+      assert_includes label, @reader.date_for_day(5).strftime('%A, %B %-d, %Y')
+      assert_includes label, 'partially read'
+      assert_includes label, 'today'
+      assert_includes label, 'has reflections'
+    end
+
     def test_original_language_labels_name_each_passages_language
       @reader.update_bible_version('HEB/GRK')
       sign_in_as(@reader)
