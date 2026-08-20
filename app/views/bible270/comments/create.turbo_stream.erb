@@ -12,5 +12,5 @@
 <% end %>
 
 <%= turbo_stream.replace "new_comment_form" do %>
-  <%= render "bible270/comments/form", day: @day, comment: Bible270::Comment.new(day: @day) %>
+  <%= render "bible270/comments/form", day: @day, comment: Bible270::Comment.new(day: @day), posted: true %>
 <% end %>

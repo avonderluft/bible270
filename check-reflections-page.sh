@@ -10,9 +10,9 @@ check() {
 check config/routes.rb                                 "as: :reflections"
 check lib/bible270/configuration.rb                    'reflections_page_size'
 check app/controllers/bible270/comments_controller.rb  'def index'
-check app/controllers/bible270/comments_controller.rb  'def recent_threads'
+check app/models/bible270/comment.rb                  'def self.thread_page'
 check app/views/bible270/comments/index.html.erb       'Days with reflections'
-check app/views/bible270/shared/_header.html.erb       'reflections_path'
+check app/views/bible270/shared/_nav_links.html.erb    'reflections_path'
 check app/views/bible270/shared/_styles.html.erb       'b270-threadday'
 echo
 [ $status -eq 0 ] && echo "All present." || echo "Copy the files marked above, then re-run."

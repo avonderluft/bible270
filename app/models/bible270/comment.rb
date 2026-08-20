@@ -11,6 +11,7 @@ module Bible270
     # the paper background; an outline glyph like U+2661 is drawn by the font
     # rather than the emoji set and needs hand-tuning to match.
     HEART = '❤️'
+    ThreadPage = Struct.new(:threads, :activity_by_id, :page, :pages, :total, keyword_init: true)
 
     self.table_name = 'bible270_comments'
 
@@ -51,6 +52,40 @@ module Bible270
       for_day(d).includes(:reader, { likes: :reader }, { replies: [:reader, { likes: :reader }] })
     }
     scope :recent, -> { approved.order(created_at: :desc) }
+
+    # One page of top-level reflections ordered by the newest activity in each
+    # conversation. Loading only IDs and timestamps keeps older archives cheap to
+    # sort, while the displayed page still eager-loads its readers, replies and likes.
+    def self.thread_page(day: nil, reader_id: nil, page: 1, per_page: 10)
+      roots = approved.where(parent_id: nil)
+      roots = roots.where(day: day) if day
+      roots = roots.where(reader_id: reader_id) if reader_id
+
+      root_rows = roots.pluck(:id, :created_at)
+      reply_activity = approved.where.not(parent_id: nil).group(:parent_id).maximum(:created_at)
+      ordered = root_rows.map do |id, created_at|
+        [id, [created_at, reply_activity[id]].compact.max]
+      end
+      ordered.sort_by! { |id, activity_at| [-activity_at.to_f, -id] }
+
+      per_page = per_page.to_i
+      per_page = 10 unless per_page.positive?
+      pages = [(ordered.length.to_f / per_page).ceil, 1].max
+      page = page.to_i.clamp(1, pages)
+      page_rows = ordered.slice((page - 1) * per_page, per_page) || []
+      ids = page_rows.map(&:first)
+      loaded = approved.where(id: ids)
+        .includes(:reader, { likes: :reader }, { replies: [:reader, { likes: :reader }] })
+        .index_by(&:id)
+
+      ThreadPage.new(
+        threads: ids.filter_map { |id| loaded[id] },
+        activity_by_id: page_rows.to_h,
+        page: page,
+        pages: pages,
+        total: ordered.length
+      )
+    end
 
     # Every reflection is visible when written; these are the moderation actions.
     def hide!    = update!(approved: false, moderated_at: Time.current)

@@ -1,5 +1,9 @@
+<% draft_key = ["bible270", "draft", "v1", Bible270.config.mount_at, current_reader.id,
+                    day, comment.parent_id.presence || "root"].join(":") %>
 <%= form_with model: comment, url: day_comments_path(day), method: :post,
-      id: "new_comment_form", class: "b270-form", data: { turbo_stream: true } do |f| %>
+      id: "new_comment_form", class: "b270-form",
+      data: { turbo_stream: true, b270_draft: true, b270_draft_key: draft_key,
+              b270_draft_errors: comment.errors.any?, b270_draft_posted: local_assigns.fetch(:posted, false) } do |f| %>
   <% if comment.errors.any? %>
     <p style="color:var(--oxblood);font-size:13px"><%= comment.errors.full_messages.to_sentence %></p>
   <% end %>
@@ -11,6 +15,7 @@
   <% end %>
   <%= f.hidden_field :parent_id %>
   <%= f.text_area :body, placeholder: comment.parent_id.present? ? "Write your reply…" : "Share a reflection on today's reading…" %>
+  <p class="b270-draft-status" data-b270-draft-status aria-live="polite"></p>
   <div class="row">
     <%= f.select :track,
           options_for_select([["The whole day", ""]] + Bible270::Plan::TRACKS.map { |k, v| [v[:label], k] }),

@@ -29,6 +29,7 @@ module Bible270
     DEFAULT_PASSAGE_SOURCE = 'bible_gateway'
     DAILY_REMINDER_TIME_FORMAT = %r{\A(?:[01]\d|2[0-3]):[0-5]\d\z}
     DAILY_REMINDER_COLUMNS = %w[daily_reminders daily_reminder_time last_daily_reminder_sent_on].freeze
+    REFLECTIONS_SEEN_COLUMN = 'reflections_seen_at'
 
     validates :display_name, presence: true
     validates :uid, uniqueness: { scope: :provider }, allow_nil: true
@@ -51,6 +52,21 @@ module Bible270
 
     def self.valid_daily_reminder_time?(value)
       value.to_s.match?(DAILY_REMINDER_TIME_FORMAT)
+    end
+
+    def self.reflections_seen_column?
+      column_names.include?(REFLECTIONS_SEEN_COLUMN)
+    rescue ActiveRecord::StatementInvalid
+      false
+    end
+
+    def mark_reflections_seen!(at)
+      return false unless self.class.reflections_seen_column?
+
+      update_column(:reflections_seen_at, at)
+      true
+    rescue ActiveRecord::StatementInvalid
+      false
     end
 
     def daily_reminder_due_at?(local_time)

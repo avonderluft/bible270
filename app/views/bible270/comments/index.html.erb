@@ -1,5 +1,7 @@
 <% content_for :title, "Reflections — #{Bible270.config.app_name}" %>
 <% content_for :hide_day_index, true %><%# this page has its own, filtered grid %>
+<% browse_params = { day: @reflection_day, reader_id: @reflection_reader_id,
+                     since: @reflections_since_param }.compact %>
 
 <p class="b270-eyebrow">Reflections</p>
 <h1>Shared gleanings</h1>
@@ -22,18 +24,64 @@
     </div>
   </div>
 
-  <h2 class="b270-section-h">Most recent</h2>
-  <div id="comments">
-    <% @threads.each do |thread| %>
-      <div class="b270-thread">
-        <p class="b270-threadday">
-          <%= link_to "Day #{thread.day}", day_path(thread.day) %>
-          · <%= b270_day_reading_links(thread.day) %>
-        </p>
-        <%= render partial: "bible270/comments/comment", locals: { comment: thread, reply: false } %>
-      </div>
+  <div class="b270-reflection-tools">
+    <div>
+      <h2 class="b270-section-h">Conversations</h2>
+      <p class="b270-reflection-count"><%= pluralize(@reflection_total, "reflection") %></p>
+    </div>
+    <%= form_with url: reflections_path, method: :get, class: "b270-reflection-filters" do %>
+      <%= hidden_field_tag :since, @reflections_since_param %>
+      <label>
+        <span>Day</span>
+        <%= select_tag :day,
+              options_for_select([["All days", ""]] + @days_with_reflections.map { |day| ["Day #{day}", day] },
+                                 @reflection_day) %>
+      </label>
+      <label>
+        <span>Reflection by</span>
+        <%= select_tag :reader_id,
+              options_for_select([["All readers", ""]] + @reflection_readers.map { |reader| [reader.display_name, reader.id] },
+                                 @reflection_reader_id) %>
+      </label>
+      <%= submit_tag "Apply", class: "b270-btn" %>
+      <% if @reflection_day || @reflection_reader_id %>
+        <%= link_to "Clear", reflections_path(since: @reflections_since_param), class: "b270-filter-clear" %>
+      <% end %>
     <% end %>
   </div>
+
+  <% if @threads.any? %>
+    <div id="comments">
+      <% @threads.each do |thread| %>
+        <% is_new = @new_thread_ids.include?(thread.id) %>
+        <div class="b270-thread <%= "b270-thread-new" if is_new %>" id="thread-<%= thread.id %>">
+          <p class="b270-threadday">
+            <%= link_to "Day #{thread.day}", day_path(thread.day) %>
+            · <%= b270_day_reading_links(thread.day) %>
+            <% if is_new %><span class="b270-new-reflection">New since your last visit</span><% end %>
+          </p>
+          <%= render partial: "bible270/comments/comment", locals: { comment: thread, reply: false } %>
+        </div>
+      <% end %>
+    </div>
+
+    <% if @reflection_pages > 1 %>
+      <nav class="b270-pagination" aria-label="Reflection pages">
+        <% if @reflection_page > 1 %>
+          <%= link_to "← Newer", reflections_path(**browse_params, page: @reflection_page - 1) %>
+        <% end %>
+        <span>Page <%= @reflection_page %> of <%= @reflection_pages %></span>
+        <% if @reflection_page < @reflection_pages %>
+          <%= link_to "Older →", reflections_path(**browse_params, page: @reflection_page + 1) %>
+        <% end %>
+      </nav>
+    <% end %>
+  <% else %>
+    <div class="b270-panel b270-filter-empty">
+      <p>No reflections match these filters.</p>
+      <%= link_to "Show all reflections", reflections_path(since: @reflections_since_param) %>
+    </div>
+  <% end %>
 
   <p style="margin-top:18px">
     <%= link_to "Browse the whole plan →", root_path %>

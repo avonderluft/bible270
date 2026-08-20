@@ -22,8 +22,15 @@ class ReaderTest < Minitest::Test
     assert_nil @reader.last_daily_reminder_sent_on
   end
 
-  def test_daily_reminder_columns_are_available_in_the_migrated_schema
+  def test_optional_reader_columns_are_available_in_the_migrated_schema
     assert Bible270::Reader.daily_reminder_columns?
+    assert Bible270::Reader.reflections_seen_column?
+  end
+
+  def test_marking_reflections_seen_is_safe_when_the_migration_is_pending
+    Bible270::Reader.stub(:reflections_seen_column?, false) do
+      refute @reader.mark_reflections_seen!(Time.current)
+    end
   end
 
   def test_missing_daily_reminder_columns_do_not_block_unrelated_updates

@@ -55,6 +55,16 @@ if RAILS_LOADED
                    Bible270::MigrationReconciler::CHECKS.fetch(migration.name)
     end
 
+    def test_reflections_seen_migration_is_recognized
+      migration = FakeMigration.new('AddReflectionsSeenAtToBible270Readers', 20_260_101_000_017)
+
+      status = build_reconciler(FakeContext.new([migration])).statuses.first
+
+      assert status.complete?
+      assert_equal :check_reflections_seen_at,
+                   Bible270::MigrationReconciler::CHECKS.fetch(migration.name)
+    end
+
     def test_only_pending_bible270_migrations_are_assessed
       migrations = [
         FakeMigration.new('CreateBible270Readers', 101),

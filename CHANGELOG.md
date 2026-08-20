@@ -8,6 +8,8 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 - recovery choices for readers whose next unfinished reading is behind the community day, including an optional schedule reset that preserves progress and reflections
 - a two-worker default `test` task with merged coverage summaries and per-file runtime recording, plus `test:serial` when a serial run is needed
+- browser-local reflection and reply drafts that survive refreshes, failed submissions, and accidental navigation
+- day and author filters, pagination, and new-activity markers on the Reflections page
 
 ### Changed
 

@@ -37,6 +37,42 @@ if RAILS_LOADED
       assert_equal 'A thought on Genesis', comment.body
     end
 
+    def test_the_reflection_form_has_a_reader_and_day_specific_draft_key
+      sign_in_as(@reader)
+
+      get "#{mount}/day/1"
+
+      form = css_select('form[data-b270-draft="true"]').first
+      key = form['data-b270-draft-key']
+      assert_includes key, ":#{@reader.id}:1:root"
+      refute_includes key, @reader.email
+      assert_match(%r{Draft saved in this browser}, response.body)
+      assert_select '[data-b270-draft-status][aria-live="polite"]'
+    end
+
+    def test_reply_drafts_are_scoped_to_the_parent_reflection
+      parent = @other.comments.create!(day: 2, body: 'A question')
+      sign_in_as(@reader)
+
+      get "#{mount}/day/2", params: { reply_to: parent.id }
+
+      assert_select "form[data-b270-draft-key$=':#{@reader.id}:2:#{parent.id}']"
+    end
+
+    def test_a_failed_turbo_post_preserves_the_draft_contract
+      sign_in_as(@reader)
+      body = 'x' * 4001
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: body } },
+           headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+      assert_response :unprocessable_entity
+      assert_select 'form[data-b270-draft-errors="true"]'
+      assert_includes response.body, body
+      assert_equal 0, Bible270::Comment.count
+    end
+
     # The form's "the whole day" option submits an empty string, which used to be
     # rejected as "Track is not included in the list".
     def test_a_reflection_about_the_whole_day_is_accepted

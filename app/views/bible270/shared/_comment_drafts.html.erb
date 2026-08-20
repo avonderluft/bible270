@@ -1,0 +1,169 @@
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270Drafts) {
+      window.Bible270Drafts.scan();
+      return;
+    }
+
+    const maxAge = 30 * 24 * 60 * 60 * 1000;
+    const pendingKey = "bible270:draft:pending";
+
+    function browserStorage(name) {
+      try { return window[name]; } catch (_error) { return null; }
+    }
+
+    const local = browserStorage("localStorage");
+    const session = browserStorage("sessionStorage");
+    const storage = {
+      get(area, key) {
+        if (!area) return null;
+        try { return area.getItem(key); } catch (_error) { return null; }
+      },
+      set(area, key, value) {
+        if (!area) return;
+        try { area.setItem(key, value); } catch (_error) { /* Drafts degrade safely. */ }
+      },
+      remove(area, key) {
+        if (!area) return;
+        try { area.removeItem(key); } catch (_error) { /* Drafts degrade safely. */ }
+      }
+    };
+
+    function readDraft(key) {
+      const raw = storage.get(local, key);
+      if (!raw) return null;
+
+      try {
+        const draft = JSON.parse(raw);
+        if (typeof draft.body !== "string" || typeof draft.savedAt !== "number" ||
+            Date.now() - draft.savedAt > maxAge) {
+          storage.remove(local, key);
+          return null;
+        }
+        return draft;
+      } catch (_error) {
+        storage.remove(local, key);
+        return null;
+      }
+    }
+
+    function setStatus(form, message) {
+      const status = form.querySelector("[data-b270-draft-status]");
+      if (status) status.textContent = message;
+    }
+
+    function save(form) {
+      const key = form.dataset.b270DraftKey;
+      const body = form.querySelector("textarea[name='comment[body]']");
+      const track = form.querySelector("select[name='comment[track]']");
+      if (!key || !body) return;
+
+      if (!body.value.trim()) {
+        storage.remove(local, key);
+        setStatus(form, "");
+        return;
+      }
+
+      const trackValue = track ? track.value : "";
+      const current = readDraft(key);
+      if (current && current.body === body.value && current.track === trackValue) {
+        setStatus(form, "Draft saved in this browser.");
+        return;
+      }
+
+      const draft = {
+        body: body.value,
+        track: trackValue,
+        savedAt: Date.now(),
+        revision: `${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`
+      };
+      storage.set(local, key, JSON.stringify(draft));
+      setStatus(form, "Draft saved in this browser.");
+    }
+
+    function settlePending(key = null) {
+      const raw = storage.get(session, pendingKey);
+      if (!raw) return;
+
+      try {
+        const pending = JSON.parse(raw);
+        if (key && pending.key !== key) return;
+        const current = readDraft(pending.key);
+        if (current && current.revision === pending.revision) {
+          storage.remove(local, pending.key);
+        }
+      } catch (_error) {
+        // A malformed pending marker should never prevent the form from working.
+      }
+      storage.remove(session, pendingKey);
+    }
+
+    function rememberSubmission(form) {
+      save(form);
+      const key = form.dataset.b270DraftKey;
+      const draft = readDraft(key);
+      if (draft) {
+        storage.set(session, pendingKey, JSON.stringify({ key, revision: draft.revision }));
+      }
+    }
+
+    function restore(form) {
+      if (form.dataset.b270DraftErrors === "true") return;
+
+      const draft = readDraft(form.dataset.b270DraftKey);
+      if (!draft) return;
+
+      const body = form.querySelector("textarea[name='comment[body]']");
+      const track = form.querySelector("select[name='comment[track]']");
+      if (body) body.value = draft.body;
+      if (track && Array.from(track.options).some((option) => option.value === draft.track)) {
+        track.value = draft.track;
+      }
+      setStatus(form, "Draft restored from this browser.");
+    }
+
+    function initialize(form) {
+      if (form.dataset.b270DraftReady === "true") return;
+      form.dataset.b270DraftReady = "true";
+
+      if (form.dataset.b270DraftPosted === "true") {
+        settlePending(form.dataset.b270DraftKey);
+      } else {
+        restore(form);
+      }
+
+      form.addEventListener("input", () => save(form));
+      form.addEventListener("change", () => save(form));
+      form.addEventListener("submit", () => rememberSubmission(form));
+    }
+
+    function scan() {
+      document.querySelectorAll("form[data-b270-draft='true']").forEach(initialize);
+    }
+
+    if (/^#comment-\d+$/.test(window.location.hash)) {
+      settlePending();
+    } else {
+      storage.remove(session, pendingKey);
+    }
+    scan();
+
+    new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
+    window.addEventListener("pageshow", scan);
+    window.addEventListener("pagehide", () => {
+      document.querySelectorAll("form[data-b270-draft='true']").forEach(save);
+    });
+    document.addEventListener("turbo:submit-end", (event) => {
+      const form = event.target;
+      if (!form.matches("form[data-b270-draft='true']")) return;
+
+      if (event.detail.success) {
+        settlePending(form.dataset.b270DraftKey);
+      } else {
+        storage.remove(session, pendingKey);
+      }
+    });
+
+    window.Bible270Drafts = { scan };
+  })();
+</script>

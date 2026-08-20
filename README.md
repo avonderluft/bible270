@@ -272,6 +272,19 @@ Admins get an extra "Admin" link in the header. From a reader's page you can:
   written; hiding one takes it off the day and community pages without deleting it, and is
   reversible. Delete is there too, for anything that shouldn't be kept.
 
+The Reflections page lists conversations by their latest approved reply, supports day and author
+filters, and paginates older threads. Signed-in readers see which conversations became active since
+their previous visit. Reflection and reply drafts are retained for up to 30 days in that browser and
+cleared after a successful post. On a shared device, clearing browser storage also removes saved drafts.
+
+After upgrading, copy and run migration `20260101000017`, which stores each reader's last visit to the
+Reflections page:
+
+```bash
+bin/rails bible270:install:migrations
+bin/rails db:migrate
+```
+
 Break points can also live in your app rather than the gem, and be changed without a restart:
 
 ```ruby

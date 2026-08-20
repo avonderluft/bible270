@@ -21,6 +21,11 @@ if RAILS_LOADED
 
     def mount = Bible270.config.mount_at.chomp('/')
 
+    def sign_in_as(reader)
+      _record, raw = Bible270::SignInToken.issue!(reader.email)
+      get "#{mount}/sign_in/email/#{raw}"
+    end
+
     # created_at is set explicitly: several reflections made in the same test would
     # otherwise share a timestamp and order unpredictably.
     def reflection(reader, day, body, at)
@@ -125,6 +130,107 @@ if RAILS_LOADED
 
       shown = (0..5).count { |n| response.body.include?("Reflection #{n}") }
       assert_equal 3, shown
+      assert_select '.b270-pagination a', text: 'Older →'
+    end
+
+    def test_older_reflections_are_available_without_duplicates
+      Bible270.config.reflections_page_size = 2
+      4.times { |n| reflection(@mary, n + 1, "Paged reflection #{n}", (10 - n).hours.ago) }
+
+      get "#{mount}/reflections"
+
+      assert_match(%r{Paged reflection 3}, response.body)
+      assert_match(%r{Paged reflection 2}, response.body)
+      refute_match(%r{Paged reflection 1}, response.body)
+
+      get "#{mount}/reflections", params: { page: 2 }
+
+      assert_match(%r{Paged reflection 1}, response.body)
+      assert_match(%r{Paged reflection 0}, response.body)
+      refute_match(%r{Paged reflection 3}, response.body)
+      assert_select '.b270-pagination a', text: '← Newer'
+    end
+
+    def test_reflections_can_be_filtered_by_day_and_author
+      reflection(@mary, 3, 'Mary on three', 3.hours.ago)
+      reflection(@mary, 4, 'Mary on four', 2.hours.ago)
+      reflection(@andrew, 3, 'Andrew on three', 1.hour.ago)
+
+      get "#{mount}/reflections", params: { day: 3, reader_id: @mary.id }
+
+      assert_match(%r{Mary on three}, response.body)
+      refute_match(%r{Mary on four}, response.body)
+      refute_match(%r{Andrew on three}, response.body)
+      assert_select "option[value='3'][selected='selected']"
+      assert_select "option[value='#{@mary.id}'][selected='selected']"
+    end
+
+    def test_filters_have_a_clear_empty_state
+      reflection(@mary, 3, 'Only Mary', 1.hour.ago)
+      reflection(@andrew, 4, 'Only Andrew', 30.minutes.ago)
+
+      get "#{mount}/reflections", params: { day: 3, reader_id: @andrew.id }
+
+      assert_select '.b270-filter-empty', text: %r{No reflections match these filters}
+      assert_select '.b270-filter-empty a', text: 'Show all reflections'
+    end
+
+    # ---- new activity -------------------------------------------------------
+
+    def test_a_first_visit_establishes_a_baseline_without_marking_old_threads_new
+      reflection(@andrew, 1, 'Already here', 1.hour.ago)
+      sign_in_as(@mary)
+
+      get "#{mount}/reflections"
+
+      assert_select '.b270-new-reflection', count: 0
+      assert @mary.reload.reflections_seen_at
+    end
+
+    def test_reflections_stay_available_while_the_seen_migration_is_pending
+      reflection(@andrew, 1, 'Still readable', 1.hour.ago)
+      sign_in_as(@mary)
+
+      Bible270::Reader.stub(:reflections_seen_column?, false) do
+        get "#{mount}/reflections"
+      end
+
+      assert_response :success
+      assert_match(%r{Still readable}, response.body)
+      assert_select '.b270-new-reflection', count: 0
+    end
+
+    def test_new_roots_and_new_replies_are_marked_since_the_previous_visit
+      @mary.update_column(:reflections_seen_at, 2.days.ago)
+      old = reflection(@andrew, 1, 'Old and quiet', 3.days.ago)
+      active = reflection(@andrew, 2, 'Old but active', 3.days.ago)
+      fresh = reflection(@andrew, 3, 'Brand new', 1.hour.ago)
+      @mary.comments.create!(day: 2, body: 'A new reply', parent: active, created_at: 30.minutes.ago)
+      sign_in_as(@mary)
+
+      get "#{mount}/reflections"
+
+      assert_select "#thread-#{old.id} .b270-new-reflection", count: 0
+      assert_select "#thread-#{active.id} .b270-new-reflection", text: 'New since your last visit'
+      assert_select "#thread-#{fresh.id} .b270-new-reflection", text: 'New since your last visit'
+      assert_operator @mary.reload.reflections_seen_at, :>, 2.days.ago
+    end
+
+    def test_older_pages_keep_the_original_new_activity_cutoff
+      Bible270.config.reflections_page_size = 1
+      @mary.update_column(:reflections_seen_at, 3.days.ago)
+      reflection(@andrew, 1, 'First new thread', 2.hours.ago)
+      reflection(@andrew, 2, 'Second new thread', 1.hour.ago)
+      sign_in_as(@mary)
+
+      get "#{mount}/reflections"
+
+      older_link = css_select('.b270-pagination a').find { |link| link.text.include?('Older') }
+      assert_includes older_link['href'], 'since='
+      get older_link['href']
+
+      assert_select '.b270-new-reflection', text: 'New since your last visit'
+      assert_match(%r{First new thread}, response.body)
     end
 
     # ---- the scripture links ------------------------------------------------

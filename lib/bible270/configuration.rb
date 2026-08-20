@@ -336,8 +336,8 @@ module Bible270
 
     # Email a reader when someone writes "@them" in a reflection. Readers can opt
     # out individually on their profile; this switches the whole feature off.
-    # How many recent threads the Reflections page shows. A thread resurfaces when
-    # someone replies to it, so this is a count of conversations, not of messages.
+    # How many threads each Reflections page shows. A thread resurfaces when someone
+    # replies to it, so this is a count of conversations, not of messages.
     attr_accessor :reflections_page_size
 
     def remember_signed_in?

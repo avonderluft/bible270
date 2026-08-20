@@ -3,8 +3,12 @@
 module Bible270
   class CommentsController < ApplicationController
     def index
+      visited_at = Time.current
       @days_with_reflections = Comment.approved.distinct.pluck(:day).sort
-      @threads = recent_threads
+      load_reflection_filters
+      load_reflection_page
+      load_new_reflections
+      current_reader&.mark_reflections_seen!(visited_at)
     end
 
     def create
@@ -25,7 +29,8 @@ module Bible270
         respond_to do |format|
           format.turbo_stream do
             render turbo_stream: turbo_stream.replace('new_comment_form', partial: 'bible270/comments/form',
-                                                                          locals: { day: @day, comment: @comment })
+                                                                          locals: { day: @day, comment: @comment }),
+                   status: :unprocessable_entity
           end
           format.html { redirect_to day_path(@day), alert: @comment.errors.full_messages.to_sentence }
         end
@@ -72,30 +77,52 @@ module Bible270
 
   private
 
-    # The most recently active conversations, newest first. A reply counts as
-    # activity, so answering an old reflection brings the whole thread back up —
-    # otherwise a lively discussion on day 3 would stay buried while quieter, newer
-    # reflections sat above it.
-    def recent_threads
-      wanted = Bible270.config.reflections_page_size.to_i
-      wanted = 10 unless wanted.positive?
+    def load_reflection_filters
+      root_reflections = Comment.approved.where(parent_id: nil)
+      reader_ids = root_reflections.distinct.pluck(:reader_id)
+      @reflection_readers = Reader.where(id: reader_ids).to_a.sort_by(&:sort_name)
 
-      # Look at rather more messages than threads, since several may belong to one.
-      recent = Comment.approved.order(created_at: :desc).limit(wanted * 5)
-        .pluck(:id, :parent_id, :created_at)
+      requested_day = params[:day].presence&.to_i
+      @reflection_day = requested_day if @days_with_reflections.include?(requested_day)
 
-      roots = {}
-      recent.each do |id, parent_id, created_at|
-        root = parent_id || id
-        roots[root] ||= created_at
-        roots[root] = created_at if created_at > roots[root]
-      end
+      requested_reader = params[:reader_id].presence&.to_i
+      @reflection_reader_id = requested_reader if reader_ids.include?(requested_reader)
+    end
 
-      ids = roots.sort_by { |_root, at| -at.to_i }.first(wanted).map(&:first)
-      threads = Comment.approved.where(id: ids)
-        .includes(:reader, { likes: :reader }, { replies: [:reader, { likes: :reader }] })
-        .index_by(&:id)
-      ids.filter_map { |id| threads[id] }
+    def load_reflection_page
+      result = Comment.thread_page(
+        day: @reflection_day,
+        reader_id: @reflection_reader_id,
+        page: params[:page],
+        per_page: Bible270.config.reflections_page_size
+      )
+      @threads = result.threads
+      @thread_activity = result.activity_by_id
+      @reflection_page = result.page
+      @reflection_pages = result.pages
+      @reflection_total = result.total
+    end
+
+    def load_new_reflections
+      @reflections_since = reflections_since
+      @reflections_since_param = @reflections_since&.iso8601(6) || 'none'
+      @new_thread_ids = if @reflections_since
+                          @thread_activity.filter_map do |id, activity_at|
+                            id if activity_at > @reflections_since
+                          end
+                        else
+                          []
+                        end
+    end
+
+    def reflections_since
+      return nil unless current_reader&.class&.reflections_seen_column?
+      return current_reader.reflections_seen_at unless params.key?(:since)
+      return nil if params[:since] == 'none'
+
+      Time.iso8601(params[:since].to_s)
+    rescue ArgumentError
+      current_reader.reflections_seen_at
     end
 
     def comment_params
