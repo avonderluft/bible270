@@ -25,13 +25,21 @@ class EntryPointTest < Minitest::Test
     require 'bible270'
 
     loaded = $LOADED_FEATURES.map { |path| File.expand_path(path) }
-    files = Dir.glob(File.join(ROOT, 'lib/bible270/*.rb'))
-      .reject { |path| File.basename(path) == 'engine.rb' } # only under Rails
+    files = Dir.glob(File.join(ROOT, 'lib/bible270/*.rb')).reject do |path|
+      # Engine loads only under Rails; the reconciler belongs only to its Rake task.
+      %w[engine.rb migration_reconciler.rb].include?(File.basename(path))
+    end
 
     orphans = files.reject { |path| loaded.include?(File.expand_path(path)) }
 
     assert_empty orphans.map { |path| path.sub("#{ROOT}/", '') },
                  'these files are never loaded — either require them or delete them'
+  end
+
+  def test_the_migration_reconciler_is_loaded_by_its_rake_task
+    task = File.read(File.join(ROOT, 'lib/tasks/bible270_migrations.rake'))
+
+    assert_match(%r{require 'bible270/migration_reconciler'}, task)
   end
 
   def test_the_engine_is_loaded_only_when_rails_is_present

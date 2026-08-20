@@ -1,26 +1,24 @@
 <% content_for :title, Bible270.config.app_name %>
 <p class="b270-eyebrow"><%= Bible270.config.tagline %></p>
 <h1><%= Bible270.config.app_name %> <em>— read God's whole story</em></h1>
-<p class="lede">Daily passages from the Old Testament, New Testament, and Psalms or Proverbs — portions sized to take about the same time to read. Check off what you read; your place is saved for you, and you can see how your friends are progressing as well.</p>
+<p class="lede">Daily passages from the Old Testament, New Testament, and Psalms or Proverbs — portions sized to take about the same time to read. Check off what you read; your place is saved for you, and you can share reflections and encourage one another along the way.</p>
 
 <%= render "bible270/shared/progress" %>
 
 <% if @readers.any? %>
-  <% rankings= @readers.count < 5 ? @readers.count : 5 %>
-  <h2 class="b270-section-h">Reader Leaders</h2>
+  <h2 class="b270-section-h">Reading together</h2>
+  <p class="b270-community-intro">Recent readers from a community of <%= @readers.size %>.</p>
   <div class="b270-list">
-    <% @readers.first(rankings).each_with_index do |r, i| %>
+    <% @readers.first(5).each do |r| %>
       <div class="b270-li">
-        <span class="rank"><%= i + 1 %></span>
         <%= b270_avatar(r) %>
         <div>
           <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
           <% day_word = @days_completed[r.id] == 1 ? "day" : "days" %>
           <div class="sub"><%= @days_completed[r.id] %> <%= day_word %> read</div>
         </div>
-        <div class="stat"><span class="big"><%= (@days_completed[r.id].to_f / Bible270::Plan::DAYS * 100).round %>%</span></div>
       </div>
     <% end %>
   </div>
-  <p style="margin:12px 0 0"><%= link_to "See everyone →", community_path %></p>
+  <p style="margin:12px 0 0"><%= link_to "Meet the community →", community_path %></p>
 <% end %>

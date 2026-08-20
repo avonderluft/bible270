@@ -2,10 +2,17 @@
 
 ENV['RAILS_ENV'] = 'test'
 
-# SKIP_COV runs the suite with no coverage machinery — quicker, and what CI's
-# test matrix uses, since only the coverage job needs a report.
+# SKIP_COV is available for especially quick targeted runs. Parallel workers use
+# distinct command names so SimpleCov can merge their results into one report.
 unless ENV['SKIP_COV']
   require 'simplecov'
+
+  if ENV['PARALLEL_COVERAGE']
+    worker = ENV['TEST_ENV_NUMBER'].to_s
+    worker = '1' if worker.empty?
+    SimpleCov.command_name "Parallel Tests #{worker}"
+    SimpleCov.formatter(Class.new { def format(_result); end })
+  end
 
   SimpleCov.start do
     track_files '{app,lib}/**/*.rb'
@@ -29,6 +36,12 @@ end
 $LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 require 'minitest/autorun'
 require 'minitest/mock'
+require 'minitest/reporters'
+require 'parallel_tests/test/runtime_logger' if ENV['RECORD_RUNTIME']
+
+Minitest::Reporters.use!(
+  Minitest::Reporters::DefaultReporter.new(color: !ENV.key?('NO_COLOR'))
+)
 require 'bible270/plan'
 
 # ---- clean dummy application ---------------------------------------------

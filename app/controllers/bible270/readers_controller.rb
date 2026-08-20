@@ -7,8 +7,9 @@ module Bible270
       counts = Checkoff.group(:reader_id, :day).count
       @days_completed = Hash.new(0)
       counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.total_parts(day) }
-      # Progress first, then by name — the same name ordering the admin list uses.
-      @readers.sort_by! { |r| [-@days_completed[r.id], r.sort_name] }
+      # Community is a directory of fellow readers, not a leaderboard. Keep the
+      # order predictable without implying that progress determines standing.
+      @readers.sort_by!(&:sort_name)
     end
 
     # The reader's own progress. Deliberately open to visitors: the panel shows an
@@ -52,6 +53,24 @@ module Bible270
       else
         redirect_to root_path, alert: 'The start date is set for the whole community.'
       end
+    end
+
+    def restart_schedule
+      return unless require_reader!
+
+      unless Bible270.config.allow_reader_start_date
+        redirect_to progress_path, alert: 'The start date is set for the whole community.' and return
+      end
+
+      next_day = current_reader.current_day
+      today = current_reader.today_day
+      unless today && next_day < today
+        redirect_to progress_path, notice: 'Your reading schedule is already up to date.' and return
+      end
+
+      current_reader.restart_on!(day: next_day)
+      redirect_to progress_path,
+                  notice: "Day #{next_day} is now today. All your reading progress is unchanged."
     end
   end
 end

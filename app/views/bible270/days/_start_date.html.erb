@@ -13,7 +13,7 @@
         · <em>the 270 days have elapsed</em>
       <% elsif (off = reader.days_off_pace) %>
         <% if off > 0 %>
-          · <em><%= off %> day<%= "s" unless off == 1 %> behind</em>
+          · <em>reading at your own pace</em>
         <% elsif off < 0 %>
           · <em><%= -off %> day<%= "s" unless off == -1 %> ahead</em>
         <% else %>

@@ -4,6 +4,15 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+### Added
+
+- recovery choices for readers whose next unfinished reading is behind the community day, including an optional schedule reset that preserves progress and reflections
+- a two-worker default `test` task with merged coverage summaries and per-file runtime recording, plus `test:serial` when a serial run is needed
+
+### Changed
+
+- replace progress-ranked community lists with recent-participation and alphabetical views that emphasize reading together
+
 See the changes since the last release:
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.18.2...main)**

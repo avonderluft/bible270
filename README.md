@@ -506,7 +506,7 @@ All computed at load and memoized — no generated schedule, so nothing to migra
 
 ## Scaling
 
-The leaderboard counts completed days in Ruby from grouped check-offs — fine for hundreds of readers. Past a few thousand, cache a `days_completed` counter on `Reader` via a `Checkoff` `after_commit` and sort in SQL.
+Community pages count completed days in Ruby from grouped check-offs — fine for hundreds of readers. Past a few thousand, cache a `days_completed` counter on `Reader` via a `Checkoff` `after_commit` and read it directly in SQL.
 
 ## Troubleshooting
 
@@ -534,8 +534,13 @@ The engine's CSS rides in a partial its own layout renders. Using your layout? A
 
 ```bash
 bundle install
-rake test
+bundle exec rake test
+bundle exec rubocop --cache false
 ```
+
+`rake test` runs two isolated processes, merges their SimpleCov results, and records per-file runtimes
+in `tmp/parallel_runtime_test.log` to improve subsequent balancing. Set `PARALLEL_WORKERS` to tune the
+worker count. Use `bundle exec rake test:serial` when a serial coverage run is specifically needed.
 
 ### Get an email link for local testing
 
@@ -553,7 +558,7 @@ Bug reports and pull requests are welcome at <https://github.com/avonderluft/bib
 
 1. Fork it and clone your fork.
 2. Branch off `main`: `git checkout -b my-feature`.
-3. Make your change, and add tests — `rake test` should stay green.
+3. Make your change, and add tests — `bundle exec rake test` and `bundle exec rubocop --cache false` should stay green.
 4. Commit with a clear message: `git commit -am "Add my feature"`.
 5. Push: `git push origin my-feature`.
 6. Open a pull request against `main`, saying what changed and why.

@@ -5,12 +5,19 @@ module Bible270
     def index
       @plan_totals = Plan.totals
 
-      # Community leaderboard (small-community friendly; see README on scaling).
-      @readers = Reader.order(updated_at: :desc).to_a
+      # Show recent participation without ranking readers by completion. A checkoff
+      # or reflection counts as activity; joining is the fallback for new readers.
+      @readers = Reader.all.to_a
+      checkoff_activity = Checkoff.group(:reader_id).maximum(:updated_at)
+      reflection_activity = Comment.approved.group(:reader_id).maximum(:updated_at)
+      @readers.sort_by! do |reader|
+        last_active = [checkoff_activity[reader.id], reflection_activity[reader.id], reader.created_at].compact.max
+        [-last_active.to_f, reader.sort_name]
+      end
+
       counts = Checkoff.group(:reader_id, :day).count
       @days_completed = Hash.new(0)
       counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.total_parts(day) }
-      @readers = @readers.sort_by { |r| -@days_completed[r.id] }
 
       @start_day = current_reader&.current_day || 1
       # nil outside the plan's window, so no "Go to today" before it begins

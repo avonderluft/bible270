@@ -22,8 +22,8 @@ jobs:
           ruby-version: "4.0"
           bundler-cache: true
 
-      - name: Run tests
-        run: bundle exec rake test
+      - name: Run serial tests with coverage
+        run: bundle exec rake test:serial
 
       - name: Inspect coverage
         run: |

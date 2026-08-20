@@ -30,13 +30,28 @@ if RAILS_LOADED
       assert_match(%r{Other Reader}, response.body)
     end
 
-    def test_readers_are_ordered_by_progress
-      @other.mark_through!(5)
+    def test_the_community_is_alphabetical_instead_of_ranked_by_progress
+      @reader.mark_through!(5)
       get "#{mount}/community"
 
       assert_response :success
       assert_operator response.body.index('Other Reader'), :<, response.body.index('R Reader'),
-                      'the reader who has done more should come first'
+                      'progress should not determine community standing'
+      assert_select '.b270-li .rank', count: 0
+      assert_select '.b270-li .stat', count: 0
+    end
+
+    def test_the_overview_highlights_recent_participation_without_a_leaderboard
+      @reader.mark_through!(1)
+      get "#{mount}/"
+
+      assert_response :success
+      assert_select 'h2.b270-section-h', text: 'Reading together'
+      refute_match(%r{Reader Leaders}, response.body)
+      assert_select '.b270-li .rank', count: 0
+      assert_select '.b270-li .stat', count: 0
+      assert_operator response.body.index('R Reader'), :<, response.body.index('Other Reader'),
+                      'the recently active reader should appear first on the overview'
     end
 
     # ---- the progress page -------------------------------------------------
@@ -73,15 +88,74 @@ if RAILS_LOADED
       assert_match(%r{/day/3}, response.body)
     end
 
-    def test_go_to_today_is_a_secondary_row_below_continue_reading
+    def test_a_reader_behind_schedule_gets_clear_recovery_choices
       @reader.set_start_date!(Bible270.today - 9)
       sign_in_as(@reader)
 
       get "#{mount}/progress"
 
-      assert_match(%r{class="b270-progress-actions">.*class="b270-btn".*class="b270-todaylink"}m,
-                   response.body)
-      assert_match(%r{Go to today \(Day 10\)}, response.body)
+      assert_select '.b270-recovery' do
+        assert_select 'a.b270-btn[href$="/day/1"]', text: %r{Catch up from Day 1}
+        assert_select 'a.b270-todaylink[href$="/day/10"]', text: %r{Read with the community}
+        assert_select 'form[action$="/schedule/restart"] button', text: %r{Make Day 1 my new today}
+      end
+      assert_match(%r{completed readings stay saved}, response.body)
+    end
+
+    def test_restarting_a_schedule_makes_the_next_unfinished_day_today_without_losing_progress
+      skip 'readers may not set their own schedule' unless Bible270.config.allow_reader_start_date
+
+      @reader.set_start_date!(Bible270.today - 9)
+      @reader.mark_day_complete!(2)
+      @reader.comments.create!(day: 2, body: 'Keep this reflection')
+      checkoff_count = @reader.checkoffs.count
+      reflection_count = @reader.comments.count
+      sign_in_as(@reader)
+
+      patch "#{mount}/schedule/restart"
+
+      assert_response :redirect
+      @reader.reload
+      assert_equal 1, @reader.today_day
+      assert_equal Bible270.today, @reader.started_on
+      assert_equal checkoff_count, @reader.checkoffs.count
+      assert_equal reflection_count, @reader.comments.count
+      assert @reader.day_complete?(2)
+    end
+
+    def test_a_visitor_cannot_restart_a_readers_schedule
+      original_start = Bible270.today - 9
+      @reader.set_start_date!(original_start)
+
+      patch "#{mount}/schedule/restart"
+
+      assert_response :redirect
+      assert_equal original_start, @reader.reload.started_on
+    end
+
+    def test_a_community_schedule_cannot_be_restarted_by_a_reader
+      previous = Bible270.config.allow_reader_start_date
+      original_start = Bible270.today - 9
+      @reader.set_start_date!(original_start)
+      Bible270.config.allow_reader_start_date = false
+      sign_in_as(@reader)
+
+      patch "#{mount}/schedule/restart"
+
+      assert_response :redirect
+      assert_equal original_start, @reader.reload.started_on
+    ensure
+      Bible270.config.allow_reader_start_date = previous
+    end
+
+    def test_recovery_choices_are_hidden_when_the_next_reading_is_today
+      @reader.set_start_date!(Bible270.today)
+      sign_in_as(@reader)
+
+      get "#{mount}/progress"
+
+      assert_select '.b270-recovery', count: 0
+      assert_match(%r{Start reading — Day 1}, response.body)
     end
 
     def test_the_progress_page_lists_recent_reflections

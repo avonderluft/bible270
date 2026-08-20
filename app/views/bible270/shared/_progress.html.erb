@@ -23,6 +23,7 @@
   panel_today_day = today_day || panel_reader&.today_day
   panel_community_date = community_start_date == :unset ? Bible270.config.start_date : community_start_date
   day_verb = panel_start_day == 1 ? 'Start' : 'Continue'
+  panel_behind = panel_today_day.present? && panel_start_day < panel_today_day
 %>
 <div class="b270-panel">
   <% if panel_reader %>
@@ -34,12 +35,29 @@
 
     <%= render "bible270/shared/track_bars", reader: panel_reader %>
 
-    <div class="b270-progress-actions">
-      <%= link_to "#{day_verb} reading — Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
-      <% if panel_today_day && panel_today_day != panel_start_day %>
-        <%= link_to "Go to today (Day #{panel_today_day})", day_path(panel_today_day), class: "b270-todaylink" %>
-      <% end %>
-    </div>
+    <% if panel_behind %>
+      <div class="b270-recovery">
+        <p class="b270-recovery-heading">Choose the reading that works for you today</p>
+        <p class="b270-recovery-copy">Your next unfinished reading is Day <%= panel_start_day %>, while the community is on Day <%= panel_today_day %>. Whichever you choose, your completed readings stay saved.</p>
+        <div class="b270-progress-actions b270-recovery-actions">
+          <%= link_to "Catch up from Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
+          <%= link_to "Read with the community — Day #{panel_today_day}", day_path(panel_today_day), class: "b270-todaylink" %>
+          <% if Bible270.config.allow_reader_start_date %>
+            <%= button_to "Make Day #{panel_start_day} my new today", restart_schedule_path,
+                  method: :patch, class: "b270-linkbtn",
+                  form: { class: "b270-restart-form",
+                          data: { turbo_confirm: "Make Day #{panel_start_day} today? Your existing check-offs and reflections will not change." } } %>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="b270-progress-actions">
+        <%= link_to "#{day_verb} reading — Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
+        <% if panel_today_day && panel_today_day != panel_start_day %>
+          <%= link_to "Go to today (Day #{panel_today_day})", day_path(panel_today_day), class: "b270-todaylink" %>
+        <% end %>
+      </div>
+    <% end %>
 
     <%= render "bible270/days/start_date", reader: panel_reader %>
   <% else %>

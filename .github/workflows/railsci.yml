@@ -29,7 +29,6 @@ jobs:
     env:
       RAILS_ENV: test
       RAILS_VERSION: ${{ matrix.rails }}
-      SKIP_COV: "true"
 
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +39,7 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
 
-      - name: Run the test suite
+      - name: Run the test suite in two processes
         run: bundle exec rake test
 
   lint:
