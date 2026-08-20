@@ -38,19 +38,31 @@
     <%= render "bible270/shared/passage_source", reader: current_reader %>
 
     <% if Bible270.config.daily_reminders? %>
+      <% reminder_hour, reminder_minute = @daily_reminder_time.to_s.split(":", 2) %>
       <div class="b270-field">
         <span>Daily reading reminder</span>
-        <label>
-          <%= check_box_tag :daily_reminders, "1", @daily_reminders %>
-          Email me each day's readings
-        </label>
-        <label>
-          Send at
-          <%= time_field_tag :daily_reminder_time, @daily_reminder_time, required: true, step: 60 %>
-        </label>
-        <span class="b270-hint" style="margin:0">
-          Uses the plan's configured time zone. You can turn reminders off here at any time.
-        </span>
+        <div class="b270-reminder-row">
+          <label class="b270-reminder-optin">
+            <%= check_box_tag :daily_reminders, "1", @daily_reminders %>
+            <span>Email me each day's readings</span>
+          </label>
+          <div class="b270-reminder-time">
+            <span>at</span>
+            <span class="b270-time-control" role="group" aria-label="Reminder time"
+                  aria-describedby="daily-reminder-time-hint">
+              <%= select_tag :daily_reminder_hour,
+                    options_for_select((0..23).map { |hour| format("%02d", hour) }, reminder_hour),
+                    class: "b270-time-select", required: true, aria: { label: "Hour" } %>
+              <span class="b270-time-separator" aria-hidden="true">:</span>
+              <%= select_tag :daily_reminder_minute,
+                    options_for_select((0..59).map { |minute| format("%02d", minute) }, reminder_minute),
+                    class: "b270-time-select", required: true, aria: { label: "Minute" } %>
+              <span class="b270-reminder-tooltip" id="daily-reminder-time-hint" role="tooltip">
+                Uses the plan's configured time zone. You can turn reminders off here at any time.
+              </span>
+            </span>
+          </div>
+        </div>
       </div>
     <% end %>
 

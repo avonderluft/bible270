@@ -83,8 +83,14 @@ if RAILS_LOADED
       get "#{mount}/profile"
 
       assert_response :success
-      assert_select 'input[name="daily_reminders"][checked="checked"]'
-      assert_select 'input[type="time"][name="daily_reminder_time"][value="08:00"]'
+      assert_select '.b270-reminder-row' do
+        assert_select 'label.b270-reminder-optin input[name="daily_reminders"][checked="checked"]'
+        assert_select '.b270-reminder-time .b270-time-control[role="group"][aria-describedby="daily-reminder-time-hint"]' do
+          assert_select 'select.b270-time-select[name="daily_reminder_hour"][aria-label="Hour"] option[selected="selected"]', text: '08'
+          assert_select 'select.b270-time-select[name="daily_reminder_minute"][aria-label="Minute"] option[selected="selected"]', text: '00'
+          assert_select '#daily-reminder-time-hint[role="tooltip"]', text: /Uses the plan's configured time zone/
+        end
+      end
       assert_match(%r{Email me each day's readings}, response.body)
     end
 
@@ -93,7 +99,8 @@ if RAILS_LOADED
       sign_in_as(@reader)
 
       patch "#{mount}/profile", params: {
-        first_name: 'R', last_name: 'Reader', daily_reminders: '1', daily_reminder_time: '06:45'
+        first_name: 'R', last_name: 'Reader', daily_reminders: '1',
+        daily_reminder_hour: '06', daily_reminder_minute: '45'
       }
 
       assert_response :redirect
@@ -107,7 +114,8 @@ if RAILS_LOADED
       sign_in_as(@reader)
 
       patch "#{mount}/profile", params: {
-        first_name: 'R', last_name: '', daily_reminders: '1', daily_reminder_time: '06:45'
+        first_name: 'R', last_name: '', daily_reminders: '1',
+        daily_reminder_hour: '06', daily_reminder_minute: '45'
       }
 
       assert_response :unprocessable_entity
@@ -115,7 +123,8 @@ if RAILS_LOADED
       refute @reader.daily_reminders
       assert_equal '08:00', @reader.daily_reminder_time
       assert_select 'input[name="daily_reminders"][checked="checked"]'
-      assert_select 'input[name="daily_reminder_time"][value="06:45"]'
+      assert_select 'select[name="daily_reminder_hour"] option[selected="selected"]', text: '06'
+      assert_select 'select[name="daily_reminder_minute"] option[selected="selected"]', text: '45'
     end
 
     def test_invalid_daily_reminder_time_rerenders_with_a_useful_error
@@ -131,7 +140,8 @@ if RAILS_LOADED
       @reader.reload
       refute @reader.daily_reminders
       assert_equal '08:00', @reader.daily_reminder_time
-      assert_select 'input[name="daily_reminder_time"][value="25:00"]'
+      assert_select 'select[name="daily_reminder_hour"]'
+      assert_select 'select[name="daily_reminder_minute"]'
     end
 
     def test_disabled_daily_reminders_preserve_both_settings_when_parameters_are_posted

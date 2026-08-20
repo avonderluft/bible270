@@ -26,7 +26,7 @@ module Bible270
       end
 
       requested_daily_reminders = params[:daily_reminders] == '1'
-      requested_daily_reminder_time = params[:daily_reminder_time].to_s
+      requested_daily_reminder_time = daily_reminder_time_param
       if Bible270.config.daily_reminders? &&
          !Reader.valid_daily_reminder_time?(requested_daily_reminder_time)
         problems << 'a reminder time in 24-hour HH:MM format'
@@ -53,6 +53,14 @@ module Bible270
     end
 
   private
+
+    def daily_reminder_time_param
+      hour = params[:daily_reminder_hour]
+      minute = params[:daily_reminder_minute]
+      return "#{hour}:#{minute}" if hour.present? || minute.present?
+
+      params[:daily_reminder_time].to_s
+    end
 
     # Unlike checking off a reading, there is nothing sensible to do here for a
     # visitor who isn't signed in, so send them to sign in rather than 404.
