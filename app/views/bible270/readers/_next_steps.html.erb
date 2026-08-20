@@ -1,0 +1,61 @@
+<%# locals: (reader:, partial_day_tasks:, remaining_partial_days:, week_days:, week_completed:, next_milestone:, days_to_milestone:) %>
+<div class="b270-panel b270-next-steps">
+  <h2 class="b270-subhead">Your next steps</h2>
+
+  <section class="b270-next-section" aria-labelledby="finish-started-heading">
+    <h3 id="finish-started-heading">Finish what you started</h3>
+    <% if partial_day_tasks.any? %>
+      <ul class="b270-task-list">
+        <% partial_day_tasks.each do |task| %>
+          <% day = task[:day] %>
+          <% first_track = task[:remaining].first&.fetch(:track) %>
+          <li class="b270-task">
+            <div class="b270-task-body">
+              <strong><%= link_to "Day #{day}", day_path(day, anchor: "reading_#{day}_#{first_track}") %></strong>
+              <span>
+                Still to read:
+                <%= safe_join(task[:remaining].map { |part|
+                      link_to(part[:reference], day_path(day, anchor: "reading_#{day}_#{part[:track]}"))
+                    }, " · ") %>
+              </span>
+            </div>
+            <%= link_to "Continue →", day_path(day, anchor: "reading_#{day}_#{first_track}"),
+                  class: "b270-task-link" %>
+          </li>
+        <% end %>
+      </ul>
+      <% if remaining_partial_days.positive? %>
+        <p class="b270-next-note"><%= remaining_partial_days %> more partially read
+          <%= "day".pluralize(remaining_partial_days) %> are highlighted in the grid below.</p>
+      <% end %>
+    <% else %>
+      <p class="b270-next-note">No partially read days. Your next reading is ready above.</p>
+    <% end %>
+  </section>
+
+  <section class="b270-next-section" aria-labelledby="this-week-heading">
+    <h3 id="this-week-heading">This week</h3>
+    <% if week_days.any? %>
+      <p class="b270-week-count"><strong><%= week_completed %> of <%= week_days.size %></strong>
+        scheduled <%= "day".pluralize(week_days.size) %> complete so far this week</p>
+      <progress class="b270-week-progress" value="<%= week_completed %>" max="<%= week_days.size %>"
+                aria-label="<%= week_completed %> of <%= week_days.size %> scheduled days complete this week"></progress>
+    <% elsif reader.dated? %>
+      <p class="b270-next-note">No plan days are scheduled so far this week.</p>
+    <% else %>
+      <p class="b270-next-note">Set a start date to see your weekly progress.</p>
+    <% end %>
+  </section>
+
+  <section class="b270-next-section" aria-labelledby="milestone-heading">
+    <h3 id="milestone-heading">Next milestone</h3>
+    <% if next_milestone %>
+      <% milestone_day, milestone_label = next_milestone %>
+      <p class="b270-milestone"><strong><%= milestone_day %> days</strong> · <%= milestone_label %></p>
+      <p class="b270-next-note"><%= days_to_milestone %>
+        <%= "day".pluralize(days_to_milestone) %> to go.</p>
+    <% else %>
+      <p class="b270-milestone"><strong>All <%= Bible270::Plan::DAYS %> days complete.</strong></p>
+    <% end %>
+  </section>
+</div>

@@ -12,6 +12,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 ### Changed
 
 - replace progress-ranked community lists with recent-participation and alphabetical views that emphasize reading together
+- make Progress actionable with partial-day links, a calendar-week summary, and the reader's next milestone
 
 See the changes since the last release:
 

@@ -52,6 +52,26 @@ class ReaderPartsTest < Minitest::Test
                  'a part-read day should not count, and chapters are not days'
   end
 
+  def test_partial_days_name_the_parts_still_to_read
+    @reader.checkoffs.create!(day: 1, track: 'ot', part: 0)
+    @reader.checkoffs.create!(day: 1, track: 'nt', part: 0)
+    @reader.reload_progress
+
+    assert_equal [1], @reader.partial_days
+    assert_equal [
+      { track: 'ot', part: 1, reference: 'Genesis 2' },
+      { track: 'ot', part: 2, reference: 'Genesis 3' },
+      { track: 'pp', part: 0, reference: 'Psalm 1' }
+    ], @reader.remaining_parts_for(1)
+  end
+
+  def test_scheduled_days_this_week_starts_with_the_readers_plan
+    @reader.set_start_date!(Date.new(2026, 9, 2))
+
+    assert_equal [1, 2, 3, 4, 5], @reader.scheduled_days_this_week(on: Date.new(2026, 9, 6))
+    assert_empty @reader.scheduled_days_this_week(on: 'not a date')
+  end
+
   def test_the_same_chapter_cannot_be_ticked_twice
     @reader.checkoffs.create!(day: 1, track: 'ot', part: 0)
 

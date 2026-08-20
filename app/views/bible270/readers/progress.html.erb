@@ -6,6 +6,16 @@
 
 <%= render "bible270/shared/progress" %>
 
+<% if @reader %>
+  <%= render "bible270/readers/next_steps", reader: @reader,
+        partial_day_tasks: @partial_day_tasks,
+        remaining_partial_days: @remaining_partial_days,
+        week_days: @week_days,
+        week_completed: @week_completed,
+        next_milestone: @next_milestone,
+        days_to_milestone: @days_to_milestone %>
+<% end %>
+
 <div class="b270-panel">
   <%= render "bible270/shared/reflections", comments: @recent_comments,
         title: "Your recent reflections",

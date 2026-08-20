@@ -321,6 +321,18 @@ module Bible270
       done >= Plan.total_parts(day) ? :complete : :partial
     end
 
+    def partial_days
+      checked_counts.keys.select { |day| day_status(day) == :partial }.sort
+    end
+
+    def remaining_parts_for(day)
+      return [] unless Plan.valid_day?(day)
+
+      missing_parts_on(day).map do |track, part|
+        { track: track, part: part, reference: Plan.parts_for(day, track).fetch(part) }
+      end
+    end
+
     def read_tracks_for(day)
       checkoffs.where(day: day).pluck(:track).uniq
     end
@@ -539,6 +551,19 @@ module Bible270
 
     def plan_end_date
       Plan.end_date_for(effective_start_date)
+    end
+
+    def scheduled_days_this_week(on: Bible270.today)
+      return [] unless dated?
+
+      date = Plan.to_date(on)
+      return [] unless date
+
+      week_start = date - ((date.wday + 6) % 7)
+      (week_start..date).filter_map do |scheduled_date|
+        day = Plan.day_for(scheduled_date, effective_start_date, clamp: false)
+        day if Plan.valid_day?(day)
+      end
     end
 
     def date_for_day(day)

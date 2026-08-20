@@ -62,6 +62,7 @@ if RAILS_LOADED
       assert_response :success
       assert_match(%r{Sign in}i, response.body)
       refute_match(%r{days complete}, response.body)
+      assert_select '.b270-next-steps', count: 0
     end
 
     def test_the_progress_page_shows_a_readers_standing
@@ -75,6 +76,38 @@ if RAILS_LOADED
       assert_select 'h1', text: 'Your reading journey'
       assert_match(%r{4}, response.body)
       assert_match(%r{days complete}, response.body)
+    end
+
+    def test_the_progress_page_links_partially_read_days_to_remaining_portions
+      @reader.checkoffs.create!(day: 1, track: 'ot', part: 0)
+      @reader.reload_progress
+      sign_in_as(@reader)
+
+      get "#{mount}/progress"
+
+      assert_select '.b270-next-steps' do
+        assert_select '#finish-started-heading', text: 'Finish what you started'
+        assert_select 'a[href$="/day/1#reading_1_ot"]', text: 'Genesis 2'
+        assert_select 'a[href$="/day/1#reading_1_ot"]', text: 'Genesis 3'
+        assert_select 'a[href$="/day/1#reading_1_nt"]', text: 'Matthew 1'
+        assert_select 'a[href$="/day/1#reading_1_pp"]', text: 'Psalm 1'
+        assert_select 'a.b270-task-link', text: %r{Continue}
+      end
+    end
+
+    def test_the_progress_page_summarizes_the_week_and_next_milestone
+      week_start = Bible270.today - ((Bible270.today.wday + 6) % 7)
+      @reader.set_start_date!(week_start)
+      @reader.mark_day_complete!(1)
+      sign_in_as(@reader)
+
+      get "#{mount}/progress"
+
+      scheduled = (Bible270.today - week_start).to_i + 1
+      assert_select '.b270-week-count', text: %r{1 of #{scheduled}.*complete so far this week}
+      assert_select "progress.b270-week-progress[value='1'][max='#{scheduled}']"
+      assert_select '.b270-milestone', text: %r{30 days.*30-day milestone}
+      assert_select '.b270-next-note', text: %r{29 days to go}
     end
 
     def test_the_progress_page_offers_the_next_day

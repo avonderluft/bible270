@@ -96,6 +96,25 @@
   .b270-recovery-actions .b270-todaylink{margin-left:0}
   .b270-restart-form{margin:0}
   .b270-recovery-actions .b270-linkbtn{margin:2px 0 0;color:var(--muted)}
+  .b270-next-steps>.b270-subhead{margin-bottom:2px}
+  .b270-next-section{padding-top:15px;margin-top:15px;border-top:1px solid var(--line-soft)}
+  .b270-next-section h3{margin:0 0 9px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .b270-task-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .b270-task{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 12px;border:1px solid var(--line-soft);border-radius:9px;background:rgba(255,255,255,.35)}
+  .b270-task-body{display:grid;gap:3px;min-width:0}
+  .b270-task-body strong{font-size:14px}
+  .b270-task-body span{color:var(--muted);font-size:12px;line-height:1.4}
+  .b270-task-body span a{color:var(--muted);text-decoration:underline;text-decoration-color:var(--line)}
+  .b270-task-body span a:hover{color:var(--gold);text-decoration-color:var(--gold)}
+  .b270 .b270-task-link{flex:none;color:var(--gold);font-size:12.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+  .b270-task-link:hover{text-decoration:underline}
+  .b270-next-note{margin:0;color:var(--faint);font-size:12.5px;line-height:1.45}
+  .b270-task-list+.b270-next-note{margin-top:8px}
+  .b270-week-count{margin:0 0 7px;color:var(--muted);font-size:13px}
+  .b270-week-count strong{color:var(--ink)}
+  .b270-week-progress{display:block;width:100%;height:8px;accent-color:var(--teal)}
+  .b270-milestone{margin:0 0 3px;color:var(--muted);font-size:13px}
+  .b270-milestone strong{color:var(--ink);font-family:"Spectral",serif;font-size:17px}
   .b270-signedout{color:var(--muted);font-size:14px;margin:4px 0 0}
 
   .b270-startdate{margin-top:18px;padding-top:16px;border-top:1px solid var(--line-soft)}
@@ -315,6 +334,7 @@
     .b270-reading{padding:14px 15px;gap:12px}
     .b270-reading.multi .b270-cat,.b270-reading.multi .b270-parts-meta{margin-left:38px}
     .b270-part{gap:12px}
+    .b270-task{align-items:flex-start;flex-direction:column;gap:7px}
     .b270-day-complete{align-items:flex-start;flex-direction:column}
     .b270 .b270-day-complete .b270-btn{margin:3px 0 0}
   }
