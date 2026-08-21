@@ -6,7 +6,9 @@
   it is not.
 %>
 <%= form_with model: comment, url: comment_path(comment), method: :patch,
-      class: "b270-form b270-editform", data: { turbo_stream: true } do |f| %>
+      class: "b270-form b270-editform",
+      data: { turbo_stream: true, b270_submit: true, b270_pending: "Saving changes…",
+              b270_success: "Changes saved.", b270_failure: "Couldn’t save the changes. Try again." } do |f| %>
   <% if comment.errors.any? %>
     <p class="b270-editerror"><%= comment.errors.full_messages.to_sentence %></p>
   <% end %>

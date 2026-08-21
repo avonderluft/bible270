@@ -332,6 +332,25 @@ if RAILS_LOADED
       assert_nil @reader.reload.started_on
     end
 
+    def test_start_date_editor_is_hidden_when_reader_dates_are_disabled
+      previous = Bible270.config.allow_reader_start_date
+      @reader.set_start_date!(Date.new(2026, 9, 6))
+      Bible270.config.allow_reader_start_date = false
+      sign_in_as(@reader)
+
+      ["#{mount}/", "#{mount}/progress"].each do |path|
+        get path
+
+        assert_response :success
+        assert_select 'details.b270-startedit', count: 0
+        assert_select "form[action='#{mount}/start-date']", count: 0
+        refute_match(%r{Change start date|Set a start date}, response.body)
+        assert_select '.b270-next-note', text: 'This plan is not tied to calendar dates.' if path.end_with?('/progress')
+      end
+    ensure
+      Bible270.config.allow_reader_start_date = previous
+    end
+
     def test_readers_are_turned_away_when_the_community_date_rules
       previous = Bible270.config.allow_reader_start_date
       Bible270.config.allow_reader_start_date = false

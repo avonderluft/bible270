@@ -23,7 +23,11 @@ module Bible270
       if @comment.save
         respond_to do |format|
           format.turbo_stream
-          format.html { redirect_to day_path(@day, anchor: "comment-#{@comment.id}") }
+          format.html do
+            message = @comment.reply? ? 'Reply posted.' : 'Reflection posted.'
+            redirect_to day_path(@day, anchor: "comment-#{@comment.id}"),
+                        flash: { b270_interaction_status: message }
+          end
         end
       else
         respond_to do |format|
@@ -47,14 +51,18 @@ module Bible270
       if @comment.update(comment_params.except(:parent_id))
         respond_to do |format|
           format.turbo_stream
-          format.html { redirect_to day_path(@day, anchor: "comment-#{@comment.id}") }
+          format.html do
+            redirect_to day_path(@day, anchor: "comment-#{@comment.id}"),
+                        flash: { b270_interaction_status: 'Changes saved.' }
+          end
         end
       else
         respond_to do |format|
           format.turbo_stream do
             render turbo_stream: turbo_stream.replace("comment-#{@comment.id}",
                                                       partial: 'bible270/comments/edit_form',
-                                                      locals: { comment: @comment })
+                                                      locals: { comment: @comment }),
+                   status: :unprocessable_entity
           end
           format.html { redirect_to day_path(@day), alert: @comment.errors.full_messages.to_sentence }
         end

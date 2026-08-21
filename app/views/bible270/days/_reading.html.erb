@@ -21,7 +21,11 @@
             <li class="b270-part <%= 'done' if part_done %>">
               <% if signed_in? %>
                 <%= button_to toggle_checkoff_part_path(day, track, index), class: "b270-toggle",
-                      form: { data: { turbo_stream: true } },
+                      params: { checked: part_done ? "0" : "1" },
+                      form: { data: { turbo_stream: true, b270_submit: true,
+                                      b270_pending: "Saving reading…",
+                                      b270_success: (part_done ? "Reading marked unread." : "Reading marked read."),
+                                      b270_failure: "Couldn’t update that reading. Try again." } },
                       aria: { label: (part_done ? "Mark #{part_ref} unread" : "Mark #{part_ref} read") } do %>
                   <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
                 <% end %>
@@ -41,7 +45,11 @@
     <% else %>
       <% if signed_in? %>
         <%= button_to toggle_checkoff_part_path(day, track, 0), class: "b270-toggle",
-              form: { data: { turbo_stream: true } },
+              params: { checked: done ? "0" : "1" },
+              form: { data: { turbo_stream: true, b270_submit: true,
+                              b270_pending: "Saving reading…",
+                              b270_success: (done ? "Reading marked unread." : "Reading marked read."),
+                              b270_failure: "Couldn’t update that reading. Try again." } },
               aria: { label: (done ? "Mark #{t[:label]} unread" : "Mark #{t[:label]} read") } do %>
           <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
         <% end %>

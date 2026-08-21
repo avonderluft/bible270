@@ -71,6 +71,32 @@ if RAILS_LOADED
       assert_match(%r{Genesis 3}, response.body)
     end
 
+    def test_day_page_offers_an_accessible_compact_reading_mode
+      reader = Bible270::Reader.create!(provider: 'email', uid: 'compact@example.org',
+                                        email: 'compact@example.org', display_name: 'Compact Reader')
+      reader.mark_day_complete!(1)
+      _record, raw = Bible270::SignInToken.issue!(reader.email)
+      get "#{mount}/sign_in/email/#{raw}"
+
+      get "#{mount}/day/1"
+
+      assert_response :success
+      assert_select '[data-b270-day-page][data-b270-reading-mode="full"]' do
+        assert_select '[data-b270-reading-options][hidden]' do
+          assert_select 'button[type="button"][data-b270-compact-toggle][aria-pressed="false"]',
+                        text: 'Compact reading'
+        end
+        assert_select '.b270-day-community[data-b270-compact-hide]'
+        assert_select '.b270-dayhead .b270-badge[data-b270-compact-hide]', text: 'Complete'
+        assert_select '.b270-day-complete > div[data-b270-compact-hide]'
+        assert_select ".b270-day-complete > a[href='#{mount}/day/2']", text: %r{Continue to Day 2}
+        assert_select '.b270-daynav a[aria-label="Next day"]'
+        assert_select '.b270-ref a[target="_blank"][rel="noopener"]', minimum: 3
+        assert_select 'button.b270-toggle[aria-label]', minimum: 3
+      end
+      assert(css_select('script[nonce]').any? { |script| script.text.include?('Bible270ReadingMode') })
+    end
+
     def test_day_navigation_uses_disabled_buttons_at_plan_boundaries
       get "#{mount}/day/1"
 

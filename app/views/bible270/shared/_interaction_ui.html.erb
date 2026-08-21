@@ -1,0 +1,69 @@
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270InteractionUI) {
+      window.Bible270InteractionUI.reset();
+      return;
+    }
+
+    function statusRegion() {
+      return document.getElementById("b270-interaction-status");
+    }
+
+    function announce(message, state = "") {
+      const region = statusRegion();
+      if (!region) return;
+
+      region.textContent = message || "";
+      region.dataset.state = state;
+    }
+
+    function resetForm(form) {
+      form.removeAttribute("aria-busy");
+      form.dataset.b270Submitting = "false";
+      form.querySelectorAll("[data-b270-disabled-by-submit]").forEach((control) => {
+        control.disabled = false;
+        delete control.dataset.b270DisabledBySubmit;
+      });
+    }
+
+    function reset() {
+      document.querySelectorAll("form[data-b270-submit='true']").forEach(resetForm);
+    }
+
+    document.addEventListener("submit", (event) => {
+      const form = event.target.closest("form[data-b270-submit='true']");
+      if (!form) return;
+      if (form.dataset.b270Submitting === "true") {
+        event.preventDefault();
+        return;
+      }
+
+      form.dataset.b270Submitting = "true";
+      form.setAttribute("aria-busy", "true");
+      const submitter = event.submitter || form.querySelector("button[type='submit'],input[type='submit']");
+      if (submitter) {
+        submitter.disabled = true;
+        submitter.dataset.b270DisabledBySubmit = "true";
+      }
+      announce(form.dataset.b270Pending || "Saving…", "pending");
+    });
+
+    document.addEventListener("turbo:submit-end", (event) => {
+      const form = event.target;
+      if (!form.matches("form[data-b270-submit='true']")) return;
+
+      resetForm(form);
+      if (event.detail.success) {
+        announce(form.dataset.b270Success || "Saved.", "success");
+      } else {
+        announce(form.dataset.b270Failure || "Couldn’t save that. Try again.", "error");
+      }
+    });
+
+    window.addEventListener("pageshow", reset);
+    document.addEventListener("turbo:load", reset);
+
+    window.Bible270InteractionUI = { reset };
+    reset();
+  })();
+</script>

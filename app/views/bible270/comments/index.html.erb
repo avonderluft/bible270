@@ -5,6 +5,7 @@
 
 <p class="b270-eyebrow">Reflections</p>
 <h1>Shared gleanings</h1>
+<%= render "bible270/shared/interaction_status" %>
 
 <% if @days_with_reflections.any? %>
   <div class="b270-panel">
@@ -98,3 +99,5 @@
     </p>
   </div>
 <% end %>
+
+<%= render "bible270/shared/interaction_ui" %>

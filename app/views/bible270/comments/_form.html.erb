@@ -1,9 +1,13 @@
 <% draft_key = ["bible270", "draft", "v1", Bible270.config.mount_at, current_reader.id,
                     day, comment.parent_id.presence || "root"].join(":") %>
+<% posting_reply = comment.parent_id.present? %>
 <%= form_with model: comment, url: day_comments_path(day), method: :post,
       id: "new_comment_form", class: "b270-form",
       data: { turbo_stream: true, b270_draft: true, b270_draft_key: draft_key,
-              b270_draft_errors: comment.errors.any?, b270_draft_posted: local_assigns.fetch(:posted, false) } do |f| %>
+              b270_draft_errors: comment.errors.any?, b270_draft_posted: local_assigns.fetch(:posted, false),
+              b270_submit: true, b270_pending: (posting_reply ? "Posting reply…" : "Posting reflection…"),
+              b270_success: (posting_reply ? "Reply posted." : "Reflection posted."),
+              b270_failure: (posting_reply ? "Couldn’t post the reply. Try again." : "Couldn’t post the reflection. Try again.") } do |f| %>
   <% if comment.errors.any? %>
     <p style="color:var(--oxblood);font-size:13px"><%= comment.errors.full_messages.to_sentence %></p>
   <% end %>

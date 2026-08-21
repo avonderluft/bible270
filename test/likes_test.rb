@@ -193,6 +193,45 @@ if RAILS_LOADED
       assert_equal 0, @thought.reload.likes.count
     end
 
+    def test_repeated_desired_states_do_not_reverse_a_like
+      sign_in_as(@mary)
+
+      2.times { post "#{mount}/comments/#{@thought.id}/like", params: { liked: '1' } }
+      assert_equal 1, @thought.reload.likes.count
+
+      2.times { post "#{mount}/comments/#{@thought.id}/like", params: { liked: '0' } }
+      assert_equal 0, @thought.reload.likes.count
+    end
+
+    def test_an_invalid_desired_like_state_is_refused
+      sign_in_as(@mary)
+
+      post "#{mount}/comments/#{@thought.id}/like", params: { liked: 'perhaps' }
+
+      assert_response :bad_request
+      assert_equal 0, @thought.reload.likes.count
+    end
+
+    def test_the_like_form_describes_its_state_and_submission_feedback
+      sign_in_as(@mary)
+
+      get "#{mount}/day/1"
+
+      assert_select 'form[data-b270-submit="true"][data-b270-pending="Saving like…"]' do
+        assert_select 'input[type="hidden"][name="liked"][value="1"]'
+        assert_select 'button[aria-label="Like this reflection"]'
+      end
+    end
+
+    def test_html_likes_return_a_success_message
+      sign_in_as(@mary)
+
+      post "#{mount}/comments/#{@thought.id}/like", params: { liked: '1' }
+
+      assert_response :redirect
+      assert_equal 'Reflection liked.', flash[:b270_interaction_status]
+    end
+
     def test_liking_something_that_is_gone
       sign_in_as(@mary)
 

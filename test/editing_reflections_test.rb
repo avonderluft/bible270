@@ -87,7 +87,7 @@ if RAILS_LOADED
             params: { comment: { body: '   ' } },
             headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
 
-      assert_response :success
+      assert_response :unprocessable_entity
       assert_match(%r{turbo-stream}, response.body)
       assert_match(%r{can&#39;t be blank|can't be blank}, response.body, 'the reason is shown')
       # The box holds what the reader typed, not the old text: discarding their
@@ -131,6 +131,7 @@ if RAILS_LOADED
       # inlined into every page, so /b270-editform/ is present whether or not a
       # form is — which made an earlier version of this pass with no form at all.
       assert_match(EDIT_FORM, response.body)
+      assert_select 'form[data-b270-submit="true"][data-b270-pending="Saving changes…"]'
       assert_match(%r{First thoughts}, response.body, 'the words are in the box')
       assert_match(%r{Cancel}, response.body)
     end

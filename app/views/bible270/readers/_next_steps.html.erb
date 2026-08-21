@@ -42,8 +42,10 @@
                 aria-label="<%= week_completed %> of <%= week_days.size %> scheduled days complete this week"></progress>
     <% elsif reader.dated? %>
       <p class="b270-next-note">No plan days are scheduled so far this week.</p>
-    <% else %>
+    <% elsif Bible270.config.allow_reader_start_date %>
       <p class="b270-next-note">Set a start date to see your weekly progress.</p>
+    <% else %>
+      <p class="b270-next-note">This plan is not tied to calendar dates.</p>
     <% end %>
   </section>
 

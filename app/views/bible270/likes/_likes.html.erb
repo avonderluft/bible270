@@ -15,7 +15,11 @@
 
   <% if signed_in? %>
     <%= button_to like_comment_path(comment), method: :post, class: "b270-likebtn#{' liked' if likes.any?}",
-          form: { style: "display:inline", data: { turbo_stream: true } },
+          params: { liked: liked ? "0" : "1" },
+          form: { style: "display:inline",
+                  data: { turbo_stream: true, b270_submit: true, b270_pending: "Saving like…",
+                          b270_success: (liked ? "Like removed." : "Reflection liked."),
+                          b270_failure: "Couldn’t update that like. Try again." } },
           aria: {
             label: liked ? "Take back your like" : "Like this reflection",
             describedby: (tooltip_id if likes.any?)

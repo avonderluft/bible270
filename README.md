@@ -24,6 +24,12 @@ The schedule is pure deterministic Ruby (`Bible270::Plan`) — none of it is sto
 - **Rails** >= 7.0. On Ruby 4.0 your host app is the real constraint, not this engine — check your lockfile with RailsBump first.
 - A host app, and Turbo if you want check-offs without a page reload.
 
+Mutation controls expose pending, success, and retry feedback when JavaScript runs, while ordinary HTML
+forms remain the fallback. Repeated checkoff and like requests converge on the intended state rather
+than accidentally reversing it. Day pages also offer a browser-local **Compact reading** preference
+that keeps passages, checkoffs, day navigation, and the completion next step while hiding community
+and reflection content.
+
 ## Install
 
 ```ruby
@@ -551,9 +557,13 @@ bundle exec rake test
 bundle exec rubocop --cache false
 ```
 
-`rake test` runs two isolated processes, merges their SimpleCov results, and records per-file runtimes
-in `tmp/parallel_runtime_test.log` to improve subsequent balancing. Set `PARALLEL_WORKERS` to tune the
-worker count. Use `bundle exec rake test:serial` when a serial coverage run is specifically needed.
+`rake test` runs two isolated processes, streams colorized progress in real time, then prints one
+consolidated result and duration. It merges their SimpleCov results, writes a browsable report to
+`coverage/index.html`, and
+records per-file runtimes in `tmp/parallel_runtime_test.log` to improve
+subsequent balancing. Set `PARALLEL_WORKERS` to tune the worker count. Use
+`bundle exec rake test:serial` when a serial coverage run is specifically needed; it writes to the same
+project-local `coverage/` directory.
 
 ### Get an email link for local testing
 

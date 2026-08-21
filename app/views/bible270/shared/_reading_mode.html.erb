@@ -1,0 +1,62 @@
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270ReadingMode) {
+      window.Bible270ReadingMode.scan();
+      return;
+    }
+
+    const storageKey = "bible270:reading-mode";
+
+    function browserStorage() {
+      try { return window.localStorage; } catch (_error) { return null; }
+    }
+
+    const storage = browserStorage();
+    let mode = "full";
+    if (storage) {
+      try { mode = storage.getItem(storageKey) === "compact" ? "compact" : "full"; } catch (_error) { /* Use full mode. */ }
+    }
+
+    function remember(nextMode) {
+      mode = nextMode;
+      if (!storage) return;
+      try { storage.setItem(storageKey, nextMode); } catch (_error) { /* Keep this page's mode. */ }
+    }
+
+    function apply(page) {
+      const compact = mode === "compact";
+      page.dataset.b270ReadingMode = mode;
+      page.querySelectorAll("[data-b270-compact-toggle]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(compact));
+      });
+      page.querySelectorAll("[data-b270-compact-hide]").forEach((element) => {
+        element.hidden = compact;
+      });
+
+      const options = page.querySelector("[data-b270-reading-options]");
+      if (options) options.hidden = false;
+    }
+
+    function scan() {
+      document.querySelectorAll("[data-b270-day-page]").forEach(apply);
+    }
+
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest?.("[data-b270-compact-toggle]");
+      if (!button) return;
+
+      const page = button.closest("[data-b270-day-page]");
+      if (!page) return;
+
+      remember(page.dataset.b270ReadingMode === "compact" ? "full" : "compact");
+      apply(page);
+    });
+
+    document.addEventListener("turbo:load", scan);
+    window.addEventListener("pageshow", scan);
+    new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
+
+    window.Bible270ReadingMode = { scan };
+    scan();
+  })();
+</script>

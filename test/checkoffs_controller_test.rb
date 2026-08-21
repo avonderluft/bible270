@@ -43,6 +43,47 @@ if RAILS_LOADED
       assert_equal 0, @reader.checkoffs.count
     end
 
+    def test_repeated_desired_states_do_not_reverse_a_checkoff
+      sign_in_as(@reader)
+
+      2.times { post "#{mount}/day/1/toggle/nt", params: { checked: '1' } }
+      assert_equal 1, @reader.checkoffs.where(day: 1, track: 'nt').count
+
+      2.times { post "#{mount}/day/1/toggle/nt", params: { checked: '0' } }
+      assert_equal 0, @reader.checkoffs.where(day: 1, track: 'nt').count
+    end
+
+    def test_an_invalid_desired_checkoff_state_is_refused
+      sign_in_as(@reader)
+
+      post "#{mount}/day/1/toggle/nt", params: { checked: 'perhaps' }
+
+      assert_response :bad_request
+      assert_equal 0, @reader.checkoffs.count
+    end
+
+    def test_checkoff_forms_describe_their_state_and_submission_feedback
+      sign_in_as(@reader)
+
+      get "#{mount}/day/1"
+
+      assert_select 'form[data-b270-submit="true"][data-b270-pending="Saving reading…"]' do
+        assert_select 'input[type="hidden"][name="checked"][value="1"]'
+        assert_select 'button[type="submit"]'
+      end
+      assert_select '#b270-interaction-status[role="status"][aria-live="polite"]'
+      assert_match(%r{Bible270InteractionUI}, response.body)
+    end
+
+    def test_html_checkoffs_return_a_success_message
+      sign_in_as(@reader)
+
+      post "#{mount}/day/1/toggle/nt", params: { checked: '1' }
+
+      assert_response :redirect
+      assert_equal 'Reading marked read.', flash[:b270_interaction_status]
+    end
+
     def test_a_day_outside_the_plan_is_refused
       sign_in_as(@reader)
       post "#{mount}/day/999/toggle/nt"
@@ -102,8 +143,10 @@ if RAILS_LOADED
       assert_response :success
       assert @reader.reload_progress.day_complete?(1)
       assert_select 'turbo-stream[action="replace"][target="day_progress_1"]' do
-        assert_select '.b270-badge', text: 'Complete'
-        assert_select '.b270-day-complete[role="status"]', text: %r{Day 1 complete}
+        assert_select '.b270-badge[data-b270-compact-hide]', text: 'Complete'
+        assert_select '.b270-day-complete[role="status"]', text: %r{Day 1 complete} do
+          assert_select '> div[data-b270-compact-hide]'
+        end
         assert_select "a[href='#{mount}/day/2']", text: %r{Continue to Day 2}
       end
       assert_select 'turbo-stream[action="replace"][target="completers_1"]', text: %r{Finished this day}

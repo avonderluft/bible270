@@ -7,7 +7,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 ### Added
 
 - recovery choices for readers whose next unfinished reading is behind the community day, including an optional schedule reset that preserves progress and reflections
-- a two-worker default `test` task with merged coverage summaries and per-file runtime recording, plus `test:serial` when a serial run is needed
+- a two-worker default `test` task with real-time colorized progress, one aggregate result and duration, merged coverage, a browsable project-local `coverage/` report, and per-file runtime recording, plus `test:serial` when a serial run is needed
 - browser-local reflection and reply drafts that survive refreshes, failed submissions, and accidental navigation
 - day and author filters, pagination, and new-activity markers on the Reflections page
 
@@ -17,6 +17,8 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 - make Progress actionable with partial-day links, a calendar-week summary, and the reader's next milestone
 - improve accessibility with AA text contrast, consistent focus indicators, descriptive day-grid labels, semantic boundary navigation, touch-friendly tooltips, responsive forms, and reduced-motion support
 - keep profiles and scheduled jobs available while a newly installed daily-reminder database migration is pending
+- add consistent pending, success, and retry feedback to reading, like, reflection, and reply actions, with repeat-safe checkoff and like requests
+- add a remembered compact reading mode that keeps passages, checkoffs, navigation, and completion next steps in focus
 
 See the changes since the last release:
 

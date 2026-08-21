@@ -114,6 +114,16 @@ module Bible270
       end
     end
 
+    def set_like!(reader, liked:)
+      if liked
+        likes.create_or_find_by!(reader: reader)
+      else
+        likes.where(reader: reader).destroy_all
+      end
+      likes.reload
+      liked
+    end
+
     # A second's grace: created_at and updated_at differ by microseconds on
     # insert, which would mark every reflection as edited.
     def edited? = updated_at - created_at > 1

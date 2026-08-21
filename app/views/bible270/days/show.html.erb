@@ -1,31 +1,46 @@
 <% content_for :title, "Day #{@day} — #{Bible270.config.app_name}" %>
-<%= render "bible270/days/day_progress", day: @day, reader: current_reader %>
 
-<div id="readings" class="b270-readings">
-  <%= render partial: "bible270/days/reading", collection: %w[ot nt pp],
-             as: :track, locals: { day: @day, readings: @readings, reader_tracks: @reader_tracks } %>
-</div>
+<div class="b270-day-page" data-b270-day-page data-b270-reading-mode="full">
+  <%= render "bible270/days/day_progress", day: @day, reader: current_reader %>
 
-<% unless signed_in? %>
-  <p class="b270-signin-hint" style="margin-top:12px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to check off these readings.</p>
-<% end %>
-
-<%= render "bible270/days/completers", day: @day, completers: @completers %>
-
-<h2 class="b270-section-h">Reflections</h2>
-<div id="comments">
-  <% if @comments.any? %>
-    <%= render partial: "bible270/comments/comment", collection: @comments, as: :comment %>
-  <% else %>
-    <p style="color:var(--faint)" id="no_comments">No reflections yet. Share the first.</p>
-  <% end %>
-</div>
-
-<% if signed_in? %>
-  <div style="margin-top:18px">
-    <%= render "bible270/comments/form", day: @day, comment: @new_comment %>
+  <div class="b270-reading-options" data-b270-reading-options hidden>
+    <button type="button" class="b270-linkbtn b270-reading-mode-toggle"
+            data-b270-compact-toggle aria-pressed="false">Compact reading</button>
   </div>
-  <%= render "bible270/shared/comment_drafts" %>
-<% else %>
-  <p class="b270-signin-hint" style="margin-top:14px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to leave a reflection.</p>
-<% end %>
+
+  <%= render "bible270/shared/interaction_status" %>
+
+  <div id="readings" class="b270-readings">
+    <%= render partial: "bible270/days/reading", collection: %w[ot nt pp],
+               as: :track, locals: { day: @day, readings: @readings, reader_tracks: @reader_tracks } %>
+  </div>
+
+  <% unless signed_in? %>
+    <p class="b270-signin-hint" style="margin-top:12px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to check off these readings.</p>
+  <% end %>
+
+  <div class="b270-day-community" data-b270-compact-hide>
+    <%= render "bible270/days/completers", day: @day, completers: @completers %>
+
+    <h2 class="b270-section-h">Reflections</h2>
+    <div id="comments">
+      <% if @comments.any? %>
+        <%= render partial: "bible270/comments/comment", collection: @comments, as: :comment %>
+      <% else %>
+        <p style="color:var(--faint)" id="no_comments">No reflections yet. Share the first.</p>
+      <% end %>
+    </div>
+
+    <% if signed_in? %>
+      <div style="margin-top:18px">
+        <%= render "bible270/comments/form", day: @day, comment: @new_comment %>
+      </div>
+      <%= render "bible270/shared/comment_drafts" %>
+    <% else %>
+      <p class="b270-signin-hint" style="margin-top:14px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to leave a reflection.</p>
+    <% end %>
+  </div>
+</div>
+
+<%= render "bible270/shared/reading_mode" %>
+<%= render "bible270/shared/interaction_ui" %>

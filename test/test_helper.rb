@@ -7,6 +7,8 @@ ENV['RAILS_ENV'] = 'test'
 unless ENV['SKIP_COV']
   require 'simplecov'
 
+  SimpleCov.coverage_dir File.expand_path('../coverage', __dir__)
+
   if ENV['PARALLEL_COVERAGE']
     worker = ENV['TEST_ENV_NUMBER'].to_s
     worker = '1' if worker.empty?

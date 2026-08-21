@@ -15,13 +15,10 @@ module Bible270
                                           Plan.present_tracks(@day).include?(@track) &&
                                           Plan.valid_part?(@day, @track, @part)
 
-      existing = current_reader.checkoffs.find_by(day: @day, track: @track, part: @part)
-      if existing
-        existing.destroy
-      else
-        current_reader.ensure_started!
-        current_reader.checkoffs.create(day: @day, track: @track, part: @part)
-      end
+      requested_state = params[:checked] if params.key?(:checked)
+      head :bad_request and return if params.key?(:checked) && !%w[0 1].include?(requested_state)
+
+      marked_read = apply_checkoff(requested_state)
 
       @reader = current_reader.reload.reload_progress
       @reader_tracks = @reader.read_tracks_for(@day)
@@ -36,7 +33,28 @@ module Bible270
 
       respond_to do |format|
         format.turbo_stream
-        format.html { redirect_to day_path(@day) }
+        format.html do
+          message = marked_read ? 'Reading marked read.' : 'Reading marked unread.'
+          redirect_to day_path(@day), flash: { b270_interaction_status: message }
+        end
+      end
+    end
+
+  private
+
+    def apply_checkoff(requested_state)
+      existing = current_reader.checkoffs.find_by(day: @day, track: @track, part: @part)
+      if requested_state == '1'
+        current_reader.ensure_started!
+        current_reader.checkoffs.create_or_find_by!(day: @day, track: @track, part: @part)
+        true
+      elsif requested_state == '0' || existing
+        existing&.destroy
+        false
+      else
+        current_reader.ensure_started!
+        current_reader.checkoffs.create(day: @day, track: @track, part: @part)
+        true
       end
     end
   end

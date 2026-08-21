@@ -35,6 +35,7 @@ if RAILS_LOADED
       assert_equal @reader.id, comment.reader_id
       assert_equal 1, comment.day
       assert_equal 'A thought on Genesis', comment.body
+      assert_equal 'Reflection posted.', flash[:b270_interaction_status]
     end
 
     def test_the_reflection_form_has_a_reader_and_day_specific_draft_key
@@ -44,10 +45,15 @@ if RAILS_LOADED
 
       form = css_select('form[data-b270-draft="true"]').first
       key = form['data-b270-draft-key']
+      assert_equal 'true', form['data-b270-submit']
+      assert_equal 'Posting reflection…', form['data-b270-pending']
+      assert_equal 'Reflection posted.', form['data-b270-success']
       assert_includes key, ":#{@reader.id}:1:root"
       refute_includes key, @reader.email
       assert_match(%r{Draft saved in this browser}, response.body)
+      assert_match(%r{Bible270InteractionUI}, response.body)
       assert_select '[data-b270-draft-status][aria-live="polite"]'
+      assert_select '#b270-interaction-status[role="status"]'
     end
 
     def test_reply_drafts_are_scoped_to_the_parent_reflection
@@ -56,7 +62,8 @@ if RAILS_LOADED
 
       get "#{mount}/day/2", params: { reply_to: parent.id }
 
-      assert_select "form[data-b270-draft-key$=':#{@reader.id}:2:#{parent.id}']"
+      assert_select "form[data-b270-draft-key$=':#{@reader.id}:2:#{parent.id}']" \
+                    '[data-b270-pending="Posting reply…"][data-b270-success="Reply posted."]'
     end
 
     def test_a_failed_turbo_post_preserves_the_draft_contract
