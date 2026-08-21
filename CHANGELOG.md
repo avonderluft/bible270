@@ -4,25 +4,53 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+No unreleased changes.
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.0.0...main)**
+
+## [1.0.0] - 2026-08-20
+
 ### Added
 
-- recovery choices for readers whose next unfinished reading is behind the community day, including an optional schedule reset that preserves progress and reflections
+- optional daily reading reminders with per-reader opt-in and delivery time, reminder emails, and a scheduler-friendly Rake task
+- immediate day-completion feedback with a preserved next-day or Progress action
+- actionable Progress sections for unfinished portions, the current calendar week, milestones, and schedule recovery without losing reading or reflection history
+- browser-local reflection and reply drafts, day and author filters, pagination, and new-activity markers on the Reflections page
+- a remembered compact reading mode that keeps passages, checkoffs, navigation, and completion next steps in focus
 - a two-worker default `test` task with real-time colorized progress, one aggregate result and duration, merged coverage, a browsable project-local `coverage/` report, and per-file runtime recording, plus `test:serial` when a serial run is needed
-- browser-local reflection and reply drafts that survive refreshes, failed submissions, and accidental navigation
-- day and author filters, pagination, and new-activity markers on the Reflections page
 
 ### Changed
 
 - replace progress-ranked community lists with transparent recent-participation and alphabetical views that emphasize reading together
-- make Progress actionable with partial-day links, a calendar-week summary, and the reader's next milestone
-- improve accessibility with AA text contrast, consistent focus indicators, descriptive day-grid labels, semantic boundary navigation, touch-friendly tooltips, responsive forms, and reduced-motion support
-- keep profiles and scheduled jobs available while a newly installed daily-reminder database migration is pending
+- show why each reader appears in Reading together, including their latest reading, reflection, or join activity
 - add consistent pending, success, and retry feedback to reading, like, reflection, and reply actions, with repeat-safe checkoff and like requests
-- add a remembered compact reading mode that keeps passages, checkoffs, navigation, and completion next steps in focus
+- improve accessibility with AA text contrast, consistent focus indicators, descriptive day-grid labels, semantic boundary navigation, touch-friendly tooltips, responsive forms, and reduced-motion support
+- replace the reminder time field with aligned hour and minute selectors and an accessible time-zone tooltip
+- hide personal start-date controls and calendar prompts when the community configuration does not allow readers to change dates
 
-See the changes since the last release:
+### Fixed
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.18.2...main)**
+- keep profiles and scheduled reminder jobs available while a newly installed daily-reminder database migration is pending
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.19.0...v1.0.0)**
+
+## [0.19.0] - 2026-08-17
+
+### Added
+
+- shared responsive navigation with clearer Community, Reflections, My Progress, and Profile labels plus a mobile menu
+
+### Changed
+
+- align page headings with navigation destinations and clarify the Start or Continue reading and Go to today actions
+- always email explicitly mentioned readers, including the original reflection author when a reply prefills their mention
+- normalize packaged file permissions before gem builds
+
+### Removed
+
+- the per-reader mention-email opt-out; writing a reader's name explicitly now always sends the mention notice
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v0.18.2...v0.19.0)**
 
 ## [0.18.2] - 2026-08-15
 
@@ -442,6 +470,8 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[1.0.0]: https://github.com/avonderluft/bible270/releases/tag/v1.0.0
+[0.19.0]: https://github.com/avonderluft/bible270/releases/tag/v0.19.0
 [0.18.2]: https://github.com/avonderluft/bible270/releases/tag/v0.18.2
 [0.18.1]: https://github.com/avonderluft/bible270/releases/tag/v0.18.1
 [0.18.0]: https://github.com/avonderluft/bible270/releases/tag/v0.18.0
