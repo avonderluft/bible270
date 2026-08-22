@@ -4,16 +4,11 @@
 <p class="b270-eyebrow">My Progress</p>
 <h1>Your reading journey</h1>
 
-<%= render "bible270/shared/progress" %>
+<%= render "bible270/shared/progress", show_start_date: false %>
 
 <% if @reader %>
-  <%= render "bible270/readers/next_steps", reader: @reader,
-        partial_day_tasks: @partial_day_tasks,
-        remaining_partial_days: @remaining_partial_days,
-        week_days: @week_days,
-        week_completed: @week_completed,
-        next_milestone: @next_milestone,
-        days_to_milestone: @days_to_milestone %>
+  <%= render "bible270/readers/next_steps", partial_day_tasks: @partial_day_tasks,
+        remaining_partial_days: @remaining_partial_days %>
 <% end %>
 
 <div class="b270-panel">

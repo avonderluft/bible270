@@ -50,28 +50,17 @@ if RAILS_LOADED
       refute_match(%r{R Reader|Other Reader}, response.body)
     end
 
-    def test_the_overview_omits_start_date_status_and_controls
+    def test_reader_pages_omit_start_date_status_and_controls
       @reader.set_start_date!(Bible270.today - 9)
       sign_in_as(@reader)
 
-      get "#{mount}/"
+      ["#{mount}/", "#{mount}/progress"].each do |path|
+        get path
 
-      assert_response :success
-      assert_select '.b270-startdate', count: 0
-      refute_match(%r{reading at your own pace|Change start date|Set a start date}, response.body)
-    end
-
-    def test_the_progress_page_retains_start_date_status_and_controls
-      skip 'readers may not set their own schedule' unless Bible270.config.allow_reader_start_date
-
-      @reader.set_start_date!(Bible270.today - 9)
-      sign_in_as(@reader)
-
-      get "#{mount}/progress"
-
-      assert_response :success
-      assert_select '.b270-startdate', text: %r{reading at your own pace}
-      assert_select 'details.b270-startedit summary', text: 'Change start date'
+        assert_response :success
+        assert_select '.b270-startdate', count: 0
+        refute_match(%r{reading at your own pace|Change start date|Set a start date}, response.body)
+      end
     end
 
     # ---- the progress page -------------------------------------------------
@@ -115,21 +104,6 @@ if RAILS_LOADED
       end
     end
 
-    def test_the_progress_page_summarizes_the_week_and_next_milestone
-      week_start = Bible270.today - ((Bible270.today.wday + 6) % 7)
-      @reader.set_start_date!(week_start)
-      @reader.mark_day_complete!(1)
-      sign_in_as(@reader)
-
-      get "#{mount}/progress"
-
-      scheduled = (Bible270.today - week_start).to_i + 1
-      assert_select '.b270-week-count', text: %r{1 of #{scheduled}.*complete so far this week}
-      assert_select "progress.b270-week-progress[value='1'][max='#{scheduled}']"
-      assert_select '.b270-milestone', text: %r{30 days.*30-day milestone}
-      assert_select '.b270-next-note', text: %r{29 days to go}
-    end
-
     def test_the_progress_page_offers_the_next_day
       @reader.mark_through!(2)
       sign_in_as(@reader)
@@ -147,12 +121,11 @@ if RAILS_LOADED
 
       get "#{mount}/progress"
 
-      assert_select '.b270-recovery' do
+      assert_select '.b270-progress-actions' do
         assert_select 'a.b270-btn[href$="/day/1"]', text: %r{Catch up from Day 1}
         assert_select 'a.b270-todaylink[href$="/day/10"]', text: %r{Read with the community}
-        assert_select 'form', count: 0
       end
-      assert_match(%r{completed readings stay saved}, response.body)
+      refute_match(%r{Choose the reading|next unfinished reading|completed readings stay saved}, response.body)
     end
 
     def test_recovery_choices_are_hidden_when_the_next_reading_is_today
@@ -161,7 +134,8 @@ if RAILS_LOADED
 
       get "#{mount}/progress"
 
-      assert_select '.b270-recovery', count: 0
+      assert_select 'a', text: %r{Catch up from}, count: 0
+      assert_select 'a', text: %r{Read with the community}, count: 0
       assert_match(%r{Start reading — Day 1}, response.body)
     end
 
@@ -273,25 +247,6 @@ if RAILS_LOADED
       patch "#{mount}/start-date", params: { start_date: '2026-09-06' }
 
       assert_nil @reader.reload.started_on
-    end
-
-    def test_start_date_editor_is_hidden_when_reader_dates_are_disabled
-      previous = Bible270.config.allow_reader_start_date
-      @reader.set_start_date!(Date.new(2026, 9, 6))
-      Bible270.config.allow_reader_start_date = false
-      sign_in_as(@reader)
-
-      ["#{mount}/", "#{mount}/progress"].each do |path|
-        get path
-
-        assert_response :success
-        assert_select 'details.b270-startedit', count: 0
-        assert_select "form[action='#{mount}/start-date']", count: 0
-        refute_match(%r{Change start date|Set a start date}, response.body)
-        assert_select '.b270-next-note', text: 'This plan is not tied to calendar dates.' if path.end_with?('/progress')
-      end
-    ensure
-      Bible270.config.allow_reader_start_date = previous
     end
 
     def test_readers_are_turned_away_when_the_community_date_rules

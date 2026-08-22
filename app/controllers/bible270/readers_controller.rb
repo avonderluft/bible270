@@ -2,14 +2,6 @@
 
 module Bible270
   class ReadersController < ApplicationController
-    MILESTONES = {
-      30 => '30-day milestone',
-      90 => 'one-third complete',
-      135 => 'halfway',
-      180 => 'two-thirds complete',
-      Plan::DAYS => 'plan complete'
-    }.freeze
-
     def index
       @readers = Reader.all.to_a
       counts = Checkoff.group(:reader_id, :day).count
@@ -29,10 +21,6 @@ module Bible270
       @recent_comments = @reader ? @reader.comments.recent.limit(5) : Comment.none
       @partial_day_tasks = []
       @remaining_partial_days = 0
-      @week_days = []
-      @week_completed = 0
-      @next_milestone = nil
-      @days_to_milestone = nil
       return unless @reader
 
       partial_days = @reader.partial_days
@@ -40,11 +28,6 @@ module Bible270
         { day: day, remaining: @reader.remaining_parts_for(day) }
       end
       @remaining_partial_days = [partial_days.size - @partial_day_tasks.size, 0].max
-      @week_days = @reader.scheduled_days_this_week
-      @week_completed = @week_days.count { |day| @reader.day_complete?(day) }
-      completed = @reader.days_completed
-      @next_milestone = MILESTONES.find { |day, _label| day > completed }
-      @days_to_milestone = @next_milestone&.first.to_i - completed if @next_milestone
     end
 
     def show

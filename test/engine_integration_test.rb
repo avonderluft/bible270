@@ -22,6 +22,7 @@ if RAILS_LOADED
 
       assert_response :success
       assert_match(%r{270}, response.body)
+      assert_select 'details.b270-index summary', text: 'View all 270 days'
     end
 
     def test_navigation_uses_clear_labels_and_a_mobile_menu

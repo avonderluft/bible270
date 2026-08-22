@@ -36,13 +36,9 @@
     <%= render "bible270/shared/track_bars", reader: panel_reader %>
 
     <% if panel_behind %>
-      <div class="b270-recovery">
-        <p class="b270-recovery-heading">Choose the reading that works for you today</p>
-        <p class="b270-recovery-copy">Your next unfinished reading is Day <%= panel_start_day %>, while the community is on Day <%= panel_today_day %>. Whichever you choose, your completed readings stay saved.</p>
-        <div class="b270-progress-actions b270-recovery-actions">
-          <%= link_to "Catch up from Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
-          <%= link_to "Read with the community — Day #{panel_today_day}", day_path(panel_today_day), class: "b270-todaylink" %>
-        </div>
+      <div class="b270-progress-actions">
+        <%= link_to "Catch up from Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
+        <%= link_to "Read with the community — Day #{panel_today_day}", day_path(panel_today_day), class: "b270-todaylink" %>
       </div>
     <% else %>
       <div class="b270-progress-actions">

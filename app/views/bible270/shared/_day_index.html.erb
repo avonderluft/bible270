@@ -1,6 +1,6 @@
 <% if Bible270::Plan::DAYS.positive? %>
   <details class="b270-index">
-    <summary>All <%= Bible270::Plan::DAYS %> days</summary>
+    <summary>View all <%= Bible270::Plan::DAYS %> days</summary>
     <div class="b270-grid">
       <% today = signed_in? ? current_reader.today_day : nil %>
       <% (1..Bible270::Plan::DAYS).each do |d| %>
