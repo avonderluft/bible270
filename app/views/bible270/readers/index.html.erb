@@ -7,11 +7,10 @@
   <div class="b270-list">
     <% @readers.each do |r| %>
       <div class="b270-li">
-        <%= b270_avatar(r, size: 72) %>
+        <%= link_to b270_avatar(r, size: 72), reader_path(r), "aria-label": r.display_name %>
         <div>
           <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
-          <% day_word = @days_completed[r.id] == 1 ? "day" : "days" %>
-          <div class="sub"><%= @days_completed[r.id] %> <%= day_word %> read · joined <%= Bible270.local_time(r.created_at).strftime("%b %Y") %></div>
+          <div class="sub">joined <%= Bible270.local_time(r.created_at).strftime("%b %-d %Y") %></div>
         </div>
       </div>
     <% end %>

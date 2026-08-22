@@ -28,6 +28,8 @@ if RAILS_LOADED
       assert_select 'h1', text: 'Reading together'
       assert_match(%r{R Reader}, response.body)
       assert_match(%r{Other Reader}, response.body)
+      assert_select "a[aria-label='R Reader'][href='#{mount}/readers/#{@reader.id}'] .b270-avatar", count: 1
+      assert_select '.b270-li .sub', text: %r{\Ajoined [A-Z][a-z]{2} \d{1,2} \d{4}\z}, count: 2
     end
 
     def test_the_community_is_alphabetical_instead_of_ranked_by_progress
@@ -37,8 +39,7 @@ if RAILS_LOADED
       assert_response :success
       assert_operator response.body.index('Other Reader'), :<, response.body.index('R Reader'),
                       'progress should not determine community standing'
-      assert_select '.b270-li .rank', count: 0
-      assert_select '.b270-li .stat', count: 0
+      refute_match(%r{days? read}, response.body)
     end
 
     def test_the_overview_links_to_fellow_readers_without_previewing_them

@@ -3,13 +3,9 @@
 module Bible270
   class ReadersController < ApplicationController
     def index
-      @readers = Reader.all.to_a
-      counts = Checkoff.group(:reader_id, :day).count
-      @days_completed = Hash.new(0)
-      counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.total_parts(day) }
       # Community is a directory of fellow readers, not a leaderboard. Keep the
       # order predictable without implying that progress determines standing.
-      @readers.sort_by!(&:sort_name)
+      @readers = Reader.all.to_a.sort_by(&:sort_name)
     end
 
     # The reader's own progress. Deliberately open to visitors: the panel shows an
