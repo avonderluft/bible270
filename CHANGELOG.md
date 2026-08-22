@@ -4,6 +4,37 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.2...main)**
+
+## [1.1.2] - 2026-08-22
+
+### Changed
+
+- include complete 1.1.0 and 1.1.1 release history in the packaged changelog
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.1...v1.1.2)**
+
+## [1.1.1] - 2026-08-22
+
+### Fixed
+
+- make the mobile navigation menu toggle reliably on iOS Safari by relying on native `details` disclosure behavior instead of overriding it with JavaScript
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.0...v1.1.1)**
+
+## [1.1.0] - 2026-08-22
+
+### Changed
+
+- notify reflection authors directly about replies, share one opt-out with explicit mentions, and stop inserting handles into reply text
+- consolidate duplicate visitor sign-in prompts on day pages into one invitation
+- show “Finish what you started” on My Progress only when partially read days need attention
+- clarify the global day-index control as “View all 270 days” and use that standard collapsed control on My Progress and public reader pages
+- redirect successful Profile updates back to Profile
+- simplify Community listings to linked reader names and avatars with full joined dates instead of progress counts
+- remove account-specific reflection messaging from the signed-out Progress page
+- simplify header, Reflections, and empty day-page framing while retaining the primary actions and information
+
 ### Removed
 
 - remove the Compact reading preference so daily reading pages have one simple, predictable presentation
@@ -13,18 +44,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 - remove weekly progress, its unused schedule helper, milestones, and explanatory schedule-recovery copy from My Progress
 - replace the Reflections page’s separate day grid with the standard “View all 270 days” control
 
-### Changed
-
-- notify reflection authors directly about replies, share one opt-out with explicit mentions, and stop inserting handles into reply text
-- consolidate duplicate visitor sign-in prompts on day pages into one invitation
-- show “Finish what you started” on My Progress only when partially read days need attention
-- clarify the global day-index control as “View all 270 days” and use that standard collapsed control on My Progress
-
-### Fixed
-
-- make the mobile navigation menu reliably open and close when its button is tapped
-
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.0.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.0.0...v1.1.0)**
 
 ## [1.0.0] - 2026-08-20
 
@@ -488,6 +508,9 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[1.1.2]: https://github.com/avonderluft/bible270/releases/tag/v1.1.2
+[1.1.1]: https://github.com/avonderluft/bible270/releases/tag/v1.1.1
+[1.1.0]: https://github.com/avonderluft/bible270/releases/tag/v1.1.0
 [1.0.0]: https://github.com/avonderluft/bible270/releases/tag/v1.0.0
 [0.19.0]: https://github.com/avonderluft/bible270/releases/tag/v0.19.0
 [0.18.2]: https://github.com/avonderluft/bible270/releases/tag/v0.18.2
