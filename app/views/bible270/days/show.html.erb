@@ -11,7 +11,7 @@
   </div>
 
   <% unless signed_in? %>
-    <p class="b270-signin-hint" style="margin-top:12px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to check off these readings.</p>
+    <p class="b270-signin-hint" style="margin-top:12px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to track your reading and join the conversation.</p>
   <% end %>
 
   <div class="b270-day-community">
@@ -31,8 +31,6 @@
         <%= render "bible270/comments/form", day: @day, comment: @new_comment %>
       </div>
       <%= render "bible270/shared/comment_drafts" %>
-    <% else %>
-      <p class="b270-signin-hint" style="margin-top:14px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to leave a reflection.</p>
     <% end %>
   </div>
 </div>

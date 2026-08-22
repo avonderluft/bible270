@@ -62,6 +62,13 @@ if RAILS_LOADED
       assert_match(%r{Psalm 1}, response.body)
     end
 
+    def test_a_day_page_gives_visitors_one_sign_in_invitation
+      get "#{mount}/day/1"
+
+      prompt = 'Sign in to track your reading and join the conversation.'
+      assert_select 'p.b270-signin-hint', count: 1, text: prompt
+    end
+
     # Day 1's Old Testament reading is three chapters, so with per-chapter
     # check-offs it should list each rather than only the range.
     def test_a_multi_chapter_reading_offers_a_box_per_chapter
