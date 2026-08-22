@@ -10,7 +10,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 - replace the homepage reader preview with one clear link to the Community page
 - remove the redundant schedule-restart shortcut from progress recovery choices
 - remove reader-facing start-date status, controls, and self-service endpoints while retaining automatic and admin-managed personal calendars
-- remove weekly progress, milestones, and explanatory schedule-recovery copy from My Progress
+- remove weekly progress, its unused schedule helper, milestones, and explanatory schedule-recovery copy from My Progress
 - replace the Reflections page’s separate day grid with the standard “View all 270 days” control
 
 ### Changed

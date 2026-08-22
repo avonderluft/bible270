@@ -578,19 +578,6 @@ module Bible270
       Plan.end_date_for(effective_start_date)
     end
 
-    def scheduled_days_this_week(on: Bible270.today)
-      return [] unless dated?
-
-      date = Plan.to_date(on)
-      return [] unless date
-
-      week_start = date - ((date.wday + 6) % 7)
-      (week_start..date).filter_map do |scheduled_date|
-        day = Plan.day_for(scheduled_date, effective_start_date, clamp: false)
-        day if Plan.valid_day?(day)
-      end
-    end
-
     def date_for_day(day)
       Plan.date_for(day, effective_start_date)
     end

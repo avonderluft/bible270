@@ -65,13 +65,6 @@ class ReaderPartsTest < Minitest::Test
     ], @reader.remaining_parts_for(1)
   end
 
-  def test_scheduled_days_this_week_starts_with_the_readers_plan
-    @reader.set_start_date!(Date.new(2026, 9, 2))
-
-    assert_equal [1, 2, 3, 4, 5], @reader.scheduled_days_this_week(on: Date.new(2026, 9, 6))
-    assert_empty @reader.scheduled_days_this_week(on: 'not a date')
-  end
-
   def test_the_same_chapter_cannot_be_ticked_twice
     @reader.checkoffs.create!(day: 1, track: 'ot', part: 0)
 
