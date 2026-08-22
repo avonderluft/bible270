@@ -1,12 +1,14 @@
+<%# locals: (reader: nil) %>
 <% if Bible270::Plan::DAYS.positive? %>
+  <% grid_reader = reader || current_reader %>
+  <% today = signed_in? && grid_reader == current_reader ? current_reader.today_day : nil %>
   <details class="b270-index">
     <summary>View all <%= Bible270::Plan::DAYS %> days</summary>
     <div class="b270-grid">
-      <% today = signed_in? ? current_reader.today_day : nil %>
       <% (1..Bible270::Plan::DAYS).each do |d| %>
-        <%= b270_day_cell(d, reader: current_reader, today: today) %>
+        <%= b270_day_cell(d, reader: grid_reader, today: today) %>
       <% end %>
     </div>
-<p class="b270-gridnote">Dot indicates days with reflections.</p>
+    <p class="b270-gridnote">Dot indicates days with reflections.</p>
   </details>
 <% end %>

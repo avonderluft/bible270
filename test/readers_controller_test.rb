@@ -179,6 +179,18 @@ if RAILS_LOADED
       assert_match(%r{R Reader}, response.body)
     end
 
+    def test_a_reader_page_uses_the_standard_collapsed_day_index_for_that_reader
+      @reader.mark_day_complete!(1)
+
+      get "#{mount}/readers/#{@reader.id}"
+
+      assert_select 'details.b270-index' do
+        assert_select 'summary', text: 'View all 270 days'
+        assert_select 'a.b270-cell.complete', text: '1', count: 1
+      end
+      assert_select 'details.b270-index[open]', count: 0
+    end
+
     def test_an_unknown_reader_redirects_rather_than_erroring
       get "#{mount}/readers/999999"
 
