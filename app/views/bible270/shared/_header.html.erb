@@ -9,15 +9,38 @@
     <div class="b270-desktopnav">
       <%= render "bible270/shared/nav_links" %>
     </div>
-    <details class="b270-navmenu">
-      <summary class="b270-navtoggle" aria-label="Menu">
+    <div class="b270-navmenu">
+      <button type="button" class="b270-navtoggle" aria-label="Menu"
+              aria-expanded="false" aria-controls="b270-mobile-navigation">
         <span class="b270-menuicon" aria-hidden="true">
           <span></span><span></span><span></span>
         </span>
-      </summary>
-      <div class="b270-navlinks">
+      </button>
+      <div id="b270-mobile-navigation" class="b270-navlinks" hidden>
         <%= render "bible270/shared/nav_links" %>
       </div>
-    </details>
+    </div>
   </nav>
 </header>
+
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270NavigationMenu) return;
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      const toggle = target.closest && target.closest("button.b270-navtoggle");
+      if (!toggle) return;
+
+      const menu = toggle.closest(".b270-navmenu");
+      const links = menu && menu.querySelector(".b270-navlinks");
+      if (!links) return;
+
+      const opening = toggle.getAttribute("aria-expanded") !== "true";
+      toggle.setAttribute("aria-expanded", String(opening));
+      links.hidden = !opening;
+    });
+
+    window.Bible270NavigationMenu = true;
+  })();
+</script>

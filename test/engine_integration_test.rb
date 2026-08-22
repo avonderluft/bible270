@@ -38,14 +38,15 @@ if RAILS_LOADED
           assert_select 'a', text: 'Community'
           assert_select 'a', text: 'Reflections'
         end
-        assert_select 'details.b270-navmenu' do
-          assert_select 'summary.b270-navtoggle[aria-label="Menu"]' do
+        assert_select 'div.b270-navmenu' do
+          assert_select 'button.b270-navtoggle[type="button"][aria-label="Menu"]' \
+                        '[aria-expanded="false"][aria-controls="b270-mobile-navigation"]' do
             assert_select 'span.b270-menuicon[aria-hidden="true"] > span', count: 3
           end
+          assert_select 'div#b270-mobile-navigation.b270-navlinks[hidden]'
         end
       end
-      refute(css_select('script').any? { |script| script.text.include?('Bible270NavigationMenu') },
-             'the native details toggle must not be overridden')
+      assert(css_select('script[nonce]').any? { |script| script.text.include?('Bible270NavigationMenu') })
     end
 
     def test_signed_in_navigation_labels_personal_progress_clearly
