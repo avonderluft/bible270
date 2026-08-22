@@ -1,5 +1,4 @@
 <% content_for :title, "Reflections — #{Bible270.config.app_name}" %>
-<% content_for :hide_day_index, true %><%# this page has its own, filtered grid %>
 <% browse_params = { day: @reflection_day, reader_id: @reflection_reader_id,
                      since: @reflections_since_param }.compact %>
 
@@ -8,23 +7,6 @@
 <%= render "bible270/shared/interaction_status" %>
 
 <% if @days_with_reflections.any? %>
-  <div class="b270-panel">
-    <h2 class="b270-subhead">Days with reflections</h2>
-    <p class="b270-hint" style="margin-top:0">
-      <%= @days_with_reflections.size %>
-      of <%= Bible270::Plan::DAYS %> days have been written about.
-    </p>
-
-    <%# Only the days that have something on them, so the grid is a map of the
-        conversation rather than of the plan. Squares keep their usual meaning:
-        the fill is reading progress, and hovering shows that day's readings. %>
-    <div class="b270-grid">
-      <% @days_with_reflections.each do |day| %>
-        <%= b270_day_cell(day, reader: current_reader) %>
-      <% end %>
-    </div>
-  </div>
-
   <div class="b270-reflection-tools">
     <div>
       <h2 class="b270-section-h">Conversations</h2>
@@ -95,5 +77,4 @@
     </p>
   </div>
 <% end %>
-
 <%= render "bible270/shared/interaction_ui" %>

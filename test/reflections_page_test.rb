@@ -32,14 +32,17 @@ if RAILS_LOADED
       reader.comments.create!(day: day, body: body, created_at: at, updated_at: at)
     end
 
-    # Every square on this page has a dot, so saying what the dot means would
-    # explain nothing. The day pages, where most squares have none, still say it.
-    def test_the_grid_note_is_omitted_here
+    # The page no longer keeps its own filtered grid; it offers the same collapsed
+    # "View all 270 days" control the layout gives every other page.
+    def test_it_shows_the_standard_collapsed_day_index
       reflection(@mary, 3, 'On day three', 1.hour.ago)
 
       get "#{mount}/reflections"
 
-      refute_match(%r{Dot indicates}, response.body)
+      assert_select 'details.b270-index' do
+        assert_select 'summary', text: 'View all 270 days'
+        assert_select '.b270-grid', count: 1
+      end
     end
 
     def test_the_day_page_still_says_it
@@ -63,39 +66,9 @@ if RAILS_LOADED
       assert_match(%r{No one has written a reflection yet}, response.body)
     end
 
-    # ---- the grid ----------------------------------------------------------
+    # ---- the empty state ---------------------------------------------------
 
-    def test_the_grid_shows_only_days_that_have_reflections
-      reflection(@mary, 3, 'On day three', 3.days.ago)
-      reflection(@andrew, 9, 'On day nine', 2.days.ago)
-
-      get "#{mount}/reflections"
-
-      assert_response :success
-      cells = response.body.scan(%r{class="b270-cell[^"]*"}).size
-      assert_equal 2, cells, 'two days have reflections, so two squares'
-      assert_match(%r{/day/3"}, response.body)
-      assert_match(%r{/day/9"}, response.body)
-    end
-
-    def test_the_grid_squares_still_carry_their_readings
-      reflection(@mary, 1, 'On day one', 1.day.ago)
-
-      get "#{mount}/reflections"
-
-      assert_match(%r{title="Genesis 1–3 · Matthew 1 · Psalm 1"}, response.body)
-    end
-
-    def test_a_day_is_counted_once_however_many_reflections
-      reflection(@mary, 3, 'One', 3.days.ago)
-      reflection(@andrew, 3, 'Two', 2.days.ago)
-
-      get "#{mount}/reflections"
-
-      assert_equal 1, response.body.scan(%r{class="b270-cell[^"]*"}).size
-    end
-
-    def test_hidden_reflections_do_not_put_a_day_on_the_grid
+    def test_hidden_reflections_do_not_show_a_conversation
       reflection(@mary, 3, 'Hidden one', 3.days.ago).hide!
 
       get "#{mount}/reflections"
