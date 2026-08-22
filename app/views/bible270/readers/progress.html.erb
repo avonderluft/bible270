@@ -5,7 +5,7 @@
 
 <%= render "bible270/shared/progress" %>
 
-<% if @reader %>
+<% if @reader && @partial_day_tasks.any? %>
   <%= render "bible270/readers/next_steps", partial_day_tasks: @partial_day_tasks,
         remaining_partial_days: @remaining_partial_days %>
 <% end %>

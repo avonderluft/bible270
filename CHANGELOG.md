@@ -15,6 +15,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Changed
 
+- show “Finish what you started” on My Progress only when partially read days need attention
 - clarify the global day-index control as “View all 270 days” and use that standard collapsed control on My Progress
 
 ### Fixed

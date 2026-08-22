@@ -1,35 +1,27 @@
 <%# locals: (partial_day_tasks:, remaining_partial_days:) %>
 <div class="b270-panel b270-next-steps">
-  <h2 class="b270-subhead">Your next steps</h2>
-
-  <section class="b270-next-section" aria-labelledby="finish-started-heading">
-    <h3 id="finish-started-heading">Finish what you started</h3>
-    <% if partial_day_tasks.any? %>
-      <ul class="b270-task-list">
-        <% partial_day_tasks.each do |task| %>
-          <% day = task[:day] %>
-          <% first_track = task[:remaining].first&.fetch(:track) %>
-          <li class="b270-task">
-            <div class="b270-task-body">
-              <strong><%= link_to "Day #{day}", day_path(day, anchor: "reading_#{day}_#{first_track}") %></strong>
-              <span>
-                Still to read:
-                <%= safe_join(task[:remaining].map { |part|
-                      link_to(part[:reference], day_path(day, anchor: "reading_#{day}_#{part[:track]}"))
-                    }, " · ") %>
-              </span>
-            </div>
-            <%= link_to "Continue →", day_path(day, anchor: "reading_#{day}_#{first_track}"),
-                  class: "b270-task-link" %>
-          </li>
-        <% end %>
-      </ul>
-      <% if remaining_partial_days.positive? %>
-        <p class="b270-next-note"><%= remaining_partial_days %> more partially read
-          <%= "day".pluralize(remaining_partial_days) %> are highlighted in the grid below.</p>
-      <% end %>
-    <% else %>
-      <p class="b270-next-note">No partially read days. Your next reading is ready above.</p>
+  <h2 class="b270-subhead">Finish what you started</h2>
+  <ul class="b270-task-list">
+    <% partial_day_tasks.each do |task| %>
+      <% day = task[:day] %>
+      <% first_track = task[:remaining].first&.fetch(:track) %>
+      <li class="b270-task">
+        <div class="b270-task-body">
+          <strong><%= link_to "Day #{day}", day_path(day, anchor: "reading_#{day}_#{first_track}") %></strong>
+          <span>
+            Still to read:
+            <%= safe_join(task[:remaining].map { |part|
+                  link_to(part[:reference], day_path(day, anchor: "reading_#{day}_#{part[:track]}"))
+                }, " · ") %>
+          </span>
+        </div>
+        <%= link_to "Continue →", day_path(day, anchor: "reading_#{day}_#{first_track}"),
+              class: "b270-task-link" %>
+      </li>
     <% end %>
-  </section>
+  </ul>
+  <% if remaining_partial_days.positive? %>
+    <p class="b270-next-note">View <%= remaining_partial_days %> more partially read
+      <%= "day".pluralize(remaining_partial_days) %> under “View all 270 days”.</p>
+  <% end %>
 </div>

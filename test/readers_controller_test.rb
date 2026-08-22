@@ -84,6 +84,7 @@ if RAILS_LOADED
       assert_select 'h1', text: 'Your reading journey'
       assert_match(%r{4}, response.body)
       assert_match(%r{days complete}, response.body)
+      assert_select '.b270-next-steps', count: 0
     end
 
     def test_the_progress_page_links_partially_read_days_to_remaining_portions
@@ -94,13 +95,23 @@ if RAILS_LOADED
       get "#{mount}/progress"
 
       assert_select '.b270-next-steps' do
-        assert_select '#finish-started-heading', text: 'Finish what you started'
+        assert_select 'h2.b270-subhead', text: 'Finish what you started'
         assert_select 'a[href$="/day/1#reading_1_ot"]', text: 'Genesis 2'
         assert_select 'a[href$="/day/1#reading_1_ot"]', text: 'Genesis 3'
         assert_select 'a[href$="/day/1#reading_1_nt"]', text: 'Matthew 1'
         assert_select 'a[href$="/day/1#reading_1_pp"]', text: 'Psalm 1'
         assert_select 'a.b270-task-link', text: %r{Continue}
       end
+    end
+
+    def test_additional_partially_read_days_point_to_the_collapsed_day_index
+      6.times { |day| @reader.checkoffs.create!(day: day + 1, track: 'ot', part: 0) }
+      @reader.reload_progress
+      sign_in_as(@reader)
+
+      get "#{mount}/progress"
+
+      assert_select '.b270-next-note', text: 'View 1 more partially read day under “View all 270 days”.'
     end
 
     def test_the_progress_page_offers_the_next_day
