@@ -1,4 +1,4 @@
-<%= @author.display_name %> mentioned you in a reflection on day <%= @comment.day %>.
+<%= @introduction %>
 
 <%= @comment.body %>
 
@@ -8,4 +8,7 @@ Read it and reply: <%= @day_url %>
 You can find it on day <%= @comment.day %> of <%= @app_name %>.
 <% end %>
 --
-You are getting this because someone wrote your name in a reflection.
+<%= @reason %>
+<% if @profile_url %>
+Manage email preferences: <%= @profile_url %>
+<% end %>

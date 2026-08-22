@@ -41,8 +41,8 @@ if RAILS_LOADED
       assert_select 'h1', text: 'Your details'
       assert_match(%r{first_name}, response.body)
       assert_match(%r{last_name}, response.body)
-      refute_match(%r{Email me when someone mentions}, response.body)
-      refute_match(%r{name="notify_on_mention"}, response.body)
+      assert_select 'input[type="checkbox"][name="notify_on_mention"][checked="checked"]'
+      assert_match(%r{Email me about replies and mentions}, response.body)
       refute_match(%r{name="daily_reminders"}, response.body)
       refute_match(%r{name="daily_reminder_time"}, response.body)
       assert_match(%r{name="bible_version".*class="b270-source-choices"}m, response.body,
@@ -183,7 +183,21 @@ if RAILS_LOADED
       assert_equal '06:30', @reader.daily_reminder_time
     end
 
-    def test_saving_the_profile_preserves_the_existing_mention_notice_setting
+    def test_the_reply_and_mention_preference_can_be_changed
+      sign_in_as(@reader)
+
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', notify_on_mention: '0'
+      }
+      refute @reader.reload.notify_on_mention
+
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', notify_on_mention: '1'
+      }
+      assert @reader.reload.notify_on_mention
+    end
+
+    def test_omitting_the_reply_and_mention_preference_preserves_it
       @reader.update!(notify_on_mention: false)
       sign_in_as(@reader)
 
@@ -192,12 +206,34 @@ if RAILS_LOADED
       refute @reader.reload.notify_on_mention
     end
 
-    def test_half_a_name_is_refused_and_the_form_comes_back
+    def test_the_reply_and_mention_preference_is_hidden_and_preserved_when_globally_disabled
+      previous = Bible270.config.mention_notifications
+      Bible270.config.mention_notifications = false
+      @reader.update!(notify_on_mention: false)
       sign_in_as(@reader)
-      patch "#{mount}/profile", params: { first_name: 'Andrew', last_name: '' }
+
+      get "#{mount}/profile"
+      assert_select 'input[type="checkbox"][name="notify_on_mention"]', count: 0
+
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', notify_on_mention: '1'
+      }
+      refute @reader.reload.notify_on_mention
+    ensure
+      Bible270.config.mention_notifications = previous
+    end
+
+    def test_half_a_name_is_refused_and_the_form_comes_back
+      @reader.update!(notify_on_mention: false)
+      sign_in_as(@reader)
+      patch "#{mount}/profile", params: {
+        first_name: 'Andrew', last_name: '', notify_on_mention: '1'
+      }
 
       assert_response :unprocessable_entity
       assert_equal 'R', @reader.reload.first_name, 'nothing should have changed'
+      refute @reader.notify_on_mention, 'notification preference should not change on an invalid form'
+      assert_select 'input[type="checkbox"][name="notify_on_mention"][checked="checked"]'
     end
 
     def test_a_translation_can_be_chosen

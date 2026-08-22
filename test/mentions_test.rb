@@ -63,12 +63,6 @@ class MentionsTest < Minitest::Test
     assert_empty M.handles_for('', 'vonderLuft')
   end
 
-  def test_the_preferred_handle_lengthens_only_when_needed
-    assert_equal 'andrew', M.preferred_handle('Andrew', 'vonderLuft')
-    assert_equal 'andrew.vonderluft', M.preferred_handle('Andrew', 'vonderLuft', ambiguous: true)
-    assert_nil M.preferred_handle('', '')
-  end
-
   def test_highlighting_leaves_the_rest_of_the_text_alone
     result = M.highlight('Yes @Andrew, quite so') { |handle, text| "[#{handle}|#{text}]" }
 

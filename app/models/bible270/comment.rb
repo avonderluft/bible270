@@ -37,10 +37,11 @@ module Bible270
     validate :parent_is_on_the_same_day
 
     # Fires once the reflection is really saved, so nothing is sent for one whose
-    # transaction rolls back.
-    after_create_commit :notify_mentioned_readers
+    # transaction rolls back. Replies notify their parent author directly; explicit
+    # mentions notify everyone else named in the body.
+    after_create_commit :notify_comment_readers
     # Only the people newly named: editing a reflection five times must not mail
-    # the same reader five times.
+    # the same reader five times or repeat the original reply notice.
     after_update_commit :notify_newly_mentioned_readers
 
     scope :approved, -> { where(approved: true) }
@@ -153,13 +154,19 @@ module Bible270
       errors.add(:parent, "is on day #{parent.day}, not #{day}")
     end
 
-    # A mention always emails the person named. There is no per-reader opt-out;
-    # failures are logged rather than raised so nobody loses a reflection because
-    # the mail server is down.
+    def notify_comment_readers
+      return unless Bible270.config.mention_notifications
+
+      replied_to = reply_notification_reader
+      deliver_comment_notice(replied_to, :replied) if replied_to
+      notify_mentioned_readers(except: [replied_to&.id].compact)
+    end
+
     def notify_newly_mentioned_readers
       return unless saved_change_to_body?
 
       already = Reader.mentioned_in(body_before_last_save).map(&:id)
+      already << parent.reader_id if reply?
       notify_mentioned_readers(except: already)
     end
 
@@ -170,11 +177,28 @@ module Bible270
         next if mentioned.id == reader_id
         next if except.include?(mentioned.id)
 
-        notice = NoticeMailer.mentioned(comment_id: id, reader_id: mentioned.id)
-        Bible270.config.registration_notice_deliver_later ? notice.deliver_later : notice.deliver_now
+        deliver_comment_notice(mentioned, :mentioned)
       end
+    end
+
+    def reply_notification_reader
+      return unless reply?
+
+      recipient = parent&.reader
+      recipient unless recipient&.id == reader_id
+    end
+
+    # Each recipient is isolated so a mail-server failure for one person cannot
+    # prevent other people named in the same reflection from being notified.
+    def deliver_comment_notice(recipient, action)
+      return unless recipient&.wants_comment_notifications?
+
+      notice = NoticeMailer.public_send(action, comment_id: id, reader_id: recipient.id)
+      Bible270.config.registration_notice_deliver_later ? notice.deliver_later : notice.deliver_now
     rescue StandardError => e
-      Rails.logger.error("[bible270] could not send mention notices for comment #{id}: #{e.class}: #{e.message}")
+      Rails.logger.error(
+        "[bible270] could not send #{action} notice for comment #{id}: #{e.class}: #{e.message}"
+      )
     end
   end
 end

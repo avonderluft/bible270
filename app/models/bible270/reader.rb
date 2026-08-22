@@ -237,19 +237,11 @@ module Bible270
 
     # ---- mentions ----------------------------------------------------------
 
-    # The handle to write when mentioning this reader: their first name, unless
-    # someone else shares it, in which case first.last.
-    def mention_handle
-      first = first_name.presence || display_name.to_s.split.first
-      return nil if first.blank?
-
-      Mentions.preferred_handle(first, last_name, ambiguous: self.class.shared_first_name?(first, self))
-    end
-
-    def self.shared_first_name?(first, except = nil)
-      scope = where('LOWER(first_name) = ?', first.to_s.downcase)
-      scope = scope.where.not(id: except.id) if except&.id
-      scope.exists?
+    # Older copied databases may briefly lack the preference column while their
+    # migrations are being reconciled. Preserve the historical opted-in behavior
+    # until the column is available rather than breaking reflection delivery.
+    def wants_comment_notifications?
+      !has_attribute?(:notify_on_mention) || self[:notify_on_mention] != false
     end
 
     # The readers a piece of text mentions. A handle matching more than one reader

@@ -77,25 +77,57 @@ if RAILS_LOADED
       assert_equal [@andrew.email], ActionMailer::Base.deliveries.last.to
     end
 
-    def test_a_previous_opt_out_does_not_suppress_an_explicit_mention
+    def test_an_opt_out_suppresses_an_explicit_mention
       @andrew.update!(notify_on_mention: false)
 
       post_reflection('Are you there @Andrew', as: @mary)
 
-      assert_equal 1, ActionMailer::Base.deliveries.size
-      assert_equal [@andrew.email], ActionMailer::Base.deliveries.last.to
+      assert_empty ActionMailer::Base.deliveries
     end
 
-    def test_a_reply_mention_always_emails_the_original_reflection_author
+    def test_a_reply_emails_the_original_author_without_a_body_mention
       original = @andrew.comments.create!(day: 1, body: 'My thought')
-      @andrew.update!(notify_on_mention: false)
+      sign_in_as(@mary)
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: 'Thank you', parent_id: original.id } }
+
+      assert_equal 1, ActionMailer::Base.deliveries.size
+      mail = ActionMailer::Base.deliveries.last
+      assert_equal [@andrew.email], mail.to
+      assert_match(%r{replied}, mail.subject)
+    end
+
+    def test_mentioning_the_parent_author_in_a_reply_does_not_send_twice
+      original = @andrew.comments.create!(day: 1, body: 'My thought')
       sign_in_as(@mary)
 
       post "#{mount}/day/1/comments",
            params: { comment: { body: 'Thank you @Andrew', parent_id: original.id } }
 
       assert_equal 1, ActionMailer::Base.deliveries.size
-      assert_equal [@andrew.email], ActionMailer::Base.deliveries.last.to
+      assert_match(%r{replied}, ActionMailer::Base.deliveries.last.subject)
+    end
+
+    def test_an_opt_out_suppresses_a_reply_notice
+      original = @andrew.comments.create!(day: 1, body: 'My thought')
+      @andrew.update!(notify_on_mention: false)
+      sign_in_as(@mary)
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: 'Thank you', parent_id: original.id } }
+
+      assert_empty ActionMailer::Base.deliveries
+    end
+
+    def test_replying_to_your_own_reflection_sends_nothing
+      original = @andrew.comments.create!(day: 1, body: 'My thought')
+      sign_in_as(@andrew)
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: 'An addendum', parent_id: original.id } }
+
+      assert_empty ActionMailer::Base.deliveries
     end
 
     def test_the_feature_can_be_switched_off_entirely
@@ -139,14 +171,16 @@ if RAILS_LOADED
       assert_match(%r{&lt;script&gt;}, response.body)
     end
 
-    def test_replying_prefills_the_handle
+    def test_replying_starts_with_an_empty_body
       comment = @andrew.comments.create!(day: 1, body: 'My thought')
       sign_in_as(@mary)
 
       get "#{mount}/day/1", params: { reply_to: comment.id }
 
       assert_response :success
-      assert_match(%r{@andrew}, response.body, 'the form should be prefilled with the handle')
+      assert_select '.b270-replying', text: %r{Replying to Andrew vonderLuft}
+      assert_select 'textarea[name="comment[body]"]', text: ''
+      refute_match(%r{@andrew}, response.body)
     end
 
     def test_the_reply_link_is_offered_on_other_peoples_reflections

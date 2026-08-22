@@ -517,6 +517,7 @@ module Bible270
             # Readers choose an opt-in time only when enabled. This application owns
             # scheduling: run `bin/rails bible270:reminders:send` every 15 minutes.
             config.daily_reminders = false
+            config.mention_notifications = true # direct replies and @mentions; readers may opt out
             # config.mailer_host = 'example.com' # links back to the day and profile
 
             # --- Reading links --------------------------------------------------------

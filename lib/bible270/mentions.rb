@@ -49,15 +49,6 @@ module Bible270
       handles.uniq
     end
 
-    # The form to write when there is more than one reader with the same first
-    # name: the longer handle is unambiguous.
-    def preferred_handle(first_name, last_name, ambiguous: false)
-      handles = handles_for(first_name, last_name)
-      return nil if handles.empty?
-
-      ambiguous ? handles.last : handles.first
-    end
-
     # Wraps each mention so a view can style it, leaving the text otherwise
     # untouched. The block receives the handle and returns the replacement.
     def highlight(text)

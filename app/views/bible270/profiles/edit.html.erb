@@ -37,6 +37,17 @@
     </label>
     <%= render "bible270/shared/passage_source", reader: current_reader %>
 
+    <% if @comment_notifications_available %>
+      <div class="b270-field">
+        <span>Email notifications</span>
+        <label class="b270-reminder-optin">
+          <%= hidden_field_tag :notify_on_mention, "0", id: nil %>
+          <%= check_box_tag :notify_on_mention, "1", @notify_on_mention %>
+          <span>Email me about replies and mentions</span>
+        </label>
+      </div>
+    <% end %>
+
     <% if @daily_reminders_available %>
       <% reminder_hour, reminder_minute = @daily_reminder_time.to_s.split(":", 2) %>
       <div class="b270-field">

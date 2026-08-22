@@ -60,6 +60,7 @@ Bible270.configure do |config|
   # Readers choose an opt-in time on their profile only when this is enabled.
   # The host app owns scheduling: run `bin/rails bible270:reminders:send` every 15 minutes.
   config.daily_reminders = false
+  config.mention_notifications = true # direct replies and @mentions; readers may opt out
   # config.mailer_host = "example.com"       # required for day/profile links in email
 
   # --- Reading links ---------------------------------------------------------

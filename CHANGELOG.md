@@ -15,6 +15,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Changed
 
+- notify reflection authors directly about replies, share one opt-out with explicit mentions, and stop inserting handles into reply text
 - consolidate duplicate visitor sign-in prompts on day pages into one invitation
 - show “Finish what you started” on My Progress only when partially read days need attention
 - clarify the global day-index control as “View all 270 days” and use that standard collapsed control on My Progress

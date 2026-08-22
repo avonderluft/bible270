@@ -13,11 +13,13 @@ if RAILS_LOADED
       @previous = {
         from: Bible270.config.mailer_from,
         host: Bible270.config.mailer_host,
-        daily_reminders: Bible270.config.daily_reminders
+        daily_reminders: Bible270.config.daily_reminders,
+        mention_notifications: Bible270.config.mention_notifications
       }
       Bible270.config.mailer_from = 'no-reply@example.org'
       Bible270.config.mailer_host = nil
       Bible270.config.daily_reminders = false
+      Bible270.config.mention_notifications = true
 
       @andrew = Bible270::Reader.create!(provider: 'email', uid: 'a@example.org', email: 'a@example.org',
                                          display_name: 'Andrew vonderLuft',
@@ -30,6 +32,7 @@ if RAILS_LOADED
       Bible270.config.mailer_from = @previous[:from]
       Bible270.config.mailer_host = @previous[:host]
       Bible270.config.daily_reminders = @previous[:daily_reminders]
+      Bible270.config.mention_notifications = @previous[:mention_notifications]
     end
 
     # Both mailers are multipart, so the content is in the parts rather than the
@@ -195,8 +198,8 @@ if RAILS_LOADED
       comment = @mary.comments.create!(day: 1, body: 'Hello @andrew')
       body = body_of(mention_notice(comment))
 
-      assert_match(%r{someone wrote your name in a reflection}i, body)
-      refute_match(%r{profile}i, body)
+      assert_match(%r{asked to be emailed about replies and mentions}i, body)
+      refute_match(%r{https?://}, body)
     end
 
     def test_the_mention_notice_links_to_the_day_when_a_host_is_set
@@ -239,14 +242,26 @@ if RAILS_LOADED
       refute mail.perform_deliveries
     end
 
-    def test_a_reply_notice_reads_the_same_way
+    def test_a_reply_notice_identifies_itself_and_quotes_the_reply
       thought = @andrew.comments.create!(day: 3, body: 'My reflection')
-      reply = @mary.comments.create!(day: 3, body: '@andrew quite so', parent: thought)
-
-      mail = mention_notice(reply)
+      reply = @mary.comments.create!(day: 3, body: 'Quite so', parent: thought)
+      mail = Bible270::NoticeMailer.replied(comment_id: reply.id, reader_id: @andrew.id)
 
       assert_equal [@andrew.email], mail.to
-      assert_match(%r{quite so}, body_of(mail))
+      assert_match(%r{Mary Smith replied}, mail.subject)
+      assert_match(%r{replied to your reflection}, body_of(mail))
+      assert_match(%r{Quite so}, body_of(mail))
+    end
+
+    def test_comment_notices_recheck_the_global_switch_and_reader_preference
+      comment = @mary.comments.create!(day: 1, body: 'Hello @andrew')
+
+      @andrew.update!(notify_on_mention: false)
+      refute mention_notice(comment).perform_deliveries
+
+      @andrew.update!(notify_on_mention: true)
+      Bible270.config.mention_notifications = false
+      refute mention_notice(comment).perform_deliveries
     end
   end
 end

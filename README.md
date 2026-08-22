@@ -376,6 +376,7 @@ Bible270.configure do |config|
   config.allow_reader_start_date = true
 
   config.daily_reminders = false             # schedule reminders:send every 15 minutes
+  config.mention_notifications = true         # replies and @mentions; readers may opt out
   config.mailer_host = "example.com"          # links in reminder/notice email
 
   config.parent_controller = "ActionController::Base"   # or "::ApplicationController"

@@ -103,7 +103,7 @@ if RAILS_LOADED
     def test_replying_posts_a_reply_not_a_reflection
       sign_in_as(@mary)
       post "#{mount}/day/1/comments",
-           params: { comment: { body: '@andrew yes', parent_id: @thought.id } }
+           params: { comment: { body: 'Yes', parent_id: @thought.id } }
 
       created = Bible270::Comment.order(:id).last
       assert created.reply?
@@ -116,15 +116,15 @@ if RAILS_LOADED
       get "#{mount}/day/1", params: { reply_to: @thought.id }
 
       assert_response :success
-      assert_match(%r{Replying to}, response.body)
-      assert_match(%r{Andrew vonderLuft}, response.body)
-      assert_match(%r{@andrew}, response.body, 'and prefills the mention')
+      assert_select '.b270-replying', text: %r{Replying to Andrew vonderLuft}
+      assert_select 'textarea[name="comment[body]"]', text: ''
+      refute_match(%r{@andrew}, response.body)
     end
 
     def test_a_reply_still_notifies_the_author
       sign_in_as(@mary)
       post "#{mount}/day/1/comments",
-           params: { comment: { body: '@andrew yes', parent_id: @thought.id } }
+           params: { comment: { body: 'Yes', parent_id: @thought.id } }
 
       assert_equal 1, ActionMailer::Base.deliveries.size
       assert_equal [@andrew.email], ActionMailer::Base.deliveries.last.to

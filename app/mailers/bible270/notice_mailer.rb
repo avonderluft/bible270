@@ -19,16 +19,21 @@ module Bible270
     end
 
     def mentioned(comment_id:, reader_id:)
-      @comment = Comment.find_by(id: comment_id)
-      @reader = Reader.find_by(id: reader_id)
-      return message.perform_deliveries = false if @comment.nil? || @reader.nil? || @reader.email.blank?
+      return message.perform_deliveries = false unless prepare_comment_notice(comment_id, reader_id)
 
-      @author = @comment.reader
-      @app_name = Bible270.config.app_name
-      @day_url = day_url_for(@comment.day)
+      @heading = "#{@author.display_name} mentioned you"
+      @introduction = "#{@author.display_name} mentioned you in a reflection on day #{@comment.day}."
+      @reason = 'You are getting this because you asked to be emailed about replies and mentions.'
+      deliver_comment_notice("#{@app_name}: #{@author.display_name} mentioned you on day #{@comment.day}")
+    end
 
-      mail to: @reader.email,
-           subject: "#{@app_name}: #{@author.display_name} mentioned you on day #{@comment.day}"
+    def replied(comment_id:, reader_id:)
+      return message.perform_deliveries = false unless prepare_comment_notice(comment_id, reader_id)
+
+      @heading = "#{@author.display_name} replied to your reflection"
+      @introduction = "#{@author.display_name} replied to your reflection on day #{@comment.day}."
+      @reason = 'You are getting this because you asked to be emailed about replies and mentions.'
+      deliver_comment_notice("#{@app_name}: #{@author.display_name} replied on day #{@comment.day}")
     end
 
     def daily_reminder(reader_id:, day:, on: Bible270.today)
@@ -88,6 +93,25 @@ module Bible270
 
     def profile_url
       engine_url(:profile_url)
+    end
+
+    def prepare_comment_notice(comment_id, reader_id)
+      return false unless Bible270.config.mention_notifications
+
+      @comment = Comment.find_by(id: comment_id)
+      @reader = Reader.find_by(id: reader_id)
+      return false if @comment.nil? || @reader.nil? || @reader.email.blank?
+      return false unless @reader.wants_comment_notifications?
+
+      @author = @comment.reader
+      @app_name = Bible270.config.app_name
+      @day_url = day_url_for(@comment.day)
+      @profile_url = profile_url
+      true
+    end
+
+    def deliver_comment_notice(subject)
+      mail to: @reader.email, subject: subject, template_name: 'comment_notice'
     end
 
     def engine_url(helper, *)

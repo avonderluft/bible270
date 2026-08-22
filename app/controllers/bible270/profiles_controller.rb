@@ -8,10 +8,13 @@ module Bible270
 
     def edit
       @names = current_reader.suggested_names
+      load_comment_notification_state
       load_daily_reminder_state
     end
 
     def update
+      @comment_notifications_available = comment_notifications_available?
+      @notify_on_mention = requested_comment_notifications
       @daily_reminders_available = daily_reminders_available?
       problems = []
       problems << 'both a first and last name' unless current_reader.update_names(params[:first_name],
@@ -32,6 +35,7 @@ module Bible270
       end
 
       if problems.empty?
+        current_reader.update!(notify_on_mention: @notify_on_mention) if @comment_notifications_available
         if @daily_reminders_available
           current_reader.update!(daily_reminders: requested_daily_reminders,
                                  daily_reminder_time: requested_daily_reminder_time)
@@ -52,6 +56,21 @@ module Bible270
     end
 
   private
+
+    def load_comment_notification_state
+      @comment_notifications_available = comment_notifications_available?
+      @notify_on_mention = current_reader.wants_comment_notifications?
+    end
+
+    def comment_notifications_available?
+      Bible270.config.mention_notifications && current_reader.has_attribute?(:notify_on_mention)
+    end
+
+    def requested_comment_notifications
+      return current_reader.wants_comment_notifications? unless params.key?(:notify_on_mention)
+
+      params[:notify_on_mention] == '1'
+    end
 
     def load_daily_reminder_state
       @daily_reminders_available = daily_reminders_available?

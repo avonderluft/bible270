@@ -17,11 +17,8 @@ module Bible270
 
       @readings   = Plan.readings_for(@day)
       @comments   = Comment.threads_for_day(@day)
-      # Replying prefills the form with the handle rather than needing JavaScript,
-      # so it works with Turbo and without an asset pipeline.
       @editing_comment_id = editing_comment_id
-      parent = reply_parent
-      @new_comment = Comment.new(day: @day, parent_id: parent&.id, body: reply_prefix(parent))
+      @new_comment = Comment.new(day: @day, parent_id: reply_parent&.id)
       @reader_tracks = current_reader ? current_reader.read_tracks_for(@day) : []
 
       # Every box on the day, not every track: an Old Testament reading of three
@@ -37,9 +34,6 @@ module Bible270
 
   private
 
-    # "@handle " for the reflection being replied to, or nothing. Private, but
-    # declared with the keyword rather than trailing the file, so it is obvious
-    # this is not an action.
     # The reflection the reader has asked to edit: their own, on this day. Anything
     # else is ignored rather than refused — the page still renders.
     def editing_comment_id
@@ -53,13 +47,6 @@ module Bible270
     def reply_parent
       parent = Comment.approved.find_by(id: params[:reply_to])
       parent if parent && parent.day == @day && parent.parent_id.nil?
-    end
-
-    # "@handle " so the author is mentioned — and so gets the email — without the
-    # reader having to type it.
-    def reply_prefix(parent)
-      handle = parent&.reader&.mention_handle
-      handle ? "@#{handle} " : nil
     end
   end
 end

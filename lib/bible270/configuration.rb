@@ -297,7 +297,7 @@ module Bible270
     # application owns scheduling the bible270:reminders:send task.
     attr_accessor :daily_reminders
 
-    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :header_mark, :remember_for, :require_sign_in_to_participate, :mention_notifications
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :header_mark, :remember_for, :require_sign_in_to_participate
 
     # Public labels.
     attr_accessor :app_name
@@ -335,8 +335,10 @@ module Bible270
     #   config.time_zone = 'America/Los_Angeles'   # a named zone
     attr_accessor :time_zone
 
-    # Email a reader when someone writes "@them" in a reflection. Readers can opt
-    # out individually on their profile; this switches the whole feature off.
+    # Email readers about direct replies and explicit @mentions. Readers can opt
+    # out with one profile preference; this switches the whole feature off.
+    attr_accessor :mention_notifications
+
     # How many threads each Reflections page shows. A thread resurfaces when someone
     # replies to it, so this is a count of conversations, not of messages.
     attr_accessor :reflections_page_size
