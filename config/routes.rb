@@ -45,9 +45,8 @@ Bible270::Engine.routes.draw do
   get 'community', to: 'readers#index', as: :community
   get 'readers/:id', to: 'readers#show', as: :reader
 
-  patch  'start-date',       to: 'readers#update_start_date', as: :start_date
-  delete 'start-date',       to: 'readers#clear_start_date',  as: :clear_start_date
-  patch  'schedule/restart', to: 'readers#restart_schedule',  as: :restart_schedule
+  patch  'start-date',      to: 'readers#update_start_date', as: :start_date
+  delete 'start-date',      to: 'readers#clear_start_date',  as: :clear_start_date
 
   # Built-in OmniAuth sign-in. The request phase (POST <mount>/auth/:provider)
   # is handled by the OmniAuth middleware in the host app, not by these routes.

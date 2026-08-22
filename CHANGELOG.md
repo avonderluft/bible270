@@ -8,6 +8,8 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 - remove the Compact reading preference so daily reading pages have one simple, predictable presentation
 - replace the homepage reader preview with one clear link to the Community page
+- remove the redundant schedule-restart shortcut from progress recovery choices
+- remove start-date status and controls from the homepage while retaining schedule management elsewhere
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.0.0...main)**
 

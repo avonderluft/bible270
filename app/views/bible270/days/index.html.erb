@@ -3,6 +3,6 @@
 <h1><%= Bible270.config.app_name %> <em>— read God's whole story</em></h1>
 <p class="lede">Daily passages from the Old Testament, New Testament, and Psalms or Proverbs — portions sized to take about the same time to read. Check off what you read; your place is saved for you, and you can share reflections and encourage one another along the way.</p>
 
-<%= render "bible270/shared/progress" %>
+<%= render "bible270/shared/progress", show_start_date: false %>
 
 <p style="margin:12px 0 0"><%= link_to "Meet your fellow readers →", community_path %></p>

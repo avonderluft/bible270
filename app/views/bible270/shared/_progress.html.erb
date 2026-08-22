@@ -1,4 +1,4 @@
-<%# locals: (reader: nil, start_day: nil, today_day: nil, community_start_date: :unset) %>
+<%# locals: (reader: nil, start_day: nil, today_day: nil, community_start_date: :unset, show_start_date: true) %>
 <%#
   The progress panel.
 
@@ -42,12 +42,6 @@
         <div class="b270-progress-actions b270-recovery-actions">
           <%= link_to "Catch up from Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
           <%= link_to "Read with the community — Day #{panel_today_day}", day_path(panel_today_day), class: "b270-todaylink" %>
-          <% if Bible270.config.allow_reader_start_date %>
-            <%= button_to "Make Day #{panel_start_day} my new today", restart_schedule_path,
-                  method: :patch, class: "b270-linkbtn",
-                  form: { class: "b270-restart-form",
-                          data: { turbo_confirm: "Make Day #{panel_start_day} today? Your existing check-offs and reflections will not change." } } %>
-          <% end %>
         </div>
       </div>
     <% else %>
@@ -59,7 +53,7 @@
       </div>
     <% end %>
 
-    <%= render "bible270/days/start_date", reader: panel_reader %>
+    <%= render "bible270/days/start_date", reader: panel_reader if show_start_date %>
   <% else %>
     <p class="b270-signedout"><%= link_to "Sign in", sign_in_path %> to track your progress and join
        the conversation. You can browse the whole plan and read others' reflections without an account.</p>

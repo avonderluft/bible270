@@ -50,6 +50,30 @@ if RAILS_LOADED
       refute_match(%r{R Reader|Other Reader}, response.body)
     end
 
+    def test_the_overview_omits_start_date_status_and_controls
+      @reader.set_start_date!(Bible270.today - 9)
+      sign_in_as(@reader)
+
+      get "#{mount}/"
+
+      assert_response :success
+      assert_select '.b270-startdate', count: 0
+      refute_match(%r{reading at your own pace|Change start date|Set a start date}, response.body)
+    end
+
+    def test_the_progress_page_retains_start_date_status_and_controls
+      skip 'readers may not set their own schedule' unless Bible270.config.allow_reader_start_date
+
+      @reader.set_start_date!(Bible270.today - 9)
+      sign_in_as(@reader)
+
+      get "#{mount}/progress"
+
+      assert_response :success
+      assert_select '.b270-startdate', text: %r{reading at your own pace}
+      assert_select 'details.b270-startedit summary', text: 'Change start date'
+    end
+
     # ---- the progress page -------------------------------------------------
 
     def test_the_progress_page_invites_a_visitor_to_sign_in
@@ -126,55 +150,9 @@ if RAILS_LOADED
       assert_select '.b270-recovery' do
         assert_select 'a.b270-btn[href$="/day/1"]', text: %r{Catch up from Day 1}
         assert_select 'a.b270-todaylink[href$="/day/10"]', text: %r{Read with the community}
-        assert_select 'form[action$="/schedule/restart"] button', text: %r{Make Day 1 my new today}
+        assert_select 'form', count: 0
       end
       assert_match(%r{completed readings stay saved}, response.body)
-    end
-
-    def test_restarting_a_schedule_makes_the_next_unfinished_day_today_without_losing_progress
-      skip 'readers may not set their own schedule' unless Bible270.config.allow_reader_start_date
-
-      @reader.set_start_date!(Bible270.today - 9)
-      @reader.mark_day_complete!(2)
-      @reader.comments.create!(day: 2, body: 'Keep this reflection')
-      checkoff_count = @reader.checkoffs.count
-      reflection_count = @reader.comments.count
-      sign_in_as(@reader)
-
-      patch "#{mount}/schedule/restart"
-
-      assert_response :redirect
-      @reader.reload
-      assert_equal 1, @reader.today_day
-      assert_equal Bible270.today, @reader.started_on
-      assert_equal checkoff_count, @reader.checkoffs.count
-      assert_equal reflection_count, @reader.comments.count
-      assert @reader.day_complete?(2)
-    end
-
-    def test_a_visitor_cannot_restart_a_readers_schedule
-      original_start = Bible270.today - 9
-      @reader.set_start_date!(original_start)
-
-      patch "#{mount}/schedule/restart"
-
-      assert_response :redirect
-      assert_equal original_start, @reader.reload.started_on
-    end
-
-    def test_a_community_schedule_cannot_be_restarted_by_a_reader
-      previous = Bible270.config.allow_reader_start_date
-      original_start = Bible270.today - 9
-      @reader.set_start_date!(original_start)
-      Bible270.config.allow_reader_start_date = false
-      sign_in_as(@reader)
-
-      patch "#{mount}/schedule/restart"
-
-      assert_response :redirect
-      assert_equal original_start, @reader.reload.started_on
-    ensure
-      Bible270.config.allow_reader_start_date = previous
     end
 
     def test_recovery_choices_are_hidden_when_the_next_reading_is_today
