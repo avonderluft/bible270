@@ -71,6 +71,8 @@ if RAILS_LOADED
       assert_match(%r{Sign in}i, response.body)
       refute_match(%r{days complete}, response.body)
       assert_select '.b270-next-steps', count: 0
+      assert_select 'h2', text: 'Your recent reflections', count: 0
+      refute_match(%r{You have not written any reflections yet}, response.body)
     end
 
     def test_the_progress_page_shows_a_readers_standing

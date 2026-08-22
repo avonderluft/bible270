@@ -10,8 +10,10 @@
         remaining_partial_days: @remaining_partial_days %>
 <% end %>
 
-<div class="b270-panel">
-  <%= render "bible270/shared/reflections", comments: @recent_comments,
-        title: "Your recent reflections",
-        empty_text: "You have not written any reflections yet." %>
-</div>
+<% if @reader %>
+  <div class="b270-panel">
+    <%= render "bible270/shared/reflections", comments: @recent_comments,
+          title: "Your recent reflections",
+          empty_text: "You have not written any reflections yet." %>
+  </div>
+<% end %>
