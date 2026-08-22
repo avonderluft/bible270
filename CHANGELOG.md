@@ -4,7 +4,9 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
-No unreleased changes.
+### Removed
+
+- remove the Compact reading preference so daily reading pages have one simple, predictable presentation
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.0.0...main)**
 

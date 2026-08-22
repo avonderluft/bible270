@@ -143,9 +143,9 @@ if RAILS_LOADED
       assert_response :success
       assert @reader.reload_progress.day_complete?(1)
       assert_select 'turbo-stream[action="replace"][target="day_progress_1"]' do
-        assert_select '.b270-badge[data-b270-compact-hide]', text: 'Complete'
+        assert_select '.b270-badge', text: 'Complete'
         assert_select '.b270-day-complete[role="status"]', text: %r{Day 1 complete} do
-          assert_select '> div[data-b270-compact-hide]'
+          assert_select '> div'
         end
         assert_select "a[href='#{mount}/day/2']", text: %r{Continue to Day 2}
       end

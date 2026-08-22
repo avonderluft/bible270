@@ -14,11 +14,11 @@
             "aria-label": "Previous day unavailable" %>
     <% end %>
     <div class="b270-dayhead">
-      <div class="k">Day <%= day %><% if complete %><span class="b270-badge" data-b270-compact-hide>Complete</span><% end %></div>
+      <div class="k">Day <%= day %><% if complete %><span class="b270-badge">Complete</span><% end %></div>
       <% if reader&.dated? %>
         <div class="date">
           <%= reader.date_for_day(day).strftime("%A, %B %-d, %Y") %>
-          <% if reader.today?(day) %><span class="b270-badge" data-b270-compact-hide>Today</span><% end %>
+          <% if reader.today?(day) %><span class="b270-badge">Today</span><% end %>
         </div>
       <% end %>
     </div>
@@ -33,7 +33,7 @@
 
   <% if complete %>
     <div class="b270-day-complete" role="status" aria-live="polite">
-      <div data-b270-compact-hide>
+      <div>
         <strong>Day <%= day %> complete</strong>
         <span>All <%= total_parts %> portions are checked off.</span>
       </div>

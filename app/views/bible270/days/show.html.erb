@@ -1,12 +1,7 @@
 <% content_for :title, "Day #{@day} — #{Bible270.config.app_name}" %>
 
-<div class="b270-day-page" data-b270-day-page data-b270-reading-mode="full">
+<div class="b270-day-page">
   <%= render "bible270/days/day_progress", day: @day, reader: current_reader %>
-
-  <div class="b270-reading-options" data-b270-reading-options hidden>
-    <button type="button" class="b270-linkbtn b270-reading-mode-toggle"
-            data-b270-compact-toggle aria-pressed="false">Compact reading</button>
-  </div>
 
   <%= render "bible270/shared/interaction_status" %>
 
@@ -19,7 +14,7 @@
     <p class="b270-signin-hint" style="margin-top:12px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to check off these readings.</p>
   <% end %>
 
-  <div class="b270-day-community" data-b270-compact-hide>
+  <div class="b270-day-community">
     <%= render "bible270/days/completers", day: @day, completers: @completers %>
 
     <h2 class="b270-section-h">Reflections</h2>
@@ -42,5 +37,4 @@
   </div>
 </div>
 
-<%= render "bible270/shared/reading_mode" %>
 <%= render "bible270/shared/interaction_ui" %>

@@ -26,9 +26,7 @@ The schedule is pure deterministic Ruby (`Bible270::Plan`) — none of it is sto
 
 Mutation controls expose pending, success, and retry feedback when JavaScript runs, while ordinary HTML
 forms remain the fallback. Repeated checkoff and like requests converge on the intended state rather
-than accidentally reversing it. Day pages also offer a browser-local **Compact reading** preference
-that keeps passages, checkoffs, day navigation, and the completion next step while hiding community
-and reflection content.
+than accidentally reversing it.
 
 ## Install
 
