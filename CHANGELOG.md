@@ -14,7 +14,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Changed
 
-- clarify the global day-index control as “View all 270 days”
+- clarify the global day-index control as “View all 270 days” and use that standard collapsed control on My Progress
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.0.0...main)**
 

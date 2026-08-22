@@ -148,14 +148,15 @@ if RAILS_LOADED
       assert_match(%r{A note to myself}, response.body)
     end
 
-    def test_the_progress_page_does_not_repeat_the_day_index
+    def test_the_progress_page_uses_the_standard_collapsed_day_index
       sign_in_as(@reader)
       get "#{mount}/progress"
 
-      # It draws its own grid, so the layout's copy must be suppressed. Count the
-      # markup only — the inlined stylesheet also mentions .b270-grid, which made
-      # an earlier version of this test read two where one was correct.
-      assert_equal 1, response.body.scan('class="b270-grid"').size
+      assert_select 'details.b270-index' do
+        assert_select 'summary', text: 'View all 270 days'
+        assert_select '.b270-grid', count: 1
+      end
+      refute_match(%r{Every day at a glance|How others are doing|Your profile}, response.body)
     end
 
     def test_a_reader_page_renders
