@@ -40,7 +40,7 @@ module Bible270
           current_reader.update!(daily_reminders: requested_daily_reminders,
                                  daily_reminder_time: requested_daily_reminder_time)
         end
-        redirect_to reader_path(current_reader), notice: 'Your profile has been updated.'
+        redirect_to profile_path, notice: 'Your profile has been updated.'
       else
         @names = { first_name: params[:first_name], last_name: params[:last_name] }
         @daily_reminders = requested_daily_reminders

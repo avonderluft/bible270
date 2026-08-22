@@ -70,6 +70,7 @@ if RAILS_LOADED
       patch "#{mount}/profile", params: { first_name: 'Andrew', last_name: 'vonderLuft' }
 
       assert_response :redirect
+      assert_equal "#{mount}/profile", URI.parse(response.location).path
       @reader.reload
       assert_equal 'Andrew', @reader.first_name
       assert_equal 'vonderLuft', @reader.last_name
