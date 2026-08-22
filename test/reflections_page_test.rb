@@ -43,6 +43,8 @@ if RAILS_LOADED
         assert_select 'summary', text: 'View all 270 days'
         assert_select '.b270-grid', count: 1
       end
+      assert_select 'h2', text: 'Days with reflections', count: 0
+      refute_match(%r{Browse the whole plan}, response.body)
     end
 
     def test_the_day_page_still_says_it

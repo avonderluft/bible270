@@ -39,6 +39,7 @@ if RAILS_LOADED
           end
         end
       end
+      assert(css_select('script[nonce]').any? { |script| script.text.include?('Bible270NavigationMenu') })
     end
 
     def test_signed_in_navigation_labels_personal_progress_clearly

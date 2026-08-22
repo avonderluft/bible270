@@ -11,10 +11,15 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 - remove the redundant schedule-restart shortcut from progress recovery choices
 - remove reader-facing start-date status and controls from the homepage and My Progress while retaining admin management
 - remove weekly progress, milestones, and explanatory schedule-recovery copy from My Progress
+- replace the Reflections page’s separate day grid with the standard “View all 270 days” control
 
 ### Changed
 
 - clarify the global day-index control as “View all 270 days” and use that standard collapsed control on My Progress
+
+### Fixed
+
+- make the mobile navigation menu reliably open and close when its button is tapped
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.0.0...main)**
 
