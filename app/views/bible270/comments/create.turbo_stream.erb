@@ -1,5 +1,3 @@
-<%= turbo_stream.remove "no_comments" %>
-
 <%# A reply belongs under its parent; a new reflection goes at the end. %>
 <% if @comment.reply? %>
   <%= turbo_stream.append "replies-#{@comment.parent_id}" do %>

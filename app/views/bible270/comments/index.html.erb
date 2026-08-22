@@ -9,7 +9,6 @@
 <% if @days_with_reflections.any? %>
   <div class="b270-reflection-tools">
     <div>
-      <h2 class="b270-section-h">Conversations</h2>
       <p class="b270-reflection-count"><%= pluralize(@reflection_total, "reflection") %></p>
     </div>
     <%= form_with url: reflections_path, method: :get, class: "b270-reflection-filters" do %>

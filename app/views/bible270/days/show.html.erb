@@ -19,11 +19,7 @@
 
     <h2 class="b270-section-h">Reflections</h2>
     <div id="comments">
-      <% if @comments.any? %>
-        <%= render partial: "bible270/comments/comment", collection: @comments, as: :comment %>
-      <% else %>
-        <p style="color:var(--faint)" id="no_comments">No reflections yet. Share the first.</p>
-      <% end %>
+      <%= render partial: "bible270/comments/comment", collection: @comments, as: :comment %>
     </div>
 
     <% if signed_in? %>

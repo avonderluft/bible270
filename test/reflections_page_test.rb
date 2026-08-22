@@ -39,6 +39,9 @@ if RAILS_LOADED
 
       get "#{mount}/reflections"
 
+      assert_select 'h1', text: 'Shared gleanings'
+      assert_select 'h2', text: 'Conversations', count: 0
+      assert_select '.b270-reflection-count', text: '1 reflection'
       assert_select 'details.b270-index' do
         assert_select 'summary', text: 'View all 270 days'
         assert_select '.b270-grid', count: 1

@@ -22,6 +22,11 @@ if RAILS_LOADED
 
       assert_response :success
       assert_match(%r{270}, response.body)
+      assert_select '.b270-brand' do
+        assert_select '.b270-title', text: Bible270.config.app_name
+        assert_select '.b270-tagline', count: 0
+      end
+      assert_select 'p.b270-eyebrow', text: Bible270.config.tagline
       assert_select 'details.b270-index summary', text: 'View all 270 days'
     end
 
@@ -60,6 +65,8 @@ if RAILS_LOADED
       assert_match(%r{Genesis 1}, response.body)
       assert_match(%r{Matthew 1}, response.body)
       assert_match(%r{Psalm 1}, response.body)
+      refute_match(%r{No one has finished this day yet}, response.body)
+      refute_match(%r{No reflections yet}, response.body)
     end
 
     def test_a_day_page_gives_visitors_one_sign_in_invitation

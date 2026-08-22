@@ -162,7 +162,10 @@ if RAILS_LOADED
         assert_select '.b270-day-complete', count: 0
         assert_select '.b270-badge', text: 'Complete', count: 0
       end
-      assert_select 'turbo-stream[action="replace"][target="completers_1"]', text: %r{No one has finished}
+      assert_select 'turbo-stream[action="replace"][target="completers_1"]' do
+        assert_select '.b270-completers', count: 1
+        assert_select '.b270-completers span', count: 0
+      end
     end
 
     def test_completing_the_last_day_links_to_progress_not_a_nonexistent_day

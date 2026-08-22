@@ -18,11 +18,9 @@
   .b270-brand{display:flex;margin-right:auto}
   /* The whole brand is one link, so the mark and the words highlight together. */
   .b270-brandlink{display:flex;align-items:center;gap:12px;text-decoration:none}
-  .b270-brandtext{display:flex;flex-direction:column}
   .b270-mark{display:flex;align-items:center;flex:none;line-height:0}
   .b270-mark svg,.b270-mark img{display:block;border-radius:8px}
   .b270-title{font-family:"Spectral",Georgia,serif;font-weight:600;font-size:22px;text-decoration:none}
-  .b270-tagline{font-size:12px;color:var(--faint);letter-spacing:.04em}
   .b270-nav{display:flex;align-items:center;font-size:14px}
   .b270-desktopnav{display:flex;align-items:center;gap:16px}
   .b270-navmenu{display:none}
@@ -314,8 +312,6 @@
   @media (max-width:620px){
     .b270-topbar{flex-wrap:nowrap;align-items:center}
     .b270-brand{min-width:0}
-    .b270-brandtext{min-width:0}
-    .b270-tagline{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .b270-nav{position:relative;flex:none}
     .b270-desktopnav{display:none}
     .b270-navmenu{display:block}
