@@ -510,6 +510,7 @@ module Bible270
             # --- Start date -----------------------------------------------------------
             # A community-wide start date, or leave nil for an undated plan.
             # config.start_date = Date.new(#{Date.today.year}, 1, 1)
+            # Allow personal calendars, stamped when an undated reader first checks off.
             config.allow_reader_start_date = true
 
             # --- Daily reading reminders -----------------------------------------------

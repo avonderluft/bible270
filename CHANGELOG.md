@@ -9,7 +9,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 - remove the Compact reading preference so daily reading pages have one simple, predictable presentation
 - replace the homepage reader preview with one clear link to the Community page
 - remove the redundant schedule-restart shortcut from progress recovery choices
-- remove reader-facing start-date status and controls from the homepage and My Progress while retaining admin management
+- remove reader-facing start-date status, controls, and self-service endpoints while retaining automatic and admin-managed personal calendars
 - remove weekly progress, milestones, and explanatory schedule-recovery copy from My Progress
 - replace the Reflections page’s separate day grid with the standard “View all 270 days” control
 

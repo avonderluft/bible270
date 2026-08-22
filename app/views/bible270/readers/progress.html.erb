@@ -3,7 +3,7 @@
 <p class="b270-eyebrow">My Progress</p>
 <h1>Your reading journey</h1>
 
-<%= render "bible270/shared/progress", show_start_date: false %>
+<%= render "bible270/shared/progress" %>
 
 <% if @reader %>
   <%= render "bible270/readers/next_steps", partial_day_tasks: @partial_day_tasks,

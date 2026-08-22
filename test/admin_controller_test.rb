@@ -113,9 +113,9 @@ if RAILS_LOADED
       assert_equal 42, Bible270::Plan.day_for(Bible270.today, @reader.started_on)
     end
 
-    # allow_reader_start_date governs what a *reader* may change; it must not
-    # block an admin acting on their behalf.
-    def test_an_admin_can_set_a_date_even_when_readers_cannot
+    # Personal calendars may be disabled while an administrator prepares a date
+    # that will take effect if they are enabled later.
+    def test_an_admin_can_set_a_date_when_personal_calendars_are_disabled
       previous = Bible270.config.allow_reader_start_date
       Bible270.config.allow_reader_start_date = false
       sign_in_as_admin

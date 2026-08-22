@@ -130,9 +130,8 @@ module Bible270
 
     def update_start
       if params[:start_date].present?
-        # set_start_date!, not update_start_date!: an admin is not subject to
-        # config.allow_reader_start_date, which governs what readers may do to
-        # their own dates.
+        # The administrator may store an individual date even when personal
+        # calendars are currently disabled for this installation.
         if @reader.set_start_date!(params[:start_date])
           redirect_to admin_reader_path(@reader),
                       notice: "Start date set to #{@reader.started_on.strftime('%B %-d, %Y')}."

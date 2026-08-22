@@ -58,7 +58,6 @@ if RAILS_LOADED
         get path
 
         assert_response :success
-        assert_select '.b270-startdate', count: 0
         refute_match(%r{reading at your own pace|Change start date|Set a start date}, response.body)
       end
     end
@@ -212,54 +211,6 @@ if RAILS_LOADED
       get "#{mount}/readers/#{@reader.id}"
 
       assert_match(%r{No reflections yet}, response.body)
-    end
-
-    # ---- start dates -------------------------------------------------------
-
-    def test_a_reader_can_set_their_start_date
-      skip 'readers may not set their own' unless Bible270.config.allow_reader_start_date
-      sign_in_as(@reader)
-
-      patch "#{mount}/start-date", params: { start_date: '2026-09-06' }
-
-      assert_equal Date.new(2026, 9, 6), @reader.reload.started_on
-    end
-
-    def test_an_unreadable_date_is_refused
-      skip 'readers may not set their own' unless Bible270.config.allow_reader_start_date
-      sign_in_as(@reader)
-
-      patch "#{mount}/start-date", params: { start_date: 'the feast of stephen' }
-
-      assert_nil @reader.reload.started_on
-    end
-
-    def test_a_reader_can_clear_their_start_date
-      skip 'readers may not set their own' unless Bible270.config.allow_reader_start_date
-      sign_in_as(@reader)
-      patch "#{mount}/start-date", params: { start_date: '2026-09-06' }
-
-      delete "#{mount}/start-date"
-
-      assert_nil @reader.reload.started_on
-    end
-
-    def test_a_visitor_cannot_set_a_start_date
-      patch "#{mount}/start-date", params: { start_date: '2026-09-06' }
-
-      assert_nil @reader.reload.started_on
-    end
-
-    def test_readers_are_turned_away_when_the_community_date_rules
-      previous = Bible270.config.allow_reader_start_date
-      Bible270.config.allow_reader_start_date = false
-      sign_in_as(@reader)
-
-      patch "#{mount}/start-date", params: { start_date: '2026-09-06' }
-
-      assert_nil @reader.reload.started_on
-    ensure
-      Bible270.config.allow_reader_start_date = previous
     end
   end
 end

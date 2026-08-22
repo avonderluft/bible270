@@ -308,17 +308,17 @@ The plan runs **undated** (day numbers only) or **dated** (days mapped onto a ca
 
 ```ruby
 config.start_date = Date.new(2026, 9, 6)   # Date, Time, or "YYYY-MM-DD". nil = undated
-config.allow_reader_start_date = true      # can readers set their own?
+config.allow_reader_start_date = true      # allow personal per-reader calendars
 ```
 
 | `start_date` | `allow_reader_start_date` | What happens |
 |---|---|---|
-| nil | true *(default)* | Each reader gets stamped on first check-off, and can change it |
-| a date | true | Community date is the default; anyone may override |
-| a date | false | Everyone pinned to the community date, form hidden |
+| nil | true *(default)* | Each reader gets stamped on their first check-off; an admin may adjust the date |
+| a date | true | The community date is the default; an admin may assign an individual date |
+| a date | false | Everyone is pinned to the community date; stored individual dates are ignored |
 | nil | false | Fully undated — no calendar anywhere |
 
-Dated plans show each day's date with a **Today** badge, a "Go to today" link, and whether you're ahead or behind. Readers set their own from the overview. Changing a start date only re-maps the calendar — check-offs and reflections are keyed to day numbers, so nothing moves.
+Dated plans show each day's date with a **Today** badge and a "Go to today" link. Administrators may re-map an individual reader's calendar from the admin panel; check-offs and reflections remain keyed to day numbers, so nothing in their history moves.
 
 Date helpers are pure functions, usable anywhere:
 
@@ -465,8 +465,6 @@ GET    /day/:day                 days#show       readings, who's finished, refle
 POST   /day/:day/toggle/:track   checkoffs#toggle
 POST   /day/:day/comments        comments#create
 DELETE /comments/:id             comments#destroy
-PATCH  /start-date               readers#update_start_date
-DELETE /start-date               readers#clear_start_date
 GET    /community                readers#index   leaderboard
 GET    /readers/:id              readers#show
 GET    /sign_in                  sessions#new    email form + provider list

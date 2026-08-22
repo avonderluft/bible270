@@ -1,4 +1,4 @@
-<%# locals: (reader: nil, start_day: nil, today_day: nil, community_start_date: :unset, show_start_date: true) %>
+<%# locals: (reader: nil, start_day: nil, today_day: nil, community_start_date: :unset) %>
 <%#
   The progress panel.
 
@@ -49,7 +49,6 @@
       </div>
     <% end %>
 
-    <%= render "bible270/days/start_date", reader: panel_reader if show_start_date %>
   <% else %>
     <p class="b270-signedout"><%= link_to "Sign in", sign_in_path %> to track your progress and join
        the conversation. You can browse the whole plan and read others' reflections without an account.</p>

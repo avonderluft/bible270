@@ -53,6 +53,7 @@ Bible270.configure do |config|
   # --- Start date ------------------------------------------------------------
   # Community-wide start date (Date, Time, or "YYYY-MM-DD"), or nil for undated.
   # config.start_date = Date.new(2026, 9, 6)
+  # Allow personal calendars, stamped when an undated reader first checks off.
   config.allow_reader_start_date = true
 
   # --- Daily reading reminders -----------------------------------------------

@@ -311,8 +311,9 @@ module Bible270
     # (defaulting to the day they first check something off).
     attr_reader :start_date
 
-    # Whether an individual reader may set or change their own start date. When
-    # false, everyone is pinned to config.start_date.
+    # Whether individual readers may follow personal start dates. When false,
+    # everyone is pinned to config.start_date; administrators may still store
+    # individual dates for use if personal calendars are enabled later.
     attr_accessor :allow_reader_start_date
 
     # Only signed-in readers may check off and comment (viewing is always open).

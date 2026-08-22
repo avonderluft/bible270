@@ -9,7 +9,6 @@ module Bible270
       # nil outside the plan's window, so no "Go to today" before it begins
       @today_day = current_reader&.today_day
       @community_start_date = Bible270.config.start_date
-      @allow_reader_start_date = Bible270.config.allow_reader_start_date
     end
 
     def show

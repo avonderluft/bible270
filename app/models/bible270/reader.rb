@@ -613,26 +613,15 @@ module Bible270
       started_on
     end
 
-    # Set the start date regardless of whether readers are allowed to set their
-    # own. For administrative use: config.allow_reader_start_date governs what a
-    # reader may do to themselves, not what an admin may do on their behalf.
+    # Set an individual start date for administrative use. This remains ungated
+    # so an administrator can prepare or preserve a personal calendar even when
+    # config.allow_reader_start_date currently makes the community date authoritative.
     # Returns false only when the value isn't a date.
     def set_start_date!(value)
       date = Plan.to_date(value)
       return false if date.nil?
 
       update!(started_on: date)
-    end
-
-    # The reader-facing version, which does respect that permission.
-    def update_start_date!(value)
-      return false unless Bible270.config.allow_reader_start_date
-
-      set_start_date!(value)
-    end
-
-    def clear_start_date!
-      update!(started_on: nil)
     end
 
     # Called when a reader first participates. Only stamps a personal start date
