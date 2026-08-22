@@ -5,30 +5,4 @@
 
 <%= render "bible270/shared/progress" %>
 
-<% if @readers.any? %>
-  <h2 class="b270-section-h">Reading together</h2>
-  <p class="b270-community-intro">
-    Showing <%= [@readers.size, 5].min %> of <%= pluralize(@readers.size, "reader") %>, ordered by recent
-    checkoffs and reflections; new readers by join date.
-  </p>
-  <div class="b270-list">
-    <% @readers.first(5).each do |r| %>
-      <div class="b270-li">
-        <%= b270_avatar(r) %>
-        <div>
-          <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
-          <% day_word = @days_completed[r.id] == 1 ? "day" : "days" %>
-          <% activity = @reader_activity.fetch(r.id) %>
-          <% activity_verb = { reading: "read", reflection: "reflected", joined: "joined" }.fetch(activity[:kind]) %>
-          <div class="sub">
-            <%= @days_completed[r.id] %> <%= day_word %> read ·
-            <span class="b270-reader-activity"><%= activity_verb %>
-              <time datetime="<%= activity[:at].iso8601 %>" title="<%= b270_datetime(activity[:at]) %>"><%= time_ago_in_words(activity[:at]) %> ago</time>
-            </span>
-          </div>
-        </div>
-      </div>
-    <% end %>
-  </div>
-  <p style="margin:12px 0 0"><%= link_to "Meet the community →", community_path %></p>
-<% end %>
+<p style="margin:12px 0 0"><%= link_to "Meet your fellow readers →", community_path %></p>

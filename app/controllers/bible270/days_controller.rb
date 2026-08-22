@@ -5,27 +5,6 @@ module Bible270
     def index
       @plan_totals = Plan.totals
 
-      # Show recent participation without ranking readers by completion. A checkoff
-      # or reflection counts as activity; joining is the fallback for new readers.
-      @readers = Reader.all.to_a
-      checkoff_activity = Checkoff.group(:reader_id).maximum(:updated_at)
-      reflection_activity = Comment.approved.group(:reader_id).maximum(:updated_at)
-      @reader_activity = @readers.to_h do |reader|
-        candidates = [
-          { kind: :joined, at: reader.created_at },
-          { kind: :reading, at: checkoff_activity[reader.id] },
-          { kind: :reflection, at: reflection_activity[reader.id] }
-        ].select { |activity| activity[:at] }
-        [reader.id, candidates.max_by { |activity| activity[:at] }]
-      end
-      @readers.sort_by! do |reader|
-        [-@reader_activity.fetch(reader.id)[:at].to_f, reader.sort_name]
-      end
-
-      counts = Checkoff.group(:reader_id, :day).count
-      @days_completed = Hash.new(0)
-      counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.total_parts(day) }
-
       @start_day = current_reader&.current_day || 1
       # nil outside the plan's window, so no "Go to today" before it begins
       @today_day = current_reader&.today_day
