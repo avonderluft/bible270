@@ -44,7 +44,8 @@ if RAILS_LOADED
           end
         end
       end
-      assert(css_select('script[nonce]').any? { |script| script.text.include?('Bible270NavigationMenu') })
+      refute(css_select('script').any? { |script| script.text.include?('Bible270NavigationMenu') },
+             'the native details toggle must not be overridden')
     end
 
     def test_signed_in_navigation_labels_personal_progress_clearly

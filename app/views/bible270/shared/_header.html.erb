@@ -21,23 +21,3 @@
     </details>
   </nav>
 </header>
-
-<script nonce="<%= content_security_policy_nonce %>">
-  (() => {
-    if (window.Bible270NavigationMenu) return;
-
-    document.addEventListener("click", (event) => {
-      const target = event.target;
-      const toggle = target.closest && target.closest("summary.b270-navtoggle");
-      if (!toggle) return;
-
-      const menu = toggle.closest("details.b270-navmenu");
-      if (!menu) return;
-
-      event.preventDefault();
-      menu.open = !menu.open;
-    });
-
-    window.Bible270NavigationMenu = true;
-  })();
-</script>
