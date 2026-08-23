@@ -4,7 +4,16 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.2...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.3...main)**
+
+## [1.1.3] - 2026-08-23
+
+### Changed
+
+- align Profile reminder choices with the recommended 15-minute scheduler interval while preserving existing off-quarter preferences
+- document concrete host cron and Docker Compose setup, output logging, verification, and one-scheduler-per-database guidance
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.2...v1.1.3)**
 
 ## [1.1.2] - 2026-08-22
 
@@ -12,13 +21,17 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 - include complete 1.1.0 and 1.1.1 release history in the packaged changelog
 
+### Fixed
+
+- make the mobile navigation menu toggle reliably on iOS Safari with an explicit accessible button, synchronized `aria-expanded` state, and controlled menu visibility
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.1...v1.1.2)**
 
 ## [1.1.1] - 2026-08-22
 
-### Fixed
+### Changed
 
-- make the mobile navigation menu toggle reliably on iOS Safari by relying on native `details` disclosure behavior instead of overriding it with JavaScript
+- replace the first custom mobile-menu handler with native `details` disclosure behavior
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.0...v1.1.1)**
 
@@ -508,6 +521,7 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[1.1.3]: https://github.com/avonderluft/bible270/releases/tag/v1.1.3
 [1.1.2]: https://github.com/avonderluft/bible270/releases/tag/v1.1.2
 [1.1.1]: https://github.com/avonderluft/bible270/releases/tag/v1.1.1
 [1.1.0]: https://github.com/avonderluft/bible270/releases/tag/v1.1.0
