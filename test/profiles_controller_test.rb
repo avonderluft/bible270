@@ -117,7 +117,21 @@ if RAILS_LOADED
           assert_select '#daily-reminder-time-hint[role="tooltip"]', text: %r{Uses the plan's configured time zone}
         end
       end
+      minute_options = css_select('select[name="daily_reminder_minute"] option').map { |option| option['value'] }
+      assert_equal %w[00 15 30 45], minute_options
       assert_match(%r{Email me each day's readings}, response.body)
+    end
+
+    def test_an_existing_off_quarter_reminder_minute_remains_available
+      Bible270.config.daily_reminders = true
+      @reader.update!(daily_reminder_time: '08:40')
+      sign_in_as(@reader)
+
+      get "#{mount}/profile"
+
+      minute_options = css_select('select[name="daily_reminder_minute"] option').map { |option| option['value'] }
+      assert_equal %w[00 15 30 40 45], minute_options
+      assert_select 'select[name="daily_reminder_minute"] option[selected="selected"]', text: '40'
     end
 
     def test_daily_reminder_preference_is_saved_after_a_valid_profile_update

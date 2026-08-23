@@ -334,7 +334,9 @@ Bible270::Plan.before_start?(date, start)
 
 Daily reminders are optional at both levels: the host enables the feature, then each reader chooses
 whether to receive it and at what local time from their profile. The feature and reader opt-in both
-default to off; each reader's time defaults to `08:00`.
+default to off; each reader's time defaults to `08:00`. Profile times use quarter-hour choices so they
+match the recommended 15-minute scheduler interval. An existing off-quarter preference remains
+available until that reader chooses a new time.
 
 ```ruby
 # config/initializers/bible270.rb
@@ -354,9 +356,27 @@ recurring-job system:
 bin/rails bible270:reminders:send
 ```
 
-Each run converts `Time.now` through `Bible270.local_time`, waits until each reader's chosen `HH:MM`
-time, sends inline with `deliver_now`, and prints the number delivered. Set `config.time_zone` when the
-plan should not follow the server's local clock. Running periodically is safe because delivery is
+For a host cron job, open the crontab with `crontab -e` under the same account that runs the application
+and add a line like this, using the absolute application path:
+
+```cron
+*/15 * * * * cd /absolute/path/to/application && RAILS_ENV=production bin/rails bible270:reminders:send >> /absolute/path/to/application/log/bible270-reminders.log 2>&1
+```
+
+For Docker Compose, run `pwd` in the directory containing the Compose file and `command -v docker` to
+find the two absolute paths, then use the same host account that can run Docker:
+
+```cron
+*/15 * * * * cd /absolute/path/to/application && /usr/bin/docker compose exec -T rails bin/rails bible270:reminders:send >> /absolute/path/to/application/log/bible270-reminders.log 2>&1
+```
+
+The `-T` is required because cron has no interactive terminal. Confirm the saved entry with `crontab -l`
+and check `log/bible270-reminders.log` after the next interval. Run one scheduler per database; several
+web containers sharing a database must not each run the task.
+
+Each run converts `Time.now` through `Bible270.local_time`, waits until the first scheduler run at or
+after each reader's chosen time, sends inline with `deliver_now`, and prints the number delivered. Set
+`config.time_zone` when the plan should not follow the server's local clock. Running periodically is
 idempotent once per local date: readers already marked for that date are skipped. Undated readers,
 calendar dates before or after their plan, completed days, blank email addresses, and readers who have
 not opted in are also skipped. A failure for one reader is logged and does not stop the rest. The sent

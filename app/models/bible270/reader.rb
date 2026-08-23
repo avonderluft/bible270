@@ -28,6 +28,7 @@ module Bible270
     PASSAGE_SOURCES = %w[bible_gateway blue_letter_bible].freeze
     DEFAULT_PASSAGE_SOURCE = 'bible_gateway'
     DAILY_REMINDER_TIME_FORMAT = %r{\A(?:[01]\d|2[0-3]):[0-5]\d\z}
+    DAILY_REMINDER_MINUTES = %w[00 15 30 45].freeze
     DAILY_REMINDER_COLUMNS = %w[daily_reminders daily_reminder_time last_daily_reminder_sent_on].freeze
     REFLECTIONS_SEEN_COLUMN = 'reflections_seen_at'
 

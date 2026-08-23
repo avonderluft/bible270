@@ -50,6 +50,7 @@
 
     <% if @daily_reminders_available %>
       <% reminder_hour, reminder_minute = @daily_reminder_time.to_s.split(":", 2) %>
+      <% reminder_minutes = (Bible270::Reader::DAILY_REMINDER_MINUTES + [reminder_minute]).compact.uniq.sort %>
       <div class="b270-field">
         <span>Daily reading reminder</span>
         <div class="b270-reminder-row">
@@ -70,7 +71,7 @@
                     class: "b270-time-select", required: true, aria: { label: "Hour" } %>
               <span class="b270-time-separator" aria-hidden="true">:</span>
               <%= select_tag :daily_reminder_minute,
-                    options_for_select((0..59).map { |minute| format("%02d", minute) }, reminder_minute),
+                    options_for_select(reminder_minutes, reminder_minute),
                     class: "b270-time-select", required: true, aria: { label: "Minute" } %>
               <span class="b270-reminder-tooltip" id="daily-reminder-time-hint" role="tooltip">
                 Uses the plan's configured time zone. You can turn reminders off here at any time.
