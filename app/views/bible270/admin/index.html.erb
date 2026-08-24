@@ -66,7 +66,8 @@
   <div class="b270-list">
     <% @readers.each do |reader| %>
       <div class="b270-li">
-        <%= b270_avatar(reader, size: 72) %>
+        <%= link_to b270_avatar(reader, size: 72), admin_reader_path(reader),
+              "aria-label": reader.display_name %>
         <div>
           <div class="name"><%= link_to reader.display_name, admin_reader_path(reader), style: 'text-decoration:none' %>
           <% if Bible270.config.admin?(reader) %> <span class="sub"><strong>[admin]</strong></span> <% end %>

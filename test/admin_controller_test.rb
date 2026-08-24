@@ -57,6 +57,7 @@ if RAILS_LOADED
 
       assert_response :success
       assert_match(%r{R Reader}, response.body)
+      assert_select "a[aria-label='R Reader'][href='#{mount}/admin/readers/#{@reader.id}'] .b270-avatar", count: 1
     end
 
     # The community page lists people by first name, so the admin list should too:
