@@ -51,6 +51,25 @@ if RAILS_LOADED
       refute_match(%r{R Reader|Other Reader}, response.body)
     end
 
+    def test_the_overview_shows_the_signed_in_readers_effective_start_date
+      start_date = Bible270.today - 5
+      @reader.set_start_date!(start_date)
+      sign_in_as(@reader)
+
+      get "#{mount}/"
+
+      assert_select '.b270-bignum .of', text: %r{of 270 days complete.*plan started on #{Regexp.escape(start_date.strftime('%b %-d, %Y'))}}
+    end
+
+    def test_my_progress_does_not_repeat_the_start_date
+      @reader.set_start_date!(Bible270.today - 5)
+      sign_in_as(@reader)
+
+      get "#{mount}/progress"
+
+      refute_match(%r{plan started on}, response.body)
+    end
+
     def test_reader_pages_omit_start_date_status_and_controls
       @reader.set_start_date!(Bible270.today - 9)
       sign_in_as(@reader)

@@ -90,7 +90,7 @@ module Bible270
 
     # Every reflection is visible when written; these are the moderation actions.
     def hide!    = update!(approved: false, moderated_at: Time.current)
-    def unhide!  = update!(approved: true,  moderated_at: Time.current)
+    def unhide!  = update!(approved: true, moderated_at: Time.current)
     def hidden?  = !approved
     def reply?   = parent_id.present?
 

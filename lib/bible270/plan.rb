@@ -493,14 +493,14 @@ module Bible270
       pinned.merge(pinned_from_breaks(chapters))
     end
 
-    def psalm_parts    = memo(:psalm_parts)    { pp_parts.first(psalm_chapters.size) }
+    def psalm_parts    = memo(:psalm_parts) { pp_parts.first(psalm_chapters.size) }
     def proverbs_parts = memo(:proverbs_parts) { pp_parts.last(proverbs_chapters.size) }
 
-    def psalm_readings    = memo(:psalm_readings)    { expand_readings(psalm_chapters, psalm_parts) }
+    def psalm_readings    = memo(:psalm_readings) { expand_readings(psalm_chapters, psalm_parts) }
     def proverbs_readings = memo(:proverbs_readings) { expand_readings(proverbs_chapters, proverbs_parts) }
 
     # Readings grouped by chapter, so a divided chapter stays together.
-    def psalm_groups    = memo(:psalm_groups)    { group_by_chapter(psalm_readings) }
+    def psalm_groups    = memo(:psalm_groups) { group_by_chapter(psalm_readings) }
     def proverbs_groups = memo(:proverbs_groups) { group_by_chapter(proverbs_readings) }
 
     def group_by_chapter(readings)
@@ -530,7 +530,7 @@ module Bible270
       end
     end
 
-    def pp_plan        = memo(:pp_plan)        { pp_readings.map { |seg| format_segment(seg) } }
+    def pp_plan        = memo(:pp_plan) { pp_readings.map { |seg| format_segment(seg) } }
     def pp_verse_loads = memo(:pp_verse_loads) { pp_readings.map { |seg| segment_length(seg) } }
 
     # 1-indexed days carrying a Proverbs reading.

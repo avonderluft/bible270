@@ -1,4 +1,4 @@
-<%# locals: (reader: nil, start_day: nil, today_day: nil, community_start_date: :unset) %>
+<%# locals: (reader: nil, start_day: nil, today_day: nil, community_start_date: :unset, show_start_date: false) %>
 <%#
   The progress panel.
 
@@ -22,6 +22,7 @@
   panel_start_day = start_day || panel_reader&.current_day || 1
   panel_today_day = today_day || panel_reader&.today_day
   panel_community_date = community_start_date == :unset ? Bible270::Setting.run_start_date : community_start_date
+  panel_start_date = panel_reader&.effective_start_date if show_start_date
   day_verb = panel_start_day == 1 ? 'Start' : 'Continue'
   panel_behind = panel_today_day.present? && panel_start_day < panel_today_day
 %>
@@ -29,7 +30,11 @@
   <% if panel_reader %>
     <div class="b270-bignum">
       <span class="n"><%= panel_reader.days_completed %></span>
-      <span class="of">of <%= Bible270::Plan::DAYS %> days complete</span>
+      <span class="of">
+        of <%= Bible270::Plan::DAYS %> days complete<% if panel_start_date %>
+          · plan <% if panel_start_date == Bible270.today %>starts today<% elsif panel_start_date > Bible270.today %>starts on <%= panel_start_date.strftime("%b %-d, %Y") %><% else %>started on <%= panel_start_date.strftime("%b %-d, %Y") %><% end %>
+        <% end %>
+      </span>
       <span class="pct"><%= panel_reader.completion_percent %>%</span>
     </div>
 
