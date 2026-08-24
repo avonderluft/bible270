@@ -124,13 +124,23 @@ if RAILS_LOADED
     def test_checking_off_starts_an_undated_reader
       # ensure_started! only applies when personal calendars are enabled and
       # there is no community-wide date.
-      skip 'a community start date is set' if Bible270.config.start_date
+      skip 'a community start date is set' if Bible270::Setting.run_start_date
       skip 'personal calendars are disabled' unless Bible270.config.allow_reader_start_date
 
       sign_in_as(@reader)
       post "#{mount}/day/1/toggle/nt"
 
       refute_nil @reader.reload.started_on, 'the first check-off should start their clock'
+    end
+
+    def test_a_shared_run_override_prevents_a_personal_date_from_being_stamped
+      Bible270::Setting.set_run_start_date!(Bible270.today - 4)
+      sign_in_as(@reader)
+
+      post "#{mount}/day/1/toggle/nt"
+
+      assert_nil @reader.reload.started_on
+      assert_equal Bible270.today - 4, @reader.effective_start_date
     end
 
     def test_the_final_turbo_checkoff_shows_completion_and_the_next_day_action

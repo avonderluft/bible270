@@ -28,10 +28,40 @@ module Bible270
       end
     end
 
+    def update_run_start
+      if Setting.set_run_start_date!(params[:start_date])
+        date = Setting.run_start_date
+        redirect_to admin_path, notice: "Current run start date changed to #{date.strftime('%B %-d, %Y')}."
+      else
+        redirect_to admin_path, alert: 'Choose a valid start date.'
+      end
+    end
+
+    def reset_run_start
+      Setting.clear_run_start_date!
+      date = Setting.run_start_date
+      notice = if date
+                 "Current run now uses the configured start date, #{date.strftime('%B %-d, %Y')}."
+               else
+                 'Current run now uses the configured undated schedule.'
+               end
+      redirect_to admin_path, notice: notice
+    end
+
     def index
       @enrollment_closed = Setting.enrollment_closed?
       @enrollment_closed_at = Setting.enrollment_closed_at
       @readers = Reader.all.to_a.sort_by(&:sort_name)
+      @run_start_date = Setting.run_start_date
+      @configured_start_date = Bible270.config.start_date
+      @run_start_date_overridden = Setting.run_start_date_overridden?
+      if Bible270.config.allow_reader_start_date
+        @shared_calendar_readers = @readers.count { |reader| reader.started_on.nil? }
+        @personal_calendar_readers = @readers.size - @shared_calendar_readers
+      else
+        @shared_calendar_readers = @readers.size
+        @personal_calendar_readers = 0
+      end
       counts = Checkoff.group(:reader_id, :day).count
       @days_completed = Hash.new(0)
       counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.total_parts(day) }

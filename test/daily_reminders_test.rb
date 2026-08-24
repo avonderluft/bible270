@@ -88,6 +88,15 @@ if RAILS_LOADED
       assert_nil reader.reload.last_daily_reminder_sent_on
     end
 
+    def test_an_admin_run_date_override_drives_the_reminder_day
+      Bible270::Setting.set_run_start_date!(@on - 6)
+      reader = create_reader(day: nil)
+
+      assert_equal 1, Bible270::DailyReminders.deliver(at: @at)
+      assert_equal @on, reader.reload.last_daily_reminder_sent_on
+      assert_match(%r{day 7}i, ActionMailer::Base.deliveries.last.subject)
+    end
+
     def test_configured_time_zone_controls_time_and_idempotency_date
       Bible270.config.time_zone = 'America/Los_Angeles'
       reader = create_reader(day: 7, daily_reminder_time: '17:00')

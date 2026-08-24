@@ -318,7 +318,7 @@ config.allow_reader_start_date = true      # allow personal per-reader calendars
 | a date | false | Everyone is pinned to the community date; stored individual dates are ignored |
 | nil | false | Fully undated — no calendar anywhere |
 
-Dated plans show each day's date with a **Today** badge and a "Go to today" link. Administrators may re-map an individual reader's calendar from the admin panel; check-offs and reflections remain keyed to day numbers, so nothing in their history moves.
+Dated plans show each day's date with a **Today** badge and a "Go to today" link. `config.start_date` is the deploy-time default; an administrator may override the current run's shared date from the Admin panel without a deploy, or reset it to the configured value. The shared-date change immediately re-maps calendar dates, **Today**, and reminders for readers following the shared calendar. Administrators may also re-map an individual reader's calendar. Check-offs and reflections remain keyed to day numbers, so nothing in their history moves.
 
 Date helpers are pure functions, usable anywhere:
 

@@ -8,7 +8,7 @@ module Bible270
       @start_day = current_reader&.current_day || 1
       # nil outside the plan's window, so no "Go to today" before it begins
       @today_day = current_reader&.today_day
-      @community_start_date = Bible270.config.start_date
+      @community_start_date = Setting.run_start_date
     end
 
     def show

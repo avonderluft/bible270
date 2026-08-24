@@ -21,7 +21,7 @@
   panel_reader = reader || current_reader
   panel_start_day = start_day || panel_reader&.current_day || 1
   panel_today_day = today_day || panel_reader&.today_day
-  panel_community_date = community_start_date == :unset ? Bible270.config.start_date : community_start_date
+  panel_community_date = community_start_date == :unset ? Bible270::Setting.run_start_date : community_start_date
   day_verb = panel_start_day == 1 ? 'Start' : 'Continue'
   panel_behind = panel_today_day.present? && panel_start_day < panel_today_day
 %>

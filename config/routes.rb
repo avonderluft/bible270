@@ -29,6 +29,8 @@ Bible270::Engine.routes.draw do
 
   post   'admin/broadcast',              to: 'admin#broadcast',        as: :admin_broadcast
   patch  'admin/enrollment',             to: 'admin#update_enrollment', as: :admin_enrollment
+  patch  'admin/run-start',              to: 'admin#update_run_start', as: :admin_run_start
+  delete 'admin/run-start',              to: 'admin#reset_run_start'
   get    'admin/comments',               to: 'admin#comments',         as: :admin_comments
   patch  'admin/comments/:id/hide',      to: 'admin#hide_comment',     as: :admin_hide_comment
   patch  'admin/comments/:id/unhide',    to: 'admin#unhide_comment',   as: :admin_unhide_comment

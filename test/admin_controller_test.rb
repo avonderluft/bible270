@@ -8,6 +8,8 @@ if RAILS_LOADED
       needs_rails!
       clear_engine_tables!
       @previous_admins = Bible270.config.admin_emails
+      @previous_start_date = Bible270.config.start_date
+      @previous_personal_dates = Bible270.config.allow_reader_start_date
       @admin = Bible270::Reader.create!(provider: 'email', uid: 'boss@example.org',
                                         email: 'boss@example.org', display_name: 'The Boss')
       @reader = Bible270::Reader.create!(provider: 'email', uid: 'r@example.org',
@@ -17,7 +19,10 @@ if RAILS_LOADED
 
     def teardown
       Bible270.config.admin_emails = @previous_admins
+      Bible270.config.start_date = @previous_start_date
+      Bible270.config.allow_reader_start_date = @previous_personal_dates
       Bible270::Setting.open_enrollment!
+      Bible270::Setting.clear_run_start_date!
     end
 
     def mount = Bible270.config.mount_at.chomp('/')
@@ -480,6 +485,72 @@ if RAILS_LOADED
       post "#{mount}/admin/broadcast", params: { subject: 'Spam', body: 'Buy things' }
 
       assert_empty ActionMailer::Base.deliveries
+    end
+
+    # ---- current run -------------------------------------------------------
+
+    def test_the_panel_shows_the_effective_run_date_and_affected_readers
+      Bible270.config.start_date = Date.new(2026, 9, 6)
+      sign_in_as_admin
+
+      get "#{mount}/admin"
+
+      assert_select 'h2', text: 'Current run start date'
+      assert_select 'input[name="start_date"][value="2026-09-06"]'
+      assert_match(%r{This affects 2 readers following the shared calendar}, response.body)
+      assert_select '.b270-badge', text: 'Admin override', count: 0
+    end
+
+    def test_an_admin_can_override_the_current_run_start_date
+      Bible270.config.start_date = Date.new(2026, 9, 6)
+      sign_in_as_admin
+
+      patch "#{mount}/admin/run-start", params: { start_date: '2026-08-02' }
+
+      assert_response :redirect
+      assert_equal Date.new(2026, 8, 2), Bible270::Setting.run_start_date
+      assert Bible270::Setting.run_start_date_overridden?
+      assert_equal Date.new(2026, 8, 2), @reader.reload.effective_start_date
+    end
+
+    def test_a_run_date_change_does_not_move_a_personal_calendar
+      @reader.set_start_date!('2026-07-01')
+      sign_in_as_admin
+
+      patch "#{mount}/admin/run-start", params: { start_date: '2026-08-02' }
+
+      assert_equal Date.new(2026, 7, 1), @reader.reload.effective_start_date
+    end
+
+    def test_an_admin_can_restore_the_configured_start_date
+      Bible270.config.start_date = Date.new(2026, 9, 6)
+      Bible270::Setting.set_run_start_date!('2026-08-02')
+      sign_in_as_admin
+
+      delete "#{mount}/admin/run-start"
+
+      assert_response :redirect
+      assert_equal Date.new(2026, 9, 6), Bible270::Setting.run_start_date
+      refute Bible270::Setting.run_start_date_overridden?
+    end
+
+    def test_an_invalid_run_start_date_is_refused
+      sign_in_as_admin
+
+      patch "#{mount}/admin/run-start", params: { start_date: 'not a date' }
+
+      assert_response :redirect
+      refute Bible270::Setting.run_start_date_overridden?
+      assert_match(%r{valid start date}, flash[:alert].to_s)
+    end
+
+    def test_an_ordinary_reader_cannot_change_the_current_run_start_date
+      sign_in_as(@reader)
+
+      patch "#{mount}/admin/run-start", params: { start_date: '2026-08-02' }
+
+      refute_equal 200, response.status
+      refute Bible270::Setting.run_start_date_overridden?
     end
 
     # ---- closing a run -----------------------------------------------------

@@ -7,11 +7,11 @@
 <div class="b270-panel">
   <h2 class="b270-subhead">This run of the plan is <%= @enrollment_closed ? 'closed' : 'open' %> to new readers.</h2>
   <% if @enrollment_closed %>
-    <% if @enrollment_closed_at %>
-      <p class="b270-startline">Enrollment closed
-      on <%= b270_date(@enrollment_closed_at) %><% end %>.
+    <p class="b270-startline">
+      <% if @enrollment_closed_at %>Enrollment closed on <%= b270_date(@enrollment_closed_at) %>.<% end %>
       The <%= @readers.size %> reader<%= 's' unless @readers.size == 1 %> already taking part can
-      still sign in and carry on.</p>
+      still sign in and carry on.
+    </p>
     <%= button_to 'Open to new readers', admin_enrollment_path, method: :patch,
           params: { state: 'open' }, class: 'b270-btn' %>
   <% else %>
@@ -19,6 +19,46 @@
     <%= button_to 'Close to new readers', admin_enrollment_path, method: :patch,
           params: { state: 'closed' }, class: 'b270-btn',
           form: { data: { turbo_confirm: 'Close this run? Existing readers keep their access.' } } %>
+  <% end %>
+</div>
+
+<div class="b270-panel">
+  <h2 class="b270-subhead">Current run start date</h2>
+  <% if @run_start_date %>
+    <p class="b270-startline">
+      This run <%= @run_start_date > Bible270.today ? 'starts' : 'started' %>
+      <strong><%= @run_start_date.strftime('%B %-d, %Y') %></strong> and ends
+      <strong><%= Bible270::Plan.end_date_for(@run_start_date).strftime('%B %-d, %Y') %></strong>.
+      <% if @run_start_date_overridden %><span class="b270-badge">Admin override</span><% end %>
+    </p>
+  <% else %>
+    <p class="b270-startline">This run is undated.</p>
+  <% end %>
+
+  <%= form_with url: admin_run_start_path, method: :patch, class: "b270-startform",
+        data: { turbo_confirm: "Change the current run start date? Calendar dates, Today, and reminders will be re-mapped. Check-offs and reflections will not change." } do %>
+    <label class="b270-field">
+      <span>Start date</span>
+      <%= date_field_tag :start_date, @run_start_date, required: true %>
+    </label>
+    <%= submit_tag(@run_start_date ? 'Change start date' : 'Set start date', class: 'b270-btn') %>
+  <% end %>
+
+  <p class="b270-hint">
+    This affects <%= pluralize(@shared_calendar_readers, 'reader') %> following the shared calendar.
+    <% if @personal_calendar_readers.positive? %>
+      <%= pluralize(@personal_calendar_readers, 'reader') %> with a personal calendar will not move.
+    <% end %>
+    Check-offs and reflections remain attached to their existing day numbers.
+  </p>
+
+  <% if @run_start_date_overridden %>
+    <%= button_to 'Use configured date', admin_run_start_path, method: :delete, class: 'b270-linkbtn',
+          form: { data: { turbo_confirm: 'Remove the Admin override and use the configured start date?' } } %>
+    <p class="b270-hint">
+      Configured date:
+      <%= @configured_start_date ? @configured_start_date.strftime('%B %-d, %Y') : 'undated' %>.
+    </p>
   <% end %>
 </div>
 
@@ -58,8 +98,7 @@
       <%= @reachable == 1 ? 'reader' : 'readers' %> individually, not as one message with
       everyone in bcc — so each is greeted by name.
       <% if @last_broadcast_at.present? %>
-        <br>Last sent <%= b270_datetime(@last_broadcast_at) %><%
-          %><% if @last_broadcast_subject.present? %>: <em><%= @last_broadcast_subject %></em><% end %>.
+        <br>Last sent <%= b270_datetime(@last_broadcast_at) %><% if @last_broadcast_subject.present? %>: <em><%= @last_broadcast_subject %></em><% end %>.
       <% end %>
     </p>
 

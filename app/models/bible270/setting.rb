@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 module Bible270
-  # Runtime state an admin can change without a deploy. Currently just whether
-  # this run of the plan is open to new readers.
+  # Runtime state an admin can change without a deploy: enrollment and the
+  # current run's shared calendar date.
   class Setting < ApplicationRecord
     self.table_name = 'bible270_settings'
 
     ENROLLMENT_CLOSED_AT = 'enrollment_closed_at'
+    RUN_START_DATE = 'run_start_date'
 
     validates :key, presence: true, uniqueness: true
 
@@ -23,6 +24,35 @@ module Bible270
 
     def self.delete_key(key)
       where(key: key.to_s).delete_all
+    end
+
+    # ---- current run ------------------------------------------------------
+
+    def self.run_start_date
+      run_start_date_override || Bible270.config.start_date
+    end
+
+    def self.run_start_date_override
+      Plan.to_date(read(RUN_START_DATE))
+    rescue ActiveRecord::StatementInvalid
+      nil
+    end
+
+    def self.run_start_date_overridden?
+      run_start_date_override.present?
+    end
+
+    def self.set_run_start_date!(value)
+      date = Plan.to_date(value)
+      return false if date.nil?
+
+      write(RUN_START_DATE, date.iso8601)
+      true
+    end
+
+    def self.clear_run_start_date!
+      delete_key(RUN_START_DATE)
+      true
     end
 
     # ---- enrolment --------------------------------------------------------

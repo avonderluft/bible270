@@ -515,14 +515,13 @@ module Bible270
 
     # The start date that actually governs this reader. A reader's own
     # started_on wins when per-reader dates are allowed; otherwise (or if they
-    # haven't got one) the community-wide config.start_date applies. Nil means
-    # the plan is undated for this reader and no calendar mapping exists.
+    # haven't got one) the current run's shared date applies. Nil means the plan
+    # is undated for this reader and no calendar mapping exists.
     def effective_start_date
-      config = Bible270.config
-      if config.allow_reader_start_date && started_on
+      if Bible270.config.allow_reader_start_date && started_on
         started_on
       else
-        config.start_date
+        Setting.run_start_date
       end
     end
 
@@ -607,10 +606,9 @@ module Bible270
     # Called when a reader first participates. Only stamps a personal start date
     # when per-reader dates are enabled and a shared date isn't already in force.
     def ensure_started!
-      config = Bible270.config
-      return unless config.allow_reader_start_date
+      return unless Bible270.config.allow_reader_start_date
       return if started_on.present?
-      return if config.start_date.present?
+      return if Setting.run_start_date.present?
 
       update!(started_on: Bible270.today)
     end
