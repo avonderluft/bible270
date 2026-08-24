@@ -160,7 +160,7 @@ namespace :test do
   Rake::Task['test:serial'].enhance(['test:prepare_serial'])
 
   task :parallel do
-    workers = ENV.fetch('PARALLEL_WORKERS', '2')
+    workers = ENV.fetch('PARALLEL_WORKERS', '6')
     FileUtils.rm_rf('coverage')
     env = {
       'PARALLEL_COVERAGE' => 'true',
