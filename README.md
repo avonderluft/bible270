@@ -415,9 +415,6 @@ Bible270.configure do |config|
   config.after_sign_out_path = nil
 
   config.bible_version = "NKJV"
-  config.passage_url_builder = ->(reference, version) {
-    "https://www.biblegateway.com/passage/?search=#{URI.encode_www_form_component(reference)}&version=#{version}"
-  }
 end
 ```
 ### Footer
@@ -460,7 +457,9 @@ It's emitted by the engine's layout, so if you point `config.layout` at your own
 References link to Bible Gateway by default. Readers choose Bible Gateway or Blue Letter Bible from
 their profile, and an admin can set the same source for any reader. The `HEB/GRK` option always uses
 Blue Letter Bible: WLC for Old Testament, Psalms, and Proverbs readings, and mGNT for New Testament
-readings. Set `passage_url_builder` to use another default reader, or a reader you host yourself.
+readings. Scripture links share one dedicated browser tab so moving among the day's passages does not
+leave a trail of open tabs; Ctrl-click, Cmd-click, middle-click, and the browser's context menu still
+open additional tabs when a reader wants to compare passages.
 
 ## With ComfortableMediaSurfer
 

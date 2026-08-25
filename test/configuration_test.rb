@@ -71,22 +71,6 @@ class ConfigurationTest < Minitest::Test
     MSG
   end
 
-  def test_default_passage_url_escapes_references
-    url = @config.passage_url_builder.call("Genesis 1\u20133", 'NKJV')
-    assert_equal 'https://www.biblegateway.com/passage/?search=Genesis+1%E2%80%933&version=NKJV', url
-  end
-
-  def test_default_passage_url_escapes_multi_book_references
-    url = @config.passage_url_builder.call("Zechariah 14, Malachi 1\u20134", 'KJV')
-    assert_includes url, 'search=Zechariah+14%2C+Malachi+1%E2%80%934'
-    assert_includes url, 'version=KJV'
-  end
-
-  def test_split_chapter_reference_round_trips
-    url = @config.passage_url_builder.call("Psalm 119:1\u201388", 'NKJV')
-    assert_includes url, 'Psalm+119%3A1%E2%80%9388'
-  end
-
   def test_sensible_defaults
     assert_equal 'ActionController::Base', @config.parent_controller
     assert_equal 'bible270/application', @config.layout

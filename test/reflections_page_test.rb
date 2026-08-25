@@ -266,12 +266,15 @@ if RAILS_LOADED
       refute_match(%r{version=NASB95&|version=NASB95"}, response.body)
     end
 
-    def test_the_references_open_in_a_new_tab_safely
+    def test_the_references_reuse_the_scripture_tab
       reflection(@mary, 1, 'On day one', 1.hour.ago)
 
       get "#{mount}/reflections"
 
-      assert_match(%r{rel="noopener"}, response.body)
+      links = css_select('a.b270-reflink')
+      assert_equal 3, links.size
+      assert(links.all? { |link| link['target'] == 'bible270_scripture' })
+      assert(links.none? { |link| link['rel'].to_s.include?('noopener') })
     end
 
     # ---- threading ---------------------------------------------------------

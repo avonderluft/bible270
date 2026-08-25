@@ -271,7 +271,6 @@ module Bible270
       PROVIDER_LABELS[key.to_sym] || key.to_s.tr('_', ' ').split.map(&:capitalize).join(' ')
     end
 
-    # Default Bible translation and a builder for external passage links.
     # Which translations readers may choose from. Defaults to all of
     # Bible270::Translations::VERSIONS; narrow it to offer fewer.
     attr_accessor :bible_versions
@@ -297,7 +296,7 @@ module Bible270
     # application owns scheduling the bible270:reminders:send task.
     attr_accessor :daily_reminders
 
-    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :passage_url_builder, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :header_mark, :remember_for, :require_sign_in_to_participate
+    attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :header_mark, :remember_for, :require_sign_in_to_participate
 
     # Public labels.
     attr_accessor :app_name
@@ -355,7 +354,6 @@ module Bible270
       @after_sign_out_path = nil
       @bible_version = 'NKJV'
       @bible_versions = Translations::VERSIONS.keys
-      @passage_url_builder = ->(reference, version) { Translations.passage_url(reference, version) }
       @app_name = 'Daily Bread'
       @tagline = 'Journeying through Scripture in 9 months'
       @time_zone = nil

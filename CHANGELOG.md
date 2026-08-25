@@ -4,6 +4,14 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+### Changed
+
+- reuse one dedicated browser tab for Bible Gateway and Blue Letter Bible Scripture links instead of opening an unlimited series of tabs
+
+### Removed
+
+- remove the unused `passage_url_builder` configuration hook; Bible Gateway and Blue Letter Bible are now the intentionally fixed passage providers
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.3...main)**
 
 ## [1.1.3] - 2026-08-23

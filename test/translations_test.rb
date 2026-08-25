@@ -127,6 +127,22 @@ class TranslationsTest < Minitest::Test
     assert_includes url, 'version=KJV'
   end
 
+  def test_bible_gateway_escapes_references
+    url = T.passage_url("Genesis 1\u20133", 'NKJV')
+    assert_equal 'https://www.biblegateway.com/passage/?search=Genesis+1%E2%80%933&version=NKJV', url
+  end
+
+  def test_bible_gateway_escapes_multi_book_references
+    url = T.passage_url("Zechariah 14, Malachi 1\u20134", 'KJV')
+    assert_includes url, 'search=Zechariah+14%2C+Malachi+1%E2%80%934'
+    assert_includes url, 'version=KJV'
+  end
+
+  def test_split_chapter_reference_round_trips
+    url = T.passage_url("Psalm 119:1\u201388", 'NKJV')
+    assert_includes url, 'Psalm+119%3A1%E2%80%9388'
+  end
+
   def test_original_language_ot_links_to_wlc
     assert_equal 'https://www.blueletterbible.org/wlc/gen/1/1/s_1001',
                  T.passage_url("Genesis 1\u20133", 'HEB/GRK')

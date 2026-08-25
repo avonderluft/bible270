@@ -27,13 +27,13 @@
                                       b270_success: (part_done ? "Reading marked unread." : "Reading marked read."),
                                       b270_failure: "Couldn’t update that reading. Try again." } },
                       aria: { label: (part_done ? "Mark #{part_ref} unread" : "Mark #{part_ref} read") } do %>
-                  <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+                  <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg></span>
                 <% end %>
               <% else %>
-                <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+                <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg></span>
               <% end %>
               <span class="b270-ref">
-                <%= link_to part_ref, b270_passage_url(part_ref), target: "_blank", rel: "noopener" %>
+                <%= b270_passage_link part_ref %>
               </span>
             </li>
           <% end %>
@@ -51,14 +51,14 @@
                               b270_success: (done ? "Reading marked unread." : "Reading marked read."),
                               b270_failure: "Couldn’t update that reading. Try again." } },
               aria: { label: (done ? "Mark #{t[:label]} unread" : "Mark #{t[:label]} read") } do %>
-          <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+          <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg></span>
         <% end %>
       <% else %>
-        <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+        <span class="b270-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg></span>
       <% end %>
       <div class="b270-rbody">
         <div class="b270-cat"><%= t[:label] %></div>
-        <div class="b270-ref"><%= link_to ref, b270_passage_url(ref), target: "_blank", rel: "noopener" %> <%= b270_version_tag(track: track) %></div>
+        <div class="b270-ref"><%= b270_passage_link ref %> <%= b270_version_tag(track: track) %></div>
       </div>
     <% end %>
   </div>

@@ -85,6 +85,15 @@ if RAILS_LOADED
       assert_equal '#', b270_passage_url(nil)
     end
 
+    def test_passage_links_reuse_one_trusted_scripture_tab
+      link = b270_passage_link('Genesis 1', class: 'reading')
+
+      assert_includes link, 'target="bible270_scripture"'
+      assert_includes link, 'class="reading"'
+      refute_includes link, 'noopener'
+      refute_includes link, 'target="_blank"'
+    end
+
     def test_the_version_tag
       @current_reader = nil
       tag = b270_version_tag

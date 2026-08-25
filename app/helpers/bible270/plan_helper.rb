@@ -2,6 +2,8 @@
 
 module Bible270
   module PlanHelper
+    PASSAGE_LINK_TARGET = 'bible270_scripture'
+
     def b270_track(track)
       Plan::TRACKS.fetch(track.to_s)
     end
@@ -117,7 +119,15 @@ module Bible270
         return Translations.passage_url(reference, selected_version, blue_letter: true)
       end
 
-      Bible270.config.passage_url_builder.call(reference, selected_version)
+      Translations.passage_url(reference, selected_version)
+    end
+
+    # Bible Gateway and Blue Letter Bible are the only passage providers and are
+    # deliberately trusted with one named browsing context. `noopener` cannot be
+    # used here: browsers treat a named target like `_blank` when it is present,
+    # recreating the unbounded-tab behavior this target prevents.
+    def b270_passage_link(reference, **)
+      link_to reference, b270_passage_url(reference), **, target: PASSAGE_LINK_TARGET
     end
 
     # Small grey "(NKJV)" after a reading, so it's clear which translation the
@@ -224,8 +234,7 @@ module Bible270
         reference = readings[track]
         next if reference.blank?
 
-        link_to reference, b270_passage_url(reference),
-                class: 'b270-reflink', target: '_blank', rel: 'noopener'
+        b270_passage_link reference, class: 'b270-reflink'
       end
 
       safe_join(links, ' · ')
