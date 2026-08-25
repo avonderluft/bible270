@@ -122,12 +122,13 @@ module Bible270
       Translations.passage_url(reference, selected_version)
     end
 
-    # Bible Gateway and Blue Letter Bible are the only passage providers and are
-    # deliberately trusted with one named browsing context. `noopener` cannot be
-    # used here: browsers treat a named target like `_blank` when it is present,
-    # recreating the unbounded-tab behavior this target prevents.
-    def b270_passage_link(reference, **)
-      link_to reference, b270_passage_url(reference), **, target: PASSAGE_LINK_TARGET
+    # The named target is the no-JavaScript fallback. Interaction UI retains one
+    # tab handle for iOS Safari, nulls its opener before external navigation, and
+    # reuses it; noopener keeps the ordinary fallback secure.
+    def b270_passage_link(reference, **options)
+      data = options.fetch(:data, {}).merge(b270_passage_link: true)
+      options.merge!(data: data, target: PASSAGE_LINK_TARGET, rel: 'noopener')
+      link_to reference, b270_passage_url(reference), options
     end
 
     # Small grey "(NKJV)" after a reading, so it's clear which translation the

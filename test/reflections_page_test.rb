@@ -274,7 +274,9 @@ if RAILS_LOADED
       links = css_select('a.b270-reflink')
       assert_equal 3, links.size
       assert(links.all? { |link| link['target'] == 'bible270_scripture' })
-      assert(links.none? { |link| link['rel'].to_s.include?('noopener') })
+      assert(links.all? { |link| link['rel'].to_s.include?('noopener') })
+      assert(links.all? { |link| link['data-b270-passage-link'] == 'true' })
+      assert(css_select('script[nonce]').any? { |script| script.text.include?('scriptureWindow') })
     end
 
     # ---- threading ---------------------------------------------------------

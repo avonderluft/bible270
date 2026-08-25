@@ -30,6 +30,33 @@
       document.querySelectorAll("form[data-b270-submit='true']").forEach(resetForm);
     }
 
+    let scriptureWindow = null;
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      const link = target.closest && target.closest("a[data-b270-passage-link='true']");
+      if (!link || event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      event.preventDefault();
+      try {
+        if (!scriptureWindow || scriptureWindow.closed) {
+          scriptureWindow = window.open("about:blank", "_blank");
+          if (!scriptureWindow) {
+            window.location.assign(link.href);
+            return;
+          }
+          scriptureWindow.opener = null;
+        }
+
+        scriptureWindow.location = link.href;
+        scriptureWindow.focus();
+      } catch (_error) {
+        scriptureWindow = null;
+        window.location.assign(link.href);
+      }
+    });
+
     document.addEventListener("submit", (event) => {
       const form = event.target.closest("form[data-b270-submit='true']");
       if (!form) return;

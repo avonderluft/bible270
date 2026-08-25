@@ -90,7 +90,8 @@ if RAILS_LOADED
 
       assert_includes link, 'target="bible270_scripture"'
       assert_includes link, 'class="reading"'
-      refute_includes link, 'noopener'
+      assert_includes link, 'rel="noopener"'
+      assert_includes link, 'data-b270-passage-link="true"'
       refute_includes link, 'target="_blank"'
     end
 
