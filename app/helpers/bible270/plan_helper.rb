@@ -122,9 +122,10 @@ module Bible270
       Translations.passage_url(reference, selected_version)
     end
 
-    # The named target is the no-JavaScript fallback. Interaction UI retains one
-    # tab handle for iOS Safari, nulls its opener before external navigation, and
-    # reuses it; noopener keeps the ordinary fallback secure.
+    # The named target and noopener are the secure no-JavaScript fallback.
+    # Interaction UI retains one opener-backed tab handle because iOS Safari does
+    # not reuse named external targets; the two fixed providers are intentionally
+    # trusted for that enhanced path.
     def b270_passage_link(reference, **options)
       data = options.fetch(:data, {}).merge(b270_passage_link: true)
       options.merge!(data: data, target: PASSAGE_LINK_TARGET, rel: 'noopener')

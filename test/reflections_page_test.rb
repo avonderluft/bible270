@@ -276,7 +276,10 @@ if RAILS_LOADED
       assert(links.all? { |link| link['target'] == 'bible270_scripture' })
       assert(links.all? { |link| link['rel'].to_s.include?('noopener') })
       assert(links.all? { |link| link['data-b270-passage-link'] == 'true' })
-      assert(css_select('script[nonce]').any? { |script| script.text.include?('scriptureWindow') })
+      script = css_select('script[nonce]').find { |candidate| candidate.text.include?('scriptureWindow') }
+      refute_nil script
+      refute_includes script.text, 'opener = null'
+      refute_includes script.text, 'window.location.assign'
     end
 
     # ---- threading ---------------------------------------------------------

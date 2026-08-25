@@ -38,22 +38,17 @@
       if (!link || event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-      event.preventDefault();
       try {
         if (!scriptureWindow || scriptureWindow.closed) {
-          scriptureWindow = window.open("about:blank", "_blank");
-          if (!scriptureWindow) {
-            window.location.assign(link.href);
-            return;
-          }
-          scriptureWindow.opener = null;
+          scriptureWindow = window.open(link.href, "_blank");
+          if (!scriptureWindow) return;
+        } else {
+          scriptureWindow.location = link.href;
         }
-
-        scriptureWindow.location = link.href;
+        event.preventDefault();
         scriptureWindow.focus();
       } catch (_error) {
         scriptureWindow = null;
-        window.location.assign(link.href);
       }
     });
 
