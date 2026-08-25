@@ -62,9 +62,7 @@ module Bible270
         @shared_calendar_readers = @readers.size
         @personal_calendar_readers = 0
       end
-      counts = Checkoff.group(:reader_id, :day).count
-      @days_completed = Hash.new(0)
-      counts.each { |(rid, day), n| @days_completed[rid] += 1 if n >= Plan.total_parts(day) }
+      @days_completed = Reader.completed_days_by_id
       @reachable = Reader.where.not(email: [nil, '']).count
       @last_broadcast_at = parsed_time(Setting.read(LAST_BROADCAST_AT))
       @last_broadcast_subject = Setting.read(LAST_BROADCAST_SUBJECT)

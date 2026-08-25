@@ -55,6 +55,12 @@ module Bible270
       value.to_s.match?(DAILY_REMINDER_TIME_FORMAT)
     end
 
+    def self.completed_days_by_id
+      Checkoff.group(:reader_id, :day).count.each_with_object(Hash.new(0)) do |((reader_id, day), done), totals|
+        totals[reader_id] += 1 if done >= Plan.total_parts(day)
+      end
+    end
+
     def self.reflections_seen_column?
       column_names.include?(REFLECTIONS_SEEN_COLUMN)
     rescue ActiveRecord::StatementInvalid

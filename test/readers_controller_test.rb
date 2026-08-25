@@ -7,10 +7,15 @@ if RAILS_LOADED
     def setup
       needs_rails!
       clear_engine_tables!
+      @previous_admins = Bible270.config.admin_emails
       @reader = Bible270::Reader.create!(provider: 'email', uid: 'r@example.org',
                                          email: 'r@example.org', display_name: 'R Reader')
       @other = Bible270::Reader.create!(provider: 'email', uid: 'o@example.org',
                                         email: 'o@example.org', display_name: 'Other Reader')
+    end
+
+    def teardown
+      Bible270.config.admin_emails = @previous_admins
     end
 
     def mount = Bible270.config.mount_at.chomp('/')
@@ -40,6 +45,57 @@ if RAILS_LOADED
       assert_operator response.body.index('Other Reader'), :<, response.body.index('R Reader'),
                       'progress should not determine community standing'
       refute_match(%r{days? read}, response.body)
+    end
+
+    def test_community_does_not_calculate_or_show_progress_for_a_visitor
+      calculated = false
+      calculation = -> do
+        calculated = true
+        {}
+      end
+      Bible270::Reader.stub(:completed_days_by_id, calculation) do
+        get "#{mount}/community"
+      end
+
+      refute calculated
+      assert_select '.b270-admin-progress', count: 0
+    end
+
+    def test_community_does_not_calculate_or_show_progress_for_an_ordinary_reader
+      sign_in_as(@reader)
+      calculated = false
+      calculation = -> do
+        calculated = true
+        {}
+      end
+      Bible270::Reader.stub(:completed_days_by_id, calculation) do
+        get "#{mount}/community"
+      end
+
+      refute calculated
+      assert_select '.b270-admin-progress', count: 0
+    end
+
+    def test_community_shows_admins_a_linked_completed_day_count
+      @reader.mark_through!(2)
+      Bible270.config.admin_emails = [@other.email]
+      sign_in_as(@other)
+
+      get "#{mount}/community"
+
+      assert_select "a.b270-admin-progress[href='#{mount}/admin/readers/#{@reader.id}']",
+                    text: '2 of 270 days complete'
+    end
+
+    def test_admin_community_counts_only_fully_completed_days
+      @reader.checkoffs.create!(day: 1, track: 'ot', part: 0)
+      Bible270.config.admin_emails = [@other.email]
+      sign_in_as(@other)
+
+      get "#{mount}/community"
+
+      assert_select "a.b270-admin-progress[href='#{mount}/admin/readers/#{@reader.id}']",
+                    text: '0 of 270 days complete'
     end
 
     def test_the_overview_links_to_fellow_readers_without_previewing_them

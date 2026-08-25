@@ -98,6 +98,14 @@ class ViewsTest < Minitest::Test
       .select { |_, body| body.match?(%r{(?<![\w-])color\s*:}) }
   end
 
+  def test_admin_progress_link_is_quiet_until_hover_or_focus
+    styles = File.read(STYLES)
+
+    assert_match(%r{\.b270-li \.b270-admin-progress\{text-decoration:none\}}, styles)
+    assert_match(%r{\.b270-admin-progress:hover.*\.b270-admin-progress:focus-visible\{color:var\(--gold\)\}},
+                 styles)
+  end
+
   def test_anchor_colour_rules_outrank_the_blanket_anchor_rule
     refute_empty anchor_classes, 'expected to find engine classes used on links'
     blanket = specificity('.b270 a')

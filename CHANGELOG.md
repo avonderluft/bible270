@@ -6,13 +6,36 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Changed
 
-- reuse one dedicated browser tab for Bible Gateway and Blue Letter Bible Scripture links instead of opening an unlimited series of tabs
+- show administrators a quiet, linked completed-day count on Community reader rows while keeping progress hidden—and its aggregate query skipped—for ordinary readers and visitors
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.5...main)**
+
+## [1.1.5] - 2026-08-25
+
+### Changed
+
+- keep Bible270 open while using one Scripture tab for Bible Gateway and Blue Letter Bible: desktop browsers reuse the existing tab, while iOS Safari replaces its background tab so each click reliably switches to the reading
+- centralize daily-reading and Reflections Scripture anchors in one passage-link helper with secure no-JavaScript fallback behavior
 
 ### Removed
 
 - remove the unused `passage_url_builder` configuration hook; Bible Gateway and Blue Letter Bible are now the intentionally fixed passage providers
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.3...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.4...v1.1.5)**
+
+## [1.1.4] - 2026-08-24
+
+### Added
+
+- let administrators persistently override the current run start date, see which readers are affected, and reset to the configured date without changing check-offs or reflections
+
+### Changed
+
+- link reader avatars in Admin to the same reader-management pages as their names
+- show a signed-in reader's effective plan start date beside Home progress without repeating it on My Progress
+- increase the default parallel test workers to six while retaining `PARALLEL_WORKERS` for constrained systems
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.3...v1.1.4)**
 
 ## [1.1.3] - 2026-08-23
 
@@ -529,6 +552,8 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[1.1.5]: https://github.com/avonderluft/bible270/releases/tag/v1.1.5
+[1.1.4]: https://github.com/avonderluft/bible270/releases/tag/v1.1.4
 [1.1.3]: https://github.com/avonderluft/bible270/releases/tag/v1.1.3
 [1.1.2]: https://github.com/avonderluft/bible270/releases/tag/v1.1.2
 [1.1.1]: https://github.com/avonderluft/bible270/releases/tag/v1.1.1

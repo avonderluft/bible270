@@ -10,7 +10,12 @@
         <%= link_to b270_avatar(r, size: 72), reader_path(r), "aria-label": r.display_name %>
         <div>
           <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
-          <div class="sub">joined <%= Bible270.local_time(r.created_at).strftime("%b %-d %Y") %></div>
+          <div class="sub">
+            joined <%= Bible270.local_time(r.created_at).strftime("%b %-d %Y") %><% if @show_admin_progress %>
+              · <%= link_to "#{@days_completed[r.id]} of #{Bible270::Plan::DAYS} days complete",
+                    admin_reader_path(r), class: "b270-admin-progress" %>
+            <% end %>
+          </div>
         </div>
       </div>
     <% end %>
