@@ -6,7 +6,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Changed
 
-- show administrators a quiet, linked completed-day count on Community reader rows while keeping progress hidden—and its aggregate query skipped—for ordinary readers and visitors
+- show administrators a quiet, linked completed-day count on Community reader rows while keeping progress hidden—and its aggregate query skipped—for ordinary readers and visitors; the link stays unadorned at rest and uses the site’s gold hover and keyboard-focus treatment
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.5...main)**
 
@@ -552,6 +552,7 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[1.1.6]: https://github.com/avonderluft/bible270/releases/tag/v1.1.6
 [1.1.5]: https://github.com/avonderluft/bible270/releases/tag/v1.1.5
 [1.1.4]: https://github.com/avonderluft/bible270/releases/tag/v1.1.4
 [1.1.3]: https://github.com/avonderluft/bible270/releases/tag/v1.1.3
