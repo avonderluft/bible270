@@ -123,9 +123,10 @@ module Bible270
     end
 
     # The named target and noopener are the secure no-JavaScript fallback.
-    # Interaction UI retains one opener-backed tab handle because iOS Safari does
-    # not reuse named external targets; the two fixed providers are intentionally
-    # trusted for that enhanced path.
+    # Interaction UI retains one opener-backed tab handle on desktop. iOS Safari
+    # cannot foreground a reused background tab, so it closes and replaces that
+    # script-opened tab on each click. The two fixed providers are intentionally
+    # trusted for this enhanced path.
     def b270_passage_link(reference, **options)
       data = options.fetch(:data, {}).merge(b270_passage_link: true)
       options.merge!(data: data, target: PASSAGE_LINK_TARGET, rel: 'noopener')

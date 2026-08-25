@@ -280,6 +280,8 @@ if RAILS_LOADED
       refute_nil script
       refute_includes script.text, 'opener = null'
       refute_includes script.text, 'window.location.assign'
+      assert_includes script.text, 'iPad|iPhone|iPod'
+      assert_includes script.text, 'scriptureWindow.close()'
     end
 
     # ---- threading ---------------------------------------------------------
