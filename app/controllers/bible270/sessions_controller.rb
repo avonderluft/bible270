@@ -17,6 +17,16 @@ module Bible270
       @origin = safe_origin(params[:origin])
     end
 
+    # Refresh a resumed page's session and CSRF token without reloading its content.
+    # Calling current_reader first lets the long-lived remember cookie rebuild a
+    # browser session that the phone may have discarded while the tab was asleep.
+    def refresh
+      current_reader
+      response.headers['X-CSRF-Token'] = form_authenticity_token
+      response.headers['Cache-Control'] = 'no-store'
+      head :no_content
+    end
+
     def create
       auth = request.env['omniauth.auth']
       redirect_to(sign_in_path, alert: "Sign in didn't complete. Please try again.") and return unless auth

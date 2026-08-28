@@ -50,6 +50,7 @@ Bible270::Engine.routes.draw do
   # Built-in OmniAuth sign-in. The request phase (POST <mount>/auth/:provider)
   # is handled by the OmniAuth middleware in the host app, not by these routes.
   get    'sign_in',                 to: 'sessions#new', as: :sign_in
+  get    'session/refresh',         to: 'sessions#refresh', as: :refresh_session
 
   # Email (magic link) sign-in, for readers without a social account.
   post   'sign_in/email',           to: 'sessions#email_link',     as: :email_sign_in_link

@@ -26,6 +26,8 @@ module Bible270
 
     layout :bible270_layout
 
+    rescue_from ActionController::InvalidAuthenticityToken, with: :recover_from_stale_page
+
     helper_method :current_reader, :signed_in?, :b270_config, :enrollment_closed?
 
   private
@@ -99,6 +101,17 @@ module Bible270
 
     def signed_in?
       current_reader.present?
+    end
+
+    # A suspended mobile tab can outlive its Rails session cookie. The page still
+    # contains the old session's CSRF token, so Rails rejects its next form before
+    # current_reader has a chance to restore the session from the remember cookie.
+    # Never execute that unverified request; return to a fresh page for a safe retry.
+    def recover_from_stale_page(error)
+      Rails.logger.info("[bible270] refreshing a page after #{error.class}")
+      redirect_back fallback_location: root_path, allow_other_host: false,
+                    alert: 'This page had been open for a while, so it was refreshed. Please try again.',
+                    status: :see_other
     end
 
     # Guard participation (checking off / commenting). Viewing is always open.

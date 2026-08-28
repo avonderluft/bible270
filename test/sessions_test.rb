@@ -80,6 +80,59 @@ if RAILS_LOADED
     ensure
       Bible270.config.remember_for = previous
     end
+
+    def test_refreshing_a_resumed_page_restores_its_session_and_csrf_token
+      sign_in
+      remembered = cookies[:bible270_remember]
+      reset!
+      cookies[:bible270_remember] = remembered
+
+      get "#{mount}/session/refresh"
+
+      assert_response :no_content
+      assert response.headers['X-CSRF-Token'].present?
+      assert_equal 'no-store', response.headers['Cache-Control']
+
+      get "#{mount}/profile"
+      assert_response :success, 'the refresh request should rebuild the signed-in session'
+    end
+
+    def test_a_stale_checkoff_token_refreshes_the_page_instead_of_showing_an_error
+      with_forgery_protection do
+        sign_in
+        get "#{mount}/day/1"
+        stale_token = css_select("meta[name='csrf-token']").first&.[]('content')
+        remembered = cookies[:bible270_remember]
+        assert stale_token.present?
+
+        reset!
+        cookies[:bible270_remember] = remembered
+        post "#{mount}/day/1/toggle/nt/0",
+             params: { checked: '1', authenticity_token: stale_token },
+             headers: {
+               'Accept' => 'text/vnd.turbo-stream.html',
+               'HTTP_REFERER' => "http://www.example.com#{mount}/day/1"
+             }
+
+        assert_response :see_other
+        assert_equal 0, Bible270::Checkoff.count, 'an unverified request must never be applied'
+        assert_equal "#{mount}/day/1", URI.parse(response.location).path
+
+        get response.location
+        assert_response :success
+        assert_match(%r{page had been open for a while}, response.body)
+      end
+    end
+
+  private
+
+    def with_forgery_protection
+      previous = ActionController::Base.allow_forgery_protection
+      ActionController::Base.allow_forgery_protection = true
+      yield
+    ensure
+      ActionController::Base.allow_forgery_protection = previous
+    end
   end
 end
 

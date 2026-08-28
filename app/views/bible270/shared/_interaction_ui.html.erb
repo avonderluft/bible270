@@ -1,5 +1,6 @@
-<script nonce="<%= content_security_policy_nonce %>">
+<script nonce="<%= content_security_policy_nonce %>" data-refresh-path="<%= refresh_session_path %>">
   (() => {
+    const refreshSessionPath = document.currentScript.dataset.refreshPath;
     if (window.Bible270InteractionUI) {
       window.Bible270InteractionUI.reset();
       return;
@@ -28,6 +29,42 @@
 
     function reset() {
       document.querySelectorAll("form[data-b270-submit='true']").forEach(resetForm);
+    }
+
+    const SESSION_REFRESH_AFTER = 5 * 60 * 1000;
+    let sessionRefreshedAt = Date.now();
+    let sessionRefresh = null;
+    let hiddenAt = null;
+
+    function updateAuthenticityToken(token) {
+      const meta = document.querySelector("meta[name='csrf-token']");
+      if (meta) meta.content = token;
+      document.querySelectorAll("input[name='authenticity_token']").forEach((input) => {
+        input.value = token;
+      });
+    }
+
+    function refreshSession() {
+      if (sessionRefresh) return sessionRefresh;
+
+      sessionRefresh = fetch(refreshSessionPath, {
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { Accept: "text/plain" }
+      }).then((response) => {
+        const token = response.headers.get("X-CSRF-Token");
+        if (!response.ok || !token) throw new Error("Could not refresh the session");
+
+        updateAuthenticityToken(token);
+        sessionRefreshedAt = Date.now();
+      }).finally(() => {
+        sessionRefresh = null;
+      });
+      return sessionRefresh;
+    }
+
+    function sessionRefreshNeeded() {
+      return Date.now() - sessionRefreshedAt >= SESSION_REFRESH_AFTER;
     }
 
     let scriptureWindow = null;
@@ -62,6 +99,24 @@
     document.addEventListener("submit", (event) => {
       const form = event.target.closest("form[data-b270-submit='true']");
       if (!form) return;
+
+      if (sessionRefresh || sessionRefreshNeeded()) {
+        event.preventDefault();
+        if (form.dataset.b270AwaitingSession === "true") return;
+
+        form.dataset.b270AwaitingSession = "true";
+        const submitter = event.submitter;
+        refreshSession().then(() => {
+          delete form.dataset.b270AwaitingSession;
+          form.requestSubmit(submitter || undefined);
+        }).catch(() => {
+          delete form.dataset.b270AwaitingSession;
+          sessionRefreshedAt = Date.now();
+          form.requestSubmit(submitter || undefined);
+        });
+        return;
+      }
+
       if (form.dataset.b270Submitting === "true") {
         event.preventDefault();
         return;
@@ -89,7 +144,18 @@
       }
     });
 
-    window.addEventListener("pageshow", reset);
+    window.addEventListener("pageshow", (event) => {
+      reset();
+      if (event.persisted) refreshSession().catch(() => {});
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now();
+      } else if (hiddenAt && Date.now() - hiddenAt >= SESSION_REFRESH_AFTER) {
+        refreshSession().catch(() => {});
+        hiddenAt = null;
+      }
+    });
     document.addEventListener("turbo:load", reset);
 
     window.Bible270InteractionUI = { reset };

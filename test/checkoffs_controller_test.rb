@@ -72,7 +72,11 @@ if RAILS_LOADED
         assert_select 'button[type="submit"]'
       end
       assert_select '#b270-interaction-status[role="status"][aria-live="polite"]'
+      assert_select "script[data-refresh-path='#{mount}/session/refresh']"
       assert_match(%r{Bible270InteractionUI}, response.body)
+      assert_match(%r{visibilitychange}, response.body)
+      assert_match(%r{X-CSRF-Token}, response.body)
+      assert_match(%r{requestSubmit}, response.body)
     end
 
     def test_html_checkoffs_return_a_success_message
