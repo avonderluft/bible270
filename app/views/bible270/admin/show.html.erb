@@ -47,6 +47,30 @@
 </div>
 
 <div class="b270-panel">
+  <h2 class="b270-subhead">Email notifications</h2>
+  <% unless Bible270.config.mention_notifications %>
+    <p class="b270-hint">Reflection emails are disabled for this installation.</p>
+  <% else %>
+    <% unless @comment_notifications_available %>
+      <p class="b270-flash alert" style="margin:0">
+        Run the pending Bible270 database migration before changing reflection emails.
+      </p>
+    <% else %>
+      <% if @reader.email.blank? %>
+        <p class="b270-hint">This reader does not currently have an email address.</p>
+      <% end %>
+      <%= form_with url: admin_reader_notifications_path(@reader), method: :patch,
+                    class: "b270-emailform" do %>
+        <%= render "bible270/shared/comment_notification_choices",
+              level: @reader.comment_notification_level,
+              personal_label: "Only replies to their reflections and mentions of them" %>
+        <%= submit_tag 'Save', class: 'b270-btn' %>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="b270-panel">
   <h2 class="b270-subhead">Where they are in the plan</h2>
   <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
     <label class="b270-field">

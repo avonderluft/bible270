@@ -14,9 +14,9 @@ module Bible270
 
     def update
       @comment_notifications_available = comment_notifications_available?
-      @notify_on_mention = requested_comment_notifications
+      @comment_notification_level = requested_comment_notification_level
       @daily_reminders_available = daily_reminders_available?
-      problems = []
+      problems = [comment_notification_problem].compact
       problems << 'both a first and last name' unless current_reader.update_names(params[:first_name],
                                                                                   params[:last_name])
       if params[:bible_version].present? && !current_reader.update_bible_version(params[:bible_version])
@@ -35,7 +35,7 @@ module Bible270
       end
 
       if problems.empty?
-        current_reader.update!(notify_on_mention: @notify_on_mention) if @comment_notifications_available
+        current_reader.update_comment_notification_level!(@comment_notification_level) if @comment_notifications_available
         if @daily_reminders_available
           current_reader.update!(daily_reminders: requested_daily_reminders,
                                  daily_reminder_time: requested_daily_reminder_time)
@@ -59,17 +59,27 @@ module Bible270
 
     def load_comment_notification_state
       @comment_notifications_available = comment_notifications_available?
-      @notify_on_mention = current_reader.wants_comment_notifications?
+      @comment_notification_level = current_reader.comment_notification_level
     end
 
     def comment_notifications_available?
-      Bible270.config.mention_notifications && current_reader.has_attribute?(:notify_on_mention)
+      return false unless Bible270.config.mention_notifications && Reader.comment_notification_columns?
+
+      current_reader.reload unless current_reader.has_attribute?(:notify_on_all_comments)
+      true
     end
 
-    def requested_comment_notifications
-      return current_reader.wants_comment_notifications? unless params.key?(:notify_on_mention)
+    def requested_comment_notification_level
+      return current_reader.comment_notification_level unless params.key?(:comment_notifications)
 
-      params[:notify_on_mention] == '1'
+      params[:comment_notifications].to_s
+    end
+
+    def comment_notification_problem
+      return unless @comment_notifications_available
+      return if Reader::COMMENT_NOTIFICATION_LEVELS.include?(@comment_notification_level)
+
+      'a reflection email preference from the list'
     end
 
     def load_daily_reminder_state

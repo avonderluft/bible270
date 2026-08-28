@@ -13,7 +13,8 @@ module Bible270
 
     before_action :require_admin!
     before_action :load_reader,
-                  only: %i[show destroy update_start update_profile remove_avatar complete_through toggle_day]
+                  only: %i[show destroy update_start update_profile update_notifications remove_avatar complete_through
+                           toggle_day]
     before_action :load_comment, only: %i[hide_comment unhide_comment destroy_comment]
 
     # ---- enrolment --------------------------------------------------------
@@ -69,6 +70,7 @@ module Bible270
     end
 
     def show
+      @comment_notifications_available = comment_notifications_available_for?(@reader)
       @days_completed = @reader.days_completed
       @comments = @reader.comments.order(created_at: :desc).limit(50)
     end
@@ -194,6 +196,24 @@ module Bible270
       end
     end
 
+    def update_notifications
+      unless Bible270.config.mention_notifications
+        return redirect_to admin_reader_path(@reader), alert: 'Reflection emails are disabled for this installation.'
+      end
+      unless comment_notifications_available_for?(@reader)
+        return redirect_to admin_reader_path(@reader),
+                           alert: 'Run the pending Bible270 database migration before changing reflection emails.'
+      end
+
+      level = params[:comment_notifications].to_s
+      unless Reader::COMMENT_NOTIFICATION_LEVELS.include?(level)
+        return redirect_to admin_reader_path(@reader), alert: 'Choose a reflection email setting from the list.'
+      end
+
+      @reader.update_comment_notification_level!(level)
+      redirect_to admin_reader_path(@reader), notice: 'Reflection email setting updated.'
+    end
+
     def remove_avatar
       @reader.remove_avatar!
       redirect_to admin_reader_path(@reader), notice: "Removed #{@reader.display_name}'s picture."
@@ -246,6 +266,13 @@ module Bible270
     end
 
   private
+
+    def comment_notifications_available_for?(reader)
+      return false unless Bible270.config.mention_notifications && Reader.comment_notification_columns?
+
+      reader.reload unless reader.has_attribute?(:notify_on_all_comments)
+      true
+    end
 
     def require_admin!
       return if Bible270.config.admin_configured? && Bible270.config.admin?(current_reader)

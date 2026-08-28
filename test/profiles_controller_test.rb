@@ -41,8 +41,14 @@ if RAILS_LOADED
       assert_select 'h1', text: 'Your details'
       assert_match(%r{first_name}, response.body)
       assert_match(%r{last_name}, response.body)
-      assert_select 'input[type="checkbox"][name="notify_on_mention"][checked="checked"]'
-      assert_match(%r{Email me about replies and mentions}, response.body)
+      assert_select 'fieldset.b270-notification-field' do
+        assert_select 'legend', text: 'Reflection emails'
+        assert_select 'input[type="radio"][name="comment_notifications"]', count: 3
+        assert_select 'input[value="personal"][checked="checked"]', count: 1
+        assert_select 'label', text: %r{Every new reflection and reply}
+        assert_select 'label', text: %r{Only replies to my reflections and mentions of me}
+        assert_select 'label', text: %r{None}
+      end
       refute_match(%r{name="daily_reminders"}, response.body)
       refute_match(%r{name="daily_reminder_time"}, response.body)
       assert_match(%r{name="bible_version".*class="b270-source-choices"}m, response.body,
@@ -98,6 +104,24 @@ if RAILS_LOADED
       @reader.reload
       assert_equal 'Ready', @reader.first_name
       assert_equal 'Reader', @reader.last_name
+    end
+
+    def test_profile_stays_available_while_the_comment_notification_migration_is_pending
+      sign_in_as(@reader)
+
+      Bible270::Reader.stub(:comment_notification_columns?, false) do
+        get "#{mount}/profile"
+        assert_response :success
+        assert_select 'input[name="comment_notifications"]', count: 0
+        assert_select '.b270-flash.alert', text: %r{Reflection email settings.*database update}i
+
+        patch "#{mount}/profile", params: {
+          first_name: 'Ready', last_name: 'Reader', comment_notifications: 'all'
+        }
+        assert_response :redirect
+      end
+
+      assert_equal 'personal', @reader.reload.comment_notification_level
     end
 
     def test_daily_reminder_checkbox_is_shown_only_when_globally_enabled
@@ -198,57 +222,75 @@ if RAILS_LOADED
       assert_equal '06:30', @reader.daily_reminder_time
     end
 
-    def test_the_reply_and_mention_preference_can_be_changed
+    def test_the_reflection_email_preference_can_be_changed
       sign_in_as(@reader)
 
       patch "#{mount}/profile", params: {
-        first_name: 'R', last_name: 'Reader', notify_on_mention: '0'
+        first_name: 'R', last_name: 'Reader', comment_notifications: 'all'
       }
-      refute @reader.reload.notify_on_mention
+      assert_equal 'all', @reader.reload.comment_notification_level
 
       patch "#{mount}/profile", params: {
-        first_name: 'R', last_name: 'Reader', notify_on_mention: '1'
+        first_name: 'R', last_name: 'Reader', comment_notifications: 'none'
       }
-      assert @reader.reload.notify_on_mention
+      assert_equal 'none', @reader.reload.comment_notification_level
+
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', comment_notifications: 'personal'
+      }
+      assert_equal 'personal', @reader.reload.comment_notification_level
     end
 
-    def test_omitting_the_reply_and_mention_preference_preserves_it
-      @reader.update!(notify_on_mention: false)
+    def test_an_unknown_reflection_email_preference_is_refused
+      sign_in_as(@reader)
+
+      patch "#{mount}/profile", params: {
+        first_name: 'R', last_name: 'Reader', comment_notifications: 'everything'
+      }
+
+      assert_response :unprocessable_entity
+      assert_match(%r{reflection email preference from the list}, response.body)
+      assert_equal 'personal', @reader.reload.comment_notification_level
+    end
+
+    def test_omitting_the_reflection_email_preference_preserves_it
+      @reader.update_comment_notification_level!('all')
       sign_in_as(@reader)
 
       patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader' }
 
-      refute @reader.reload.notify_on_mention
+      assert_equal 'all', @reader.reload.comment_notification_level
     end
 
-    def test_the_reply_and_mention_preference_is_hidden_and_preserved_when_globally_disabled
+    def test_the_reflection_email_preference_is_hidden_and_preserved_when_globally_disabled
       previous = Bible270.config.mention_notifications
       Bible270.config.mention_notifications = false
-      @reader.update!(notify_on_mention: false)
+      @reader.update_comment_notification_level!('all')
       sign_in_as(@reader)
 
       get "#{mount}/profile"
-      assert_select 'input[type="checkbox"][name="notify_on_mention"]', count: 0
+      assert_select 'input[name="comment_notifications"]', count: 0
 
       patch "#{mount}/profile", params: {
-        first_name: 'R', last_name: 'Reader', notify_on_mention: '1'
+        first_name: 'R', last_name: 'Reader', comment_notifications: 'none'
       }
-      refute @reader.reload.notify_on_mention
+      assert_equal 'all', @reader.reload.comment_notification_level
     ensure
       Bible270.config.mention_notifications = previous
     end
 
     def test_half_a_name_is_refused_and_the_form_comes_back
-      @reader.update!(notify_on_mention: false)
+      @reader.update_comment_notification_level!('none')
       sign_in_as(@reader)
       patch "#{mount}/profile", params: {
-        first_name: 'Andrew', last_name: '', notify_on_mention: '1'
+        first_name: 'Andrew', last_name: '', comment_notifications: 'all'
       }
 
       assert_response :unprocessable_entity
       assert_equal 'R', @reader.reload.first_name, 'nothing should have changed'
-      refute @reader.notify_on_mention, 'notification preference should not change on an invalid form'
-      assert_select 'input[type="checkbox"][name="notify_on_mention"][checked="checked"]'
+      assert_equal 'none', @reader.comment_notification_level,
+                   'notification preference should not change on an invalid form'
+      assert_select 'input[name="comment_notifications"][value="all"][checked="checked"]'
     end
 
     def test_a_translation_can_be_chosen

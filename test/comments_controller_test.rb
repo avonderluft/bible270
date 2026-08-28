@@ -54,6 +54,15 @@ if RAILS_LOADED
       assert_match(%r{Bible270InteractionUI}, response.body)
       assert_select '[data-b270-draft-status][aria-live="polite"]'
       assert_select '#b270-interaction-status[role="status"]'
+      assert_select "[data-b270-mention-composer][data-suggestions-url='#{mount}/mention-suggestions']" do
+        assert_select 'label.b270-sr-only[for="comment_body"]', text: 'Reflection'
+        assert_select 'textarea[role="combobox"][aria-autocomplete="list"]' \
+                      '[aria-expanded="false"][aria-controls="b270-mention-options"]'
+        assert_select '#b270-mention-options[role="listbox"][hidden]'
+        assert_select '[data-b270-mention-status][aria-live="polite"]'
+      end
+      assert_match(%r{Bible270MentionTypeahead}, response.body)
+      assert_match(%r{ArrowDown.*ArrowUp.*Enter.*Escape}m, response.body)
     end
 
     def test_reply_drafts_are_scoped_to_the_parent_reflection

@@ -25,6 +25,52 @@ class ReaderTest < Minitest::Test
   def test_optional_reader_columns_are_available_in_the_migrated_schema
     assert Bible270::Reader.daily_reminder_columns?
     assert Bible270::Reader.reflections_seen_column?
+    assert Bible270::Reader.comment_notification_columns?
+  end
+
+  def test_comment_notification_columns_refresh_a_stale_schema_cache
+    calls = 0
+    column_names = -> do
+      calls += 1
+      calls == 1 ? ['notify_on_mention'] : Bible270::Reader::COMMENT_NOTIFICATION_COLUMNS
+    end
+    reset = false
+
+    Bible270::Reader.stub(:column_names, column_names) do
+      Bible270::Reader.stub(:reset_column_information, -> { reset = true }) do
+        assert Bible270::Reader.comment_notification_columns?
+      end
+    end
+    assert reset
+  end
+
+  def test_mention_suggestions_rank_handles_before_surnames_and_exclude_the_writer
+    andrew = create_named_reader('Andrew', 'Smith')
+    create_named_reader('Beth', 'Andrew')
+
+    suggestions = Bible270::Reader.mention_suggestions('and', except: @reader)
+    assert_equal ['@andrew.smith', '@beth.andrew'], suggestions.pluck(:handle)
+
+    suggestions = Bible270::Reader.mention_suggestions('and', except: andrew)
+    assert_equal ['@beth.andrew'], suggestions.pluck(:handle)
+  end
+
+  def test_mention_suggestions_omit_ambiguous_full_handles_and_do_not_fuzzy_match
+    2.times { |index| create_named_reader('Sam', 'Jones', suffix: index) }
+    create_named_reader('Amanda', 'Stone')
+
+    assert_empty Bible270::Reader.mention_suggestions('sam')
+    assert_empty Bible270::Reader.mention_suggestions('mand')
+  end
+
+  def test_mention_suggestions_are_alphabetical_and_limited_to_five
+    6.times { |index| create_named_reader("Ann#{index}", 'Reader') }
+
+    suggestions = Bible270::Reader.mention_suggestions('ann')
+
+    assert_equal 5, suggestions.size
+    assert_equal %w[@ann0.reader @ann1.reader @ann2.reader @ann3.reader @ann4.reader],
+                 suggestions.pluck(:handle)
   end
 
   def test_marking_reflections_seen_is_safe_when_the_migration_is_pending
@@ -186,5 +232,13 @@ class ReaderTest < Minitest::Test
   def test_email_readers_are_recognised_for_a_closed_run
     assert Bible270::Reader.email_reader_exists?('a@example.org')
     refute Bible270::Reader.email_reader_exists?('nobody@example.org')
+  end
+
+private
+
+  def create_named_reader(first, last, suffix: Bible270::Reader.count)
+    uid = "#{first}.#{last}.#{suffix}@example.org".downcase
+    Bible270::Reader.create!(provider: 'email', uid: uid, email: uid,
+                             display_name: "#{first} #{last}", first_name: first, last_name: last)
   end
 end

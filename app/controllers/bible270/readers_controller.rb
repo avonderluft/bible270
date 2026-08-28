@@ -35,5 +35,12 @@ module Bible270
       @days_completed = @reader.days_completed
       @recent_comments = @reader.comments.recent.limit(20)
     end
+
+    def mention_suggestions
+      return head :unauthorized unless signed_in?
+
+      response.headers['Cache-Control'] = 'private, no-store'
+      render json: { suggestions: Reader.mention_suggestions(params[:q], except: current_reader) }
+    end
   end
 end

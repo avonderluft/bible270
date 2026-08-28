@@ -4,6 +4,15 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+### Added
+
+- let readers choose reflection emails for every new reflection and reply, only replies to their reflections and mentions of them, or none; administrators can manage the same setting, pending migrations are explained instead of silently hiding it, and existing preferences retain their previous behavior
+- suggest up to five unambiguous reader handles only while a signed-in writer types `@`, with keyboard and touch selection and no change to server-authoritative mention resolution
+
+### Fixed
+
+- refresh stale `Reader` column information after an in-process database migration so newly available reflection email controls do not remain hidden until the web process restarts
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.7...main)**
 
 ## [1.1.7] - 2026-08-27

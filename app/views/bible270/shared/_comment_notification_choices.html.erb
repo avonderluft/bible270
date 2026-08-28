@@ -1,0 +1,17 @@
+<fieldset class="b270-field b270-notification-field">
+  <legend>Reflection emails</legend>
+  <div class="b270-notification-choices">
+    <label class="b270-notification-choice">
+      <%= radio_button_tag :comment_notifications, "all", level == "all" %>
+      <span>Every new reflection and reply</span>
+    </label>
+    <label class="b270-notification-choice">
+      <%= radio_button_tag :comment_notifications, "personal", level == "personal" %>
+      <span><%= personal_label %></span>
+    </label>
+    <label class="b270-notification-choice">
+      <%= radio_button_tag :comment_notifications, "none", level == "none" %>
+      <span>None</span>
+    </label>
+  </div>
+</fieldset>

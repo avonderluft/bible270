@@ -10,6 +10,7 @@ if RAILS_LOADED
       @previous_admins = Bible270.config.admin_emails
       @previous_start_date = Bible270.config.start_date
       @previous_personal_dates = Bible270.config.allow_reader_start_date
+      @previous_mention_notifications = Bible270.config.mention_notifications
       @admin = Bible270::Reader.create!(provider: 'email', uid: 'boss@example.org',
                                         email: 'boss@example.org', display_name: 'The Boss')
       @reader = Bible270::Reader.create!(provider: 'email', uid: 'r@example.org',
@@ -21,6 +22,7 @@ if RAILS_LOADED
       Bible270.config.admin_emails = @previous_admins
       Bible270.config.start_date = @previous_start_date
       Bible270.config.allow_reader_start_date = @previous_personal_dates
+      Bible270.config.mention_notifications = @previous_mention_notifications
       Bible270::Setting.open_enrollment!
       Bible270::Setting.clear_run_start_date!
     end
@@ -82,6 +84,55 @@ if RAILS_LOADED
 
       assert_response :success
       assert_match(%r{R Reader}, response.body)
+    end
+
+    def test_an_admin_sees_a_readers_reflection_email_setting
+      sign_in_as_admin
+
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      assert_select 'h2', text: 'Email notifications'
+      assert_select 'input[type="radio"][name="comment_notifications"]', count: 3
+      assert_select 'input[name="comment_notifications"][value="personal"][checked="checked"]'
+    end
+
+    def test_an_admin_can_change_a_readers_reflection_email_setting
+      sign_in_as_admin
+
+      patch "#{mount}/admin/readers/#{@reader.id}/notifications",
+            params: { comment_notifications: 'all' }
+
+      assert_response :redirect
+      assert_equal 'all', @reader.reload.comment_notification_level
+    end
+
+    def test_admin_reflection_email_controls_explain_a_pending_migration
+      sign_in_as_admin
+
+      Bible270::Reader.stub(:comment_notification_columns?, false) do
+        get "#{mount}/admin/readers/#{@reader.id}"
+        assert_select 'input[name="comment_notifications"]', count: 0
+        assert_select '.b270-flash.alert', text: %r{pending Bible270 database migration}i
+
+        patch "#{mount}/admin/readers/#{@reader.id}/notifications",
+              params: { comment_notifications: 'all' }
+        assert_equal 'personal', @reader.reload.comment_notification_level
+        assert_match(%r{pending Bible270 database migration}i, flash[:alert])
+      end
+    end
+
+    def test_admin_reflection_email_controls_respect_the_global_switch
+      @reader.update_comment_notification_level!('all')
+      Bible270.config.mention_notifications = false
+      sign_in_as_admin
+
+      get "#{mount}/admin/readers/#{@reader.id}"
+      assert_select 'input[name="comment_notifications"]', count: 0
+      assert_select '.b270-hint', text: %r{Reflection emails are disabled}i
+
+      patch "#{mount}/admin/readers/#{@reader.id}/notifications",
+            params: { comment_notifications: 'none' }
+      assert_equal 'all', @reader.reload.comment_notification_level
     end
 
     def test_an_admin_can_rename_a_reader

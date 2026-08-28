@@ -25,6 +25,27 @@ if RAILS_LOADED
       get "#{mount}/sign_in/email/#{raw}"
     end
 
+    def test_mention_suggestions_require_a_signed_in_reader
+      get "#{mount}/mention-suggestions", params: { q: 'oth' }, as: :json
+
+      assert_response :unauthorized
+      assert_empty response.body
+    end
+
+    def test_mention_suggestions_return_only_public_name_and_canonical_handle
+      @other.update!(first_name: 'Other', last_name: 'Reader')
+      sign_in_as(@reader)
+
+      get "#{mount}/mention-suggestions", params: { q: 'oth' }, as: :json
+
+      assert_response :success
+      assert_match(%r{private}, response.headers['Cache-Control'])
+      assert_match(%r{no-store}, response.headers['Cache-Control'])
+      suggestions = response.parsed_body.fetch('suggestions')
+      assert_equal [{ 'name' => 'Other Reader', 'handle' => '@other.reader' }], suggestions
+      assert_equal %w[handle name], suggestions.first.keys.sort
+    end
+
     def test_the_community_page_lists_readers
       get "#{mount}/community"
 

@@ -18,7 +18,18 @@
     </p>
   <% end %>
   <%= f.hidden_field :parent_id %>
-  <%= f.text_area :body, placeholder: comment.parent_id.present? ? "Write your reply…" : "Share a reflection on today's reading…" %>
+  <div class="b270-mention-composer" data-b270-mention-composer
+       data-suggestions-url="<%= mention_suggestions_path %>">
+    <%= f.label :body, (posting_reply ? "Reply" : "Reflection"), class: "b270-sr-only" %>
+    <%= f.text_area :body,
+          placeholder: posting_reply ? "Write your reply…" : "Share a reflection on today's reading…",
+          role: "combobox", autocomplete: "off",
+          aria: { autocomplete: "list", expanded: "false", haspopup: "listbox",
+                  controls: "b270-mention-options" } %>
+    <div class="b270-mention-options" id="b270-mention-options" role="listbox"
+         data-b270-mention-options hidden></div>
+    <p class="b270-sr-only" data-b270-mention-status aria-live="polite"></p>
+  </div>
   <p class="b270-draft-status" data-b270-draft-status aria-live="polite"></p>
   <div class="row">
     <%= f.select :track,

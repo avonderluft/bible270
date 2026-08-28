@@ -276,12 +276,12 @@ Rules enforced by the model include:
 
 ### Mentions and reply notices
 
-`lib/bible270/mentions.rb` parses handles such as `@first` and `@first.last`. Ambiguous short handles resolve to nobody rather than risking notification of the wrong reader.
+`lib/bible270/mentions.rb` parses handles such as `@first` and `@first.last`. Ambiguous short handles resolve to nobody rather than risking notification of the wrong reader. For signed-in writers, `ReadersController#mention_suggestions` supplies at most five prefix-matched public names to the progressively enhanced composer; the server-side parser remains authoritative when the reflection is posted.
 
-After a comment commits, model callbacks determine who should receive a reply or mention notice. They suppress:
+After a comment commits, model callbacks determine who should receive a direct reply or mention notice and which readers requested every new reflection and reply. They suppress:
 
 - Self-notifications.
-- Duplicate reply-and-mention notifications.
+- Duplicate direct and broad notifications.
 - Readers who have opted out.
 - Notifications disabled globally.
 - Readers already notified for an unchanged mention.
@@ -308,7 +308,7 @@ After a comment commits, model callbacks determine who should receive a reply or
 - Avatar.
 - Bible translation.
 - Bible Gateway or Blue Letter Bible.
-- Reply and mention email notices.
+- Reflection email scope: every post, only personal replies and mentions, or none.
 - Daily reminder opt-in and time.
 
 Original-language selections use Blue Letter Bible automatically.
@@ -319,7 +319,7 @@ Original-language selections use Blue Letter Bible automatically.
 
 - Open or close enrollment.
 - Change or reset the current run's shared start date.
-- Inspect and edit readers.
+- Inspect readers and edit their identity and reflection email scope.
 - Manage personal calendar dates where supported.
 - Correct exact reading completion state.
 - Moderate or delete reflections.
@@ -393,6 +393,7 @@ Bible270 keeps its presentation self-contained under `app/views`.
 - Shared progress/grid UI: `_progress.html.erb` and `_day_index.html.erb`
 - Shared interaction JavaScript: `_interaction_ui.html.erb`
 - Reflection draft JavaScript: `_comment_drafts.html.erb`
+- Mention suggestion JavaScript: `_mention_typeahead.html.erb`
 - Turbo Stream templates: controller-specific `.turbo_stream.erb` files
 
 The layout uses CSP nonces for inline scripts. JavaScript enhances ordinary forms rather than replacing their server-rendered behavior. Mutation controllers keep HTML redirect fallbacks, while Turbo performs focused updates when available.

@@ -282,9 +282,15 @@ The Reflections page lists conversations by their latest approved reply, support
 filters, and paginates older threads. Signed-in readers see which conversations became active since
 their previous visit. Reflection and reply drafts are retained for up to 30 days in that browser and
 cleared after a successful post. On a shared device, clearing browser storage also removes saved drafts.
+Typing `@` in the composer offers up to five unambiguous reader handles; manual mentions continue to
+work without JavaScript.
 
-After upgrading, copy and run migration `20260101000017`, which stores each reader's last visit to the
-Reflections page:
+When `config.mention_notifications` is enabled, each reader can request email for every new reflection
+and reply, only replies to their reflections and mentions of them, or none. Administrators can change
+the same preference from the reader's Admin page. Migration
+`20260101000018` adds the broad opt-in without changing any existing reader's choice. Migration
+`20260101000017` stores each reader's last visit to the Reflections page. After upgrading, install and
+run the current migrations:
 
 ```bash
 bin/rails bible270:install:migrations
@@ -398,7 +404,7 @@ Bible270.configure do |config|
   config.allow_reader_start_date = true
 
   config.daily_reminders = false             # schedule reminders:send every 15 minutes
-  config.mention_notifications = true         # replies and @mentions; readers may opt out
+  config.mention_notifications = true         # reflection/reply emails; readers choose the scope
   config.mailer_host = "example.com"          # links in reminder/notice email
 
   config.parent_controller = "ActionController::Base"   # or "::ApplicationController"
@@ -487,7 +493,8 @@ GET    /day/:day                 days#show       readings, who's finished, refle
 POST   /day/:day/toggle/:track   checkoffs#toggle
 POST   /day/:day/comments        comments#create
 DELETE /comments/:id             comments#destroy
-GET    /community                readers#index   leaderboard
+GET    /community                readers#index   reader directory
+GET    /mention-suggestions      readers#mention_suggestions (signed-in JSON)
 GET    /readers/:id              readers#show
 GET    /sign_in                  sessions#new    email form + provider list
 POST   /sign_in/email            sessions#email_link

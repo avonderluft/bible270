@@ -20,8 +20,9 @@ Bible270::Engine.routes.draw do
   get    'admin',                        to: 'admin#index',            as: :admin
   get    'admin/readers/:id',            to: 'admin#show',             as: :admin_reader
   delete 'admin/readers/:id',            to: 'admin#destroy'
-  patch  'admin/readers/:id/profile',    to: 'admin#update_profile',   as: :admin_reader_profile
-  delete 'admin/readers/:id/avatar',     to: 'admin#remove_avatar',    as: :admin_reader_avatar
+  patch  'admin/readers/:id/profile',    to: 'admin#update_profile', as: :admin_reader_profile
+  patch  'admin/readers/:id/notifications', to: 'admin#update_notifications', as: :admin_reader_notifications
+  delete 'admin/readers/:id/avatar',     to: 'admin#remove_avatar', as: :admin_reader_avatar
   patch  'admin/readers/:id/version',    to: 'admin#update_bible_version', as: :admin_reader_version
   patch  'admin/readers/:id/start',      to: 'admin#update_start',     as: :admin_reader_start
   patch  'admin/readers/:id/through',    to: 'admin#complete_through', as: :admin_reader_through
@@ -45,6 +46,7 @@ Bible270::Engine.routes.draw do
   get 'progress', to: 'readers#progress', as: :progress
 
   get 'community', to: 'readers#index', as: :community
+  get 'mention-suggestions', to: 'readers#mention_suggestions', as: :mention_suggestions, defaults: { format: :json }
   get 'readers/:id', to: 'readers#show', as: :reader
 
   # Built-in OmniAuth sign-in. The request phase (POST <mount>/auth/:provider)

@@ -35,6 +35,51 @@ if RAILS_LOADED
       post "#{mount}/day/1/comments", params: { comment: { body: body } }
     end
 
+    def test_every_comment_preference_emails_a_new_reflection
+      @andrew.update_comment_notification_level!('all')
+
+      post_reflection('A thought for everyone', as: @mary)
+
+      assert_equal 1, ActionMailer::Base.deliveries.size
+      mail = ActionMailer::Base.deliveries.last
+      assert_equal [@andrew.email], mail.to
+      assert_match(%r{posted a reflection}, mail.subject)
+    end
+
+    def test_every_comment_preference_does_not_email_the_author
+      @mary.update_comment_notification_level!('all')
+
+      post_reflection('A note of my own', as: @mary)
+
+      assert_empty ActionMailer::Base.deliveries
+    end
+
+    def test_a_broad_subscriber_who_is_mentioned_receives_only_the_specific_notice
+      @andrew.update_comment_notification_level!('all')
+
+      post_reflection('Good point @Andrew', as: @mary)
+
+      assert_equal 1, ActionMailer::Base.deliveries.size
+      assert_match(%r{mentioned you}, ActionMailer::Base.deliveries.last.subject)
+    end
+
+    def test_every_comment_preference_includes_replies_to_other_readers
+      original = @andrew.comments.create!(day: 1, body: 'My thought')
+      subscriber = Bible270::Reader.create!(provider: 'email', uid: 's@example.org', email: 's@example.org',
+                                            display_name: 'Sam Jones', first_name: 'Sam', last_name: 'Jones')
+      subscriber.update_comment_notification_level!('all')
+      ActionMailer::Base.deliveries.clear
+      sign_in_as(@mary)
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: 'Thank you', parent_id: original.id } }
+
+      assert_equal 2, ActionMailer::Base.deliveries.size
+      deliveries_by_address = ActionMailer::Base.deliveries.index_by { |mail| mail.to.first }
+      assert_match(%r{replied}, deliveries_by_address.fetch(@andrew.email).subject)
+      assert_match(%r{posted a reply}, deliveries_by_address.fetch(subscriber.email).subject)
+    end
+
     def test_a_mention_emails_the_person_named
       post_reflection('Good point @Andrew', as: @mary)
 

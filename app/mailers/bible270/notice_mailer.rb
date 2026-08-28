@@ -36,6 +36,18 @@ module Bible270
       deliver_comment_notice("#{@app_name}: #{@author.display_name} replied on day #{@comment.day}")
     end
 
+    def comment_posted(comment_id:, reader_id:)
+      return message.perform_deliveries = false unless prepare_comment_notice(comment_id, reader_id)
+      return message.perform_deliveries = false unless @reader.wants_all_comment_notifications?
+      return message.perform_deliveries = false if @comment.reader_id == @reader.id
+
+      kind = @comment.reply? ? 'reply' : 'reflection'
+      @heading = "#{@author.display_name} posted a #{kind}"
+      @introduction = "#{@author.display_name} posted a #{kind} on day #{@comment.day}."
+      @reason = 'You are getting this because you asked to be emailed about every new reflection and reply.'
+      deliver_comment_notice("#{@app_name}: #{@author.display_name} posted a #{kind} on day #{@comment.day}")
+    end
+
     def daily_reminder(reader_id:, day:, on: Bible270.today)
       @reader = Reader.find_by(id: reader_id)
       return message.perform_deliveries = false unless Bible270.config.daily_reminders?

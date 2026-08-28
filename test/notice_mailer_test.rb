@@ -184,6 +184,10 @@ if RAILS_LOADED
       Bible270::NoticeMailer.mentioned(comment_id: comment.id, reader_id: @andrew.id)
     end
 
+    def all_comments_notice(comment, reader: @andrew)
+      Bible270::NoticeMailer.comment_posted(comment_id: comment.id, reader_id: reader.id)
+    end
+
     def test_the_mention_notice_quotes_the_reflection
       comment = @mary.comments.create!(day: 7, body: 'Good point @andrew about Genesis')
       mail = mention_notice(comment)
@@ -251,6 +255,34 @@ if RAILS_LOADED
       assert_match(%r{Mary Smith replied}, mail.subject)
       assert_match(%r{replied to your reflection}, body_of(mail))
       assert_match(%r{Quite so}, body_of(mail))
+    end
+
+    def test_an_all_comments_notice_identifies_the_new_reflection
+      comment = @mary.comments.create!(day: 4, body: 'A new thought')
+      @andrew.update_comment_notification_level!('all')
+      mail = all_comments_notice(comment)
+      body = body_of(mail)
+
+      assert_equal [@andrew.email], mail.to
+      assert_match(%r{Mary Smith posted a reflection}, mail.subject)
+      assert_match(%r{A new thought}, body)
+      assert_match(%r{every new reflection and reply}i, body)
+    end
+
+    def test_an_all_comments_notice_identifies_a_reply
+      original = @mary.comments.create!(day: 4, body: 'A thought')
+      reply = @mary.comments.create!(day: 4, body: 'More detail', parent: original)
+      @andrew.update_comment_notification_level!('all')
+
+      assert_match(%r{posted a reply}, all_comments_notice(reply).subject)
+    end
+
+    def test_an_all_comments_notice_rechecks_the_preference_and_excludes_the_author
+      comment = @mary.comments.create!(day: 4, body: 'A thought')
+
+      refute all_comments_notice(comment).perform_deliveries
+      @mary.update_comment_notification_level!('all')
+      refute all_comments_notice(comment, reader: @mary).perform_deliveries
     end
 
     def test_comment_notices_recheck_the_global_switch_and_reader_preference

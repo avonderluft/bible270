@@ -155,11 +155,13 @@ module Bible270
     end
 
     def notify_comment_readers
-      return unless Bible270.config.mention_notifications
+      return unless Bible270.config.mention_notifications && approved?
 
       replied_to = reply_notification_reader
       deliver_comment_notice(replied_to, :replied) if replied_to
-      notify_mentioned_readers(except: [replied_to&.id].compact)
+      directly_notified = [reader_id, replied_to&.id].compact
+      directly_notified.concat(notify_mentioned_readers(except: directly_notified))
+      notify_all_comment_readers(except: directly_notified)
     end
 
     def notify_newly_mentioned_readers
@@ -171,13 +173,20 @@ module Bible270
     end
 
     def notify_mentioned_readers(except: [])
-      return unless Bible270.config.mention_notifications
+      return [] unless Bible270.config.mention_notifications
 
-      Reader.mentioned_in(body).each do |mentioned|
+      Reader.mentioned_in(body).each_with_object([]) do |mentioned, notified|
         next if mentioned.id == reader_id
         next if except.include?(mentioned.id)
 
         deliver_comment_notice(mentioned, :mentioned)
+        notified << mentioned.id
+      end
+    end
+
+    def notify_all_comment_readers(except: [])
+      Reader.all_comment_notification_recipients.where.not(id: except).find_each do |recipient|
+        deliver_comment_notice(recipient, :comment_posted)
       end
     end
 

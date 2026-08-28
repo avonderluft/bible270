@@ -38,14 +38,13 @@
     <%= render "bible270/shared/passage_source", reader: current_reader %>
 
     <% if @comment_notifications_available %>
-      <div class="b270-field">
-        <span>Email notifications</span>
-        <label class="b270-reminder-optin">
-          <%= hidden_field_tag :notify_on_mention, "0", id: nil %>
-          <%= check_box_tag :notify_on_mention, "1", @notify_on_mention %>
-          <span>Email me about replies and mentions</span>
-        </label>
-      </div>
+      <%= render "bible270/shared/comment_notification_choices",
+            level: @comment_notification_level,
+            personal_label: "Only replies to my reflections and mentions of me" %>
+    <% elsif Bible270.config.mention_notifications %>
+      <p class="b270-flash alert" style="margin:0">
+        Reflection email settings are temporarily unavailable while this installation finishes a database update.
+      </p>
     <% end %>
 
     <% if @daily_reminders_available %>

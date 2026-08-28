@@ -31,6 +31,9 @@ module Bible270
     DAILY_REMINDER_MINUTES = %w[00 15 30 45].freeze
     DAILY_REMINDER_COLUMNS = %w[daily_reminders daily_reminder_time last_daily_reminder_sent_on].freeze
     REFLECTIONS_SEEN_COLUMN = 'reflections_seen_at'
+    COMMENT_NOTIFICATION_LEVELS = %w[all personal none].freeze
+    COMMENT_NOTIFICATION_COLUMNS = %w[notify_on_mention notify_on_all_comments].freeze
+    MENTION_SUGGESTION_LIMIT = 5
 
     validates :display_name, presence: true
     validates :uid, uniqueness: { scope: :provider }, allow_nil: true
@@ -244,11 +247,76 @@ module Bible270
 
     # ---- mentions ----------------------------------------------------------
 
-    # Older copied databases may briefly lack the preference column while their
+    # Older copied databases may briefly lack preference columns while their
     # migrations are being reconciled. Preserve the historical opted-in behavior
-    # until the column is available rather than breaking reflection delivery.
+    # until the original column is available rather than breaking reflection delivery.
     def wants_comment_notifications?
-      !has_attribute?(:notify_on_mention) || self[:notify_on_mention] != false
+      wants_all_comment_notifications? || !has_attribute?(:notify_on_mention) || self[:notify_on_mention] != false
+    end
+
+    def wants_all_comment_notifications?
+      has_attribute?(:notify_on_all_comments) && self[:notify_on_all_comments] == true
+    end
+
+    def comment_notification_level
+      return 'all' if wants_all_comment_notifications?
+
+      wants_comment_notifications? ? 'personal' : 'none'
+    end
+
+    def update_comment_notification_level!(level)
+      raise ArgumentError, 'unknown reflection email preference' unless COMMENT_NOTIFICATION_LEVELS.include?(level)
+
+      update!(notify_on_mention: level != 'none', notify_on_all_comments: level == 'all')
+    end
+
+    def self.comment_notification_columns?
+      return true if (COMMENT_NOTIFICATION_COLUMNS - column_names).empty?
+
+      # A migration commonly runs in a one-off process while the web process keeps
+      # its old schema cache. Refresh once before reporting that the migration is
+      # still pending, so the controls appear without requiring an application restart.
+      reset_column_information
+      (COMMENT_NOTIFICATION_COLUMNS - column_names).empty?
+    rescue ActiveRecord::StatementInvalid
+      false
+    end
+
+    def self.all_comment_notification_recipients
+      return none unless comment_notification_columns?
+
+      where(notify_on_all_comments: true).where.not(email: [nil, ''])
+    end
+
+    # Small, deterministic suggestions for the reflection composer. Full-handle
+    # collisions are omitted because the server must never guess which reader a
+    # mention intended.
+    def self.mention_suggestions(query, except: nil)
+      needle = Mentions.normalize(query.to_s.first(61))
+      candidates = where.not(first_name: [nil, '']).where.not(last_name: [nil, ''])
+      candidates = candidates.where.not(id: except.id) if except
+      unique = candidates.to_a.group_by { |reader| canonical_mention_handle(reader) }
+        .select { |handle, readers| handle.present? && readers.one? }
+
+      ranked = unique.filter_map do |handle, readers|
+        reader = readers.first
+        surname = Mentions.normalize(reader.last_name)
+        rank = if needle.empty? || handle.start_with?(needle)
+                 0
+               elsif surname.start_with?(needle)
+                 1
+               end
+        next unless rank
+
+        [{ name: reader.display_name, handle: "@#{handle}" }, rank, handle, reader.id]
+      end
+      ranked.sort_by { |_, rank, handle, id| [rank, handle, id] }
+        .first(MENTION_SUGGESTION_LIMIT)
+        .map(&:first)
+    end
+
+    def self.canonical_mention_handle(reader)
+      Mentions.handles_for(reader.first_name, reader.last_name).last
     end
 
     # The readers a piece of text mentions. A handle matching more than one reader
