@@ -4,11 +4,23 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.7...main)**
+
+## [1.1.7] - 2026-08-27
+
+### Fixed
+
+- refresh remembered sessions and CSRF tokens before interactions from long-lived or restored pages, and safely refresh the page after any remaining stale-token race instead of showing a Rails error page
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.6...v1.1.7)**
+
+## [1.1.6] - 2026-08-25
+
 ### Changed
 
 - show administrators a quiet, linked completed-day count on Community reader rows while keeping progress hidden—and its aggregate query skipped—for ordinary readers and visitors; the link stays unadorned at rest and uses the site’s gold hover and keyboard-focus treatment
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.5...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.5...v1.1.6)**
 
 ## [1.1.5] - 2026-08-25
 
@@ -552,6 +564,7 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[1.1.7]: https://github.com/avonderluft/bible270/releases/tag/v1.1.7
 [1.1.6]: https://github.com/avonderluft/bible270/releases/tag/v1.1.6
 [1.1.5]: https://github.com/avonderluft/bible270/releases/tag/v1.1.5
 [1.1.4]: https://github.com/avonderluft/bible270/releases/tag/v1.1.4

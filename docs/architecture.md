@@ -2,7 +2,7 @@
 
 This guide explains how Bible270 works from application boot through reader interactions, administration, email delivery, and testing. It assumes general familiarity with Rails MVC.
 
-It describes the codebase at version **1.1.6**. When behavior changes, update this document along with the relevant tests and release notes.
+It describes the codebase at version **1.1.7**. When behavior changes, update this document along with the relevant tests and release notes.
 
 ## 1. Start with the big picture
 
