@@ -6,6 +6,8 @@ A mountable **Rails engine** that drops a 270-day (9 month) interactive Bible re
 
 Initially created for use by students and faculty of [Kingdom Movement School of Ministry](https://www.kmsm.life/), to read through all of Scripture together during the school year. Thus it is potentially useful for any Bible School, Seminary, or Discipleship school working on a 9 month schedule.
 
+For a guided tour of the implementation, see the [architecture walkthrough](docs/architecture.md).
+
 ## The plan
 
 Three readings a day, sized by **verse count** so each day takes roughly the same time.
