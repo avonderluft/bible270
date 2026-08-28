@@ -67,7 +67,7 @@ if RAILS_LOADED
 
       get "#{mount}/day/1"
 
-      assert_select 'form[data-b270-submit="true"][data-b270-pending="Saving reading…"]' do
+      assert_select 'form[data-b270-submit="true"][data-b270-checkoff="true"][data-b270-pending="Saving reading…"]' do
         assert_select 'input[type="hidden"][name="checked"][value="1"]'
         assert_select 'button[type="submit"]'
       end
@@ -77,6 +77,9 @@ if RAILS_LOADED
       assert_match(%r{visibilitychange}, response.body)
       assert_match(%r{X-CSRF-Token}, response.body)
       assert_match(%r{requestSubmit}, response.body)
+      assert_match(%r{X-Bible270-Refresh-Session}, response.body)
+      assert_match(%r{statusCode === 422}, response.body)
+      assert_match(%r{b270RetriedAfterStaleSession}, response.body)
     end
 
     def test_html_checkoffs_return_a_success_message

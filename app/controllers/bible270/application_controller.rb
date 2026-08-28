@@ -104,14 +104,28 @@ module Bible270
     end
 
     # A suspended mobile tab can outlive its Rails session cookie. The page still
-    # contains the old session's CSRF token, so Rails rejects its next form before
-    # current_reader has a chance to restore the session from the remember cookie.
-    # Never execute that unverified request; return to a fresh page for a safe retry.
-    def recover_from_stale_page(error)
-      Rails.logger.info("[bible270] refreshing a page after #{error.class}")
-      redirect_back fallback_location: root_path, allow_other_host: false,
-                    alert: 'This page had been open for a while, so it was refreshed. Please try again.',
-                    status: :see_other
+    # contains the old session's CSRF token, so Rails would normally raise before
+    # current_reader could restore the session from the remember cookie. Redirect
+    # directly from Rails' forgery callback; rescue_from remains a fallback for an
+    # authenticity exception raised anywhere else in the request.
+    def handle_unverified_request
+      recover_from_stale_page
+    end
+
+    def recover_from_stale_page(error = nil)
+      reason = error ? error.class : 'an unverified request'
+      Rails.logger.info("[bible270] silently refreshing a page after #{reason}")
+
+      if stale_turbo_checkoff?
+        response.set_header('X-Bible270-Refresh-Session', 'true')
+        head :conflict
+      else
+        redirect_back fallback_location: root_path, allow_other_host: false, status: :see_other
+      end
+    end
+
+    def stale_turbo_checkoff?
+      controller_name == 'checkoffs' && action_name == 'toggle' && request.format.turbo_stream?
     end
 
     # Guard participation (checking off / commenting). Viewing is always open.

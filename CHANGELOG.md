@@ -10,7 +10,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Fixed
 
-- refresh remembered sessions and CSRF tokens before interactions from long-lived or restored pages, and safely refresh the page after any remaining stale-token race instead of showing a Rails error page
+- silently recover checkoffs from expired or rotated sessions: refresh remembered sessions and CSRF tokens before resumed interactions, handle remaining stale-token races without a flash or Rails 422 page, and retry the intended checkoff once with a fresh token
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.1.6...v1.1.7)**
 

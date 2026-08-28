@@ -22,7 +22,7 @@
               <% if signed_in? %>
                 <%= button_to toggle_checkoff_part_path(day, track, index), class: "b270-toggle",
                       params: { checked: part_done ? "0" : "1" },
-                      form: { data: { turbo_stream: true, b270_submit: true,
+                      form: { data: { turbo_stream: true, b270_submit: true, b270_checkoff: true,
                                       b270_pending: "Saving reading…",
                                       b270_success: (part_done ? "Reading marked unread." : "Reading marked read."),
                                       b270_failure: "Couldn’t update that reading. Try again." } },
@@ -46,7 +46,7 @@
       <% if signed_in? %>
         <%= button_to toggle_checkoff_part_path(day, track, 0), class: "b270-toggle",
               params: { checked: done ? "0" : "1" },
-              form: { data: { turbo_stream: true, b270_submit: true,
+              form: { data: { turbo_stream: true, b270_submit: true, b270_checkoff: true,
                               b270_pending: "Saving reading…",
                               b270_success: (done ? "Reading marked unread." : "Reading marked read."),
                               b270_failure: "Couldn’t update that reading. Try again." } },

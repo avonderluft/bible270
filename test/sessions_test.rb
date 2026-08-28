@@ -97,7 +97,7 @@ if RAILS_LOADED
       assert_response :success, 'the refresh request should rebuild the signed-in session'
     end
 
-    def test_a_stale_checkoff_token_refreshes_the_page_instead_of_showing_an_error
+    def test_a_stale_turbo_checkoff_can_refresh_and_retry_without_returning_422
       with_forgery_protection do
         sign_in
         get "#{mount}/day/1"
@@ -109,18 +109,40 @@ if RAILS_LOADED
         cookies[:bible270_remember] = remembered
         post "#{mount}/day/1/toggle/nt/0",
              params: { checked: '1', authenticity_token: stale_token },
-             headers: {
-               'Accept' => 'text/vnd.turbo-stream.html',
-               'HTTP_REFERER' => "http://www.example.com#{mount}/day/1"
-             }
+             headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        assert_response :conflict
+        assert_equal 'true', response.headers['X-Bible270-Refresh-Session']
+        assert_equal 0, Bible270::Checkoff.count, 'an unverified request must never be applied'
+
+        get "#{mount}/session/refresh"
+        fresh_token = response.headers['X-CSRF-Token']
+        post "#{mount}/day/1/toggle/nt/0",
+             params: { checked: '1', authenticity_token: fresh_token },
+             headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        assert_response :success
+        assert_equal 1, Bible270::Checkoff.count
+        assert_nil flash[:alert]
+      end
+    end
+
+    def test_a_stale_checkoff_without_a_referrer_silently_returns_to_the_plan
+      with_forgery_protection do
+        sign_in
+        get "#{mount}/day/1"
+        stale_token = css_select("meta[name='csrf-token']").first&.[]('content')
+        remembered = cookies[:bible270_remember]
+
+        reset!
+        cookies[:bible270_remember] = remembered
+        post "#{mount}/day/1/toggle/nt/0",
+             params: { checked: '1', authenticity_token: stale_token }
 
         assert_response :see_other
-        assert_equal 0, Bible270::Checkoff.count, 'an unverified request must never be applied'
-        assert_equal "#{mount}/day/1", URI.parse(response.location).path
-
-        get response.location
-        assert_response :success
-        assert_match(%r{page had been open for a while}, response.body)
+        assert_equal 0, Bible270::Checkoff.count
+        assert_equal "#{mount}/", URI.parse(response.location).path
+        assert_empty flash.to_hash
       end
     end
 

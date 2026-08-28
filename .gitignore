@@ -6,3 +6,4 @@ Gemfile.lock
 
 coverage/
 test/dummy/log/*.log
+updates.txt

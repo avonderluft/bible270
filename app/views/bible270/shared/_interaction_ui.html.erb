@@ -132,11 +132,39 @@
       announce(form.dataset.b270Pending || "Saving…", "pending");
     });
 
+    function staleSessionResponse(fetchResponse) {
+      if (!fetchResponse) return false;
+      if (fetchResponse.statusCode === 422) return true;
+
+      return fetchResponse.statusCode === 409 &&
+        fetchResponse.response.headers.get("X-Bible270-Refresh-Session") === "true";
+    }
+
+    document.addEventListener("turbo:before-fetch-response", (event) => {
+      const target = event.target;
+      const form = target.closest && target.closest("form[data-b270-checkoff='true']");
+      const response = event.detail.fetchResponse;
+      if (!form || !staleSessionResponse(response)) return;
+
+      event.preventDefault();
+      if (form.dataset.b270RetriedAfterStaleSession === "true") {
+        window.location.reload();
+        return;
+      }
+
+      form.dataset.b270RetriedAfterStaleSession = "true";
+      resetForm(form);
+      refreshSession().then(() => form.requestSubmit()).catch(() => window.location.reload());
+    });
+
     document.addEventListener("turbo:submit-end", (event) => {
       const form = event.target;
       if (!form.matches("form[data-b270-submit='true']")) return;
 
       resetForm(form);
+      if (form.dataset.b270RetriedAfterStaleSession === "true" &&
+          staleSessionResponse(event.detail.fetchResponse)) return;
+
       if (event.detail.success) {
         announce(form.dataset.b270Success || "Saved.", "success");
       } else {
