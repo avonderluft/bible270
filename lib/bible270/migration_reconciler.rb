@@ -28,6 +28,7 @@ module Bible270
       'AddDailyRemindersToBible270Readers' => :check_daily_reminders,
       'AddReflectionsSeenAtToBible270Readers' => :check_reflections_seen_at,
       'AddAllCommentNoticesToBible270Readers' => :check_all_comment_notices,
+      'ChangePassageSourceDefaultToBibleCom' => :check_passage_source_default,
       'CreateActiveStorageTables' => :check_active_storage
     }.freeze
 
@@ -193,6 +194,14 @@ module Bible270
 
     def check_all_comment_notices
       table_missing(:bible270_readers, columns: %i[notify_on_all_comments])
+    end
+
+    def check_passage_source_default
+      missing = table_missing(:bible270_readers, columns: %i[passage_source])
+      return missing if missing.any?
+
+      column = connection.columns(:bible270_readers).find { |candidate| candidate.name == 'passage_source' }
+      column&.default == 'bible_com' ? [] : ['column bible270_readers.passage_source default bible_com']
     end
 
     # The Bible270 installer can install Active Storage for reader avatars. A

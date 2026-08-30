@@ -4,6 +4,7 @@ require 'test_helper'
 
 if RAILS_LOADED
   require Dir.glob(File.expand_path('../db/migrate/*_add_passage_source_to_bible270_readers.rb', __dir__)).first
+  require Dir.glob(File.expand_path('../db/migrate/*_change_passage_source_default_to_bible_com.rb', __dir__)).first
 
   class PassageSourceMigrationTest < Minitest::Test
     class IsolatedRecord < ActiveRecord::Base
@@ -47,6 +48,27 @@ if RAILS_LOADED
       assert_equal 'bible_gateway', column.default
       refute column.null
       assert_equal ['bible_gateway'], passage_sources
+    end
+
+    def test_the_new_default_changes_without_overwriting_existing_choices
+      create_readers_table do |table|
+        table.string :passage_source, default: 'bible_gateway', null: false
+      end
+      @connection.execute <<~SQL.squish
+        INSERT INTO bible270_readers (passage_source)
+        VALUES ('bible_gateway'), ('blue_letter_bible')
+      SQL
+      migration = ChangePassageSourceDefaultToBibleCom.new
+      migration.verbose = false
+      connection = @connection
+      migration.define_singleton_method(:connection) { connection }
+
+      migration.change
+      @connection.execute('INSERT INTO bible270_readers DEFAULT VALUES')
+
+      column = @connection.columns(:bible270_readers).find { |candidate| candidate.name == 'passage_source' }
+      assert_equal 'bible_com', column.default
+      assert_equal %w[bible_gateway blue_letter_bible bible_com], passage_sources
     end
 
     def test_down_preserves_each_source_in_the_legacy_boolean

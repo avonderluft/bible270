@@ -80,6 +80,15 @@ if RAILS_LOADED
       refute_includes response.body, '(HEB/GRK)'
     end
 
+    def test_all_greek_labels_name_every_passage_greek
+      @reader.update_bible_version('ALLGRK')
+      sign_in_as(@reader)
+      get "#{mount}/day/1"
+
+      assert_equal 3, response.body.scan('(Greek)').size
+      refute_includes response.body, '(ALLGRK)'
+    end
+
     # ---- reflections -------------------------------------------------------
 
     def test_a_day_with_no_reflections_is_not_marked

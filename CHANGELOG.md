@@ -8,6 +8,8 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 - let readers choose reflection emails for every new reflection and reply, only replies to their reflections and mentions of them, or none; administrators can manage the same setting, pending migrations are explained instead of silently hiding it, and existing preferences retain their previous behavior
 - suggest up to five unambiguous reader handles only while a signed-in writer types `@`, with keyboard and touch selection and no change to server-authoritative mention resolution
+- add Bible.com as the first-listed and default reader/admin Scripture source for every offered translation, using chapter links and WLC Hebrew or THGNT Greek when `HEB/GRK` is selected; existing reader choices are preserved
+- add `ALLGRK — LXX OT and Greek NT` immediately after `HEB/GRK`, using Blue Letter Bible's mGNT/LXX routing or Bible.com's GRCBRENT Old Testament and THGNT New Testament
 
 ### Fixed
 

@@ -462,10 +462,14 @@ config.favicon = false                      # none; the host's favicon applies
 It's emitted by the engine's layout, so if you point `config.layout` at your own layout, add
 `<%= b270_favicon_tag %>` to its `<head>`.
 
-References link to Bible Gateway by default. Readers choose Bible Gateway or Blue Letter Bible from
-their profile, and an admin can set the same source for any reader. The `HEB/GRK` option always uses
-Blue Letter Bible: WLC for Old Testament, Psalms, and Proverbs readings, and mGNT for New Testament
-readings. Scripture links share one dedicated browser tab so moving among the day's passages does not
+References link to Bible.com by default. Readers choose Bible.com, Bible Gateway, or Blue Letter Bible
+from their profile, and an admin can set the same source for any reader. With `HEB/GRK`,
+Bible Gateway is unavailable: Blue Letter Bible uses WLC for Old Testament, Psalms, and Proverbs and
+mGNT for New Testament, while Bible.com uses WLC and THGNT respectively. The `ALLGRK — LXX OT and
+Greek NT` option also excludes Bible Gateway: Blue Letter Bible uses its mGNT/LXX route for every
+track, while Bible.com uses GRCBRENT for the Old Testament and THGNT for the New Testament. Bible.com
+links open the whole chapter rather than its individual-verse introduction page. Scripture links share one
+dedicated browser tab so moving among the day's passages does not
 leave a trail of open tabs; Ctrl-click, Cmd-click, middle-click, and the browser's context menu still
 open additional tabs when a reader wants to compare passages.
 

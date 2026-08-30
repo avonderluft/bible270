@@ -219,7 +219,7 @@ if RAILS_LOADED
       get "#{mount}/reflections"
 
       assert_response :success
-      assert_match(%r{href="https://www\.biblegateway\.com/passage/\?search=Genesis\+1[^"]*"}, response.body)
+      assert_match(%r{href="https://www\.bible\.com/bible/114/GEN\.1\.NKJV"}, response.body)
       assert_match(%r{class="b270-reflink"}, response.body)
     end
 
@@ -228,8 +228,8 @@ if RAILS_LOADED
 
       get "#{mount}/reflections"
 
-      %w[Genesis Matthew Psalm].each do |book|
-        assert_match(%r{search=#{book}}, response.body, "#{book} should be a link")
+      %w[GEN MAT PSA].each do |book|
+        assert_match(%r{/114/#{book}\.}, response.body, "#{book} should be a link")
       end
     end
 
@@ -238,7 +238,7 @@ if RAILS_LOADED
 
       get "#{mount}/reflections"
 
-      assert_match(%r{version=#{Bible270.config.bible_version}}, response.body)
+      assert_match(%r{/114/GEN\.1\.NKJV}, response.body)
     end
 
     def test_a_reader_gets_their_own_translation
@@ -249,13 +249,14 @@ if RAILS_LOADED
 
       get "#{mount}/reflections"
 
-      assert_match(%r{version=KJV}, response.body)
+      assert_match(%r{/1/GEN\.1\.KJV}, response.body)
     end
 
     # NASB95 is NASB1995 to Bible Gateway; sending the display code lands on a
     # search page instead of the passage.
     def test_the_gateway_code_is_used_not_the_display_code
       @mary.update_bible_version('NASB95')
+      @mary.update!(passage_source: 'bible_gateway')
       reflection(@mary, 1, 'On day one', 1.hour.ago)
       _record, raw = Bible270::SignInToken.issue!(@mary.email)
       get "#{mount}/sign_in/email/#{raw}"

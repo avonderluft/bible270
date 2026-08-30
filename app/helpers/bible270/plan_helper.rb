@@ -115,7 +115,9 @@ module Bible270
       return '#' if reference.blank?
 
       selected_version = version || b270_bible_version
-      if selected_version != Translations::ORIGINAL_LANGUAGES && current_reader&.blue_letter_bible?
+      source = current_reader&.passage_source.presence || Reader::DEFAULT_PASSAGE_SOURCE
+      return Translations.passage_url(reference, selected_version, bible_com: true) if source == 'bible_com'
+      if source == 'blue_letter_bible' || Translations.original_languages?(selected_version)
         return Translations.passage_url(reference, selected_version, blue_letter: true)
       end
 
@@ -125,8 +127,8 @@ module Bible270
     # The named target and noopener are the secure no-JavaScript fallback.
     # Interaction UI retains one opener-backed tab handle on desktop. iOS Safari
     # cannot foreground a reused background tab, so it closes and replaces that
-    # script-opened tab on each click. The two fixed providers are intentionally
-    # trusted for this enhanced path.
+    # script-opened tab on each click. The three fixed providers are trusted for
+    # this enhanced path.
     def b270_passage_link(reference, **options)
       data = options.fetch(:data, {}).merge(b270_passage_link: true)
       options.merge!(data: data, target: PASSAGE_LINK_TARGET, rel: 'noopener')
@@ -138,8 +140,8 @@ module Bible270
     # used for each track rather than repeating the combined preference code.
     def b270_version_tag(version = nil, track: nil)
       label = version || b270_bible_version
-      if label == Translations::ORIGINAL_LANGUAGES && track
-        label = track.to_s == 'nt' ? 'Greek' : 'Hebrew'
+      if Translations.original_languages?(label) && track
+        label = label == Translations::ALL_GREEK || track.to_s == 'nt' ? 'Greek' : 'Hebrew'
       end
 
       content_tag :span, "(#{label})", class: 'b270-version'

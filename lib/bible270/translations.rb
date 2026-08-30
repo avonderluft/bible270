@@ -20,16 +20,35 @@ module Bible270
       'ESV' => { label: 'English Standard Version', short: 'English Standard Version', gateway: 'ESV', blue_letter: 'esv' },
       'KJV' => { label: 'King James Version', short: 'King James Version', gateway: 'KJV', blue_letter: 'kjv' },
       'YLT' => { label: 'Young\'s Literal Translation', short: 'Young\'s Literal Translation', gateway: 'YLT', blue_letter: 'ylt' },
-      'HEB/GRK' => { label: 'Hebrew and Greek', short: 'Hebrew and Greek', gateway: 'WLC', blue_letter: 'wlc/mgnt' }
+      'HEB/GRK' => { label: 'Hebrew and Greek', short: 'Hebrew and Greek', gateway: 'WLC', blue_letter: 'wlc/mgnt' },
+      'ALLGRK' => { label: 'LXX Old Testament and Greek New Testament', short: 'LXX OT and Greek NT', gateway: 'LXX', blue_letter: 'mgnt' }
     }.freeze
 
     DEFAULT = 'NKJV'
     ORIGINAL_LANGUAGES = 'HEB/GRK'
+    ALL_GREEK = 'ALLGRK'
+    ORIGINAL_LANGUAGE_CODES = [ORIGINAL_LANGUAGES, ALL_GREEK].freeze
     BLUE_LETTER_BASE_URL = 'https://www.blueletterbible.org'
+    BIBLE_COM_BASE_URL = 'https://www.bible.com/bible'
+    BIBLE_COM_VERSIONS = {
+      'NKJV' => [114, 'NKJV'], 'NASB95' => [100, 'NASB1995'], 'LSB' => [3345, 'LSB'],
+      'ESV' => [59, 'ESV'], 'KJV' => [1, 'KJV'], 'YLT' => [821, 'YLT98']
+    }.freeze
+    BIBLE_COM_ORIGINAL_LANGUAGES = {
+      old_testament: [3585, 'WLC'], new_testament: [2270, 'THGNT']
+    }.freeze
+    BIBLE_COM_ALL_GREEK = {
+      old_testament: [2503, 'GRCBRENT'], new_testament: [2270, 'THGNT']
+    }.freeze
     BLUE_LETTER_BOOK_CODES = %w[
       gen exo lev num deu jos jdg rut 1sa 2sa 1ki 2ki 1ch 2ch ezr neh est job psa pro ecc sng
       isa jer lam eze dan hos joe amo oba jon mic nah hab zep hag zec mal mat mar luk joh act rom
       1co 2co gal eph php col 1th 2th 1ti 2ti tit phm heb jas 1pe 2pe 1jo 2jo 3jo jud rev
+    ].freeze
+    BIBLE_COM_BOOK_CODES = %w[
+      GEN EXO LEV NUM DEU JOS JDG RUT 1SA 2SA 1KI 2KI 1CH 2CH EZR NEH EST JOB PSA PRO ECC SNG
+      ISA JER LAM EZK DAN HOS JOL AMO OBA JON MIC NAM HAB ZEP HAG ZEC MAL MAT MRK LUK JHN ACT ROM
+      1CO 2CO GAL EPH PHP COL 1TH 2TH 1TI 2TI TIT PHM HEB JAS 1PE 2PE 1JN 2JN 3JN JUD REV
     ].freeze
 
   module_function
@@ -48,6 +67,10 @@ module Bible270
 
     def normalize(code)
       code.to_s.strip.upcase
+    end
+
+    def original_languages?(code)
+      ORIGINAL_LANGUAGE_CODES.include?(normalize(code))
     end
 
     def label(code)
@@ -69,10 +92,9 @@ module Bible270
       codes.map { |code| ["#{code} — #{short_label(code)}", code] }
     end
 
-    def passage_url(reference, version, blue_letter: false)
-      if blue_letter || normalize(version) == ORIGINAL_LANGUAGES
-        return blue_letter_url(reference, version)
-      end
+    def passage_url(reference, version, blue_letter: false, bible_com: false)
+      return bible_com_url(reference, version) if bible_com
+      return blue_letter_url(reference, version) if blue_letter || original_languages?(version)
 
       search = URI.encode_www_form_component(reference)
       gateway = URI.encode_www_form_component(gateway_code(version))
@@ -85,25 +107,17 @@ module Bible270
     # query URL, so link to the first chapter/verse and let its chapter navigation
     # carry the reader onward.
     def blue_letter_url(reference, version = ORIGINAL_LANGUAGES)
+      start = reference_start(reference)
+      return "#{BLUE_LETTER_BASE_URL}/" unless start
+
+      book_index, chapter, verse = start
       books = Versification::VERSES.keys
-      book_index = books.index { |book| reference.to_s.start_with?("#{book} ") }
-      return "#{BLUE_LETTER_BASE_URL}/" unless book_index
-
-      book = books[book_index]
-      location = reference.to_s.delete_prefix("#{book} ")
-      match = location.match(%r{\A(\d+)(?::(\d+))?})
-      return "#{BLUE_LETTER_BASE_URL}/" unless match
-
-      chapter = match[1].to_i
-      verse = match[2]&.to_i || 1
-      chapter_verses = Versification::VERSES[book]
-      return "#{BLUE_LETTER_BASE_URL}/" unless chapter.between?(1, chapter_verses.length)
-      return "#{BLUE_LETTER_BASE_URL}/" unless verse.between?(1, chapter_verses[chapter - 1])
-
       canonical_chapter = books.first(book_index).sum { |prior| Versification::VERSES[prior].length } + chapter
       new_testament = book_index >= books.index('Matthew')
       reader = if normalize(version) == ORIGINAL_LANGUAGES
                  new_testament ? 'mgnt' : 'wlc'
+               elsif normalize(version) == ALL_GREEK
+                 'mgnt'
                else
                  VERSIONS.dig(normalize(version), :blue_letter)
                end
@@ -112,6 +126,45 @@ module Bible270
       anchor = (canonical_chapter * 1000) + verse
       "#{BLUE_LETTER_BASE_URL}/#{reader}/#{BLUE_LETTER_BOOK_CODES[book_index]}/" \
         "#{chapter}/#{verse}/s_#{anchor}"
+    end
+
+    def bible_com_url(reference, version)
+      start = reference_start(reference)
+      return BIBLE_COM_BASE_URL unless start
+
+      book_index, chapter, = start
+      version_id, version_code = bible_com_version(version, book_index)
+      return BIBLE_COM_BASE_URL unless version_id && version_code
+
+      "#{BIBLE_COM_BASE_URL}/#{version_id}/#{BIBLE_COM_BOOK_CODES[book_index]}." \
+        "#{chapter}.#{version_code}"
+    end
+
+    def bible_com_version(version, book_index)
+      normalized = normalize(version)
+      testament = book_index >= Versification::VERSES.keys.index('Matthew') ? :new_testament : :old_testament
+      return BIBLE_COM_ORIGINAL_LANGUAGES[testament] if normalized == ORIGINAL_LANGUAGES
+      return BIBLE_COM_ALL_GREEK[testament] if normalized == ALL_GREEK
+
+      BIBLE_COM_VERSIONS[normalized]
+    end
+
+    def reference_start(reference)
+      books = Versification::VERSES.keys
+      book_index = books.index { |book| reference.to_s.start_with?("#{book} ") }
+      return unless book_index
+
+      book = books[book_index]
+      match = reference.to_s.delete_prefix("#{book} ").match(%r{\A(\d+)(?::(\d+))?})
+      return unless match
+
+      chapter = match[1].to_i
+      verse = match[2]&.to_i || 1
+      chapter_verses = Versification::VERSES[book]
+      return unless chapter.between?(1, chapter_verses.length)
+      return unless verse.between?(1, chapter_verses[chapter - 1])
+
+      [book_index, chapter, verse]
     end
 
     # Falls back to the configured default, then to ESV, so a link is never built

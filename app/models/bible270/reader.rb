@@ -25,8 +25,8 @@ module Bible270
     # transaction rolls back.
     after_create_commit :notify_of_registration
 
-    PASSAGE_SOURCES = %w[bible_gateway blue_letter_bible].freeze
-    DEFAULT_PASSAGE_SOURCE = 'bible_gateway'
+    PASSAGE_SOURCES = %w[bible_com bible_gateway blue_letter_bible].freeze
+    DEFAULT_PASSAGE_SOURCE = 'bible_com'
     DAILY_REMINDER_TIME_FORMAT = %r{\A(?:[01]\d|2[0-3]):[0-5]\d\z}
     DAILY_REMINDER_MINUTES = %w[00 15 30 45].freeze
     DAILY_REMINDER_COLUMNS = %w[daily_reminders daily_reminder_time last_daily_reminder_sent_on].freeze
@@ -236,6 +236,7 @@ module Bible270
 
     def bible_gateway? = passage_source == 'bible_gateway'
     def blue_letter_bible? = passage_source == 'blue_letter_bible'
+    def bible_com? = passage_source == 'bible_com'
 
     # Readers are listed by first name, matching how they are shown — the display
     # name is "First Last", so sorting on it needs only case folding. Surname

@@ -17,6 +17,7 @@ class ReaderTest < Minitest::Test
     assert_equal 0, @reader.days_completed
     refute @reader.day_complete?(1)
     assert_equal :none, @reader.day_status(1)
+    assert_equal 'bible_com', @reader.passage_source
     refute @reader.daily_reminders
     assert_equal '08:00', @reader.daily_reminder_time
     assert_nil @reader.last_daily_reminder_sent_on

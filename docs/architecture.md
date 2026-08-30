@@ -307,11 +307,11 @@ After a comment commits, model callbacks determine who should receive a direct r
 - First and last name.
 - Avatar.
 - Bible translation.
-- Bible Gateway or Blue Letter Bible.
+- Bible.com (default), Bible Gateway, or Blue Letter Bible.
 - Reflection email scope: every post, only personal replies and mentions, or none.
 - Daily reminder opt-in and time.
 
-Original-language selections use Blue Letter Bible automatically.
+Original-language selections default to Bible.com, while also allowing Blue Letter Bible; Bible Gateway remains unavailable. `HEB/GRK` selects Hebrew OT and Greek NT texts. `ALLGRK` selects LXX OT and Greek NT texts.
 
 ### Admin
 
@@ -334,8 +334,9 @@ Provider behavior is intentionally fixed rather than accepting an arbitrary URL 
 
 - Bible Gateway.
 - Blue Letter Bible.
+- Bible.com.
 
-The provider list is defined on `Reader`; URLs are generated in `lib/bible270/translations.rb`. Shared link markup comes through `PlanHelper#b270_passage_link`, ensuring all Scripture links use the same behavior.
+The provider list is defined on `Reader`; URLs are generated in `lib/bible270/translations.rb`. Bible.com links target whole chapters. `HEB/GRK` uses WLC/THGNT; `ALLGRK` uses GRCBRENT/THGNT. Blue Letter Bible uses mGNT for both `ALLGRK` testaments, with its Old Testament route displaying the LXX. Shared link markup comes through `PlanHelper#b270_passage_link`, ensuring all Scripture links use the same behavior.
 
 The no-JavaScript anchor has a named target and `rel="noopener"`. With JavaScript, `app/views/bible270/shared/_interaction_ui.html.erb` coordinates a script-owned reading window:
 

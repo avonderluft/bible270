@@ -42,16 +42,16 @@ if RAILS_LOADED
       assert_equal 'Church Directory', b270_provider_label('church_directory')
     end
 
-    def test_the_passage_url_uses_the_site_default_for_a_visitor
+    def test_the_passage_url_uses_bible_com_for_a_visitor
       @current_reader = nil
-      url = b270_passage_url('Genesis 1')
 
-      assert_includes url, 'Genesis+1'
-      assert_includes url, Bible270::Translations.gateway_code(Bible270.config.bible_version)
+      assert_equal 'https://www.bible.com/bible/114/GEN.1.NKJV',
+                   b270_passage_url('Genesis 1')
     end
 
-    def test_the_passage_url_follows_the_readers_choice
+    def test_the_passage_url_follows_the_readers_gateway_choice
       @reader.update_bible_version('NASB95')
+      @reader.update!(passage_source: 'bible_gateway')
       @current_reader = @reader
 
       # NASB95 is 'NASB1995' to Bible Gateway; sending the display code would
@@ -70,13 +70,58 @@ if RAILS_LOADED
                    b270_passage_url('Matthew 1')
     end
 
-    def test_original_language_links_follow_the_readers_choice
+    def test_bible_com_links_follow_the_readers_choice
+      @reader.update_bible_version('KJV')
+      @reader.update!(passage_source: 'bible_com')
+      @current_reader = @reader
+
+      assert_equal 'https://www.bible.com/bible/1/GEN.1.KJV',
+                   b270_passage_url("Genesis 1\u20133")
+      assert_equal 'https://www.bible.com/bible/1/MAT.1.KJV',
+                   b270_passage_url('Matthew 1')
+    end
+
+    def test_original_language_links_can_use_blue_letter_bible
       @reader.update_bible_version('HEB/GRK')
+      @reader.update!(passage_source: 'blue_letter_bible')
       @current_reader = @reader
 
       assert_equal 'https://www.blueletterbible.org/wlc/gen/1/1/s_1001',
                    b270_passage_url("Genesis 1\u20133")
       assert_equal 'https://www.blueletterbible.org/mgnt/mat/1/1/s_930001',
+                   b270_passage_url('Matthew 1')
+    end
+
+    def test_original_language_links_can_use_bible_com
+      @reader.update_bible_version('HEB/GRK')
+      @reader.update!(passage_source: 'bible_com')
+      @current_reader = @reader
+
+      assert_equal 'https://www.bible.com/bible/3585/GEN.1.WLC',
+                   b270_passage_url("Genesis 1\u20133")
+      assert_equal 'https://www.bible.com/bible/2270/MAT.1.THGNT',
+                   b270_passage_url('Matthew 1')
+    end
+
+    def test_all_greek_links_can_use_blue_letter_bible
+      @reader.update_bible_version('ALLGRK')
+      @reader.update!(passage_source: 'blue_letter_bible')
+      @current_reader = @reader
+
+      assert_equal 'https://www.blueletterbible.org/mgnt/gen/1/1/s_1001',
+                   b270_passage_url('Genesis 1')
+      assert_equal 'https://www.blueletterbible.org/mgnt/mat/1/1/s_930001',
+                   b270_passage_url('Matthew 1')
+    end
+
+    def test_all_greek_links_can_use_bible_com
+      @reader.update_bible_version('ALLGRK')
+      @reader.update!(passage_source: 'bible_com')
+      @current_reader = @reader
+
+      assert_equal 'https://www.bible.com/bible/2503/GEN.1.GRCBRENT',
+                   b270_passage_url('Genesis 1')
+      assert_equal 'https://www.bible.com/bible/2270/MAT.1.THGNT',
                    b270_passage_url('Matthew 1')
     end
 
@@ -110,6 +155,15 @@ if RAILS_LOADED
       assert_includes b270_version_tag(track: 'ot'), '(Hebrew)'
       assert_includes b270_version_tag(track: 'pp'), '(Hebrew)'
       assert_includes b270_version_tag(track: 'nt'), '(Greek)'
+    end
+
+    def test_all_greek_version_tags_name_every_track_greek
+      @reader.update_bible_version('ALLGRK')
+      @current_reader = @reader
+
+      %w[ot pp nt].each do |track|
+        assert_includes b270_version_tag(track: track), '(Greek)'
+      end
     end
 
     def test_the_favicon_is_a_data_uri_by_default
