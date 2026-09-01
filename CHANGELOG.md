@@ -4,6 +4,10 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+### Fixed
+
+- correct Day 27's New Testament reading to include Matthew 26:75
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.3.0...main)**
 
 ## [1.3.0] - 2026-08-29

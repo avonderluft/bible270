@@ -96,6 +96,10 @@ class PlanTest < Minitest::Test
     assert_equal 'Revelation 22', P.readings_for(P::DAYS)['nt']
   end
 
+  def test_day_27_finishes_matthew_26
+    assert_equal 'Matthew 26:36–75', P.readings_for(27)['nt']
+  end
+
   # --- Psalms and Proverbs once ---------------------------------------
 
   def test_psalm_119_is_eleven_sections_of_sixteen_verses

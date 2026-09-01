@@ -24,6 +24,7 @@ class VersificationTest < Minitest::Test
     assert_equal 176, V.verses('Psalm', 119), 'the longest chapter'
     assert_equal 2,   V.verses('Psalm', 117), 'the shortest'
     assert_equal 31,  V.verses('Genesis', 1)
+    assert_equal 75,  V.verses('Matthew', 26)
     assert_equal 21,  V.verses('Revelation', 22)
   end
 
