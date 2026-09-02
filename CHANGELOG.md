@@ -7,6 +7,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 ### Fixed
 
 - correct Day 27's New Testament reading to include Matthew 26:75
+- silently recover all Turbo interactions from stale sessions, retry once with a fresh CSRF token, and reload rather than submit with a known-stale token if refreshing fails
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.3.0...main)**
 

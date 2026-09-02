@@ -35,6 +35,7 @@
     let sessionRefreshedAt = Date.now();
     let sessionRefresh = null;
     let hiddenAt = null;
+    const submitters = new WeakMap();
 
     function updateAuthenticityToken(token) {
       const meta = document.querySelector("meta[name='csrf-token']");
@@ -97,6 +98,9 @@
     });
 
     document.addEventListener("submit", (event) => {
+      const submittedForm = event.target.closest("form");
+      if (submittedForm && event.submitter) submitters.set(submittedForm, event.submitter);
+
       const form = event.target.closest("form[data-b270-submit='true']");
       if (!form) return;
 
@@ -111,8 +115,7 @@
           form.requestSubmit(submitter || undefined);
         }).catch(() => {
           delete form.dataset.b270AwaitingSession;
-          sessionRefreshedAt = Date.now();
-          form.requestSubmit(submitter || undefined);
+          window.location.reload();
         });
         return;
       }
@@ -134,17 +137,22 @@
 
     function staleSessionResponse(fetchResponse) {
       if (!fetchResponse) return false;
-      if (fetchResponse.statusCode === 422) return true;
 
-      return fetchResponse.statusCode === 409 &&
-        fetchResponse.response.headers.get("X-Bible270-Refresh-Session") === "true";
+      const response = fetchResponse.response;
+      if (fetchResponse.statusCode === 409 &&
+          response.headers.get("X-Bible270-Refresh-Session") === "true") return true;
+
+      // Older deployments can still return Rails' HTML 422 page. Do not confuse
+      // an intentional Turbo Stream validation response with an expired session.
+      const contentType = response.headers.get("Content-Type") || "";
+      return fetchResponse.statusCode === 422 && contentType.includes("text/html");
     }
 
     document.addEventListener("turbo:before-fetch-response", (event) => {
       const target = event.target;
-      const form = target.closest && target.closest("form[data-b270-checkoff='true']");
+      const form = target.closest && target.closest("form");
       const response = event.detail.fetchResponse;
-      if (!form || !staleSessionResponse(response)) return;
+      if (!form || form.method.toLowerCase() === "get" || !staleSessionResponse(response)) return;
 
       event.preventDefault();
       if (form.dataset.b270RetriedAfterStaleSession === "true") {
@@ -152,9 +160,12 @@
         return;
       }
 
+      const submitter = submitters.get(form);
       form.dataset.b270RetriedAfterStaleSession = "true";
       resetForm(form);
-      refreshSession().then(() => form.requestSubmit()).catch(() => window.location.reload());
+      refreshSession()
+        .then(() => form.requestSubmit(submitter || undefined))
+        .catch(() => window.location.reload());
     });
 
     document.addEventListener("turbo:submit-end", (event) => {
@@ -165,6 +176,7 @@
       if (form.dataset.b270RetriedAfterStaleSession === "true" &&
           staleSessionResponse(event.detail.fetchResponse)) return;
 
+      delete form.dataset.b270RetriedAfterStaleSession;
       if (event.detail.success) {
         announce(form.dataset.b270Success || "Saved.", "success");
       } else {

@@ -116,16 +116,13 @@ module Bible270
       reason = error ? error.class : 'an unverified request'
       Rails.logger.info("[bible270] silently refreshing a page after #{reason}")
 
-      if stale_turbo_checkoff?
+      if request.format.turbo_stream?
         response.set_header('X-Bible270-Refresh-Session', 'true')
+        response.set_header('Cache-Control', 'no-store')
         head :conflict
       else
         redirect_back fallback_location: root_path, allow_other_host: false, status: :see_other
       end
-    end
-
-    def stale_turbo_checkoff?
-      controller_name == 'checkoffs' && action_name == 'toggle' && request.format.turbo_stream?
     end
 
     # Guard participation (checking off / commenting). Viewing is always open.

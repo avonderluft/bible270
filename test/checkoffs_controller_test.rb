@@ -79,7 +79,10 @@ if RAILS_LOADED
       assert_match(%r{requestSubmit}, response.body)
       assert_match(%r{X-Bible270-Refresh-Session}, response.body)
       assert_match(%r{statusCode === 422}, response.body)
+      assert_match(%r{contentType\.includes\("text/html"\)}, response.body)
+      assert_match(%r{target\.closest\("form"\)}, response.body)
       assert_match(%r{b270RetriedAfterStaleSession}, response.body)
+      assert_match(%r{window\.location\.reload}, response.body)
     end
 
     def test_html_checkoffs_return_a_success_message

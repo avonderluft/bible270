@@ -113,6 +113,7 @@ if RAILS_LOADED
 
         assert_response :conflict
         assert_equal 'true', response.headers['X-Bible270-Refresh-Session']
+        assert_equal 'no-store', response.headers['Cache-Control']
         assert_equal 0, Bible270::Checkoff.count, 'an unverified request must never be applied'
 
         get "#{mount}/session/refresh"
@@ -124,6 +125,35 @@ if RAILS_LOADED
         assert_response :success
         assert_equal 1, Bible270::Checkoff.count
         assert_nil flash[:alert]
+      end
+    end
+
+    def test_a_stale_turbo_reflection_can_refresh_and_retry_without_returning_422
+      with_forgery_protection do
+        reader = sign_in
+        get "#{mount}/day/1"
+        stale_token = css_select("meta[name='csrf-token']").first&.[]('content')
+        remembered = cookies[:bible270_remember]
+
+        reset!
+        cookies[:bible270_remember] = remembered
+        post "#{mount}/day/1/comments",
+             params: { comment: { body: 'A remembered thought' }, authenticity_token: stale_token },
+             headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        assert_response :conflict
+        assert_equal 'true', response.headers['X-Bible270-Refresh-Session']
+        assert_equal 0, Bible270::Comment.count
+
+        get "#{mount}/session/refresh"
+        fresh_token = response.headers['X-CSRF-Token']
+        post "#{mount}/day/1/comments",
+             params: { comment: { body: 'A remembered thought' }, authenticity_token: fresh_token },
+             headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+        assert_response :success
+        assert_equal 1, reader.comments.count
+        assert_equal 'A remembered thought', reader.comments.first.body
       end
     end
 
