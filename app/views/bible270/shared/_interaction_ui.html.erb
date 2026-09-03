@@ -177,7 +177,11 @@
           staleSessionResponse(event.detail.fetchResponse)) return;
 
       delete form.dataset.b270RetriedAfterStaleSession;
-      if (event.detail.success) {
+      const completedDay = form.dataset.b270Checkoff === "true" &&
+        document.querySelector("[data-b270-day-just-completed='true']");
+      if (event.detail.success && completedDay) {
+        announce("");
+      } else if (event.detail.success) {
         announce(form.dataset.b270Success || "Saved.", "success");
       } else {
         announce(form.dataset.b270Failure || "Couldn’t save that. Try again.", "error");

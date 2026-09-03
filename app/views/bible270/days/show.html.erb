@@ -1,7 +1,8 @@
 <% content_for :title, "Day #{@day} — #{Bible270.config.app_name}" %>
 
 <div class="b270-day-page">
-  <%= render "bible270/days/day_progress", day: @day, reader: current_reader %>
+  <%= render "bible270/days/day_progress", day: @day, reader: current_reader,
+        just_completed: @day_just_completed %>
 
   <%= render "bible270/shared/interaction_status" %>
 
@@ -33,3 +34,4 @@
 </div>
 
 <%= render "bible270/shared/interaction_ui" %>
+<%= render "bible270/shared/day_completion_effect", day: @day %>

@@ -1,9 +1,10 @@
-<%# locals: (day:, reader:) %>
+<%# locals: (day:, reader:, just_completed: false) %>
 <%
   previous_day = day > 1 ? day - 1 : nil
   next_day = day < Bible270::Plan::DAYS ? day + 1 : nil
   total_parts = Bible270::Plan.total_parts(day)
   complete = reader&.day_complete?(day)
+  completion_data = just_completed ? { b270_day_just_completed: true, b270_day: day } : {}
 %>
 <div id="day_progress_<%= day %>">
   <div class="b270-daynav">
@@ -32,7 +33,9 @@
 
 
   <% if complete %>
-    <div class="b270-day-complete" role="status" aria-live="polite">
+    <%= render "bible270/shared/day_completion_dove", day: day if just_completed %>
+    <div class="b270-day-complete" role="status" aria-live="polite"
+         <%= tag.attributes(data: completion_data) %>>
       <div>
         <strong>Day <%= day %> complete</strong>
         <span>All <%= total_parts %> portions are checked off.</span>

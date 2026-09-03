@@ -20,6 +20,7 @@ module Bible270
       @editing_comment_id = editing_comment_id
       @new_comment = Comment.new(day: @day, parent_id: reply_parent&.id)
       @reader_tracks = current_reader ? current_reader.read_tracks_for(@day) : []
+      @day_just_completed = flash[:b270_day_just_completed].to_i == @day
 
       # Every box on the day, not every track: an Old Testament reading of three
       # chapters is three rows, so counting tracks would call someone finished

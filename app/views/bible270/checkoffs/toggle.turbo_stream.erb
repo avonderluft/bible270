@@ -4,7 +4,8 @@
 <% end %>
 
 <%= turbo_stream.replace "day_progress_#{@day}" do %>
-  <%= render "bible270/days/day_progress", day: @day, reader: @reader %>
+  <%= render "bible270/days/day_progress", day: @day, reader: @reader,
+        just_completed: @day_just_completed %>
 <% end %>
 
 <%= turbo_stream.replace "completers_#{@day}" do %>

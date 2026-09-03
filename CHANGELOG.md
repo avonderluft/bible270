@@ -4,10 +4,15 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+### Added
+
+- mark a newly completed day with a brief, translucent dove animation that begins immediately on the final checkoff in JavaScript-capable browsers and remains available after Turbo or HTML-fallback responses; it respects reduced-motion preferences, replaces the final generic success message, and never blocks interaction
+
 ### Fixed
 
 - correct Day 27's New Testament reading to include Matthew 26:75
 - silently recover all Turbo interactions from stale sessions, retry once with a fresh CSRF token, and reload rather than submit with a known-stale token if refreshing fails
+- keep repeated or concurrent explicit checkoffs idempotent instead of raising a duplicate-validation Rails 422 error
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.3.0...main)**
 

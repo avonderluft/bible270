@@ -83,6 +83,59 @@ if RAILS_LOADED
       assert_match(%r{target\.closest\("form"\)}, response.body)
       assert_match(%r{b270RetriedAfterStaleSession}, response.body)
       assert_match(%r{window\.location\.reload}, response.body)
+      assert_match(%r{completedDay}, response.body)
+      assert_match(%r{Bible270DayCompletionEffect}, response.body)
+      assert_select 'template[data-b270-completion-dove-template][data-b270-day="1"]' do
+        assert_select 'svg[data-b270-completion-dove]', count: 1
+      end
+      assert_match(%r{willCompleteDay}, response.body)
+      assert_match(%r{startDove}, response.body)
+      assert_match(%r{b270-dove-origin-x}, response.body)
+      assert_match(%r{width:min\(75vw,97\.5vh\)}, response.body)
+      assert_match(%r{animationend}, response.body)
+      assert_match(%r{aria-hidden}, response.body)
+    end
+
+    def test_only_the_checkoff_that_completes_a_day_marks_the_completion_effect
+      sign_in_as(@reader)
+      @reader.mark_day_complete!(1)
+      @reader.checkoffs.find_by!(day: 1, track: 'nt', part: 0).destroy!
+
+      post "#{mount}/day/1/toggle/nt/0",
+           params: { checked: '1' },
+           headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+      assert_response :success
+      assert_select '[data-b270-day-just-completed="true"][data-b270-day="1"]', count: 1
+      assert_select 'svg[data-b270-completion-dove][aria-hidden="true"][data-b270-day="1"]', count: 1 do
+        assert_select '.b270-dove-feathers', count: 0
+      end
+
+      post "#{mount}/day/1/toggle/nt/0",
+           params: { checked: '1' },
+           headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+      assert_response :success
+      assert_select '[data-b270-day-just-completed]', count: 0
+      assert_select '[data-b270-completion-dove]', count: 0
+    end
+
+    def test_a_final_html_checkoff_redirects_to_the_dove_without_a_success_message
+      sign_in_as(@reader)
+      @reader.mark_day_complete!(1)
+      @reader.checkoffs.find_by!(day: 1, track: 'nt', part: 0).destroy!
+
+      post "#{mount}/day/1/toggle/nt/0", params: { checked: '1' }
+
+      assert_response :redirect
+      assert_nil flash[:b270_interaction_status]
+      assert_equal 1, flash[:b270_day_just_completed]
+
+      follow_redirect!
+
+      assert_response :success
+      assert_select '#day_progress_1 svg[data-b270-completion-dove][data-b270-day="1"]', count: 1
+      assert_select '#b270-interaction-status', text: '', count: 1
     end
 
     def test_html_checkoffs_return_a_success_message
