@@ -2,22 +2,44 @@
 
 All notable changes to bible270. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html), treating pre-1.0 minor bumps as the place breaking changes may land.
 
-## Unreleased Changes
+## [Unreleased]
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.2...main)**
+
+## [1.4.2] - 2026-09-03
 
 ### Added
 
-- let administrators disable the day-completion dove animation for individual readers
+- let administrators disable the day-completion dove animation for individual readers without affecting progress tracking; upgrading hosts must copy and run the new `completion_dove_disabled` reader migration before changing this setting
 
 ### Changed
 
-- simplify day completion to one continuous server-confirmed dove flight from the lower center, eliminating the stagger between a pre-submit animation and the Turbo or HTML response
-- keep the dove bright in dark mode, grow it to an 80%-of-viewport fit, and finish with a quick fade instead of veering offscreen
+- keep the completion dove bright in dark mode, grow it to an 80%-of-viewport fit with a smoother rounded silhouette, and finish with a centered fade instead of veering offscreen
+- show every reader who finished a day after the Reflections section, using compact 56px avatars ordered from earliest to latest completion
 
 ### Fixed
 
-- show the dove only once for each persisted day-completion event, even when Turbo replays a response or retries a stale-session request
+- show the dove only once for each persisted day completion, including during concurrent final checkoffs, Turbo response replays, and stale-session retries
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.1...v1.4.2)**
+
+## [1.4.1] - 2026-09-02
+
+### Changed
+
+- run the day-completion dove as one continuous, server-confirmed animation from the lower center, avoiding a stagger between submission and the Turbo or HTML response
+- improve installer guidance for OmniAuth providers, deferred bundling, Active Storage, pending migrations, and OAuth callback setup
+- detect existing engine mounts more reliably and move them above catch-all routes when necessary
+
+### Fixed
+
+- reject invalid enrollment states and malformed or out-of-range admin day values instead of silently interpreting them
+- apply admin profile name and avatar changes atomically, preventing partial updates when validation fails
+- report broadcast queueing, delivery failures, and partial success accurately without recording an entirely failed broadcast as sent
+- restrict reflection return redirects to safe application URLs
+- honor the install generator's `--mailer-from` option, reject unsafe provider identifiers, and safely quote generated configuration values
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.0...v1.4.1)**
 
 ## [1.4.0] - 2026-09-02
 
@@ -631,6 +653,9 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/avonderluft/bible270/releases/tag/v1.4.2
+[1.4.1]: https://github.com/avonderluft/bible270/releases/tag/v1.4.1
 [1.4.0]: https://github.com/avonderluft/bible270/releases/tag/v1.4.0
 [1.3.2]: https://github.com/avonderluft/bible270/releases/tag/v1.3.2
 [1.3.1]: https://github.com/avonderluft/bible270/releases/tag/v1.3.1
