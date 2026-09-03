@@ -146,6 +146,17 @@ class ReaderTest < Minitest::Test
     refute @reader.daily_reminder_due_at?(Time.utc(2026, 9, 6, 23, 59))
   end
 
+  def test_day_completers_are_ordered_by_when_the_final_checkoff_was_created
+    early = create_named_reader('Zulu', 'Reader')
+    late = create_named_reader('Alpha', 'Reader')
+    early.mark_day_complete!(1)
+    late.mark_day_complete!(1)
+    early.checkoffs.where(day: 1).update_all(created_at: 2.hours.ago)
+    late.checkoffs.where(day: 1).update_all(created_at: 1.hour.ago)
+
+    assert_equal [early.id, late.id], Bible270::Reader.completers_for(1).map(&:id)
+  end
+
   def test_marking_a_day_complete_ticks_every_box
     @reader.mark_day_complete!(1)
 

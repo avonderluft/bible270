@@ -65,6 +65,18 @@ module Bible270
       end
     end
 
+    # A day is completed when its final required checkoff is created, so MAX(created_at)
+    # is the completion moment. Keep reader_id as a deterministic tie-breaker.
+    def self.completers_for(day)
+      reader_ids = Checkoff.where(day: day)
+        .group(:reader_id)
+        .having('COUNT(*) >= ?', Plan.total_parts(day))
+        .order(Checkoff.arel_table[:created_at].maximum.asc, :reader_id)
+        .pluck(:reader_id)
+      readers_by_id = where(id: reader_ids).index_by(&:id)
+      reader_ids.filter_map { |reader_id| readers_by_id[reader_id] }
+    end
+
     def self.reflections_seen_column?
       column_names.include?(REFLECTIONS_SEEN_COLUMN)
     rescue ActiveRecord::StatementInvalid

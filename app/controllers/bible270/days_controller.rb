@@ -23,15 +23,7 @@ module Bible270
       @day_just_completed = flash[:b270_day_just_completed].to_i == @day
       @completion_event_id = flash[:b270_completion_event_id] if @day_just_completed
 
-      # Every box on the day, not every track: an Old Testament reading of three
-      # chapters is three rows, so counting tracks would call someone finished
-      # who had only read the Old Testament.
-      required = Plan.total_parts(@day)
-      completer_ids = Checkoff.where(day: @day)
-        .group(:reader_id)
-        .having('COUNT(*) >= ?', required)
-        .pluck(:reader_id)
-      @completers = Reader.where(id: completer_ids).order(:display_name)
+      @completers = Reader.completers_for(@day)
     end
 
   private

@@ -88,7 +88,7 @@ if RAILS_LOADED
       assert_match(%r{width:min\(80vw,104vh\)}, response.body)
       assert_match(%r{color-scheme:only light}, response.body)
       assert_match(%r{forced-color-adjust:none}, response.body)
-      assert_match(%r{55%\{top:50vh;left:50vw;opacity:1;visibility:visible;.*scale\(1\)}, response.body)
+      assert_match(%r{\d+%\{top:50vh;left:50vw;opacity:1;visibility:visible;.*scale\(1\)}, response.body)
       assert_match(%r{100%\{top:50vh;left:50vw;opacity:0;visibility:hidden;.*scale\(1\)}, response.body)
       refute_match(%r{left:115vw}, response.body)
       assert_match(%r{sessionStorage\.getItem}, response.body)

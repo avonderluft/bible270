@@ -29,12 +29,7 @@ module Bible270
       @reader_tracks = @reader.read_tracks_for(@day)
       @readings = Plan.readings_for(@day)
 
-      required = Plan.total_parts(@day)
-      completer_ids = Checkoff.where(day: @day)
-        .group(:reader_id)
-        .having('COUNT(*) >= ?', required)
-        .pluck(:reader_id)
-      @completers = Reader.where(id: completer_ids).order(:display_name)
+      @completers = Reader.completers_for(@day)
 
       respond_to do |format|
         format.turbo_stream
