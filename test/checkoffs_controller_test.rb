@@ -84,16 +84,9 @@ if RAILS_LOADED
       assert_match(%r{b270RetriedAfterStaleSession}, response.body)
       assert_match(%r{window\.location\.reload}, response.body)
       assert_match(%r{completedDay}, response.body)
-      assert_match(%r{Bible270DayCompletionEffect}, response.body)
-      assert_select 'template[data-b270-completion-dove-template][data-b270-day="1"]' do
-        assert_select 'svg[data-b270-completion-dove]', count: 1
-      end
-      assert_match(%r{willCompleteDay}, response.body)
-      assert_match(%r{startDove}, response.body)
-      assert_match(%r{b270-dove-origin-x}, response.body)
+      assert_select '[data-b270-completion-dove-template]', count: 0
       assert_match(%r{width:min\(75vw,97\.5vh\)}, response.body)
       assert_match(%r{animationend}, response.body)
-      assert_match(%r{aria-hidden}, response.body)
     end
 
     def test_only_the_checkoff_that_completes_a_day_marks_the_completion_effect

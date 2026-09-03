@@ -201,6 +201,9 @@
       }
     });
     document.addEventListener("turbo:load", reset);
+    document.addEventListener("animationend", (event) => {
+      if (event.target.matches("[data-b270-completion-dove]")) event.target.remove();
+    });
 
     window.Bible270InteractionUI = { reset };
     reset();

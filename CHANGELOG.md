@@ -4,6 +4,10 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+### Changed
+
+- simplify day completion to one continuous server-confirmed dove flight from the lower center, eliminating the stagger between a pre-submit animation and the Turbo or HTML response
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.0...main)**
 
 ## [1.4.0] - 2026-09-02
