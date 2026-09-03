@@ -20,12 +20,15 @@ module Bible270
     # ---- enrolment --------------------------------------------------------
 
     def update_enrollment
-      if params[:state] == 'closed'
+      case params[:state]
+      when 'closed'
         Setting.close_enrollment!
         redirect_to admin_path, notice: 'Closed to new readers. Existing readers can still sign in.'
-      else
+      when 'open'
         Setting.open_enrollment!
         redirect_to admin_path, notice: 'Open to new readers.'
+      else
+        redirect_to admin_path, alert: 'Choose whether enrollment is open or closed. Nothing was changed.'
       end
     end
 
@@ -122,12 +125,23 @@ module Bible270
       recipients = Reader.where.not(email: [nil, '']).order(:id)
       return redirect_to(admin_path, alert: 'Nobody has an email address.') if recipients.empty?
 
+      recipient_count = recipients.count
       sent = deliver_broadcast(recipients, subject, body)
+      later = Bible270.config.registration_notice_deliver_later
+
+      if sent.zero?
+        action = later ? 'queued' : 'sent'
+        return redirect_to admin_path, alert: "The message could not be #{action} to any readers."
+      end
+
       Setting.write(LAST_BROADCAST_AT, Time.current.iso8601)
       Setting.write(LAST_BROADCAST_SUBJECT, subject)
 
-      redirect_to admin_path,
-                  notice: "Sent to #{sent} #{'reader'.pluralize(sent)}."
+      action = later ? 'Queued for' : 'Sent to'
+      failures = recipient_count - sent
+      notice = "#{action} #{sent} #{'reader'.pluralize(sent)}."
+      notice += " #{failures} #{'reader'.pluralize(failures)} could not be #{later ? 'queued' : 'sent'}." if failures.positive?
+      redirect_to admin_path, notice: notice
     end
 
     def update_bible_version
@@ -169,9 +183,14 @@ module Bible270
           redirect_to admin_reader_path(@reader),
                       alert: "Couldn't read #{params[:start_date].inspect} as a date."
         end
-      elsif params[:day].present? && @reader.restart_on!(day: params[:day])
-        redirect_to admin_reader_path(@reader),
-                    notice: "#{@reader.display_name} is now on day #{params[:day]}."
+      elsif params[:day].present?
+        day = strict_integer(params[:day], 1..Plan::DAYS)
+        if day && @reader.restart_on!(day: day)
+          redirect_to admin_reader_path(@reader),
+                      notice: "#{@reader.display_name} is now on day #{day}."
+        else
+          redirect_to admin_reader_path(@reader), alert: 'Give a start date or a day between 1 and 270.'
+        end
       else
         redirect_to admin_reader_path(@reader), alert: 'Give a start date or a day between 1 and 270.'
       end
@@ -181,12 +200,15 @@ module Bible270
     # themselves on their own profile.
     def update_profile
       problems = []
-      if (params[:first_name].present? || params[:last_name].present?) && !@reader.update_names(params[:first_name],
-                                                                                                params[:last_name])
-        problems << 'both a first and last name'
-      end
-      if params[:avatar].present? && !@reader.attach_avatar(params[:avatar])
-        problems << (@reader.errors[:avatar].first || 'a valid image')
+      @reader.transaction do
+        if (params[:first_name].present? || params[:last_name].present?) && !@reader.update_names(params[:first_name],
+                                                                                                  params[:last_name])
+          problems << 'both a first and last name'
+        end
+        if problems.empty? && params[:avatar].present? && !@reader.attach_avatar(params[:avatar])
+          problems << (@reader.errors[:avatar].first || 'a valid image')
+        end
+        raise ActiveRecord::Rollback if problems.any?
       end
 
       if problems.empty?
@@ -220,22 +242,24 @@ module Bible270
     end
 
     def complete_through
-      day = params[:day].to_i
-      if @reader.mark_through!(day)
-        redirect_to admin_reader_path(@reader),
-                    notice: day.zero? ? 'All check-offs cleared.' : "Marked days 1-#{day} complete."
-      else
-        redirect_to admin_reader_path(@reader), alert: 'Give a day between 0 and 270.'
+      day = strict_integer(params[:day], 0..Plan::DAYS)
+      unless day
+        return redirect_to admin_reader_path(@reader), alert: 'Give a day between 0 and 270.'
       end
+
+      @reader.mark_through!(day)
+      redirect_to admin_reader_path(@reader),
+                  notice: day.zero? ? 'All check-offs cleared.' : "Marked days 1-#{day} complete."
     end
 
     def toggle_day
-      day = params[:day].to_i
-      if @reader.toggle_day!(day)
-        redirect_to admin_reader_path(@reader, anchor: "day-#{day}")
-      else
-        redirect_to admin_reader_path(@reader), alert: 'That day is outside the plan.'
+      day = strict_integer(params[:day], 1..Plan::DAYS)
+      unless day
+        return redirect_to admin_reader_path(@reader), alert: 'That day is outside the plan.'
       end
+
+      @reader.toggle_day!(day)
+      redirect_to admin_reader_path(@reader, anchor: "day-#{day}")
     end
 
     # Failures are counted rather than raised: one bad address must not stop the
@@ -282,16 +306,25 @@ module Bible270
 
     def load_comment
       @comment = Comment.find_by(id: params[:id])
-      redirect_to(admin_comments_path, alert: 'Reflection not found.') if @comment.nil?
+      return if @comment
+
+      redirect_to admin_comments_path, alert: 'Reflection not found.'
     end
 
     def redirect_back_to_comments(notice)
-      redirect_to(params[:return_to].presence || admin_comments_path, notice: notice)
+      redirect_to(url_from(params[:return_to]) || admin_comments_path, notice: notice)
     end
 
     def load_reader
       @reader = Reader.find_by(id: params[:id])
-      redirect_to(admin_path, alert: 'Reader not found.') if @reader.nil?
+      return if @reader
+
+      redirect_to admin_path, alert: 'Reader not found.'
+    end
+
+    def strict_integer(value, range)
+      integer = Integer(value.to_s, 10, exception: false)
+      integer if range.cover?(integer)
     end
   end
 end

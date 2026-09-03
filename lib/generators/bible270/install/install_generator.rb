@@ -18,10 +18,12 @@ module Bible270
     #     --mailer-from=no-reply@example.org
     #
     class InstallGenerator < Rails::Generators::Base
-      MOUNT_LINE        = 'mount Bible270::Engine, at: Bible270.config.mount_at'
-      DEFAULT_MOUNT     = '/daily-bread'
-      DEFAULT_PROVIDERS = 'github'
-      KNOWN_PROVIDERS   = {
+      MOUNT_LINE          = 'mount Bible270::Engine, at: Bible270.config.mount_at'
+      MOUNT_LINE_PATTERN  = %r{^\s*mount\s*\(?\s*Bible270::Engine\b}
+      PROVIDER_IDENTIFIER = %r{\A[a-z][a-z0-9_]*\z}
+      DEFAULT_MOUNT       = '/daily-bread'
+      DEFAULT_PROVIDERS   = 'github'
+      KNOWN_PROVIDERS = {
         'github' => 'omniauth-github',
         'google_oauth2' => 'omniauth-google-oauth2',
         'facebook' => 'omniauth-facebook',
@@ -97,18 +99,23 @@ module Bible270
       def add_strategy_gems
         return if @providers.empty?
 
-        missing = @providers.filter_map { |p| KNOWN_PROVIDERS[p] }.reject { |g| gemfile_has?(g) }
-        unknown = @providers.reject { |p| KNOWN_PROVIDERS.key?(p) }
+        missing = @providers.filter_map { |provider| KNOWN_PROVIDERS[provider] }
+          .reject { |gem_name| gemfile_has?(gem_name) }
+        @unknown_providers = @providers.reject { |provider| KNOWN_PROVIDERS.key?(provider) }
+        @strategy_gems_added = missing.any?
 
         missing.each { |name| gem name }
 
-        return if unknown.empty?
+        return if @unknown_providers.empty?
 
-        say "  Unrecognised provider(s): #{unknown.join(', ')}. Add their strategy gems yourself.", :yellow
+        identifiers = @unknown_providers.map { |provider| provider.to_sym.inspect }.join(', ')
+        say "  Unrecognised provider(s): #{@unknown_providers.join(', ')}.", :yellow
+        say "  Add an OmniAuth strategy gem that registers #{identifiers} to the Gemfile, then run bundle install.",
+            :yellow
       end
 
       def install_bundle
-        return if @providers.empty?
+        return unless @strategy_gems_added
 
         @bundled = decide(:bundle, 'Run bundle install now (needed before the app can boot)?', true)
         run 'bundle install' if @bundled
@@ -121,7 +128,16 @@ module Bible270
       # rather than assuming a fresh app has it.
 
       def ensure_active_storage
-        return if skip_rails_commands?
+        if skip_rails_commands?
+          @active_storage = if !active_storage_enabled?
+                              :unavailable
+                            elsif active_storage_installed?
+                              :present
+                            else
+                              :pending
+                            end
+          return
+        end
 
         unless active_storage_enabled?
           @active_storage = :unavailable
@@ -153,11 +169,15 @@ module Bible270
       # Migrations run before the initializers are written, so a problem in the
       # generated config can never block the database work.
       def copy_migrations
-        return if skip_rails_commands?
+        if skip_rails_commands?
+          @migrations_copied = false
+          return
+        end
 
         say ''
         say 'Copying migrations into db/migrate', :yellow
         rails_command 'bible270:install:migrations'
+        @migrations_copied = true
       end
 
       def run_migrations
@@ -191,7 +211,11 @@ module Bible270
 
       def add_route
         if routes_mounted?
-          say "  config/routes.rb already mounts Bible270::Engine — left as is.#{cms_order_hint}", :yellow
+          if move_mount_above_catch_all
+            say '  config/routes.rb already mounted Bible270::Engine; moved it above the catch-all route.', :yellow
+          else
+            say "  config/routes.rb already mounts Bible270::Engine — left as is.#{cms_order_hint}", :yellow
+          end
           return
         end
 
@@ -202,7 +226,9 @@ module Bible270
         # across files, an unusual layout, a missing file). Verify rather than
         # assume, since a silent miss leaves the plan unreachable.
         if routes_mounted?
-          say "  Mounted in config/routes.rb.#{cms_order_hint}", :green
+          moved = move_mount_above_catch_all
+          detail = moved ? ' Mounted above the catch-all route.' : cms_order_hint
+          say "  Mounted in config/routes.rb.#{detail}", :green
         else
           @route_failed = true
           say '  Could not edit config/routes.rb automatically.', :red
@@ -220,7 +246,7 @@ module Bible270
         say "  Plan mounted at   #{@mount_at}"
         say "  Sign-in           #{auth_summary}"
         say "  Initializers      #{initializer_summary}"
-        say "  Migrations        #{@migrated ? 'copied and run' : 'copied (not yet run)'}"
+        say "  Migrations        #{migration_summary}"
         say "  Picture uploads   #{active_storage_summary}"
         say ''
 
@@ -241,16 +267,13 @@ module Bible270
       # bin/rails call fail ("Could not find ... in locally installed gems"), so
       # don't even try.
       def skip_rails_commands?
-        return false unless @providers.any? && @bundled == false
+        return false unless @strategy_gems_added && @bundled == false
         return true if @warned_unbundled
 
         @warned_unbundled = true
         say ''
         say '  Gemfile changed but not bundled, so bin/rails cannot run yet.', :yellow
-        say '  Skipping the migration steps — run these once you have bundled:', :yellow
-        say '    bundle install'
-        say '    bin/rails bible270:install:migrations'
-        say '    bin/rails db:migrate'
+        say '  Skipping Active Storage and migration commands until bundle install succeeds.', :yellow
         true
       end
 
@@ -320,10 +343,10 @@ module Bible270
 
       def ask_mailer_from
         default = "no-reply@#{app_domain}"
-        address = prompt('From: address for sign-in emails?', default)
+        address = options[:mailer_from] || prompt('From: address for sign-in emails?', default)
 
         until valid_email?(address)
-          say "  '#{address}' doesn't look like an email address.", :red
+          say "  #{address.inspect} doesn't look like an email address.", :red
           address = prompt('From: address for sign-in emails?', default)
         end
         address
@@ -352,7 +375,15 @@ module Bible270
       end
 
       def parse_providers(value)
-        value.to_s.split(',').map { |p| p.strip.downcase.tr('-', '_') }.reject(&:empty?).uniq
+        providers = value.to_s.split(',').map { |provider| provider.strip.downcase.tr('-', '_') }
+          .reject(&:empty?).uniq
+        invalid = providers.grep_v(PROVIDER_IDENTIFIER)
+        if invalid.any?
+          say "  Ignoring unsafe provider identifier(s): #{invalid.join(', ')}.", :red
+          say '  Provider names must start with a letter and contain only lowercase letters, numbers, and underscores.',
+              :red
+        end
+        providers - invalid
       end
 
       def app_domain
@@ -363,7 +394,11 @@ module Bible270
       end
 
       def providers_literal
-        @providers.map { |p| ":#{p}" }.join(', ')
+        @providers.map { |provider| provider.to_sym.inspect }.join(', ')
+      end
+
+      def ruby_literal(value)
+        value.to_s.dump
       end
 
       def auth_path_prefix
@@ -382,15 +417,40 @@ module Bible270
         path = File.join(destination_root, 'config', 'routes.rb')
         return '' unless File.exist?(path)
 
-        body = File.read(path)
-        return '' unless body.match?(%r{comfy_route|match\s+['"]\*|get\s+['"]\*})
+        lines = File.readlines(path)
+        mount_index = lines.index { |line| line.match?(MOUNT_LINE_PATTERN) }
+        catch_all_index = catch_all_route_index(lines)
+        return '' unless catch_all_index && (!mount_index || mount_index > catch_all_index)
 
-        ' Check the mount line sits ABOVE any catch-all route.'
+        ' Move the mount line ABOVE the catch-all route.'
+      end
+
+      def move_mount_above_catch_all
+        path = File.join(destination_root, 'config', 'routes.rb')
+        lines = File.readlines(path)
+        mount_index = lines.index { |line| line.match?(MOUNT_LINE_PATTERN) }
+        catch_all_index = catch_all_route_index(lines)
+        return false unless mount_index && catch_all_index && mount_index > catch_all_index
+
+        mount_line = lines.delete_at(mount_index)
+        lines.insert(catch_all_index, mount_line)
+        File.write(path, lines.join)
+        true
+      rescue StandardError
+        false
+      end
+
+      def catch_all_route_index(lines)
+        lines.index do |line|
+          code = line.sub(%r{#.*\z}, '')
+          code.match?(%r{\bcomfy_route\s+:cms\b.*\bpath:\s*['"]/['"]}) ||
+            code.match?(%r{\b(?:get|match)\s*\(?\s*['"]\*})
+        end
       end
 
       def routes_mounted?
         path = File.join(destination_root, 'config', 'routes.rb')
-        File.exist?(path) && File.read(path).include?('Bible270::Engine')
+        File.exist?(path) && File.foreach(path).any? { |line| line.match?(MOUNT_LINE_PATTERN) }
       end
 
       def report_auth_choice
@@ -434,17 +494,30 @@ module Bible270
         body.include?('path_prefix') && !body.include?('Bible270.config.auth_path_prefix')
       end
 
+      def migration_summary
+        if @migrations_copied
+          @migrated ? 'copied and run' : 'copied (not yet run)'
+        else
+          'not copied (not run)'
+        end
+      end
+
       def active_storage_summary
         case @active_storage
         when :installed then 'Active Storage installed'
         when :present then 'Active Storage already present'
         when :declined then 'off — Active Storage not installed'
         when :unavailable then 'off — Active Storage not enabled in this app'
+        when :pending then 'not installed — waiting for bundle install'
         else 'unchanged'
         end
       end
 
       def outstanding_steps
+        route_and_initializer_steps + installation_steps + provider_setup_steps + mailer_steps
+      end
+
+      def route_and_initializer_steps
         steps = []
         steps << "Add to config/routes.rb: #{MOUNT_LINE}" if @route_failed
         if @providers.any? && !initializer_present?('omniauth.rb')
@@ -453,22 +526,36 @@ module Bible270
         if stale_omniauth_prefix?
           steps << "config/initializers/omniauth.rb sets its own path_prefix — make it 'Bible270.config.auth_path_prefix'"
         end
-        steps << 'bundle install' if @providers.any? && !@bundled
-        steps << 'bin/rails bible270:install:migrations' if skip_rails_commands?
+        steps
+      end
+
+      def installation_steps
+        steps = []
+        steps << 'bundle install' if @strategy_gems_added && !@bundled
+        steps << unknown_provider_gem_step if @unknown_providers&.any?
+        steps << 'bin/rails active_storage:install' if @active_storage == :pending
+        steps << 'bin/rails bible270:install:migrations' unless @migrations_copied
         steps << 'bin/rails db:migrate' unless @migrated
         if @active_storage == :declined
           steps << 'bin/rails active_storage:install && bin/rails db:migrate — for picture uploads'
         end
-
-        if @providers.any?
-          steps << 'Set each provider\'s client id/secret in credentials or ENV'
-          @providers.each { |p| steps << "Register callback URL: https://YOUR-HOST#{auth_path_prefix}/#{p}/callback" }
-        end
-
-        if @email
-          steps << 'Confirm Action Mailer can deliver mail in this environment'
-        end
         steps
+      end
+
+      def unknown_provider_gem_step
+        providers = @unknown_providers.map { |provider| provider.to_sym.inspect }.join(', ')
+        "Add an OmniAuth strategy gem registering #{providers} to Gemfile, then run bundle install"
+      end
+
+      def provider_setup_steps
+        return [] if @providers.empty?
+
+        ['Set each provider\'s client id/secret in credentials or ENV'] +
+          @providers.map { |provider| "Register callback URL: https://YOUR-HOST#{auth_path_prefix}/#{provider}/callback" }
+      end
+
+      def mailer_steps
+        @email ? ['Confirm Action Mailer can deliver mail in this environment'] : []
       end
 
       # ---- file bodies ------------------------------------------------------
@@ -489,7 +576,7 @@ module Bible270
             # Change this one value to move the plan. config/routes.rb and
             # config/initializers/omniauth.rb both read it, so nothing else needs editing
             # (but do update the callback URLs registered with each OAuth provider).
-            config.mount_at = '#{@mount_at}'
+            config.mount_at = #{ruby_literal(@mount_at)}
 
             config.app_name = 'Daily Bread'
             config.tagline  = 'A 270-day journey through Scripture'
@@ -532,7 +619,7 @@ module Bible270
             # Passwordless email sign-in: a one-time link, no password, no third-party
             # account. This is what lets anyone take part. Needs Action Mailer delivery.
             config.email_sign_in = true
-            config.mailer_from   = '#{@mailer_from}'
+            config.mailer_from   = #{ruby_literal(@mailer_from)}
             config.email_sign_in_ask_name = true
             # config.email_sign_in_ttl = 20 * 60             # link lifetime, seconds
             # config.email_sign_in_max_per_window = 5        # per address, per window
@@ -607,11 +694,12 @@ module Bible270
       end
 
       def provider_line(provider)
+        provider_symbol = provider.to_sym.inspect
         env = provider.upcase
         <<~RUBY.chomp
-          provider :#{provider},
-                   Rails.application.credentials.dig(:#{provider}, :client_id) || ENV.fetch('#{env}_CLIENT_ID', nil),
-                   Rails.application.credentials.dig(:#{provider}, :client_secret) || ENV.fetch('#{env}_CLIENT_SECRET', nil)
+          provider #{provider_symbol},
+                   Rails.application.credentials.dig(#{provider_symbol}, :client_id) || ENV.fetch(#{ruby_literal("#{env}_CLIENT_ID")}, nil),
+                   Rails.application.credentials.dig(#{provider_symbol}, :client_secret) || ENV.fetch(#{ruby_literal("#{env}_CLIENT_SECRET")}, nil)
         RUBY
       end
     end
