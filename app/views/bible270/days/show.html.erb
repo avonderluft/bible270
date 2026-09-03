@@ -2,7 +2,7 @@
 
 <div class="b270-day-page">
   <%= render "bible270/days/day_progress", day: @day, reader: current_reader,
-        just_completed: @day_just_completed %>
+        just_completed: @day_just_completed, completion_event_id: @completion_event_id %>
 
   <%= render "bible270/shared/interaction_status" %>
 

@@ -1,4 +1,4 @@
-<%# locals: (day:, reader:, just_completed: false) %>
+<%# locals: (day:, reader:, just_completed: false, completion_event_id: nil) %>
 <%
   previous_day = day > 1 ? day - 1 : nil
   next_day = day < Bible270::Plan::DAYS ? day + 1 : nil
@@ -33,7 +33,9 @@
 
 
   <% if complete %>
-    <%= render "bible270/shared/day_completion_dove", day: day if just_completed %>
+    <% if just_completed && completion_event_id && !reader&.completion_dove_disabled? %>
+      <%= render "bible270/shared/day_completion_dove", day: day, completion_event_id: completion_event_id %>
+    <% end %>
     <div class="b270-day-complete" role="status" aria-live="polite"
          <%= tag.attributes(data: completion_data) %>>
       <div>

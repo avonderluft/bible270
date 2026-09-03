@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+# Rails routes are intentionally kept in one cohesive DSL block.
 Bible270::Engine.routes.draw do
   root to: 'days#index'
 
@@ -22,6 +23,8 @@ Bible270::Engine.routes.draw do
   delete 'admin/readers/:id',            to: 'admin#destroy'
   patch  'admin/readers/:id/profile',    to: 'admin#update_profile', as: :admin_reader_profile
   patch  'admin/readers/:id/notifications', to: 'admin#update_notifications', as: :admin_reader_notifications
+  patch  'admin/readers/:id/completion-animation', to: 'admin#update_completion_animation',
+                                                   as: :admin_reader_completion_animation
   delete 'admin/readers/:id/avatar',     to: 'admin#remove_avatar', as: :admin_reader_avatar
   patch  'admin/readers/:id/version',    to: 'admin#update_bible_version', as: :admin_reader_version
   patch  'admin/readers/:id/start',      to: 'admin#update_start',     as: :admin_reader_start

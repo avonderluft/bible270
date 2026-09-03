@@ -148,16 +148,20 @@
   .b270-day-complete span{font-size:12px;color:var(--muted)}
   .b270 .b270-day-complete .b270-btn{flex:none;margin:0 0 0 auto}
   .b270-completion-dove{position:fixed;z-index:1000;top:72vh;left:50vw;
-                        width:min(75vw,97.5vh);height:auto;overflow:visible;pointer-events:none;opacity:0;
+                        width:min(80vw,104vh);height:auto;overflow:visible;pointer-events:none;opacity:0;
+                        color-scheme:only light;forced-color-adjust:none;
                         filter:drop-shadow(0 0 8px rgba(255,255,255,1)) drop-shadow(0 0 24px rgba(255,252,220,1)) drop-shadow(0 0 52px rgba(225,191,92,.82));
-                        will-change:top,left,transform,opacity;animation:b270-dove-flight 1.6s cubic-bezier(.18,.72,.28,1) both}
-  .b270-dove-silhouette{fill:url(#b270-dove-light);stroke:none}
+                        will-change:top,left,transform,opacity}
+  .b270-completion-dove-active{animation:b270-dove-flight 1.7s cubic-bezier(.18,.72,.28,1) both}
+  .b270-dove-silhouette{fill:url(#b270-dove-light)!important;stroke:none}
+  .b270-dove-light-center{stop-color:#fff!important}
+  .b270-dove-light-middle{stop-color:#fffef8!important}
+  .b270-dove-light-edge{stop-color:#fff9e2!important}
   @keyframes b270-dove-flight{
     0%{top:72vh;left:50vw;opacity:.22;visibility:visible;transform:translate(-50%,-50%) scale(.02) rotate(-8deg)}
     8%{top:calc(72vh - 10px);left:50vw;opacity:.78;transform:translate(-50%,-50%) scale(.08) rotate(-5deg)}
-    64%{top:38vh;left:52vw;opacity:.92;transform:translate(-50%,-50%) scale(1) rotate(4deg)}
-    99%{visibility:visible}
-    100%{top:-25vh;left:115vw;opacity:0;visibility:hidden;transform:translate(-50%,-50%) scale(1.55) rotate(12deg)}
+    33%{top:50vh;left:50vw;opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1) rotate(4deg)}
+    100%{top:50vh;left:50vw;opacity:0;visibility:hidden;transform:translate(-50%,-50%) scale(1) rotate(4deg)}
   }
 
   /* readings */

@@ -18,10 +18,14 @@ module Bible270
       requested_state = params[:checked] if params.key?(:checked)
       head :bad_request and return if params.key?(:checked) && !%w[0 1].include?(requested_state)
 
-      marked_read, checkoff_changed = apply_checkoff(requested_state)
-
-      @reader = current_reader.reload.reload_progress
-      @day_just_completed = marked_read && checkoff_changed && @reader.day_complete?(@day)
+      # Serialize this reader's transitions so two different final portions
+      # submitted concurrently cannot both announce the same day completion.
+      marked_read = nil
+      current_reader.with_lock do
+        marked_read, @completion_event_id = apply_checkoff(requested_state)
+        @reader = current_reader.reload.reload_progress
+        @day_just_completed = marked_read && @completion_event_id && @reader.day_complete?(@day)
+      end
       @reader_tracks = @reader.read_tracks_for(@day)
       @readings = Plan.readings_for(@day)
 
@@ -36,7 +40,10 @@ module Bible270
         format.turbo_stream
         format.html do
           if @day_just_completed
-            redirect_to day_path(@day), flash: { b270_day_just_completed: @day }
+            redirect_to day_path(@day), flash: {
+              b270_day_just_completed: @day,
+              b270_completion_event_id: @completion_event_id
+            }
           else
             message = marked_read ? 'Reading marked read.' : 'Reading marked unread.'
             redirect_to day_path(@day), flash: { b270_interaction_status: message }
@@ -51,9 +58,10 @@ module Bible270
       existing = find_checkoff
       if requested_state == '1'
         current_reader.ensure_started!
-        [true, existing.nil? && create_checkoff]
+        [true, existing.nil? ? create_checkoff : nil]
       elsif requested_state == '0' || existing
-        [false, existing ? existing.destroy.present? : false]
+        existing&.destroy
+        [false, nil]
       else
         current_reader.ensure_started!
         [true, create_checkoff]
@@ -66,15 +74,16 @@ module Bible270
       end
     end
 
+    # The created id is stable if Turbo replays this response, while a later
+    # re-completion creates a new id and is correctly treated as a new event.
     def create_checkoff
-      Checkoff.create!(reader: current_reader, day: @day, track: @track, part: @part)
-      true
+      Checkoff.create!(reader: current_reader, day: @day, track: @track, part: @part).id
     rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
       # A repeated or concurrent desired-state request is already successful. Do
       # not hide any other validation failure under the same recovery.
       raise unless find_checkoff
 
-      false
+      nil
     end
   end
 end

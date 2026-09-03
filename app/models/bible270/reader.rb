@@ -33,6 +33,7 @@ module Bible270
     REFLECTIONS_SEEN_COLUMN = 'reflections_seen_at'
     COMMENT_NOTIFICATION_LEVELS = %w[all personal none].freeze
     COMMENT_NOTIFICATION_COLUMNS = %w[notify_on_mention notify_on_all_comments].freeze
+    COMPLETION_DOVE_COLUMN = 'completion_dove_disabled'
     MENTION_SUGGESTION_LIMIT = 5
 
     validates :display_name, presence: true
@@ -287,6 +288,22 @@ module Bible270
       return none unless comment_notification_columns?
 
       where(notify_on_all_comments: true).where.not(email: [nil, ''])
+    end
+
+    def self.completion_dove_column?
+      return true if column_names.include?(COMPLETION_DOVE_COLUMN)
+
+      reset_column_information
+      column_names.include?(COMPLETION_DOVE_COLUMN)
+    rescue ActiveRecord::StatementInvalid
+      false
+    end
+
+    # Keep day completion usable while an upgraded host is waiting to run the
+    # preference migration. Historically the dove was enabled, so a missing
+    # column preserves that behavior.
+    def completion_dove_disabled?
+      has_attribute?(COMPLETION_DOVE_COLUMN) && self[COMPLETION_DOVE_COLUMN] == true
     end
 
     # Small, deterministic suggestions for the reflection composer. Full-handle

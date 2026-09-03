@@ -18,6 +18,53 @@
       region.dataset.state = state;
     }
 
+    const shownCompletionDoves = new Set();
+
+    function claimCompletionDove(dove) {
+      const eventId = dove.dataset.b270CompletionEvent;
+      if (!eventId) return false;
+
+      const key = `b270-completion-dove:${eventId}`;
+      if (shownCompletionDoves.has(key)) return false;
+
+      try {
+        if (window.sessionStorage.getItem(key) === "shown") return false;
+        window.sessionStorage.setItem(key, "shown");
+      } catch (_error) {
+        // Some privacy modes disable session storage. The in-memory set still
+        // prevents duplicate Turbo rendering within the current page.
+      }
+      shownCompletionDoves.add(key);
+      return true;
+    }
+
+    function initializeCompletionDove(dove) {
+      if (dove.dataset.b270DoveInitialized === "true") return;
+      dove.dataset.b270DoveInitialized = "true";
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        dove.remove();
+        return;
+      }
+
+      if (!claimCompletionDove(dove)) {
+        dove.remove();
+        return;
+      }
+
+      // Keep an active flight outside the Turbo-replaced progress panel so a
+      // replayed response cannot restart or cut short the same completion event.
+      if (dove.parentElement !== document.body) document.body.appendChild(dove);
+      requestAnimationFrame(() => {
+        if (dove.isConnected) dove.classList.add("b270-completion-dove-active");
+      });
+    }
+
+    function initializeCompletionDoves(root = document) {
+      if (root.matches && root.matches("[data-b270-completion-dove]")) initializeCompletionDove(root);
+      root.querySelectorAll?.("[data-b270-completion-dove]").forEach(initializeCompletionDove);
+    }
+
     function resetForm(form) {
       form.removeAttribute("aria-busy");
       form.dataset.b270Submitting = "false";
@@ -29,7 +76,17 @@
 
     function reset() {
       document.querySelectorAll("form[data-b270-submit='true']").forEach(resetForm);
+      initializeCompletionDoves();
     }
+
+    const completionDoveObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) initializeCompletionDoves(node);
+        });
+      });
+    });
+    completionDoveObserver.observe(document.documentElement, { childList: true, subtree: true });
 
     const SESSION_REFRESH_AFTER = 5 * 60 * 1000;
     let sessionRefreshedAt = Date.now();
@@ -201,8 +258,12 @@
       }
     });
     document.addEventListener("turbo:load", reset);
+    document.addEventListener("turbo:before-cache", () => {
+      document.querySelectorAll("[data-b270-completion-dove]").forEach((dove) => dove.remove());
+    });
     document.addEventListener("animationend", (event) => {
-      if (event.target.matches("[data-b270-completion-dove]")) event.target.remove();
+      if (event.animationName === "b270-dove-flight" &&
+          event.target.matches("[data-b270-completion-dove]")) event.target.remove();
     });
 
     window.Bible270InteractionUI = { reset };

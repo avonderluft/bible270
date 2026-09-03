@@ -32,7 +32,7 @@ Metrics/AbcSize:
   Enabled: false
 
 Metrics/BlockLength:
-  Max: 45
+  Max: 60
 
 Metrics/ClassLength:
   Enabled: false

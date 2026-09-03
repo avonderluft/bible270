@@ -182,6 +182,43 @@ if RAILS_LOADED
       assert_match(%r{from the list}, flash[:alert].to_s)
     end
 
+    def test_an_admin_sees_a_readers_completion_animation_setting
+      sign_in_as_admin
+
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      assert_select 'h2', text: 'Completion animation'
+      assert_select 'input[type="checkbox"][name="completion_dove_disabled"]:not([checked])', count: 1
+    end
+
+    def test_an_admin_can_turn_a_readers_completion_animation_off_and_back_on
+      sign_in_as_admin
+
+      patch "#{mount}/admin/readers/#{@reader.id}/completion-animation",
+            params: { completion_dove_disabled: '1' }
+      assert_response :redirect
+      assert @reader.reload.completion_dove_disabled?
+
+      patch "#{mount}/admin/readers/#{@reader.id}/completion-animation"
+      assert_response :redirect
+      refute @reader.reload.completion_dove_disabled?
+    end
+
+    def test_admin_completion_animation_control_explains_a_pending_migration
+      sign_in_as_admin
+
+      Bible270::Reader.stub(:completion_dove_column?, false) do
+        get "#{mount}/admin/readers/#{@reader.id}"
+        assert_select 'input[name="completion_dove_disabled"]', count: 0
+        assert_select '.b270-flash.alert', text: %r{pending Bible270 database migration}i
+
+        patch "#{mount}/admin/readers/#{@reader.id}/completion-animation",
+              params: { completion_dove_disabled: '1' }
+        refute @reader.reload.completion_dove_disabled?
+        assert_match(%r{pending Bible270 database migration}i, flash[:alert])
+      end
+    end
+
     def test_an_admin_can_rename_a_reader
       sign_in_as_admin
       patch "#{mount}/admin/readers/#{@reader.id}/profile",

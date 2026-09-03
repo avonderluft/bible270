@@ -71,6 +71,29 @@
 </div>
 
 <div class="b270-panel">
+  <h2 class="b270-subhead">Completion animation</h2>
+  <% unless @completion_dove_preference_available %>
+    <p class="b270-flash alert" style="margin:0">
+      Run the pending Bible270 database migration before changing the completion animation.
+    </p>
+  <% else %>
+    <%= form_with url: admin_reader_completion_animation_path(@reader), method: :patch,
+                  class: "b270-emailform" do %>
+      <div class="b270-field">
+        <label class="b270-reminder-optin">
+          <%= check_box_tag :completion_dove_disabled, "1", @reader.completion_dove_disabled? %>
+          <span>Turn off the dove animation for this reader</span>
+        </label>
+      </div>
+      <p class="b270-hint" style="margin:0">
+        Day completion and progress tracking still work normally when the animation is off.
+      </p>
+      <%= submit_tag 'Save', class: 'b270-btn' %>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="b270-panel">
   <h2 class="b270-subhead">Where they are in the plan</h2>
   <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
     <label class="b270-field">

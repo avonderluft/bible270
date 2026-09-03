@@ -4,9 +4,18 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+### Added
+
+- let administrators disable the day-completion dove animation for individual readers
+
 ### Changed
 
 - simplify day completion to one continuous server-confirmed dove flight from the lower center, eliminating the stagger between a pre-submit animation and the Turbo or HTML response
+- keep the dove bright in dark mode, grow it to an 80%-of-viewport fit, and finish with a quick fade instead of veering offscreen
+
+### Fixed
+
+- show the dove only once for each persisted day-completion event, even when Turbo replays a response or retries a stale-session request
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.0...main)**
 

@@ -85,7 +85,15 @@ if RAILS_LOADED
       assert_match(%r{window\.location\.reload}, response.body)
       assert_match(%r{completedDay}, response.body)
       assert_select '[data-b270-completion-dove-template]', count: 0
-      assert_match(%r{width:min\(75vw,97\.5vh\)}, response.body)
+      assert_match(%r{width:min\(80vw,104vh\)}, response.body)
+      assert_match(%r{color-scheme:only light}, response.body)
+      assert_match(%r{forced-color-adjust:none}, response.body)
+      assert_match(%r{55%\{top:50vh;left:50vw;opacity:1;visibility:visible;.*scale\(1\)}, response.body)
+      assert_match(%r{100%\{top:50vh;left:50vw;opacity:0;visibility:hidden;.*scale\(1\)}, response.body)
+      refute_match(%r{left:115vw}, response.body)
+      assert_match(%r{sessionStorage\.getItem}, response.body)
+      assert_match(%r{prefers-reduced-motion: reduce}, response.body)
+      assert_match(%r{turbo:before-cache}, response.body)
       assert_match(%r{animationend}, response.body)
     end
 
@@ -100,8 +108,12 @@ if RAILS_LOADED
 
       assert_response :success
       assert_select '[data-b270-day-just-completed="true"][data-b270-day="1"]', count: 1
-      assert_select 'svg[data-b270-completion-dove][aria-hidden="true"][data-b270-day="1"]', count: 1 do
+      completion_event_id = @reader.reload.checkoffs.where(day: 1).maximum(:id)
+      assert_select "svg[data-b270-completion-dove][aria-hidden='true'][data-b270-day='1']" \
+                    "[data-b270-completion-event='#{completion_event_id}'][data-turbo-temporary]", count: 1 do
         assert_select '.b270-dove-feathers', count: 0
+        assert_select 'path.b270-dove-beak', count: 1
+        assert_select '.b270-dove-light-center[stop-color="#fff"]', count: 1
       end
 
       post "#{mount}/day/1/toggle/nt/0",
@@ -111,6 +123,22 @@ if RAILS_LOADED
       assert_response :success
       assert_select '[data-b270-day-just-completed]', count: 0
       assert_select '[data-b270-completion-dove]', count: 0
+    end
+
+    def test_an_admin_can_disable_the_completion_dove_without_hiding_completion_status
+      @reader.update!(completion_dove_disabled: true)
+      @reader.mark_day_complete!(1)
+      @reader.checkoffs.find_by!(day: 1, track: 'nt', part: 0).destroy!
+      sign_in_as(@reader)
+
+      post "#{mount}/day/1/toggle/nt/0",
+           params: { checked: '1' },
+           headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+      assert_response :success
+      assert_select '[data-b270-day-just-completed="true"][data-b270-day="1"]', count: 1
+      assert_select '[data-b270-completion-dove]', count: 0
+      assert_select '.b270-day-complete', text: %r{Day 1 complete}
     end
 
     def test_a_final_html_checkoff_redirects_to_the_dove_without_a_success_message
@@ -123,6 +151,7 @@ if RAILS_LOADED
       assert_response :redirect
       assert_nil flash[:b270_interaction_status]
       assert_equal 1, flash[:b270_day_just_completed]
+      assert_equal @reader.reload.checkoffs.where(day: 1).maximum(:id), flash[:b270_completion_event_id]
 
       follow_redirect!
 

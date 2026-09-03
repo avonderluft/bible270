@@ -85,6 +85,16 @@ if RAILS_LOADED
                    Bible270::MigrationReconciler::CHECKS.fetch(migration.name)
     end
 
+    def test_completion_dove_preference_migration_is_recognized
+      migration = FakeMigration.new('AddCompletionDoveDisabledToBible270Readers', 20_260_101_000_020)
+
+      status = build_reconciler(FakeContext.new([migration])).statuses.first
+
+      assert status.complete?
+      assert_equal :check_completion_dove_disabled,
+                   Bible270::MigrationReconciler::CHECKS.fetch(migration.name)
+    end
+
     def test_only_pending_bible270_migrations_are_assessed
       migrations = [
         FakeMigration.new('CreateBible270Readers', 101),

@@ -13,8 +13,8 @@ module Bible270
 
     before_action :require_admin!
     before_action :load_reader,
-                  only: %i[show destroy update_start update_profile update_notifications remove_avatar complete_through
-                           toggle_day]
+                  only: %i[show destroy update_start update_profile update_notifications update_completion_animation
+                           remove_avatar complete_through toggle_day]
     before_action :load_comment, only: %i[hide_comment unhide_comment destroy_comment]
 
     # ---- enrolment --------------------------------------------------------
@@ -74,6 +74,7 @@ module Bible270
 
     def show
       @comment_notifications_available = comment_notifications_available_for?(@reader)
+      @completion_dove_preference_available = completion_dove_available_for(@reader)
       @days_completed = @reader.days_completed
       @comments = @reader.comments.order(created_at: :desc).limit(50)
     end
@@ -236,6 +237,16 @@ module Bible270
       redirect_to admin_reader_path(@reader), notice: 'Reflection email setting updated.'
     end
 
+    def update_completion_animation
+      unless completion_dove_available_for(@reader)
+        alert = 'Run the pending Bible270 database migration before changing the completion animation.'
+        return redirect_to(admin_reader_path(@reader), alert: alert)
+      end
+
+      @reader.update!(completion_dove_disabled: params[:completion_dove_disabled] == '1')
+      redirect_to admin_reader_path(@reader), notice: 'Completion animation setting updated.'
+    end
+
     def remove_avatar
       @reader.remove_avatar!
       redirect_to admin_reader_path(@reader), notice: "Removed #{@reader.display_name}'s picture."
@@ -296,6 +307,12 @@ module Bible270
 
       reader.reload unless reader.has_attribute?(:notify_on_all_comments)
       true
+    end
+
+    def completion_dove_available_for(reader)
+      available = Reader.completion_dove_column?
+      reader.reload if available && !reader.has_attribute?('completion_dove_disabled')
+      available
     end
 
     def require_admin!

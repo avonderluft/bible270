@@ -21,12 +21,20 @@ class ReaderTest < Minitest::Test
     refute @reader.daily_reminders
     assert_equal '08:00', @reader.daily_reminder_time
     assert_nil @reader.last_daily_reminder_sent_on
+    refute @reader.completion_dove_disabled?
   end
 
   def test_optional_reader_columns_are_available_in_the_migrated_schema
     assert Bible270::Reader.daily_reminder_columns?
     assert Bible270::Reader.reflections_seen_column?
     assert Bible270::Reader.comment_notification_columns?
+    assert Bible270::Reader.completion_dove_column?
+  end
+
+  def test_completion_dove_preference_can_be_disabled
+    @reader.update!(completion_dove_disabled: true)
+
+    assert @reader.completion_dove_disabled?
   end
 
   def test_comment_notification_columns_refresh_a_stale_schema_cache
