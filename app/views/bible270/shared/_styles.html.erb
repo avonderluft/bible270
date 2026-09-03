@@ -150,7 +150,7 @@
   .b270-completion-dove{position:fixed;z-index:1000;top:var(--b270-dove-origin-y,72vh);left:var(--b270-dove-origin-x,50vw);
                         width:min(75vw,97.5vh);height:auto;overflow:visible;pointer-events:none;opacity:0;
                         filter:drop-shadow(0 0 8px rgba(255,255,255,1)) drop-shadow(0 0 24px rgba(255,252,220,1)) drop-shadow(0 0 52px rgba(225,191,92,.82));
-                        will-change:top,left,transform,opacity;animation:b270-dove-flight 2.0s cubic-bezier(.2,.72,.3,1) both}
+                        will-change:top,left,transform,opacity;animation:b270-dove-flight 1.6s cubic-bezier(.18,.72,.28,1) both}
   .b270-dove-silhouette{fill:url(#b270-dove-light);stroke:none}
   @keyframes b270-dove-flight{
     0%{top:var(--b270-dove-origin-y,72vh);left:var(--b270-dove-origin-x,50vw);opacity:.22;visibility:visible;transform:translate(-50%,-50%) scale(.02) rotate(-8deg)}
@@ -168,7 +168,7 @@
   .b270-reading.rest{opacity:.65}
   .b270-toggle{border:none;background:none;padding:0;cursor:pointer}
   .b270-toggle form{margin:0}
-  .b270-check{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);flex:none;display:grid;place-items:center;background:#fff;transition:all .18s}
+  .b270-check{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);flex:none;display:grid;place-items:center;background:#fff;transition:background-color .18s,border-color .18s,opacity .18s}
   .b270-check svg{width:15px;height:15px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0}
   .b270-reading.done.ot .b270-check{background:var(--teal);border-color:var(--teal)}
   .b270-reading.done.nt .b270-check{background:var(--oxblood);border-color:var(--oxblood)}
@@ -379,6 +379,6 @@
   }
   @media (prefers-reduced-motion:reduce){
     .b270-completion-dove{display:none!important}
-    .b270 *,.b270 *::before,.b270 *::after{scroll-behavior:auto!important;transition-duration:100.0ms!important;animation-duration:100.0ms!important;animation-iteration-count:1!important}
+    .b270 *,.b270 *::before,.b270 *::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
   }
 </style>
