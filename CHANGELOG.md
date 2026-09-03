@@ -4,17 +4,39 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## Unreleased Changes
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.0...main)**
+
+## [1.4.0] - 2026-09-02
+
 ### Added
 
 - mark a newly completed day with a brief, translucent dove animation that begins immediately on the final checkoff in JavaScript-capable browsers and remains available after Turbo or HTML-fallback responses; it respects reduced-motion preferences, replaces the final generic success message, and never blocks interaction
 
+### Changed
+
+- refine the completion animation to 1.6 seconds with smoother easing, limit checkoff transitions to relevant visual properties, and make reduced-motion transitions effectively instantaneous
+
+### Fixed
+
+- keep repeated or concurrent explicit checkoffs idempotent instead of raising a duplicate-validation Rails 422 error
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.3.2...v1.4.0)**
+
+## [1.3.2] - 2026-09-02
+
+### Fixed
+
+- silently recover all Turbo interactions from stale sessions, retry once with a fresh CSRF token, and reload rather than submit with a known-stale token if refreshing fails
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.3.1...v1.3.2)**
+
+## [1.3.1] - 2026-09-01
+
 ### Fixed
 
 - correct Day 27's New Testament reading to include Matthew 26:75
-- silently recover all Turbo interactions from stale sessions, retry once with a fresh CSRF token, and reload rather than submit with a known-stale token if refreshing fails
-- keep repeated or concurrent explicit checkoffs idempotent instead of raising a duplicate-validation Rails 422 error
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.3.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.3.0...v1.3.1)**
 
 ## [1.3.0] - 2026-08-29
 
@@ -596,6 +618,9 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
+[1.4.0]: https://github.com/avonderluft/bible270/releases/tag/v1.4.0
+[1.3.2]: https://github.com/avonderluft/bible270/releases/tag/v1.3.2
+[1.3.1]: https://github.com/avonderluft/bible270/releases/tag/v1.3.1
 [1.3.0]: https://github.com/avonderluft/bible270/releases/tag/v1.3.0
 [1.2.0]: https://github.com/avonderluft/bible270/releases/tag/v1.2.0
 [1.1.7]: https://github.com/avonderluft/bible270/releases/tag/v1.1.7
