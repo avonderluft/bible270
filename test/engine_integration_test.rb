@@ -71,6 +71,32 @@ if RAILS_LOADED
       refute_match(%r{No reflections yet}, response.body)
     end
 
+    def test_a_day_page_puts_reflections_before_the_finisher_list
+      get "#{mount}/day/1"
+
+      reflections = response.body.index('>Reflections</h2>')
+      finishers = response.body.index('id="completers_1"')
+      assert reflections
+      assert finishers
+      assert_operator reflections, :<, finishers
+    end
+
+    def test_finished_this_day_shows_every_reader_with_section_specific_avatar_size
+      13.times do |index|
+        reader = Bible270::Reader.create!(provider: 'test', uid: "finisher-#{index}",
+                                          display_name: "Finisher #{index}")
+        reader.mark_day_complete!(1)
+      end
+
+      get "#{mount}/day/1"
+
+      assert_select '#completers_1' do
+        assert_select 'a', count: 13
+        assert_select '.b270-avatar-fallback[style="width:56px;height:56px;line-height:56px"]', count: 13
+        assert_select 'span', text: %r{more}, count: 0
+      end
+    end
+
     def test_a_day_page_gives_visitors_one_sign_in_invitation
       get "#{mount}/day/1"
 

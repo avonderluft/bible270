@@ -2,9 +2,8 @@
 <div class="b270-completers" id="completers_<%= day %>">
   <% if completers.any? %>
     <span>Finished this day:</span>
-    <% completers.first(12).each do |reader| %>
-      <%= link_to b270_avatar(reader), reader_path(reader), title: reader.display_name %>
+    <% completers.each do |reader| %>
+      <%= link_to b270_avatar(reader, size: 56), reader_path(reader), title: reader.display_name %>
     <% end %>
-    <% if completers.size > 12 %><span><%= completers.size - 12 %> more</span><% end %>
   <% end %>
 </div>

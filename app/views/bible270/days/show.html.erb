@@ -16,8 +16,6 @@
   <% end %>
 
   <div class="b270-day-community">
-    <%= render "bible270/days/completers", day: @day, completers: @completers %>
-
     <h2 class="b270-section-h">Reflections</h2>
     <div id="comments">
       <%= render partial: "bible270/comments/comment", collection: @comments, as: :comment %>
@@ -30,6 +28,8 @@
       <%= render "bible270/shared/comment_drafts" %>
       <%= render "bible270/shared/mention_typeahead" %>
     <% end %>
+
+    <%= render "bible270/days/completers", day: @day, completers: @completers %>
   </div>
 </div>
 
