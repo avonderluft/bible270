@@ -17,19 +17,19 @@ unless ENV['SKIP_COV']
   end
 
   SimpleCov.start do
-    track_files '{app,lib}/**/*.rb'
+    cover '{app,lib}/**/*.rb'
 
-    add_filter '/test/'
-    add_filter '/gemfiles/'
-    add_filter 'lib/bible270/version.rb'
+    skip '/test/'
+    skip '/gemfiles/'
+    skip 'lib/bible270/version.rb'
 
-    add_group 'Plan',        'lib/bible270/plan.rb'
-    add_group 'Library',     'lib/bible270'
-    add_group 'Generators',  'lib/generators'
-    add_group 'Models',      'app/models'
-    add_group 'Controllers', 'app/controllers'
-    add_group 'Helpers',     'app/helpers'
-    add_group 'Mailers',     'app/mailers'
+    group 'Plan',        'lib/bible270/plan.rb'
+    group 'Library',     'lib/bible270'
+    group 'Generators',  'lib/generators'
+    group 'Models',      'app/models'
+    group 'Controllers', 'app/controllers'
+    group 'Helpers',     'app/helpers'
+    group 'Mailers',     'app/mailers'
 
     minimum_coverage ENV['COVERAGE_FLOOR'].to_i if ENV['COVERAGE_FLOOR']
   end
