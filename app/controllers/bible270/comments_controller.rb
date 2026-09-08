@@ -11,6 +11,14 @@ module Bible270
       current_reader&.mark_reflections_seen!(visited_at)
     end
 
+    def preview
+      return unless require_reader!
+
+      attributes = { body: params.dig(:comment, :body).to_s }
+      attributes[:body_format] = CommentFormatter::MARKDOWN if Comment.body_format_column?
+      render partial: 'bible270/comments/body', locals: { comment: Comment.new(attributes) }
+    end
+
     def create
       return unless require_reader!
 
@@ -134,7 +142,9 @@ module Bible270
     end
 
     def comment_params
-      params.require(:comment).permit(:body, :track, :parent_id)
+      permitted = %i[body track parent_id]
+      permitted << :body_format if Comment.body_format_column?
+      params.require(:comment).permit(*permitted)
     end
 
     # Scoped to the reader, so someone else's reflection is simply not found —

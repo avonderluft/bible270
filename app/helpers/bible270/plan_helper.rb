@@ -53,40 +53,46 @@ module Bible270
       end
     end
 
-    # The mark beside the title in the header. Larger than the favicon and inlined
-    # as SVG, so it stays crisp at any size and needs no asset pipeline.
-    # Renders "@handle" as a link to that reader. An unresolved or ambiguous handle
-    # is left as plain text, which is how a writer discovers it found nobody.
-    #
-    # Built by walking the matches and escaping everything between them, rather
-    # than escaping afterwards: the body is reader-supplied, so the only safe
-    # construction is one where every non-link fragment is escaped by hand.
-    def b270_with_mentions(body)
-      text = body.to_s
-      readers = Bible270::Reader.mentioned_in(text)
-
-      pieces = []
-      cursor = 0
-
-      text.to_enum(:scan, Bible270::Mentions::PATTERN).each do
-        match = Regexp.last_match
-        pieces << ERB::Util.html_escape(text[cursor...match.begin(0)])
-
-        handle = Bible270::Mentions.normalize(match[1])
-        reader = readers.find { |candidate| candidate.answers_to?(handle) }
-        pieces << if reader
-                    link_to(match[0], reader_path(reader), class: 'b270-mention')
-                  else
-                    ERB::Util.html_escape(match[0])
-                  end
-
-        cursor = match.end(0)
-      end
-
-      pieces << ERB::Util.html_escape(text[cursor..].to_s)
-      safe_join(pieces)
+    # Formats every reflection surface through the same sanitizer. Web views link
+    # resolved mentions; email can opt out because it has no mounted request path.
+    def b270_comment_body(comment, link_mentions: true)
+      format = comment.rendered_body_format
+      html = if link_mentions
+               readers = Bible270::Reader.mentioned_in(comment.body)
+               Bible270::CommentFormatter.html(comment.body, format: format) do |handle|
+                 reader = readers.find { |candidate| candidate.answers_to?(handle) }
+                 reader_path(reader) if reader
+               end
+             else
+               Bible270::CommentFormatter.html(comment.body, format: format)
+             end
+      html.html_safe
     end
 
+    def b270_comment_text(comment)
+      Bible270::CommentFormatter.text(comment.body, format: comment.rendered_body_format)
+    end
+
+    def b270_editor_rows(body, columns: 48, minimum: 4)
+      rows = body.to_s.split("\n", -1).sum do |line|
+        [1, (line.length.to_f / columns).ceil].max
+      end
+      [minimum, rows].max
+    end
+
+    # Backward-compatible plain-text entry point for host views that called the old
+    # mention helper directly.
+    def b270_with_mentions(body)
+      readers = Bible270::Reader.mentioned_in(body)
+      html = Bible270::CommentFormatter.html(body, format: Bible270::CommentFormatter::PLAIN) do |handle|
+        reader = readers.find { |candidate| candidate.answers_to?(handle) }
+        reader_path(reader) if reader
+      end
+      html.html_safe
+    end
+
+    # The mark beside the title in the header. Larger than the favicon and inlined
+    # as SVG, so it stays crisp at any size and needs no asset pipeline.
     def b270_mark(size: 38)
       configured = Bible270.config.header_mark
       return nil if configured == false

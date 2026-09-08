@@ -1,0 +1,6 @@
+<%# locals: (comment:) %>
+<% if comment.body.to_s.strip.empty? %>
+  <p class="b270-hint">Nothing to preview yet.</p>
+<% else %>
+  <%= b270_comment_body(comment) %>
+<% end %>

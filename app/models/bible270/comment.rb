@@ -11,6 +11,8 @@ module Bible270
     # the paper background; an outline glyph like U+2661 is drawn by the font
     # rather than the emoji set and needs hand-tuning to match.
     HEART = '❤️'
+    BODY_FORMAT_COLUMN = 'body_format'
+    BODY_FORMATS = CommentFormatter::FORMATS
     ThreadPage = Struct.new(:threads, :activity_by_id, :page, :pages, :total, keyword_init: true)
 
     self.table_name = 'bible270_comments'
@@ -26,6 +28,7 @@ module Bible270
 
     validates :day, inclusion: { in: 1..Plan::DAYS }
     validates :body, presence: true, length: { maximum: 4000 }
+    validates :body_format, inclusion: { in: BODY_FORMATS }, if: :body_format_column?
     # A reflection can be about one track or about the whole day. The form's
     # "The whole day" option submits an empty string, so normalise it to NULL
     # before validating — allow_nil alone rejects "" with
@@ -53,6 +56,23 @@ module Bible270
       for_day(d).includes(:reader, { likes: :reader }, { replies: [:reader, { likes: :reader }] })
     }
     scope :recent, -> { approved.order(created_at: :desc) }
+
+    def self.body_format_column?
+      column_names.include?(BODY_FORMAT_COLUMN)
+    rescue ActiveRecord::StatementInvalid
+      false
+    end
+
+    def self.new_for_composer(attributes = {})
+      attributes = attributes.merge(BODY_FORMAT_COLUMN => CommentFormatter::MARKDOWN) if body_format_column?
+      new(attributes)
+    end
+
+    def body_format_column? = self.class.body_format_column?
+
+    def rendered_body_format
+      body_format_column? ? body_format.presence || CommentFormatter::PLAIN : CommentFormatter::PLAIN
+    end
 
     # One page of top-level reflections ordered by the newest activity in each
     # conversation. Loading only IDs and timestamps keeps older archives cheap to

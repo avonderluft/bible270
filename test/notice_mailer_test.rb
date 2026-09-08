@@ -198,6 +198,25 @@ if RAILS_LOADED
       assert_match(%r{Good point}, body_of(mail))
     end
 
+    def test_a_markdown_reflection_is_formatted_safely_in_both_email_parts
+      comment = @mary.comments.create!(
+        day: 7,
+        body: "**Good point**\nSecond line [Source](https://example.org) <script>alert(1)</script>",
+        body_format: 'markdown'
+      )
+      mail = mention_notice(comment)
+      html = mail.html_part.body.decoded
+      text = mail.text_part.body.decoded
+
+      assert_match(%r{<strong>Good point</strong>}, html)
+      assert_match(%r{<strong>Good point</strong><br>Second line}, html)
+      assert_match(%r{href="https://example.org"}, html)
+      refute_match(%r{<script\b}i, html)
+      assert_match(%r{Good point}, text)
+      assert_match(%r{Source \(https://example.org\)}, text)
+      refute_includes text, '**'
+    end
+
     def test_the_mention_notice_explains_why_it_was_sent
       comment = @mary.comments.create!(day: 1, body: 'Hello @andrew')
       body = body_of(mention_notice(comment))

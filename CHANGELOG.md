@@ -4,6 +4,14 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+
+- add an on-demand Markdown formatting drawer and separate server-rendered Preview control for reflections and replies, with safe rendering, formatted notification emails, mention and browser-draft compatibility, and literal display of existing plain-text reflections; upgrading hosts must copy and run the new `body_format` comment migration
+
+### Fixed
+
+- keep `json` below 3.0 while supported Rails releases still pass positional parse options, preventing session-cookie decoding from crashing every request under `json` 3.0
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.2...main)**
 
 ## [1.4.2] - 2026-09-03

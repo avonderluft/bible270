@@ -1,0 +1,57 @@
+<%# locals: (form:, comment:, label_text:, placeholder: nil) %>
+<% editor_key = comment.persisted? ? "edit-#{comment.id}" : "new" %>
+<% textarea_id = "b270-comment-body-#{editor_key}" %>
+<% options_id = "b270-mention-options-#{editor_key}" %>
+<% write_id = "b270-comment-write-#{editor_key}" %>
+<% preview_id = "b270-comment-preview-#{editor_key}" %>
+<% drawer_id = "b270-comment-formatting-#{editor_key}" %>
+<% markdown_available = Bible270::Comment.body_format_column? %>
+
+<div class="b270-mention-composer" data-b270-mention-composer
+     data-suggestions-url="<%= mention_suggestions_path %>">
+  <div class="b270-markdown-editor" data-b270-markdown-editor data-b270-editor-key="<%= editor_key %>"
+       data-b270-preview-url="<%= comment_preview_path if markdown_available %>"
+       data-b270-formatting-open="false" data-b270-editor-mode="write">
+    <% if markdown_available %>
+      <div class="b270-editor-utilities" data-b270-editor-utilities hidden>
+        <button type="button" class="b270-editor-utility" aria-expanded="false"
+                aria-controls="<%= drawer_id %>" data-b270-formatting-toggle>
+          Formatting <span class="b270-format-chevron" aria-hidden="true">▾</span>
+        </button>
+        <button type="button" class="b270-editor-utility" aria-pressed="false"
+                aria-controls="<%= write_id %> <%= preview_id %>" data-b270-preview-toggle>Preview</button>
+      </div>
+      <div id="<%= drawer_id %>" class="b270-formatting-drawer" aria-hidden="true"
+           data-b270-formatting-drawer inert>
+        <div class="b270-formatting-drawer-inner">
+          <div class="b270-markdown-toolbar" role="toolbar" aria-label="Reflection formatting"
+               data-b270-markdown-toolbar>
+            <button type="button" data-b270-markdown-action="bold" aria-label="Bold selected text" title="Bold (Ctrl+B)"><span class="b270-format-glyph b270-format-bold" aria-hidden="true">B</span></button>
+            <button type="button" data-b270-markdown-action="italic" aria-label="Italicize selected text" title="Italic (Ctrl+I)"><span class="b270-format-glyph b270-format-italic" aria-hidden="true">I</span></button>
+            <button type="button" data-b270-markdown-action="quote" aria-label="Format as a quotation" title="Quotation">“ ”</button>
+            <button type="button" data-b270-markdown-action="bullet-list" aria-label="Format as a bulleted list" title="Bulleted list">• List</button>
+            <button type="button" data-b270-markdown-action="number-list" aria-label="Format as a numbered list" title="Numbered list">1. List</button>
+            <button type="button" data-b270-markdown-action="link" aria-label="Add a link" title="Link">Link</button>
+          </div>
+        </div>
+      </div>
+      <%= form.hidden_field :body_format, data: { b270_body_format: true } %>
+    <% end %>
+
+    <div id="<%= write_id %>" data-b270-write-panel>
+      <%= form.label :body, label_text, for: textarea_id, class: "b270-sr-only" %>
+      <%= form.text_area :body, id: textarea_id, placeholder: placeholder,
+            rows: (b270_editor_rows(comment.body) if comment.persisted?),
+            role: "combobox", autocomplete: "off", data: { b270_autosize: comment.persisted? },
+            aria: { autocomplete: "list", expanded: "false", haspopup: "listbox", controls: options_id } %>
+    </div>
+    <% if markdown_available %>
+      <div id="<%= preview_id %>" class="b270-markdown-preview b270-cbody"
+           aria-label="Reflection preview" aria-live="polite" data-b270-preview-panel hidden></div>
+    <% end %>
+  </div>
+
+  <div class="b270-mention-options" id="<%= options_id %>" role="listbox"
+       data-b270-mention-options hidden></div>
+  <p class="b270-sr-only" data-b270-mention-status aria-live="polite"></p>
+</div>

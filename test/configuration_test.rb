@@ -30,7 +30,7 @@ class ConfigurationTest < Minitest::Test
 
     sources = Dir.glob(File.join(root, '{app,lib}/**/*.{rb,erb}')).map { |f| File.read(f) }.join
 
-    { 'turbo-rails' => %r{turbo_stream}, 'omniauth' => %r{OmniAuth} }.each do |gem_name, pattern|
+    { 'turbo-rails' => %r{turbo_stream}, 'omniauth' => %r{OmniAuth}, 'kramdown' => %r{Kramdown} }.each do |gem_name, pattern|
       next unless sources.match?(pattern)
 
       assert_includes declared, gem_name, "#{gem_name} is used but not declared in the gemspec"
@@ -41,6 +41,16 @@ class ConfigurationTest < Minitest::Test
   # so a reader in Los Angeles saw tomorrow's reading from 4pm. Bible270.today
   # follows the machine instead, and everything that decides a plan date must go
   # through it. (Timestamps are a different matter: Time.current is right there.)
+  def test_json_is_constrained_to_the_api_supported_by_current_rails
+    root = File.expand_path('..', __dir__)
+    spec = Gem::Specification.load(File.join(root, 'bible270.gemspec'))
+    requirement = spec.dependencies.find { |dependency| dependency.name == 'json' }&.requirement
+
+    refute_nil requirement
+    assert requirement.satisfied_by?(Gem::Version.new('2.21.2'))
+    refute requirement.satisfied_by?(Gem::Version.new('3.0.0'))
+  end
+
   def test_plan_dates_do_not_use_the_rails_zone_directly
     root = File.expand_path('..', __dir__)
     offenders = Dir.glob(File.join(root, '{app,lib}/**/*.{rb,erb}')).flat_map do |path|

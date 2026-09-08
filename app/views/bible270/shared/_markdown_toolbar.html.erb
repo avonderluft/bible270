@@ -1,0 +1,239 @@
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270MarkdownToolbar) {
+      window.Bible270MarkdownToolbar.scan();
+      return;
+    }
+
+    const openEditors = new Set();
+
+    function editorKey(editor) {
+      return editor.dataset.b270EditorKey;
+    }
+
+    function select(textarea, start, finish) {
+      textarea.focus();
+      textarea.setSelectionRange(start, finish);
+    }
+
+    function resizeTextarea(textarea) {
+      if (!textarea || textarea.dataset.b270Autosize !== "true") return;
+
+      textarea.style.height = "auto";
+      const borders = textarea.offsetHeight - textarea.clientHeight;
+      textarea.style.height = `${textarea.scrollHeight + borders}px`;
+    }
+
+    function initializeAutosize(textarea) {
+      if (!textarea || textarea.dataset.b270Autosize !== "true" ||
+          textarea.dataset.b270AutosizeReady === "true") return;
+
+      textarea.dataset.b270AutosizeReady = "true";
+      textarea.addEventListener("input", () => resizeTextarea(textarea));
+      window.requestAnimationFrame(() => resizeTextarea(textarea));
+    }
+
+    function resizeEditors() {
+      document.querySelectorAll("textarea[data-b270-autosize='true']").forEach(resizeTextarea);
+    }
+
+    function update(editor, textarea, replacement, start, finish, selectedStart, selectedEnd) {
+      textarea.value = `${textarea.value.slice(0, start)}${replacement}${textarea.value.slice(finish)}`;
+      const format = editor.querySelector("[data-b270-body-format]");
+      if (format) format.value = "markdown";
+      select(textarea, start + selectedStart, start + selectedEnd);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function wrap(editor, textarea, before, after, placeholder) {
+      const start = textarea.selectionStart;
+      const finish = textarea.selectionEnd;
+      const selected = textarea.value.slice(start, finish) || placeholder;
+      const replacement = `${before}${selected}${after}`;
+      update(editor, textarea, replacement, start, finish, before.length, before.length + selected.length);
+    }
+
+    function prefixLines(editor, textarea, action) {
+      const selectionStart = textarea.selectionStart;
+      const selectionEnd = textarea.selectionEnd;
+      const start = textarea.value.lastIndexOf("\n", Math.max(selectionStart - 1, 0)) + 1;
+      const nextNewline = textarea.value.indexOf("\n", selectionEnd);
+      const finish = nextNewline === -1 ? textarea.value.length : nextNewline;
+      const source = textarea.value.slice(start, finish) || (action === "quote" ? "quoted text" : "list item");
+      const lines = source.split("\n");
+      const replacement = lines.map((line, index) => {
+        if (action === "quote") return `> ${line}`;
+        if (action === "number-list") return `${index + 1}. ${line}`;
+        return `- ${line}`;
+      }).join("\n");
+      update(editor, textarea, replacement, start, finish, 0, replacement.length);
+    }
+
+    function addLink(editor, textarea) {
+      const href = window.prompt("Link address (https://…)");
+      if (!href) return;
+
+      const start = textarea.selectionStart;
+      const finish = textarea.selectionEnd;
+      const selected = textarea.value.slice(start, finish) || "link text";
+      const replacement = `[${selected}](${href.trim()})`;
+      update(editor, textarea, replacement, start, finish, 1, selected.length + 1);
+    }
+
+    function requestPreview(editor, state) {
+      const textarea = editor.querySelector("textarea[name='comment[body]']");
+      const preview = editor.querySelector("[data-b270-preview-panel]");
+      const url = editor.dataset.b270PreviewUrl;
+      if (!textarea || !preview || !url) return;
+
+      if (!textarea.value.trim()) {
+        preview.innerHTML = '<p class="b270-hint">Nothing to preview yet.</p>';
+        return;
+      }
+
+      if (state.abort) state.abort.abort();
+      state.abort = new AbortController();
+      preview.textContent = "Loading preview…";
+      const body = new URLSearchParams({ "comment[body]": textarea.value });
+      const token = document.querySelector("meta[name='csrf-token']")?.content;
+      const headers = {
+        Accept: "text/html",
+        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+      };
+      if (token) headers["X-CSRF-Token"] = token;
+
+      fetch(url, {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        redirect: "error",
+        headers,
+        body: body.toString(),
+        signal: state.abort.signal
+      }).then((response) => {
+        if (!response.ok) throw new Error("Preview unavailable");
+        return response.text();
+      }).then((html) => {
+        preview.innerHTML = html;
+      }).catch((error) => {
+        if (error.name !== "AbortError") preview.textContent = "Preview unavailable. Return to Write and try again.";
+      });
+    }
+
+    function setFormattingOpen(editor, open, remember = true) {
+      const drawer = editor.querySelector("[data-b270-formatting-drawer]");
+      const toggle = editor.querySelector("[data-b270-formatting-toggle]");
+      if (!drawer || !toggle) return;
+
+      editor.dataset.b270FormattingOpen = open ? "true" : "false";
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      drawer.setAttribute("aria-hidden", open ? "false" : "true");
+      drawer.inert = !open;
+      if (!remember) return;
+
+      if (open) openEditors.add(editorKey(editor));
+      else openEditors.delete(editorKey(editor));
+    }
+
+    function showMode(editor, state, mode) {
+      const previewing = mode === "preview";
+      const writePanel = editor.querySelector("[data-b270-write-panel]");
+      const previewPanel = editor.querySelector("[data-b270-preview-panel]");
+      const previewToggle = editor.querySelector("[data-b270-preview-toggle]");
+      const formattingToggle = editor.querySelector("[data-b270-formatting-toggle]");
+      if (!writePanel || !previewPanel || !previewToggle || !formattingToggle) return;
+
+      editor.dataset.b270EditorMode = mode;
+      writePanel.hidden = previewing;
+      previewPanel.hidden = !previewing;
+      previewToggle.textContent = previewing ? "Write" : "Preview";
+      previewToggle.setAttribute("aria-pressed", previewing ? "true" : "false");
+      previewToggle.setAttribute("aria-label", previewing ? "Return to writing" : "Preview reflection");
+      formattingToggle.disabled = previewing;
+      if (previewing) {
+        setFormattingOpen(editor, false, false);
+        requestPreview(editor, state);
+      } else {
+        setFormattingOpen(editor, openEditors.has(editorKey(editor)), false);
+        const textarea = editor.querySelector("textarea[name='comment[body]']");
+        resizeTextarea(textarea);
+        textarea?.focus();
+      }
+    }
+
+    function apply(editor, action) {
+      const textarea = editor.querySelector("textarea[name='comment[body]']");
+      if (!textarea) return;
+
+      if (action === "bold") {
+        wrap(editor, textarea, "**", "**", "bold text");
+      } else if (action === "italic") {
+        wrap(editor, textarea, "*", "*", "italic text");
+      } else if (action === "link") {
+        addLink(editor, textarea);
+      } else {
+        prefixLines(editor, textarea, action);
+      }
+    }
+
+    function initialize(editor) {
+      const textarea = editor.querySelector("textarea[name='comment[body]']");
+      if (!textarea) return;
+      initializeAutosize(textarea);
+      if (editor.dataset.b270MarkdownReady === "true") return;
+
+      const utilities = editor.querySelector("[data-b270-editor-utilities]");
+      const toolbar = editor.querySelector("[data-b270-markdown-toolbar]");
+      const drawer = editor.querySelector("[data-b270-formatting-drawer]");
+      const formattingToggle = editor.querySelector("[data-b270-formatting-toggle]");
+      const previewToggle = editor.querySelector("[data-b270-preview-toggle]");
+      if (!utilities || !toolbar || !drawer || !formattingToggle || !previewToggle) return;
+
+      editor.dataset.b270MarkdownReady = "true";
+      if (editor.closest("form")?.dataset.b270DraftPosted === "true") openEditors.delete(editorKey(editor));
+      const state = { abort: null };
+      utilities.hidden = false;
+      setFormattingOpen(editor, openEditors.has(editorKey(editor)), false);
+      formattingToggle.addEventListener("click", () => {
+        setFormattingOpen(editor, editor.dataset.b270FormattingOpen !== "true");
+      });
+      previewToggle.addEventListener("click", () => {
+        const mode = editor.dataset.b270EditorMode === "preview" ? "write" : "preview";
+        showMode(editor, state, mode);
+      });
+      toolbar.querySelectorAll("[data-b270-markdown-action]").forEach((button) => {
+        button.addEventListener("click", () => apply(editor, button.dataset.b270MarkdownAction));
+      });
+      toolbar.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+
+        event.preventDefault();
+        setFormattingOpen(editor, false);
+        formattingToggle.focus();
+      });
+      textarea.addEventListener("keydown", (event) => {
+        if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+        const action = event.key.toLocaleLowerCase() === "b" ? "bold" :
+          event.key.toLocaleLowerCase() === "i" ? "italic" : null;
+        if (!action) return;
+
+        event.preventDefault();
+        apply(editor, action);
+      });
+    }
+
+    function scan() {
+      document.querySelectorAll("[data-b270-markdown-editor]").forEach(initialize);
+    }
+
+    scan();
+    new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
+    window.addEventListener("pageshow", () => {
+      scan();
+      resizeEditors();
+    });
+    window.addEventListener("resize", resizeEditors);
+    document.addEventListener("turbo:load", scan);
+    window.Bible270MarkdownToolbar = { scan };
+  })();
+</script>

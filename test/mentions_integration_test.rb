@@ -193,11 +193,11 @@ if RAILS_LOADED
     # ---- the page ----------------------------------------------------------
 
     def test_a_mention_is_rendered_as_a_link
-      @mary.comments.create!(day: 1, body: 'Good point @Andrew')
+      @mary.comments.create!(day: 1, body: '**Good point @Andrew**', body_format: 'markdown')
       get "#{mount}/day/1"
 
       assert_response :success
-      assert_match(%r{<a[^>]*b270-mention[^>]*>@Andrew</a>}, response.body)
+      assert_select '.b270-cbody strong a.b270-mention', text: '@Andrew'
     end
 
     def test_an_unresolved_mention_stays_plain_text
@@ -214,6 +214,33 @@ if RAILS_LOADED
 
       refute_match(%r{<script>alert}, response.body, 'the body must be escaped')
       assert_match(%r{&lt;script&gt;}, response.body)
+    end
+
+    def test_markdown_cannot_smuggle_active_markup_or_unsafe_links
+      comment = @mary.comments.create!(
+        day: 1,
+        body: '**Safe** <script>alert(1)</script> [bad](javascript:alert(2)) <img src=x onerror=alert(3)>',
+        body_format: 'markdown'
+      )
+
+      get "#{mount}/day/1"
+
+      body = css_select("#comment-#{comment.id} .b270-cbody").first.to_s
+      assert_match(%r{<strong>Safe</strong>}, body)
+      refute_match(%r{<script\b}i, body)
+      refute_match(%r{<img\b}i, body)
+      refute_match(%r{<[^>]+\sonerror\s*=}i, body)
+      refute_match(%r{href=["']javascript:}i, body)
+    end
+
+    def test_a_mention_inside_a_markdown_link_does_not_create_nested_links
+      comment = @mary.comments.create!(day: 1, body: '[@Andrew](https://example.org)', body_format: 'markdown')
+
+      get "#{mount}/day/1"
+
+      body = css_select("#comment-#{comment.id} .b270-cbody").first.to_s
+      assert_match(%r{<a href="https://example.org"[^>]*>@Andrew</a>}, body)
+      refute_match(%r{<a[^>]*><a}, body)
     end
 
     def test_replying_starts_with_an_empty_body

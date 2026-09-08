@@ -12,7 +12,7 @@ class EntryPointTest < Minitest::Test
   def test_requiring_the_gem_defines_every_module
     require 'bible270'
 
-    %i[Plan Versification EmailSignIn Names Avatars Translations Favicon Configuration].each do |name|
+    %i[Plan Versification EmailSignIn Names Avatars Translations Favicon Configuration CommentFormatter].each do |name|
       assert Bible270.const_defined?(name), "Bible270::#{name} should be loaded by require 'bible270'"
     end
   end

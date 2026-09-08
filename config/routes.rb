@@ -13,6 +13,7 @@ Bible270::Engine.routes.draw do
                                    constraints: { day: %r{\d+} }
   post   'day/:day/comments',      to: 'comments#create',  as: :day_comments,
                                    constraints: { day: %r{\d+} }
+  post   'comments/preview',       to: 'comments#preview', as: :comment_preview
   post   'comments/:id/like',      to: 'likes#toggle',     as: :like_comment
   patch  'comments/:id',           to: 'comments#update'
   delete 'comments/:id',           to: 'comments#destroy', as: :comment

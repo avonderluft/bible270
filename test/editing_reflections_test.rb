@@ -42,6 +42,16 @@ if RAILS_LOADED
       patch "#{mount}/comments/#{@mine.id}", params: { comment: { body: 'Second thoughts' } }
 
       assert_equal 'Second thoughts', @mine.reload.body
+      assert_equal 'plain', @mine.body_format
+    end
+
+    def test_a_writer_can_upgrade_a_reflection_to_markdown
+      sign_in_as(@mary)
+      patch "#{mount}/comments/#{@mine.id}",
+            params: { comment: { body: '**Second thoughts**', body_format: 'markdown' } }
+
+      assert_equal '**Second thoughts**', @mine.reload.body
+      assert_equal 'markdown', @mine.body_format
     end
 
     def test_nobody_else_can
@@ -134,6 +144,39 @@ if RAILS_LOADED
       assert_select 'form[data-b270-submit="true"][data-b270-pending="Saving changes…"]'
       assert_match(%r{First thoughts}, response.body, 'the words are in the box')
       assert_match(%r{Cancel}, response.body)
+      assert_select 'form.b270-editform' do
+        assert_select 'input[data-b270-body-format][value="plain"]'
+        assert_select '[role="toolbar"][aria-label="Reflection formatting"]'
+        assert_select 'textarea[data-b270-autosize="true"][rows="4"]'
+      end
+      textareas = css_select('textarea[name="comment[body]"]')
+      assert_equal 2, textareas.size
+      ids = textareas.map { |textarea| textarea['id'] }
+      assert_equal ids.uniq, ids, 'each composer needs a unique textarea id'
+    end
+
+    def test_a_long_reflection_gets_a_large_no_javascript_editing_fallback
+      @mine.update!(body: (['A long line of reflection text'] * 40).join(' '))
+      sign_in_as(@mary)
+
+      get "#{mount}/day/1", params: { edit: @mine.id }
+
+      textarea = css_select('form.b270-editform textarea[data-b270-autosize="true"]').first
+      assert_operator textarea['rows'].to_i, :>, 20
+      assert_match(%r{scrollHeight}, response.body)
+    end
+
+    def test_a_successful_turbo_edit_renders_markdown
+      sign_in_as(@mary)
+
+      patch "#{mount}/comments/#{@mine.id}",
+            params: { comment: { body: '**Revised**', body_format: 'markdown' } },
+            headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+      assert_response :success
+      assert_select "turbo-stream[action='replace'][target='comment-#{@mine.id}']" do
+        assert_select "#comment-#{@mine.id} .b270-cbody strong", text: 'Revised'
+      end
     end
 
     def test_the_edit_link_points_at_the_day_page
@@ -208,6 +251,18 @@ if RAILS_LOADED
       patch "#{mount}/comments/#{@mine.id}", params: { comment: { body: '@andrew second' } }
 
       assert_empty ActionMailer::Base.deliveries, 'already mentioned, so no second notice'
+    end
+
+    def test_changing_only_the_body_format_notifies_nobody
+      mentioning = @mary.comments.create!(day: 1, body: 'Hello @andrew')
+      ActionMailer::Base.deliveries.clear
+      sign_in_as(@mary)
+
+      patch "#{mount}/comments/#{mentioning.id}",
+            params: { comment: { body: 'Hello @andrew', body_format: 'markdown' } }
+
+      assert_empty ActionMailer::Base.deliveries
+      assert_equal 'markdown', mentioning.reload.body_format
     end
 
     def test_editing_something_other_than_the_body_notifies_nobody

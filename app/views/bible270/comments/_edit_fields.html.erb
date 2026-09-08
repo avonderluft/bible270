@@ -13,7 +13,8 @@
     <p class="b270-editerror"><%= comment.errors.full_messages.to_sentence %></p>
   <% end %>
 
-  <%= f.text_area :body %>
+  <%= render "bible270/comments/editor", form: f, comment: comment,
+        label_text: (comment.reply? ? "Reply" : "Reflection") %>
   <div class="row">
     <% unless comment.reply? %>
       <%= f.select :track,

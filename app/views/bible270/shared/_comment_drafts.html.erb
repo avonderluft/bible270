@@ -56,6 +56,7 @@
       const key = form.dataset.b270DraftKey;
       const body = form.querySelector("textarea[name='comment[body]']");
       const track = form.querySelector("select[name='comment[track]']");
+      const format = form.querySelector("[data-b270-body-format]");
       if (!key || !body) return;
 
       if (!body.value.trim()) {
@@ -65,8 +66,10 @@
       }
 
       const trackValue = track ? track.value : "";
+      const bodyFormat = format ? format.value : null;
       const current = readDraft(key);
-      if (current && current.body === body.value && current.track === trackValue) {
+      if (current && current.body === body.value && current.track === trackValue &&
+          current.bodyFormat === bodyFormat) {
         setStatus(form, "Draft saved in this browser.");
         return;
       }
@@ -74,6 +77,7 @@
       const draft = {
         body: body.value,
         track: trackValue,
+        bodyFormat,
         savedAt: Date.now(),
         revision: `${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`
       };
@@ -115,9 +119,13 @@
 
       const body = form.querySelector("textarea[name='comment[body]']");
       const track = form.querySelector("select[name='comment[track]']");
+      const format = form.querySelector("[data-b270-body-format]");
       if (body) body.value = draft.body;
       if (track && Array.from(track.options).some((option) => option.value === draft.track)) {
         track.value = draft.track;
+      }
+      if (format) {
+        format.value = ["plain", "markdown"].includes(draft.bodyFormat) ? draft.bodyFormat : "plain";
       }
       setStatus(form, "Draft restored from this browser.");
     }

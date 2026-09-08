@@ -283,7 +283,14 @@ filters, and paginates older threads. Signed-in readers see which conversations 
 their previous visit. Reflection and reply drafts are retained for up to 30 days in that browser and
 cleared after a successful post. On a shared device, clearing browser storage also removes saved drafts.
 Typing `@` in the composer offers up to five unambiguous reader handles; manual mentions continue to
-work without JavaScript.
+work without JavaScript. A quiet **Formatting** disclosure opens a toolbar for bold, italic,
+quotations, bulleted and numbered lists, and links without requiring readers to know Markdown syntax.
+A separate **Preview** control checks the current draft through the same server-side sanitizer used
+after posting; formatting tools stay out of sight until requested. The source remains
+editable in the ordinary textarea, drafts preserve its format, and all rendered HTML is restricted to that small safe
+set. Existing reflections remain literal plain text until a reader intentionally formats or converts
+them. Upgrading hosts must copy and run migration `20260101000021`, which records whether each body is
+plain text or Markdown; until then, the composer safely falls back to plain text.
 
 When `config.mention_notifications` is enabled, each reader can request email for every new reflection
 and reply, only replies to their reflections and mentions of them, or none. Administrators can change
@@ -483,7 +490,7 @@ The CMS serves your content; this is a separate mounted app. Either **just link 
 |-------|-------|
 | `bible270_readers` | identity, avatar, provider/uid or polymorphic `owner`, start date, translation, passage-reader, and reminder preferences |
 | `bible270_checkoffs` | one row per reader per day per track (`ot`/`nt`/`pp`), unique-indexed |
-| `bible270_comments` | a reflection on a day, optionally scoped to a track, public to all |
+| `bible270_comments` | a plain-text or safely rendered Markdown reflection on a day, optionally scoped to a track, public to all |
 | `bible270_sign_in_tokens` | magic-link tokens: email, **digest only**, expiry, consumed-at |
 
 A day is "complete" once all three tracks are ticked. Progress and comments are **public** by
@@ -496,6 +503,7 @@ GET    /                         days#index      overview + community + calendar
 GET    /day/:day                 days#show       readings, who's finished, reflections
 POST   /day/:day/toggle/:track   checkoffs#toggle
 POST   /day/:day/comments        comments#create
+POST   /comments/preview         comments#preview
 DELETE /comments/:id             comments#destroy
 GET    /community                readers#index   reader directory
 GET    /mention-suggestions      readers#mention_suggestions (signed-in JSON)

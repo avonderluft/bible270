@@ -35,6 +35,7 @@ if RAILS_LOADED
       assert_equal @reader.id, comment.reader_id
       assert_equal 1, comment.day
       assert_equal 'A thought on Genesis', comment.body
+      assert_equal 'plain', comment.body_format
       assert_equal 'Reflection posted.', flash[:b270_interaction_status]
     end
 
@@ -55,13 +56,37 @@ if RAILS_LOADED
       assert_select '[data-b270-draft-status][aria-live="polite"]'
       assert_select '#b270-interaction-status[role="status"]'
       assert_select "[data-b270-mention-composer][data-suggestions-url='#{mount}/mention-suggestions']" do
-        assert_select 'label.b270-sr-only[for="comment_body"]', text: 'Reflection'
-        assert_select 'textarea[role="combobox"][aria-autocomplete="list"]' \
-                      '[aria-expanded="false"][aria-controls="b270-mention-options"]'
-        assert_select '#b270-mention-options[role="listbox"][hidden]'
+        assert_select 'label.b270-sr-only[for="b270-comment-body-new"]', text: 'Reflection'
+        assert_select 'textarea#b270-comment-body-new[role="combobox"][aria-autocomplete="list"]' \
+                      '[aria-expanded="false"][aria-controls="b270-mention-options-new"]'
+        assert_select '#b270-mention-options-new[role="listbox"][hidden]'
         assert_select '[data-b270-mention-status][aria-live="polite"]'
+        assert_select 'input[data-b270-body-format][value="markdown"]'
+        assert_select "[data-b270-markdown-editor][data-b270-preview-url='#{mount}/comments/preview']"
+        assert_select '[data-b270-editor-utilities][hidden]' do
+          assert_select 'button[data-b270-formatting-toggle][aria-expanded="false"]', text: %r{Formatting}
+          assert_select 'button[data-b270-preview-toggle][aria-pressed="false"]', text: 'Preview'
+        end
+        assert_select '[data-b270-formatting-drawer][aria-hidden="true"][inert]' do
+          assert_select '[role="toolbar"][aria-label="Reflection formatting"]' do
+            assert_select 'button[type="button"][data-b270-markdown-action]', count: 6
+            assert_select '.b270-format-bold', text: 'B'
+            assert_select '.b270-format-italic', text: 'I'
+          end
+        end
+        assert_select '[data-b270-preview-panel][aria-live="polite"][hidden]'
       end
       assert_match(%r{Bible270MentionTypeahead}, response.body)
+      assert_match(%r{Bible270MarkdownToolbar}, response.body)
+      assert_match(%r{X-CSRF-Token}, response.body)
+      assert_match(%r{b270PreviewUrl}, response.body)
+      assert_includes response.body, 'const openEditors = new Set();'
+      assert_includes response.body, 'function setFormattingOpen(editor, open, remember = true)'
+      assert_includes response.body, 'drawer.inert = !open;'
+      assert_includes response.body, 'dataset.b270DraftPosted === "true"'
+      assert_includes response.body, 'event.key !== "Escape"'
+      assert_includes response.body, 'previewing ? "Write" : "Preview"'
+      assert_match(%r{selectionStart.*selectionEnd.*new Event\("input", \{ bubbles: true \}\)}m, response.body)
       assert_match(%r{ArrowDown.*ArrowUp.*Enter.*Escape}m, response.body)
     end
 
@@ -75,16 +100,71 @@ if RAILS_LOADED
                     '[data-b270-pending="Posting reply…"][data-b270-success="Reply posted."]'
     end
 
+    def test_a_signed_in_reader_can_preview_sanitized_markdown_without_saving
+      @other.update!(first_name: 'Other', last_name: 'Reader')
+      sign_in_as(@reader)
+
+      post "#{mount}/comments/preview",
+           params: { comment: { body: '**Grace @Other.Reader** <script>alert(1)</script>' } }
+
+      assert_response :success
+      assert_select 'strong', text: %r{Grace}
+      assert_select 'a.b270-mention', text: '@Other.Reader'
+      refute_match(%r{<script\b}i, response.body)
+      assert_equal 0, Bible270::Comment.count
+    end
+
+    def test_a_visitor_cannot_preview_markdown
+      post "#{mount}/comments/preview", params: { comment: { body: '**Grace**' } }
+
+      assert_response :redirect
+      assert_equal 0, Bible270::Comment.count
+    end
+
+    def test_a_markdown_reflection_is_stored_and_rendered_in_a_turbo_response
+      sign_in_as(@reader)
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: '**Grace**', body_format: 'markdown' } },
+           headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+      assert_response :success
+      comment = Bible270::Comment.last
+      assert_equal 'markdown', comment.body_format
+      assert_select "turbo-stream[action='append'][target='comments']" do
+        assert_select "#comment-#{comment.id} .b270-cbody strong", text: 'Grace'
+      end
+      assert_select "turbo-stream[action='replace'][target='new_comment_form']" do
+        assert_select 'form[data-b270-draft-posted="true"]' do
+          assert_select 'input[data-b270-body-format][value="markdown"]'
+          assert_select '[data-b270-formatting-open="false"]'
+        end
+      end
+    end
+
+    def test_an_unknown_body_format_is_refused
+      sign_in_as(@reader)
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: 'Unsafe format', body_format: 'html' } }
+
+      assert_equal 0, Bible270::Comment.count
+      assert_match(%r{Body format is not included}, flash[:alert])
+    end
+
     def test_a_failed_turbo_post_preserves_the_draft_contract
       sign_in_as(@reader)
       body = 'x' * 4001
 
       post "#{mount}/day/1/comments",
-           params: { comment: { body: body } },
+           params: { comment: { body: body, body_format: 'markdown' } },
            headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
 
       assert_response :unprocessable_entity
-      assert_select 'form[data-b270-draft-errors="true"]'
+      assert_select 'form[data-b270-draft-errors="true"]' do
+        assert_select 'input[data-b270-body-format][value="markdown"]'
+        assert_select '[role="toolbar"][aria-label="Reflection formatting"]'
+      end
       assert_includes response.body, body
       assert_equal 0, Bible270::Comment.count
     end

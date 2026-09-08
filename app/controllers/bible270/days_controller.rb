@@ -18,7 +18,7 @@ module Bible270
       @readings   = Plan.readings_for(@day)
       @comments   = Comment.threads_for_day(@day)
       @editing_comment_id = editing_comment_id
-      @new_comment = Comment.new(day: @day, parent_id: reply_parent&.id)
+      @new_comment = Comment.new_for_composer(day: @day, parent_id: reply_parent&.id)
       @reader_tracks = current_reader ? current_reader.read_tracks_for(@day) : []
       @day_just_completed = flash[:b270_day_just_completed].to_i == @day
       @completion_event_id = flash[:b270_completion_event_id] if @day_just_completed
