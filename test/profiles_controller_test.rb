@@ -45,7 +45,7 @@ if RAILS_LOADED
       assert_select 'fieldset.b270-notification-field' do
         assert_select 'legend', text: 'Reflection emails'
         assert_select 'input[type="radio"][name="comment_notifications"]', count: 3
-        assert_select 'input[value="personal"][checked="checked"]', count: 1
+        assert_select 'input[value="all"][checked="checked"]', count: 1
         assert_select 'label', text: %r{Every new reflection and reply}
         assert_select 'label', text: %r{Only replies to my reflections and mentions of me}
         assert_select 'label', text: %r{None}
@@ -138,7 +138,7 @@ if RAILS_LOADED
         assert_response :redirect
       end
 
-      assert_equal 'personal', @reader.reload.comment_notification_level
+      assert_equal 'all', @reader.reload.comment_notification_level
     end
 
     def test_daily_reminder_checkbox_is_shown_only_when_globally_enabled
@@ -267,7 +267,7 @@ if RAILS_LOADED
 
       assert_response :unprocessable_entity
       assert_match(%r{reflection email preference from the list}, response.body)
-      assert_equal 'personal', @reader.reload.comment_notification_level
+      assert_equal 'all', @reader.reload.comment_notification_level
     end
 
     def test_omitting_the_reflection_email_preference_preserves_it

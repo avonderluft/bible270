@@ -26,6 +26,8 @@ if RAILS_LOADED
                                          first_name: 'Andrew', last_name: 'vonderLuft')
       @mary = Bible270::Reader.create!(provider: 'email', uid: 'm@example.org', email: 'm@example.org',
                                        display_name: 'Mary Smith', first_name: 'Mary', last_name: 'Smith')
+      @andrew.update_comment_notification_level!('personal')
+      @mary.update_comment_notification_level!('personal')
     end
 
     def teardown

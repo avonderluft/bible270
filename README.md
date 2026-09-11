@@ -295,13 +295,26 @@ plain text or Markdown; until then, the composer safely falls back to plain text
 When `config.mention_notifications` is enabled, each reader can request email for every new reflection
 and reply, only replies to their reflections and mentions of them, or none. Administrators can change
 the same preference from the reader's Admin page. Migration
-`20260101000018` adds the broad opt-in without changing any existing reader's choice. Migration
+`20260101000018` adds the broad opt-in without changing any existing reader's choice, while migration
+`20260101000022` makes that broad option the default for readers created afterward. Migration
 `20260101000017` stores each reader's last visit to the Reflections page. After upgrading, install and
 run the current migrations:
 
 ```bash
 bin/rails bible270:install:migrations
 bin/rails db:migrate
+```
+
+To change every existing reader to **Every new reflection and reply**, run:
+
+```bash
+bin/rails bible270:notifications:enable_all
+```
+
+With Docker Compose:
+
+```bash
+docker compose exec -e RAILS_ENV=production rails bin/rails bible270:notifications:enable_all
 ```
 
 Break points can also live in your app rather than the gem, and be changed without a restart:

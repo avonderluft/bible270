@@ -15,6 +15,8 @@ if RAILS_LOADED
                                          first_name: 'Andrew', last_name: 'vonderLuft')
       @mary = Bible270::Reader.create!(provider: 'email', uid: 'm@example.org', email: 'm@example.org',
                                        display_name: 'Mary Smith', first_name: 'Mary', last_name: 'Smith')
+      @andrew.update_comment_notification_level!('personal')
+      @mary.update_comment_notification_level!('personal')
       ActionMailer::Base.deliveries.clear
     end
 
@@ -105,7 +107,8 @@ if RAILS_LOADED
     # Two Andrews means the short handle is ambiguous, so nobody is mailed.
     def test_an_ambiguous_handle_sends_nothing
       Bible270::Reader.create!(provider: 'email', uid: 'a2@example.org', email: 'a2@example.org',
-                               display_name: 'Andrew Miller', first_name: 'Andrew', last_name: 'Miller')
+                               display_name: 'Andrew Miller', first_name: 'Andrew', last_name: 'Miller',
+                               notify_on_all_comments: false)
 
       post_reflection('Which one @Andrew', as: @mary)
 
@@ -114,7 +117,8 @@ if RAILS_LOADED
 
     def test_the_dotted_handle_disambiguates
       Bible270::Reader.create!(provider: 'email', uid: 'a2@example.org', email: 'a2@example.org',
-                               display_name: 'Andrew Miller', first_name: 'Andrew', last_name: 'Miller')
+                               display_name: 'Andrew Miller', first_name: 'Andrew', last_name: 'Miller',
+                               notify_on_all_comments: false)
 
       post_reflection('You specifically @Andrew.vonderLuft', as: @mary)
 

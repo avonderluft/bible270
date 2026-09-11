@@ -128,7 +128,7 @@ if RAILS_LOADED
 
       assert_select 'h2', text: 'Email notifications'
       assert_select 'input[type="radio"][name="comment_notifications"]', count: 3
-      assert_select 'input[name="comment_notifications"][value="personal"][checked="checked"]'
+      assert_select 'input[name="comment_notifications"][value="all"][checked="checked"]'
     end
 
     def test_an_admin_can_change_a_readers_reflection_email_setting
@@ -150,8 +150,8 @@ if RAILS_LOADED
         assert_select '.b270-flash.alert', text: %r{pending Bible270 database migration}i
 
         patch "#{mount}/admin/readers/#{@reader.id}/notifications",
-              params: { comment_notifications: 'all' }
-        assert_equal 'personal', @reader.reload.comment_notification_level
+              params: { comment_notifications: 'personal' }
+        assert_equal 'all', @reader.reload.comment_notification_level
         assert_match(%r{pending Bible270 database migration}i, flash[:alert])
       end
     end

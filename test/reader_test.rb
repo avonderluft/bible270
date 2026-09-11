@@ -21,6 +21,7 @@ class ReaderTest < Minitest::Test
     refute @reader.daily_reminders
     assert_equal '08:00', @reader.daily_reminder_time
     assert_nil @reader.last_daily_reminder_sent_on
+    assert_equal 'all', @reader.comment_notification_level
     refute @reader.completion_dove_disabled?
   end
 

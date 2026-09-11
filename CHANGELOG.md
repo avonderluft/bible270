@@ -7,6 +7,11 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 ### Added
 
 - add an on-demand Markdown formatting drawer and separate server-rendered Preview control for reflections and replies, with safe rendering, formatted notification emails, mention and browser-draft compatibility, and literal display of existing plain-text reflections; upgrading hosts must copy and run the new `body_format` comment migration
+- add `bible270:notifications:enable_all` to opt every existing reader into emails for each new reflection and reply
+
+### Changed
+
+- default new readers to emails for every new reflection and reply; existing reader preferences remain unchanged by the migration
 
 ### Fixed
 
