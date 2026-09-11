@@ -13,6 +13,7 @@ require 'bible270/translations'
 require 'bible270/favicon'
 require 'bible270/configuration'
 require 'bible270/daily_reminders'
+require 'bible270/reader_progress_report'
 require 'bible270/engine' if defined?(Rails::Engine)
 
 module Bible270

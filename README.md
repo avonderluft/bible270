@@ -317,6 +317,15 @@ With Docker Compose:
 docker compose exec -e RAILS_ENV=production rails bin/rails bible270:notifications:enable_all
 ```
 
+To print an aligned progress report ordered by completed days, run:
+
+```bash
+docker compose exec -e RAILS_ENV=production rails bin/rails bible270:readers:list
+```
+
+The report compares completed days with the calendar day implied by each reader's effective start date
+and shows `on track`, days ahead or behind, or `undated` when no calendar applies.
+
 Break points can also live in your app rather than the gem, and be changed without a restart:
 
 ```ruby
