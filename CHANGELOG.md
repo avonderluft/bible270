@@ -4,21 +4,37 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.5.1...main)**
+
+## [1.5.1] - 2026-09-11
+
 ### Added
 
-- add an on-demand Markdown formatting drawer and separate server-rendered Preview control for reflections and replies, with safe rendering, formatted notification emails, mention and browser-draft compatibility, and literal display of existing plain-text reflections; upgrading hosts must copy and run the new `body_format` comment migration
-- add `bible270:notifications:enable_all` to opt every existing reader into emails for each new reflection and reply
-- add `bible270:readers:list` to print an aligned, progress-sorted reader report with schedule status
+- add `bible270:notifications:enable_all` to opt every existing reader into emails for each new reflection and reply, with environment-aware counts and guidance when the selected database has no readers
+- add `bible270:readers:list` to print aligned Name, Days Read, and schedule Status columns, ordered by completed days
 
 ### Changed
 
-- default new readers to emails for every new reflection and reply; existing reader preferences remain unchanged by the migration
+- default new readers to emails for every new reflection and reply; migration `20260101000022` changes only the default and preserves existing reader preferences
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.5.0...v1.5.1)**
+
+## [1.5.0] - 2026-09-07
+
+### Added
+
+- add an on-demand Markdown formatting drawer and separate server-rendered Preview control for reflections and replies, with safe rendering, formatted notification emails, mention and browser-draft compatibility, and literal display of existing plain-text reflections; upgrading hosts must copy and run the new `body_format` comment migration
+
+### Changed
+
+- update RuboCop and SimpleCov development dependencies and replace deprecated SimpleCov configuration methods
+- use the current Coveralls-backed Shields.io coverage badge endpoint for the `main` branch
 
 ### Fixed
 
 - keep `json` below 3.0 while supported Rails releases still pass positional parse options, preventing session-cookie decoding from crashing every request under `json` 3.0
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.2...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.4.2...v1.5.0)**
 
 ## [1.4.2] - 2026-09-03
 
@@ -667,7 +683,9 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/avonderluft/bible270/releases/tag/v1.5.1
+[1.5.0]: https://github.com/avonderluft/bible270/releases/tag/v1.5.0
 [1.4.2]: https://github.com/avonderluft/bible270/releases/tag/v1.4.2
 [1.4.1]: https://github.com/avonderluft/bible270/releases/tag/v1.4.1
 [1.4.0]: https://github.com/avonderluft/bible270/releases/tag/v1.4.0
