@@ -4,6 +4,10 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Fixed
+
+- normalize boolean column defaults reported by Rails adapters so migration reconciliation and tests work consistently across Rails 7.1 through 8.1
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.5.1...main)**
 
 ## [1.5.1] - 2026-09-11

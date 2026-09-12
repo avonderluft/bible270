@@ -39,7 +39,7 @@ if RAILS_LOADED
 
       refute @existing.reload.notify_on_all_comments
       assert new_reader.notify_on_all_comments
-      assert_equal true, notification_column.default
+      assert boolean_default
     end
 
     def test_the_previous_default_can_be_restored
@@ -49,13 +49,14 @@ if RAILS_LOADED
       new_reader = IsolatedReader.create!(display_name: 'New reader')
 
       refute new_reader.notify_on_all_comments
-      assert_equal false, notification_column.default
+      refute boolean_default
     end
 
   private
 
-    def notification_column
-      @connection.columns(:bible270_readers).find { |column| column.name == 'notify_on_all_comments' }
+    def boolean_default
+      column = @connection.columns(:bible270_readers).find { |candidate| candidate.name == 'notify_on_all_comments' }
+      ActiveModel::Type::Boolean.new.cast(column.default)
     end
   end
 end

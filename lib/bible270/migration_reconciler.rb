@@ -227,7 +227,8 @@ module Bible270
       return missing if missing.any?
 
       column = connection.columns(:bible270_readers).find { |candidate| candidate.name == 'notify_on_all_comments' }
-      column&.default == true ? [] : ['column bible270_readers.notify_on_all_comments default true']
+      default = ActiveModel::Type::Boolean.new.cast(column&.default)
+      default == true ? [] : ['column bible270_readers.notify_on_all_comments default true']
     end
 
     # The Bible270 installer can install Active Storage for reader avatars. A
