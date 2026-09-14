@@ -54,6 +54,22 @@ class ReaderTest < Minitest::Test
     assert reset
   end
 
+  def test_completion_dove_column_refreshes_a_stale_schema_cache
+    calls = 0
+    column_names = -> do
+      calls += 1
+      calls == 1 ? [] : [Bible270::Reader::COMPLETION_DOVE_COLUMN]
+    end
+    reset = false
+
+    Bible270::Reader.stub(:column_names, column_names) do
+      Bible270::Reader.stub(:reset_column_information, -> { reset = true }) do
+        assert Bible270::Reader.completion_dove_column?
+      end
+    end
+    assert reset
+  end
+
   def test_mention_suggestions_rank_handles_before_surnames_and_exclude_the_writer
     andrew = create_named_reader('Andrew', 'Smith')
     create_named_reader('Beth', 'Andrew')
@@ -261,5 +277,82 @@ private
     uid = "#{first}.#{last}.#{suffix}@example.org".downcase
     Bible270::Reader.create!(provider: 'email', uid: uid, email: uid,
                              display_name: "#{first} #{last}", first_name: first, last_name: last)
+  end
+end
+
+if RAILS_LOADED
+  class ReaderRegistrationTest < Minitest::Test
+    def setup
+      needs_rails!
+      clear_engine_tables!
+      @previous_recipients = Bible270.config.registration_notice_emails
+      @previous_deliver_later = Bible270.config.registration_notice_deliver_later
+      Bible270.config.registration_notice_emails = ['admin@example.org']
+      Bible270.config.registration_notice_deliver_later = false
+    end
+
+    def teardown
+      Bible270.config.registration_notice_emails = @previous_recipients
+      Bible270.config.registration_notice_deliver_later = @previous_deliver_later
+    end
+
+    def test_registration_notice_is_delivered_inline
+      calls = []
+      delivery = fake_delivery(calls)
+      mailer = ->(reader_id:, recipients:) do
+        calls << [:new_reader, reader_id, recipients]
+        delivery
+      end
+
+      Bible270::NoticeMailer.stub(:new_reader, mailer) do
+        reader = create_reader('inline@example.org')
+
+        assert_equal [:new_reader, reader.id, ['admin@example.org']], calls.first
+      end
+      assert_equal :deliver_now, calls.last
+    end
+
+    def test_registration_notice_can_be_queued
+      Bible270.config.registration_notice_deliver_later = true
+      calls = []
+      delivery = fake_delivery(calls)
+
+      Bible270::NoticeMailer.stub(:new_reader, ->(**) { delivery }) do
+        create_reader('queued@example.org')
+      end
+
+      assert_equal [:deliver_later], calls
+    end
+
+    def test_registration_notice_failure_does_not_prevent_reader_creation
+      messages = []
+      delivery = Object.new
+      delivery.define_singleton_method(:deliver_now) { raise 'mail service unavailable' }
+
+      reader = nil
+      Bible270::NoticeMailer.stub(:new_reader, ->(**) { delivery }) do
+        Rails.logger.stub(:error, ->(message) { messages << message }) do
+          reader = create_reader('failure@example.org')
+        end
+      end
+
+      assert reader.persisted?
+      assert_equal 1, Bible270::Reader.count
+      assert_match(%r{could not send the registration notice}, messages.one? && messages.first)
+      assert_match(%r{mail service unavailable}, messages.first)
+    end
+
+  private
+
+    def create_reader(email)
+      Bible270::Reader.create!(provider: 'email', uid: email, email: email, display_name: 'New Reader')
+    end
+
+    def fake_delivery(calls)
+      Object.new.tap do |delivery|
+        delivery.define_singleton_method(:deliver_now) { calls << :deliver_now }
+        delivery.define_singleton_method(:deliver_later) { calls << :deliver_later }
+      end
+    end
   end
 end

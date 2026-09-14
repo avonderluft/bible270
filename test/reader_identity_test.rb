@@ -5,6 +5,20 @@ require 'test_helper'
 # How readers come into existence, and the derived values shown about them.
 if RAILS_LOADED
   class ReaderIdentityTest < Minitest::Test
+    class AuthObject
+      attr_reader :provider, :uid, :info
+
+      def initialize(provider:, uid:, info:)
+        @provider = provider
+        @uid = uid
+        @info = info
+      end
+    end
+
+    class RaisingAuthObject
+      def provider = raise 'provider unavailable'
+    end
+
     def setup
       needs_rails!
       clear_engine_tables!
@@ -63,6 +77,26 @@ if RAILS_LOADED
       reader = Bible270::Reader.from_omniauth(auth('info' => { 'email' => 'nameless@example.org' }))
 
       refute_empty reader.display_name.to_s, 'a blank display name would render as an empty link'
+    end
+
+    def test_an_auth_object_can_expose_values_as_methods
+      info = AuthObject.new(provider: nil, uid: nil,
+                            info: nil)
+      info.define_singleton_method(:name) { 'Method Reader' }
+      info.define_singleton_method(:email) { 'method@example.org' }
+      auth_object = AuthObject.new(provider: 'github', uid: 'method-1', info: info)
+
+      reader = Bible270::Reader.from_omniauth(auth_object)
+
+      assert_equal 'github', reader.provider
+      assert_equal 'method-1', reader.uid
+      assert_equal 'Method Reader', reader.display_name
+      assert_equal 'method@example.org', reader.email
+    end
+
+    def test_a_broken_auth_accessor_is_treated_as_missing
+      assert_nil Bible270::Reader.from_omniauth(RaisingAuthObject.new)
+      assert_empty Bible270::Reader.all
     end
 
     # Providers usually give one display name. Without splitting it the reader had
@@ -151,6 +185,31 @@ if RAILS_LOADED
 
       reader.update!(display_name: 'Madonna')
       assert_equal 'M', reader.initials
+    end
+
+    def test_suggested_names_split_a_legacy_display_name
+      reader = Bible270::Reader.create!(provider: 'email', uid: 'legacy@example.org',
+                                        email: 'legacy@example.org', display_name: 'Mary Smith')
+
+      assert_equal({ first_name: 'Mary', last_name: 'Smith' }, reader.suggested_names)
+    end
+
+    def test_suggested_names_preserve_a_legacy_single_word_name
+      reader = Bible270::Reader.create!(provider: 'email', uid: 'single@example.org',
+                                        email: 'single@example.org', display_name: 'Madonna')
+
+      assert_equal({ first_name: 'Madonna', last_name: nil }, reader.suggested_names)
+    end
+
+    def test_short_display_names_use_structured_names_when_available
+      reader = Bible270::Reader.create!(provider: 'email', uid: 'short@example.org',
+                                        email: 'short@example.org', display_name: 'Mary Smith',
+                                        first_name: 'Mary', last_name: 'Smith')
+
+      assert_equal 'Mary S.', reader.first_with_last_initial
+
+      reader.update!(first_name: nil, last_name: nil, display_name: 'Legacy Reader')
+      assert_equal 'Legacy Reader', reader.first_with_last_initial
     end
 
     def test_completion_is_a_whole_percentage

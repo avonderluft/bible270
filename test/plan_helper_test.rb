@@ -10,6 +10,12 @@ if RAILS_LOADED
       needs_rails!
       clear_engine_tables!
       @previous_from = Bible270.config.mailer_from
+      @previous_footer = {
+        footer: Bible270.config.footer,
+        html: Bible270.config.footer_html,
+        partial: Bible270.config.footer_partial,
+        placement: Bible270.config.footer_placement
+      }
       @reader = Bible270::Reader.create!(provider: 'email', uid: 'h@example.org',
                                          email: 'h@example.org', display_name: 'Helen Helper',
                                          first_name: 'Helen', last_name: 'Helper')
@@ -18,8 +24,10 @@ if RAILS_LOADED
     def teardown
       Bible270.config.mailer_from = @previous_from
       Bible270.config.favicon = nil
-      Bible270.config.footer = nil
-      Bible270.config.footer_html = nil
+      Bible270.config.footer = @previous_footer[:footer]
+      Bible270.config.footer_html = @previous_footer[:html]
+      Bible270.config.footer_partial = @previous_footer[:partial]
+      Bible270.config.footer_placement = @previous_footer[:placement]
       Bible270.config.header_mark = nil
     end
 
@@ -28,6 +36,8 @@ if RAILS_LOADED
     attr_reader :current_reader
 
     def signed_in? = !@current_reader.nil?
+
+    def reader_path(reader) = Bible270::Engine.routes.url_helpers.reader_path(reader)
 
     def test_track_metadata
       assert_equal 'Old Testament', b270_track('ot')[:label]
@@ -233,6 +243,42 @@ if RAILS_LOADED
 
       Bible270.config.footer = false
       assert_nil b270_footer
+    end
+
+    def test_a_custom_footer_can_follow_the_default_footer
+      Bible270.config.footer_html = '<p>Host footer</p>'
+      Bible270.config.footer_placement = :after
+
+      footer = b270_footer
+
+      assert_operator footer.index('Old and New Testaments'), :<, footer.index('Host footer')
+    end
+
+    def test_a_custom_footer_can_precede_the_default_footer
+      Bible270.config.footer_html = '<p>Host footer</p>'
+      Bible270.config.footer_placement = :before
+
+      footer = b270_footer
+
+      assert_operator footer.index('Host footer'), :<, footer.index('Old and New Testaments')
+    end
+
+    def test_a_host_footer_partial_is_rendered
+      Bible270.config.footer_partial = 'shared/test_footer'
+
+      footer = b270_footer
+
+      assert_includes footer, 'Host application footer'
+      refute_includes footer, 'Old and New Testaments'
+    end
+
+    def test_the_backward_compatible_mention_helper_links_known_readers
+      html = b270_with_mentions('Thank you @helen.helper and @unknown.reader')
+
+      assert_includes html, reader_path(@reader)
+      assert_includes html, '@helen.helper'
+      assert_includes html, '@unknown.reader'
+      assert_equal 1, html.scan('<a ').size
     end
   end
 end
