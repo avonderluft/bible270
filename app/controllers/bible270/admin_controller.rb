@@ -64,7 +64,8 @@ module Bible270
       @days_completed = Reader.completed_days_by_id
       @reader_sort_options = READER_SORT_OPTIONS
       @reader_sort = READER_SORT_OPTIONS.key?(params[:sort]) ? params[:sort] : 'first_name'
-      @readers = Reader.all.to_a.sort_by { |reader| reader_sort_key(reader) }
+      @reader_report = ReaderProgressReport.new(completed_days: @days_completed, sort: @reader_sort)
+      @readers = @reader_report.sorted_readers
       @run_start_date = Setting.run_start_date
       @configured_start_date = Bible270.config.start_date
       @run_start_date_overridden = Setting.run_start_date_overridden?
@@ -309,20 +310,6 @@ module Bible270
     end
 
   private
-
-    def reader_sort_key(reader)
-      case @reader_sort
-      when 'last_name'
-        last_name = reader.last_name.presence || reader.display_name.to_s.split.last
-        [last_name.to_s.downcase, reader.sort_name, reader.id]
-      when 'most_completed'
-        [-@days_completed[reader.id].to_i, reader.sort_name, reader.id]
-      when 'least_completed'
-        [@days_completed[reader.id].to_i, reader.sort_name, reader.id]
-      else
-        [reader.sort_name, reader.id]
-      end
-    end
 
     def comment_notifications_available_for?(reader)
       return false unless Bible270.config.mention_notifications && Reader.comment_notification_columns?

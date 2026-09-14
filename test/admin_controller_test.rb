@@ -115,6 +115,24 @@ if RAILS_LOADED
       end
     end
 
+    def test_reader_stats_are_available_in_a_dismissable_dialog
+      @reader.mark_through!(3)
+      sign_in_as_admin
+
+      get "#{mount}/admin", params: { sort: 'least_completed' }
+
+      assert_select 'button[data-b270-reader-stats-open][hidden][aria-haspopup="dialog"]' \
+                    '[aria-controls="b270-reader-stats-dialog"]', text: 'Reader Stats'
+      assert_select 'dialog#b270-reader-stats-dialog[data-b270-reader-stats-dialog]' \
+                    '[aria-labelledby="b270-reader-stats-title"]:not([open])' do
+        assert_select 'h2#b270-reader-stats-title', text: 'Reader Stats'
+        assert_select 'form[method="dialog"] button[type="submit"]', text: 'Close'
+      end
+      expected = Bible270::ReaderProgressReport.new(sort: 'least_completed').to_table
+      assert_equal expected, css_select('#b270-reader-stats-dialog pre').first.text
+      assert_match(%r{Bible270ReaderStats.*showModal.*target\.close.*turbo:load}m, response.body)
+    end
+
     def test_the_reader_list_can_be_ordered_by_last_name
       Bible270::Reader.create!(provider: 'email', uid: 'z@example.org', email: 'z@example.org',
                                display_name: 'Aaron Zebedee', first_name: 'Aaron', last_name: 'Zebedee')

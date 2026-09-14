@@ -63,13 +63,17 @@
 </div>
 
 <% if @readers.any? %>
-  <%= form_with url: admin_path, method: :get, class: "b270-admin-reader-sort" do %>
-    <label>
-      <span>Sort readers by</span>
-      <%= select_tag :sort, options_for_select(@reader_sort_options.map { |value, label| [label, value] }, @reader_sort) %>
-    </label>
-    <%= submit_tag "Sort", class: "b270-btn" %>
-  <% end %>
+  <div class="b270-admin-reader-tools">
+    <%= form_with url: admin_path, method: :get, class: "b270-admin-reader-sort" do %>
+      <label>
+        <span>Sort readers by</span>
+        <%= select_tag :sort, options_for_select(@reader_sort_options.map { |value, label| [label, value] }, @reader_sort) %>
+      </label>
+      <%= submit_tag "Sort", class: "b270-btn" %>
+    <% end %>
+    <button type="button" class="b270-btn b270-reader-stats-open" aria-haspopup="dialog"
+            aria-controls="b270-reader-stats-dialog" data-b270-reader-stats-open hidden>Reader Stats</button>
+  </div>
 
   <div class="b270-list">
     <% @readers.each do |reader| %>
@@ -92,6 +96,48 @@
       </div>
     <% end %>
   </div>
+
+  <dialog id="b270-reader-stats-dialog" class="b270-reader-stats-dialog"
+          aria-labelledby="b270-reader-stats-title" data-b270-reader-stats-dialog>
+    <div class="b270-reader-stats-content">
+      <div class="b270-reader-stats-head">
+        <h2 id="b270-reader-stats-title" class="b270-subhead">Reader Stats</h2>
+        <form method="dialog"><button type="submit" class="b270-linkbtn">Close</button></form>
+      </div>
+      <pre><%= @reader_report.to_table %></pre>
+    </div>
+  </dialog>
+
+  <script nonce="<%= content_security_policy_nonce %>">
+    (() => {
+      function scan() {
+        document.querySelectorAll("[data-b270-reader-stats-open]").forEach((button) => {
+          const dialog = document.getElementById(button.getAttribute("aria-controls"));
+          if (dialog && typeof dialog.showModal === "function") button.hidden = false;
+        });
+      }
+
+      if (window.Bible270ReaderStats) {
+        scan();
+        return;
+      }
+
+      document.addEventListener("click", (event) => {
+        const target = event.target;
+        const openButton = target.closest && target.closest("[data-b270-reader-stats-open]");
+        if (openButton) {
+          const dialog = document.getElementById(openButton.getAttribute("aria-controls"));
+          if (dialog && typeof dialog.showModal === "function") dialog.showModal();
+          return;
+        }
+
+        if (target.matches && target.matches("[data-b270-reader-stats-dialog]")) target.close();
+      });
+      document.addEventListener("turbo:load", scan);
+      window.Bible270ReaderStats = { scan };
+      scan();
+    })();
+  </script>
 <% else %>
   <p style="color:var(--faint)">No readers yet.</p>
 <% end %>

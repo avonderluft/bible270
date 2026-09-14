@@ -6,7 +6,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Added
 
-- let administrators sort the reader list by first name, last name, most completed days, or least completed days
+- let administrators sort the reader list by first name, last name, most completed days, or least completed days, and open the Rake task's progress report in a dismissable Reader Stats dialog that follows the current sort selection
 
 ### Changed
 
