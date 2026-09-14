@@ -121,6 +121,21 @@ if RAILS_LOADED
       assert_equal 0, Bible270::Comment.count
     end
 
+    def test_preview_keeps_lists_compact_when_the_source_has_blank_lines
+      sign_in_as(@reader)
+
+      post "#{mount}/comments/preview",
+           params: { comment: { body: "- one\n\n- two\n\n1. one\n\n2. two" } }
+
+      assert_response :success
+      unordered_items = css_select('ul > li').map { |item| item.text.strip }
+      ordered_items = css_select('ol > li').map { |item| item.text.strip }
+      assert_equal %w[one two], unordered_items
+      assert_equal %w[one two], ordered_items
+      assert_select 'li > br', count: 0
+      assert_select 'li > p', count: 0
+    end
+
     def test_a_visitor_cannot_preview_markdown
       post "#{mount}/comments/preview", params: { comment: { body: '**Grace**' } }
 

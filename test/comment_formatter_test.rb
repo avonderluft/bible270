@@ -25,6 +25,15 @@ class CommentFormatterTest < Minitest::Test
     assert_match(%r{<ul>.*<li>one</li>.*<li>two</li>.*</ul>}m, html)
   end
 
+  def test_blank_lines_between_list_items_do_not_create_visible_spacing
+    html = Formatter.html("- one\n\n- two\n\n1. one\n\n2. two", format: Formatter::MARKDOWN)
+
+    assert_match(%r{<ul>\s*<li>one</li>\s*<li>two</li>\s*</ul>}m, html)
+    assert_match(%r{<ol>\s*<li>one</li>\s*<li>two</li>\s*</ol>}m, html)
+    refute_match(%r{<li>\s*<br}, html)
+    refute_match(%r{<li>\s*<p>}, html)
+  end
+
   def test_markdown_is_strictly_sanitized
     html = Formatter.html(
       '[safe](https://example.org) [bad](javascript:alert(1)) ' \

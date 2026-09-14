@@ -26,8 +26,11 @@ module Bible270
       source = body.to_s
       rendered = format == MARKDOWN ? markdown_html(source) : plain_html(source)
       fragment = fragment_for(sanitize(rendered))
-      hard_wrap(fragment) if format == MARKDOWN
-      link_urls(fragment) if format == MARKDOWN
+      if format == MARKDOWN
+        normalize_lists(fragment)
+        hard_wrap(fragment)
+        link_urls(fragment)
+      end
       decorate_links(fragment)
       link_mentions(fragment, &mention_path) if mention_path
       fragment.to_html
@@ -81,6 +84,20 @@ module Bible270
       Nokogiri::HTML::DocumentFragment.parse(rendered)
     end
     private_class_method :fragment_for
+
+    # Blank lines between Markdown list items make Kramdown wrap each item's
+    # content in a paragraph. For a simple item, remove that structural wrapper
+    # and its indentation so loose and compact lists render identically.
+    def normalize_lists(fragment)
+      fragment.xpath('.//li/text()[normalize-space(.) = ""]').remove
+      fragment.css('li').each do |item|
+        children = item.element_children
+        next unless children.one? && children.first.name == 'p'
+
+        children.first.replace(children.first.children)
+      end
+    end
+    private_class_method :normalize_lists
 
     def hard_wrap(fragment)
       fragment.xpath('.//p//text() | .//li//text()').to_a.each do |node|
