@@ -843,24 +843,28 @@ if RAILS_LOADED
       refute Bible270::Comment.exists?(comment.id)
     end
 
-    # Removing someone's words is the moderator's job; rewriting them is not.
-    def test_an_admin_cannot_edit_someone_elses_reflection
+    def test_an_admin_can_edit_someone_elses_reflection_without_changing_the_author
       comment = @reader.comments.create!(day: 1, body: 'Their words')
       sign_in_as_admin
 
-      patch "#{mount}/comments/#{comment.id}", params: { comment: { body: 'My words' } }
+      patch "#{mount}/comments/#{comment.id}", params: { comment: { body: 'Corrected words' } }
 
-      assert_response :not_found
-      assert_equal 'Their words', comment.reload.body
+      assert_response :redirect
+      assert_equal 'Corrected words', comment.reload.body
+      assert_equal @reader.id, comment.reader_id
     end
 
-    def test_an_admin_sees_no_edit_link_on_someone_elses
-      @reader.comments.create!(day: 1, body: 'Their words')
+    def test_an_admin_sees_and_can_open_the_edit_link_on_someone_elses_reflection
+      comment = @reader.comments.create!(day: 1, body: 'Their words')
       sign_in_as_admin
 
       get "#{mount}/day/1"
+      assert_match(%r{edit=#{comment.id}}, response.body)
 
-      refute_match(%r{edit=}, response.body)
+      get "#{mount}/day/1", params: { edit: comment.id }
+      assert_select "form[action='#{mount}/comments/#{comment.id}'].b270-editform" do
+        assert_select 'textarea', text: 'Their words'
+      end
     end
 
     # Deleting another person's reflection asks first; deleting your own does not.

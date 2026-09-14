@@ -181,11 +181,12 @@ module Bible270
       local&.strftime('%b %-d, %Y at %-I:%M %p')
     end
 
-    # Only the writer may change their own words. An admin can remove a reflection
-    # but not rewrite it: putting words in someone's mouth is worse than taking
-    # them away, and taking them away is already the moderator's job.
+    # Writers may revise their own words; administrators may also correct or
+    # moderate any reflection without changing its recorded author.
     def b270_can_edit?(comment)
-      signed_in? && comment.reader_id == current_reader.id
+      return false unless signed_in?
+
+      comment.reader_id == current_reader.id || Bible270.config.admin?(current_reader)
     end
 
     def b270_can_delete?(comment)

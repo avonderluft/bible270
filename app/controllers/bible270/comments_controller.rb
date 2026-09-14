@@ -52,7 +52,7 @@ module Bible270
     def update
       return unless require_reader!
 
-      @comment = own_comment
+      @comment = editable_comment
       head :not_found and return unless @comment
 
       @day = @comment.day
@@ -147,18 +147,16 @@ module Bible270
       params.require(:comment).permit(*permitted)
     end
 
-    # Scoped to the reader, so someone else's reflection is simply not found —
-    # it reveals nothing about what exists.
-    def own_comment
-      current_reader.comments.find_by(id: params[:id])
-    end
-
-    # An admin may remove any reflection; everyone else only their own. Editing
-    # stays with the writer either way.
-    def deletable_comment
-      return own_comment unless Bible270.config.admin?(current_reader)
+    # Scoped to the reader unless they are an administrator, so an ordinary reader
+    # cannot use editing or deletion to discover someone else's reflection.
+    def editable_comment
+      return current_reader.comments.find_by(id: params[:id]) unless Bible270.config.admin?(current_reader)
 
       Comment.find_by(id: params[:id])
+    end
+
+    def deletable_comment
+      editable_comment
     end
   end
 end

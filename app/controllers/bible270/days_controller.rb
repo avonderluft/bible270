@@ -28,12 +28,13 @@ module Bible270
 
   private
 
-    # The reflection the reader has asked to edit: their own, on this day. Anything
-    # else is ignored rather than refused — the page still renders.
+    # The reflection the reader has asked to edit: their own, or any reflection
+    # when they are an administrator. Anything else is ignored rather than refused.
     def editing_comment_id
       return nil if params[:edit].blank? || current_reader.nil?
 
-      current_reader.comments.where(day: @day, id: params[:edit]).pick(:id)
+      comments = Bible270.config.admin?(current_reader) ? Comment.all : current_reader.comments
+      comments.where(day: @day, id: params[:edit]).pick(:id)
     end
 
     # The reflection being replied to, if the link carried one and it is a
