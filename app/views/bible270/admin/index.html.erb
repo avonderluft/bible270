@@ -63,6 +63,14 @@
 </div>
 
 <% if @readers.any? %>
+  <%= form_with url: admin_path, method: :get, class: "b270-admin-reader-sort" do %>
+    <label>
+      <span>Sort readers by</span>
+      <%= select_tag :sort, options_for_select(@reader_sort_options.map { |value, label| [label, value] }, @reader_sort) %>
+    </label>
+    <%= submit_tag "Sort", class: "b270-btn" %>
+  <% end %>
+
   <div class="b270-list">
     <% @readers.each do |reader| %>
       <div class="b270-li">

@@ -10,6 +10,12 @@ module Bible270
   class AdminController < ApplicationController
     LAST_BROADCAST_AT = 'last_broadcast_at'
     LAST_BROADCAST_SUBJECT = 'last_broadcast_subject'
+    READER_SORT_OPTIONS = {
+      'first_name' => 'First Name',
+      'last_name' => 'Last Name',
+      'most_completed' => 'Most days completed',
+      'least_completed' => 'Least days completed'
+    }.freeze
 
     before_action :require_admin!
     before_action :load_reader,
@@ -55,7 +61,10 @@ module Bible270
     def index
       @enrollment_closed = Setting.enrollment_closed?
       @enrollment_closed_at = Setting.enrollment_closed_at
-      @readers = Reader.all.to_a.sort_by(&:sort_name)
+      @days_completed = Reader.completed_days_by_id
+      @reader_sort_options = READER_SORT_OPTIONS
+      @reader_sort = READER_SORT_OPTIONS.key?(params[:sort]) ? params[:sort] : 'first_name'
+      @readers = Reader.all.to_a.sort_by { |reader| reader_sort_key(reader) }
       @run_start_date = Setting.run_start_date
       @configured_start_date = Bible270.config.start_date
       @run_start_date_overridden = Setting.run_start_date_overridden?
@@ -66,7 +75,6 @@ module Bible270
         @shared_calendar_readers = @readers.size
         @personal_calendar_readers = 0
       end
-      @days_completed = Reader.completed_days_by_id
       @reachable = Reader.where.not(email: [nil, '']).count
       @last_broadcast_at = parsed_time(Setting.read(LAST_BROADCAST_AT))
       @last_broadcast_subject = Setting.read(LAST_BROADCAST_SUBJECT)
@@ -301,6 +309,20 @@ module Bible270
     end
 
   private
+
+    def reader_sort_key(reader)
+      case @reader_sort
+      when 'last_name'
+        last_name = reader.last_name.presence || reader.display_name.to_s.split.last
+        [last_name.to_s.downcase, reader.sort_name, reader.id]
+      when 'most_completed'
+        [-@days_completed[reader.id].to_i, reader.sort_name, reader.id]
+      when 'least_completed'
+        [@days_completed[reader.id].to_i, reader.sort_name, reader.id]
+      else
+        [reader.sort_name, reader.id]
+      end
+    end
 
     def comment_notifications_available_for?(reader)
       return false unless Bible270.config.mention_notifications && Reader.comment_notification_columns?

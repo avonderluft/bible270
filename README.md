@@ -258,8 +258,9 @@ end
 
 ## Admin panel
 
-At `<mount>/admin`: remove readers, adjust their completions, move them to a given day. Unreachable —
-every route 404s rather than 403s — unless you say who may use it:
+At `<mount>/admin`: sort readers by first name, last name, or completed days; remove readers; adjust
+their completions; and move them to a given day. The panel is unreachable — every route 404s rather
+than 403s — unless you say who may use it:
 
 ```ruby
 config.admin_emails = %w[andrew@example.org]

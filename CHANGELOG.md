@@ -4,6 +4,10 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+
+- let administrators sort the reader list by first name, last name, most completed days, or least completed days
+
 ### Changed
 
 - send each broad reflection/reply notification once with all eligible subscribers in BCC, while keeping direct reply and mention notices individually addressed

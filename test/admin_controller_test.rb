@@ -98,6 +98,66 @@ if RAILS_LOADED
                       'Aaron should precede Zeke, despite Zebedee following Aaronson'
     end
 
+    def test_the_reader_list_offers_all_sort_options
+      sign_in_as_admin
+
+      get "#{mount}/admin", params: { sort: 'last_name' }
+
+      assert_select "form.b270-admin-reader-sort[action='#{mount}/admin'][method='get']" do
+        assert_select 'select[name="sort"]' do
+          assert_select 'option', count: 4
+          assert_select 'option[value="first_name"]', text: 'First Name'
+          assert_select 'option[value="last_name"][selected="selected"]', text: 'Last Name'
+          assert_select 'option[value="most_completed"]', text: 'Most days completed'
+          assert_select 'option[value="least_completed"]', text: 'Least days completed'
+        end
+        assert_select 'input[type="submit"][value="Sort"]'
+      end
+    end
+
+    def test_the_reader_list_can_be_ordered_by_last_name
+      Bible270::Reader.create!(provider: 'email', uid: 'z@example.org', email: 'z@example.org',
+                               display_name: 'Aaron Zebedee', first_name: 'Aaron', last_name: 'Zebedee')
+      Bible270::Reader.create!(provider: 'email', uid: 'y@example.org', email: 'y@example.org',
+                               display_name: 'Zeke Aaronson', first_name: 'Zeke', last_name: 'Aaronson')
+      sign_in_as_admin
+
+      get "#{mount}/admin", params: { sort: 'last_name' }
+
+      assert_operator response.body.index('Zeke Aaronson'), :<, response.body.index('Aaron Zebedee')
+    end
+
+    def test_the_reader_list_can_be_ordered_by_completed_days
+      most = Bible270::Reader.create!(provider: 'email', uid: 'most@example.org', email: 'most@example.org',
+                                      display_name: 'Most Reader')
+      least = Bible270::Reader.create!(provider: 'email', uid: 'least@example.org', email: 'least@example.org',
+                                       display_name: 'Least Reader')
+      most.mark_through!(5)
+      least.mark_through!(2)
+      sign_in_as_admin
+
+      get "#{mount}/admin", params: { sort: 'most_completed' }
+      assert_operator response.body.index(most.display_name), :<, response.body.index(least.display_name)
+      assert_select 'option[value="most_completed"][selected="selected"]'
+
+      get "#{mount}/admin", params: { sort: 'least_completed' }
+      assert_operator response.body.index(least.display_name), :<, response.body.index(most.display_name)
+      assert_select 'option[value="least_completed"][selected="selected"]'
+    end
+
+    def test_an_unknown_reader_sort_falls_back_to_first_name
+      first = Bible270::Reader.create!(provider: 'email', uid: 'a@example.org', email: 'a@example.org',
+                                       display_name: 'Aaron Zebedee')
+      last = Bible270::Reader.create!(provider: 'email', uid: 'z@example.org', email: 'z@example.org',
+                                      display_name: 'Zeke Aaronson')
+      sign_in_as_admin
+
+      get "#{mount}/admin", params: { sort: 'not-a-sort' }
+
+      assert_operator response.body.index(first.display_name), :<, response.body.index(last.display_name)
+      assert_select 'option[value="first_name"][selected="selected"]'
+    end
+
     def test_an_admin_sees_a_reader
       sign_in_as_admin
       get "#{mount}/admin/readers/#{@reader.id}"
