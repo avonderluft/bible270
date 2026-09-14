@@ -4,7 +4,31 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.6.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.6.2...main)**
+
+## [1.6.2] - 2026-09-14
+
+### Fixed
+
+- keep ordered and unordered Markdown lists compact when writers leave blank lines between items, removing visible indentation and extra line-break artifacts from previews and rendered reflections
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.6.1...v1.6.2)**
+
+## [1.6.1] - 2026-09-14
+
+### Added
+
+- let administrators edit any reflection or reply inline while preserving its recorded author and retaining the existing restrictions for ordinary readers
+
+### Changed
+
+- select only the `list item` placeholder when inserting a list, and continue unordered or incrementing ordered list markers when the writer presses Enter
+
+### Fixed
+
+- render pasted `http://` and `https://` URLs as safe links in Markdown previews and displayed reflections without nesting explicit Markdown links or swallowing trailing punctuation
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.6.0...v1.6.1)**
 
 ## [1.6.0] - 2026-09-14
 
@@ -701,7 +725,9 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.6.2...HEAD
+[1.6.2]: https://github.com/avonderluft/bible270/releases/tag/v1.6.2
+[1.6.1]: https://github.com/avonderluft/bible270/releases/tag/v1.6.1
 [1.6.0]: https://github.com/avonderluft/bible270/releases/tag/v1.6.0
 [1.5.1]: https://github.com/avonderluft/bible270/releases/tag/v1.5.1
 [1.5.0]: https://github.com/avonderluft/bible270/releases/tag/v1.5.0
