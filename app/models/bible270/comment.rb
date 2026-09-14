@@ -205,9 +205,20 @@ module Bible270
     end
 
     def notify_all_comment_readers(except: [])
-      Reader.all_comment_notification_recipients.where.not(id: except).find_each do |recipient|
-        deliver_comment_notice(recipient, :comment_posted)
+      recipient_ids = Reader.all_comment_notification_recipients.where.not(id: except).pluck(:id)
+      return if recipient_ids.empty?
+
+      notice = NoticeMailer.comment_posted(comment_id: id, reader_ids: recipient_ids)
+      if Bible270.config.registration_notice_deliver_later
+        notice.deliver_later
+      else
+        notice.deliver_now
       end
+    rescue StandardError => e
+      Rails.logger.error(
+        "[bible270] could not send comment_posted notice for comment #{id} " \
+        "to #{recipient_ids&.size || 0} readers: #{e.class}: #{e.message}"
+      )
     end
 
     def reply_notification_reader

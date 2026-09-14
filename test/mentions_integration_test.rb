@@ -44,8 +44,23 @@ if RAILS_LOADED
 
       assert_equal 1, ActionMailer::Base.deliveries.size
       mail = ActionMailer::Base.deliveries.last
-      assert_equal [@andrew.email], mail.to
+      assert_nil mail.to
+      assert_equal [@andrew.email], mail.bcc
       assert_match(%r{posted a reflection}, mail.subject)
+    end
+
+    def test_every_comment_preference_bccs_all_subscribers_in_one_message
+      other = Bible270::Reader.create!(provider: 'email', uid: 'o@example.org', email: 'o@example.org',
+                                       display_name: 'Other Reader')
+      @andrew.update_comment_notification_level!('all')
+      other.update_comment_notification_level!('all')
+
+      post_reflection('A thought for everyone', as: @mary)
+
+      assert_equal 1, ActionMailer::Base.deliveries.size
+      mail = ActionMailer::Base.deliveries.last
+      assert_nil mail.to
+      assert_equal [@andrew.email, other.email].sort, mail.bcc.sort
     end
 
     def test_every_comment_preference_does_not_email_the_author
@@ -62,7 +77,10 @@ if RAILS_LOADED
       post_reflection('Good point @Andrew', as: @mary)
 
       assert_equal 1, ActionMailer::Base.deliveries.size
-      assert_match(%r{mentioned you}, ActionMailer::Base.deliveries.last.subject)
+      mail = ActionMailer::Base.deliveries.last
+      assert_equal [@andrew.email], mail.to
+      assert_nil mail.bcc
+      assert_match(%r{mentioned you}, mail.subject)
     end
 
     def test_every_comment_preference_includes_replies_to_other_readers
@@ -77,9 +95,10 @@ if RAILS_LOADED
            params: { comment: { body: 'Thank you', parent_id: original.id } }
 
       assert_equal 2, ActionMailer::Base.deliveries.size
-      deliveries_by_address = ActionMailer::Base.deliveries.index_by { |mail| mail.to.first }
-      assert_match(%r{replied}, deliveries_by_address.fetch(@andrew.email).subject)
-      assert_match(%r{posted a reply}, deliveries_by_address.fetch(subscriber.email).subject)
+      reply_notice = ActionMailer::Base.deliveries.find { |mail| mail.to == [@andrew.email] }
+      broad_notice = ActionMailer::Base.deliveries.find { |mail| mail.bcc == [subscriber.email] }
+      assert_match(%r{replied}, reply_notice.subject)
+      assert_match(%r{posted a reply}, broad_notice.subject)
     end
 
     def test_a_mention_emails_the_person_named

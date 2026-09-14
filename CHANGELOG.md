@@ -4,6 +4,10 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Changed
+
+- send each broad reflection/reply notification once with all eligible subscribers in BCC, while keeping direct reply and mention notices individually addressed
+
 ### Fixed
 
 - normalize boolean column defaults reported by Rails adapters so migration reconciliation and tests work consistently across Rails 7.1 through 8.1

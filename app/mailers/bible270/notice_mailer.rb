@@ -36,16 +36,19 @@ module Bible270
       deliver_comment_notice("#{@app_name}: #{@author.display_name} replied on day #{@comment.day}")
     end
 
-    def comment_posted(comment_id:, reader_id:)
-      return message.perform_deliveries = false unless prepare_comment_notice(comment_id, reader_id)
-      return message.perform_deliveries = false unless @reader.wants_all_comment_notifications?
-      return message.perform_deliveries = false if @comment.reader_id == @reader.id
+    def comment_posted(comment_id:, reader_ids:)
+      return message.perform_deliveries = false unless prepare_comment(comment_id)
+
+      addresses = all_comment_addresses(reader_ids)
+      return message.perform_deliveries = false if addresses.empty?
 
       kind = @comment.reply? ? 'reply' : 'reflection'
       @heading = "#{@author.display_name} posted a #{kind}"
       @introduction = "#{@author.display_name} posted a #{kind} on day #{@comment.day}."
       @reason = 'You are getting this because you asked to be emailed about every new reflection and reply.'
-      deliver_comment_notice("#{@app_name}: #{@author.display_name} posted a #{kind} on day #{@comment.day}")
+      mail bcc: addresses,
+           subject: "#{@app_name}: #{@author.display_name} posted a #{kind} on day #{@comment.day}",
+           template_name: 'comment_notice'
     end
 
     def daily_reminder(reader_id:, day:, on: Bible270.today)
@@ -108,18 +111,35 @@ module Bible270
     end
 
     def prepare_comment_notice(comment_id, reader_id)
+      return false unless prepare_comment(comment_id)
+
+      @reader = Reader.find_by(id: reader_id)
+      return false if @reader.nil? || @reader.email.blank?
+      return false unless @reader.wants_comment_notifications?
+
+      true
+    end
+
+    def prepare_comment(comment_id)
       return false unless Bible270.config.mention_notifications
 
       @comment = Comment.find_by(id: comment_id)
-      @reader = Reader.find_by(id: reader_id)
-      return false if @comment.nil? || @reader.nil? || @reader.email.blank?
-      return false unless @reader.wants_comment_notifications?
+      return false if @comment.nil?
 
       @author = @comment.reader
       @app_name = Bible270.config.app_name
       @day_url = day_url_for(@comment.day)
       @profile_url = profile_url
       true
+    end
+
+    def all_comment_addresses(reader_ids)
+      Reader.all_comment_notification_recipients
+        .where(id: Array(reader_ids))
+        .where.not(id: @comment.reader_id)
+        .pluck(:email)
+        .map(&:strip)
+        .uniq(&:downcase)
     end
 
     def deliver_comment_notice(subject)

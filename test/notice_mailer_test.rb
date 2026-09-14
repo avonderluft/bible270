@@ -186,8 +186,8 @@ if RAILS_LOADED
       Bible270::NoticeMailer.mentioned(comment_id: comment.id, reader_id: @andrew.id)
     end
 
-    def all_comments_notice(comment, reader: @andrew)
-      Bible270::NoticeMailer.comment_posted(comment_id: comment.id, reader_id: reader.id)
+    def all_comments_notice(comment, readers: [@andrew])
+      Bible270::NoticeMailer.comment_posted(comment_id: comment.id, reader_ids: readers.map(&:id))
     end
 
     def test_the_mention_notice_quotes_the_reflection
@@ -284,7 +284,8 @@ if RAILS_LOADED
       mail = all_comments_notice(comment)
       body = body_of(mail)
 
-      assert_equal [@andrew.email], mail.to
+      assert_nil mail.to
+      assert_equal [@andrew.email], mail.bcc
       assert_match(%r{Mary Smith posted a reflection}, mail.subject)
       assert_match(%r{A new thought}, body)
       assert_match(%r{every new reflection and reply}i, body)
@@ -298,12 +299,25 @@ if RAILS_LOADED
       assert_match(%r{posted a reply}, all_comments_notice(reply).subject)
     end
 
+    def test_an_all_comments_notice_bccs_every_broad_subscriber
+      other = Bible270::Reader.create!(provider: 'email', uid: 'o@example.org', email: 'o@example.org',
+                                       display_name: 'Other Reader')
+      @andrew.update_comment_notification_level!('all')
+      other.update_comment_notification_level!('all')
+      comment = @mary.comments.create!(day: 4, body: 'A thought')
+
+      mail = all_comments_notice(comment, readers: [@andrew, other])
+
+      assert_nil mail.to
+      assert_equal [@andrew.email, other.email].sort, mail.bcc.sort
+    end
+
     def test_an_all_comments_notice_rechecks_the_preference_and_excludes_the_author
       comment = @mary.comments.create!(day: 4, body: 'A thought')
 
       refute all_comments_notice(comment).perform_deliveries
       @mary.update_comment_notification_level!('all')
-      refute all_comments_notice(comment, reader: @mary).perform_deliveries
+      refute all_comments_notice(comment, readers: [@mary]).perform_deliveries
     end
 
     def test_comment_notices_recheck_the_global_switch_and_reader_preference
