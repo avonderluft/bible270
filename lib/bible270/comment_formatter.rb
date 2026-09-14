@@ -17,6 +17,7 @@ module Bible270
     ALLOWED_TAGS = %w[p br strong em blockquote ul ol li a].freeze
     ALLOWED_ATTRIBUTES = %w[href rel].freeze
     LINK_REL = 'nofollow ugc noopener'
+    URL_PATTERN = %r{https?://[^\s<>"]*[^\s<>".,;:!?)\]\}]}i
     SKIP_MENTIONS_IN = %w[a code pre].freeze
 
   module_function
@@ -26,6 +27,7 @@ module Bible270
       rendered = format == MARKDOWN ? markdown_html(source) : plain_html(source)
       fragment = fragment_for(sanitize(rendered))
       hard_wrap(fragment) if format == MARKDOWN
+      link_urls(fragment) if format == MARKDOWN
       decorate_links(fragment)
       link_mentions(fragment, &mention_path) if mention_path
       fragment.to_html
@@ -93,6 +95,28 @@ module Bible270
       end
     end
     private_class_method :hard_wrap
+
+    def link_urls(fragment)
+      fragment.xpath('.//text()').to_a.each do |node|
+        next if node.ancestors.any? { |ancestor| SKIP_MENTIONS_IN.include?(ancestor.name) }
+        next unless node.text.match?(URL_PATTERN)
+
+        replacement = Nokogiri::HTML::DocumentFragment.parse('')
+        cursor = 0
+        node.text.to_enum(:scan, URL_PATTERN).each do
+          match = Regexp.last_match
+          replacement.add_child(Nokogiri::XML::Text.new(node.text[cursor...match.begin(0)], fragment.document))
+          link = Nokogiri::XML::Node.new('a', fragment.document)
+          link['href'] = match[0]
+          link.content = match[0]
+          replacement.add_child(link)
+          cursor = match.end(0)
+        end
+        replacement.add_child(Nokogiri::XML::Text.new(node.text[cursor..].to_s, fragment.document))
+        node.replace(replacement)
+      end
+    end
+    private_class_method :link_urls
 
     def decorate_links(fragment)
       fragment.css('a:not([href])').each do |link|

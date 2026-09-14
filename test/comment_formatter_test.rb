@@ -40,6 +40,31 @@ class CommentFormatterTest < Minitest::Test
     refute_match(%r{href="javascript:}i, html)
   end
 
+  def test_markdown_auto_links_bare_web_urls_without_swallowing_punctuation
+    html = Formatter.html(
+      'Read https://example.org/guide. Or use HTTP://example.org/help!',
+      format: Formatter::MARKDOWN
+    )
+
+    assert_match(%r{<a href="https://example.org/guide"[^>]*>https://example.org/guide</a>\.}, html)
+    assert_match(%r{<a href="HTTP://example.org/help"[^>]*>HTTP://example.org/help</a>!}, html)
+    assert_equal 2, html.scan('rel="nofollow ugc noopener"').size
+  end
+
+  def test_markdown_does_not_auto_link_urls_inside_explicit_links
+    html = Formatter.html('[Guide](https://example.org/guide)', format: Formatter::MARKDOWN)
+
+    assert_equal 1, html.scan('<a ').size
+    assert_match(%r{<a href="https://example.org/guide"[^>]*>Guide</a>}, html)
+  end
+
+  def test_plain_text_urls_remain_literal
+    html = Formatter.html('Visit https://example.org', format: Formatter::PLAIN)
+
+    refute_includes html, '<a '
+    assert_includes html, 'https://example.org'
+  end
+
   def test_mentions_can_be_linked_inside_formatting_but_not_inside_existing_links
     requested = []
     html = Formatter.html('**Hello @Mary** [@Mary](https://example.org)', format: Formatter::MARKDOWN) do |handle|

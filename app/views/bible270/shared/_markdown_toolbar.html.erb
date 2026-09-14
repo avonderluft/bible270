@@ -59,14 +59,39 @@
       const start = textarea.value.lastIndexOf("\n", Math.max(selectionStart - 1, 0)) + 1;
       const nextNewline = textarea.value.indexOf("\n", selectionEnd);
       const finish = nextNewline === -1 ? textarea.value.length : nextNewline;
-      const source = textarea.value.slice(start, finish) || (action === "quote" ? "quoted text" : "list item");
+      const existing = textarea.value.slice(start, finish);
+      const placeholder = action === "quote" ? "quoted text" : "list item";
+      const source = existing || placeholder;
       const lines = source.split("\n");
       const replacement = lines.map((line, index) => {
         if (action === "quote") return `> ${line}`;
         if (action === "number-list") return `${index + 1}. ${line}`;
         return `- ${line}`;
       }).join("\n");
-      update(editor, textarea, replacement, start, finish, 0, replacement.length);
+      const selectListPlaceholder = !existing && action.endsWith("-list");
+      const selectedStart = selectListPlaceholder ? replacement.indexOf(placeholder) : 0;
+      const selectedEnd = selectListPlaceholder ? selectedStart + placeholder.length : replacement.length;
+      update(editor, textarea, replacement, start, finish, selectedStart, selectedEnd);
+    }
+
+    function continueList(editor, textarea, event) {
+      if (event.key !== "Enter" || event.isComposing || event.shiftKey || event.ctrlKey ||
+          event.metaKey || event.altKey || textarea.selectionStart !== textarea.selectionEnd) return false;
+
+      const caret = textarea.selectionStart;
+      const lineStart = textarea.value.lastIndexOf("\n", Math.max(caret - 1, 0)) + 1;
+      const beforeCaret = textarea.value.slice(lineStart, caret);
+      const bullet = beforeCaret.match(/^(\s*)([-+*])\s+/);
+      const numbered = beforeCaret.match(/^(\s*)(\d+)([.)])\s+/);
+      let marker;
+      if (bullet) marker = `${bullet[1]}${bullet[2]} `;
+      else if (numbered) marker = `${numbered[1]}${Number(numbered[2]) + 1}${numbered[3]} `;
+      else return false;
+
+      event.preventDefault();
+      const insertion = `\n${marker}`;
+      update(editor, textarea, insertion, caret, caret, insertion.length, insertion.length);
+      return true;
     }
 
     function addLink(editor, textarea) {
@@ -212,6 +237,7 @@
         formattingToggle.focus();
       });
       textarea.addEventListener("keydown", (event) => {
+        if (continueList(editor, textarea, event)) return;
         if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
         const action = event.key.toLocaleLowerCase() === "b" ? "bold" :
           event.key.toLocaleLowerCase() === "i" ? "italic" : null;

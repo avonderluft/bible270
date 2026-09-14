@@ -105,11 +105,18 @@ if RAILS_LOADED
       sign_in_as(@reader)
 
       post "#{mount}/comments/preview",
-           params: { comment: { body: '**Grace @Other.Reader** <script>alert(1)</script>' } }
+           params: {
+             comment: {
+               body: '**Grace @Other.Reader** [Guide](https://example.org/guide) ' \
+                     'or https://example.org/news. <script>alert(1)</script>'
+             }
+           }
 
       assert_response :success
       assert_select 'strong', text: %r{Grace}
       assert_select 'a.b270-mention', text: '@Other.Reader'
+      assert_select 'a[href="https://example.org/guide"]', text: 'Guide'
+      assert_select 'a[href="https://example.org/news"]', text: 'https://example.org/news'
       refute_match(%r{<script\b}i, response.body)
       assert_equal 0, Bible270::Comment.count
     end
