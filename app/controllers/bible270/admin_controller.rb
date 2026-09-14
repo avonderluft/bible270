@@ -10,6 +10,7 @@ module Bible270
   class AdminController < ApplicationController
     LAST_BROADCAST_AT = 'last_broadcast_at'
     LAST_BROADCAST_SUBJECT = 'last_broadcast_subject'
+    BROADCAST_AUDIENCES = %w[everyone admins].freeze
     READER_SORT_OPTIONS = {
       'first_name' => 'First Name',
       'last_name' => 'Last Name',
@@ -76,7 +77,9 @@ module Bible270
         @shared_calendar_readers = @readers.size
         @personal_calendar_readers = 0
       end
-      @reachable = Reader.where.not(email: [nil, '']).count
+      reachable_readers = @readers.select { |reader| reader.email.present? }
+      @reachable = reachable_readers.size
+      @reachable_admins = reachable_readers.count { |reader| Bible270.config.admin?(reader) }
       @last_broadcast_at = parsed_time(Setting.read(LAST_BROADCAST_AT))
       @last_broadcast_subject = Setting.read(LAST_BROADCAST_SUBJECT)
     end
@@ -127,13 +130,21 @@ module Bible270
     def broadcast
       subject = params[:subject].to_s.strip
       body = params[:body].to_s.strip
+      audience = params[:audience].presence || 'everyone'
 
+      unless BROADCAST_AUDIENCES.include?(audience)
+        return redirect_to admin_path, alert: 'Choose who should receive the message. Nothing was sent.'
+      end
       if subject.empty? || body.empty?
         return redirect_to(admin_path, alert: 'A message needs both a subject and something to say.')
       end
 
-      recipients = Reader.where.not(email: [nil, '']).order(:id)
-      return redirect_to(admin_path, alert: 'Nobody has an email address.') if recipients.empty?
+      recipients = broadcast_recipients(audience)
+      noun = audience == 'admins' ? 'admin' : 'reader'
+      if recipients.empty?
+        alert = audience == 'admins' ? 'No admins have an email address.' : 'Nobody has an email address.'
+        return redirect_to admin_path, alert: alert
+      end
 
       recipient_count = recipients.count
       sent = deliver_broadcast(recipients, subject, body)
@@ -141,7 +152,7 @@ module Bible270
 
       if sent.zero?
         action = later ? 'queued' : 'sent'
-        return redirect_to admin_path, alert: "The message could not be #{action} to any readers."
+        return redirect_to admin_path, alert: "The message could not be #{action} to any #{noun.pluralize}."
       end
 
       Setting.write(LAST_BROADCAST_AT, Time.current.iso8601)
@@ -149,8 +160,8 @@ module Bible270
 
       action = later ? 'Queued for' : 'Sent to'
       failures = recipient_count - sent
-      notice = "#{action} #{sent} #{'reader'.pluralize(sent)}."
-      notice += " #{failures} #{'reader'.pluralize(failures)} could not be #{later ? 'queued' : 'sent'}." if failures.positive?
+      notice = "#{action} #{sent} #{noun.pluralize(sent)}."
+      notice += " #{failures} #{noun.pluralize(failures)} could not be #{later ? 'queued' : 'sent'}." if failures.positive?
       redirect_to admin_path, notice: notice
     end
 
@@ -292,6 +303,14 @@ module Bible270
       Time.parse(value.to_s)
     rescue ArgumentError, TypeError
       nil
+    end
+
+    def broadcast_recipients(audience)
+      recipients = Reader.where.not(email: [nil, '']).order(:id)
+      return recipients if audience == 'everyone'
+
+      admin_ids = recipients.select { |reader| Bible270.config.admin?(reader) }.map(&:id)
+      recipients.where(id: admin_ids)
     end
 
     def deliver_broadcast(recipients, subject, body)

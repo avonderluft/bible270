@@ -875,14 +875,20 @@ if RAILS_LOADED
 
     # ---- writing to everyone ------------------------------------------------
 
-    def test_the_panel_offers_to_write_to_everyone
+    def test_the_panel_offers_a_recipient_selector
       sign_in_as_admin
 
       get "#{mount}/admin"
 
       assert_response :success
-      assert_match(%r{Write to everyone}, response.body)
-      assert_match(%r{2 readers}, response.body, 'says how many it will reach')
+      assert_select 'h2', text: 'Write a message'
+      assert_select 'label.b270-sr-only[for="b270-broadcast-audience"]', text: 'Recipients'
+      assert_select 'form[action$="/admin/broadcast"] select#b270-broadcast-audience[name="audience"]' do
+        assert_select 'option[value="everyone"][selected="selected"]', text: 'Write to everyone'
+        assert_select 'option[value="admins"]', text: 'Write to all admins'
+      end
+      assert_match(%r{2 readers}, response.body, 'says how many readers can receive email')
+      assert_match(%r{1 admin}, response.body, 'says how many admins can receive email')
     end
 
     def test_a_message_goes_to_every_reader_with_an_address
@@ -894,6 +900,48 @@ if RAILS_LOADED
       assert_equal 2, ActionMailer::Base.deliveries.size
       assert_equal [@admin.email, @reader.email].sort,
                    ActionMailer::Base.deliveries.map { |mail| mail.to.first }.sort
+    end
+
+    def test_a_message_can_be_sent_only_to_configured_admin_emails
+      other_admin = Bible270::Reader.create!(provider: 'email', uid: 'admin@example.org',
+                                             email: 'admin@example.org', display_name: 'Other Admin')
+      sign_in_as_admin
+      Bible270.config.admin_emails = [@admin.email, other_admin.email]
+      ActionMailer::Base.deliveries.clear
+
+      post "#{mount}/admin/broadcast",
+           params: { audience: 'admins', subject: 'Admins', body: 'For administrators.' }
+
+      assert_equal [@admin.email, other_admin.email].sort,
+                   ActionMailer::Base.deliveries.map { |mail| mail.to.first }.sort
+      assert_match(%r{Sent to 2 admins}, flash[:notice].to_s)
+    end
+
+    def test_a_message_to_admins_honors_a_custom_admin_resolver
+      resolver_admin = Bible270::Reader.create!(provider: 'email', uid: 'resolver@example.org',
+                                                email: 'resolver@example.org', display_name: 'Resolver Admin')
+      sign_in_as_admin
+      admin_ids = [@admin.id, resolver_admin.id]
+      Bible270.config.admin_resolver = ->(reader) { admin_ids.include?(reader.id) }
+      ActionMailer::Base.deliveries.clear
+
+      post "#{mount}/admin/broadcast",
+           params: { audience: 'admins', subject: 'Admins', body: 'For administrators.' }
+
+      assert_equal [@admin.email, resolver_admin.email].sort,
+                   ActionMailer::Base.deliveries.map { |mail| mail.to.first }.sort
+      assert_match(%r{Sent to 2 admins}, flash[:notice].to_s)
+    end
+
+    def test_an_unknown_broadcast_audience_is_refused
+      sign_in_as_admin
+      ActionMailer::Base.deliveries.clear
+
+      post "#{mount}/admin/broadcast",
+           params: { audience: 'outsiders', subject: 'No', body: 'Do not send.' }
+
+      assert_empty ActionMailer::Base.deliveries
+      assert_match(%r{Choose who should receive}, flash[:alert].to_s)
     end
 
     # One message each, not one message with everyone in bcc.

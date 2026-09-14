@@ -269,7 +269,9 @@ config.admin_emails = %w[andrew@example.org]
 config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@example.org') }
 ```
 
-Admins get an extra "Admin" link in the header. From a reader's page you can:
+Admins get an extra "Admin" link in the header. The broadcast form can send an individually addressed
+message either to every reader with an email address or only to readers recognized as administrators.
+From a reader's page you can:
 
 - **move them to a day** — "put them on day 42 as of today" back-dates the start date; check-offs are
   keyed to day numbers, so nothing in their history moves;
