@@ -4,6 +4,10 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.6.0...main)**
+
+## [1.6.0] - 2026-09-14
+
 ### Added
 
 - let administrators sort the reader list by first name, last name, most completed days, or least completed days, and open the Rake task's progress report in a dismissable Reader Stats dialog that follows the current sort selection
@@ -12,12 +16,13 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 ### Changed
 
 - send each broad reflection/reply notification once with all eligible subscribers in BCC, while keeping direct reply and mention notices individually addressed
+- expand regression coverage for registration delivery and failure isolation, legacy reader names, custom footer composition, mention compatibility, and stale completion-animation schema caches
 
 ### Fixed
 
 - normalize boolean column defaults reported by Rails adapters so migration reconciliation and tests work consistently across Rails 7.1 through 8.1
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.5.1...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.5.1...v1.6.0)**
 
 ## [1.5.1] - 2026-09-11
 
@@ -696,7 +701,8 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/avonderluft/bible270/releases/tag/v1.6.0
 [1.5.1]: https://github.com/avonderluft/bible270/releases/tag/v1.5.1
 [1.5.0]: https://github.com/avonderluft/bible270/releases/tag/v1.5.0
 [1.4.2]: https://github.com/avonderluft/bible270/releases/tag/v1.4.2
