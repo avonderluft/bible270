@@ -23,7 +23,7 @@ The schedule is pure deterministic Ruby (`Bible270::Plan`) — none of it is sto
 ## Requirements
 
 - **Ruby** >= 3.2. Plain Ruby, no C extensions. Runs on 4.0.6 — it avoids everything 4.0 dropped or unbundled (notably `cgi`; URL escaping uses `URI.encode_www_form_component`).
-- **Rails** >= 7.0. On Ruby 4.0 your host app is the real constraint, not this engine — check your lockfile with RailsBump first.
+- **Rails** >= 7.2. On Ruby 4.0 your host app is the real constraint, not this engine — check your lockfile with RailsBump first.
 - A host app, and Turbo if you want check-offs without a page reload.
 
 Mutation controls expose pending, success, and retry feedback when JavaScript runs, while ordinary HTML
