@@ -94,6 +94,7 @@ if RAILS_LOADED
       assert_response :success
       assert_match(%r{R Reader}, response.body)
       assert_select "a[aria-label='R Reader'][href='#{mount}/admin/readers/#{@reader.id}'] .b270-avatar", count: 1
+      assert_select "a[href='mailto:#{@reader.email}']", text: @reader.email
     end
 
     def test_the_reader_list_shows_each_readers_latest_reading_activity
@@ -111,13 +112,17 @@ if RAILS_LOADED
       get "#{mount}/admin"
 
       completed_readings = Bible270::Plan.readings_for(7).values.compact.join(', ')
+      completed_tooltip = Bible270::Plan.readings_for(7).values.compact.join(' · ')
       completed_date = Bible270.local_time(completed_at).strftime('%b %-d, %Y')
       partial_reference = Bible270::Plan.parts_for(13, 'ot').first
+      partial_tooltip = Bible270::Plan.readings_for(13).values.compact.join(' · ')
       partial_date = Bible270.local_time(partial_at).strftime('%b %-d, %Y')
 
       assert_select '.b270-reader-activity', count: 3
       assert_select '.b270-reader-activity', text: "#{completed_date}: completed Day 7 (#{completed_readings})"
+      assert_select ".b270-reader-activity a[href='#{mount}/day/7'][title='#{completed_tooltip}']", text: 'Day 7'
       assert_select '.b270-reader-activity', text: "#{partial_date}: checked off “#{partial_reference}” for Day 13"
+      assert_select ".b270-reader-activity a[href='#{mount}/day/13'][title='#{partial_tooltip}']", text: 'Day 13'
       assert_select '.b270-reader-activity', text: 'No reading activity yet', count: 1
     end
 

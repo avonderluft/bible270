@@ -85,7 +85,11 @@
           <% if Bible270.config.admin?(reader) %> <span class="sub"><strong>[admin]</strong></span> <% end %>
           </div>
           <div class="sub">
-            <%= reader.email.presence || reader.provider %>
+            <% if reader.email.present? %>
+              <%= mail_to reader.email %>
+            <% else %>
+              <%= reader.provider %>
+            <% end %>
             · <%= @days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days
             <% if reader.dated? %>· started <%= reader.effective_start_date.strftime('%b %-d, %Y') %><% end %>
           </div>
