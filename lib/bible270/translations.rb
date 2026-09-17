@@ -87,6 +87,21 @@ module Bible270
       VERSIONS.dig(normalize(code), :gateway) || normalize(code)
     end
 
+    # ScriptTagger accepts one default translation, but Bible270's two original-
+    # language choices vary by testament. Returning both lets the browser select
+    # the correct BLB text for each detected reference.
+    def blue_letter_tagger_translations(code)
+      translation = resolve(code)
+      case translation
+      when ORIGINAL_LANGUAGES
+        { old_testament: 'WLC', new_testament: 'mGNT' }
+      when ALL_GREEK
+        { old_testament: 'LXX', new_testament: 'mGNT' }
+      else
+        { old_testament: translation, new_testament: translation }
+      end
+    end
+
     # [[label, code], ...] for a select field.
     def options
       codes.map { |code| ["#{code} — #{short_label(code)}", code] }

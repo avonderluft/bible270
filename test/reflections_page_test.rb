@@ -211,7 +211,56 @@ if RAILS_LOADED
       assert_match(%r{First new thread}, response.body)
     end
 
-    # ---- the scripture links ------------------------------------------------
+    # ---- Scripture links and hover previews ---------------------------------
+
+    def test_blue_letter_bible_hover_previews_use_the_visitors_default_translation
+      previous_version = Bible270.config.bible_version
+      Bible270.config.bible_version = 'ESV'
+      reflection(@mary, 1, 'John 3:16 gives hope', 1.hour.ago)
+
+      get "#{mount}/reflections"
+
+      script_url = 'https://www.blueletterbible.org/assets/scripts/blbToolTip/' \
+                   'BLB_ScriptTagger-min.js'
+      assert_select "script[src='#{script_url}'][data-turbo-eval='false'][nonce]"
+      integration = css_select('script[data-old-testament-translation="ESV"]' \
+                               '[data-new-testament-translation="ESV"]').first
+      refute_nil integration
+      assert_includes integration.text, 'tagger.HyperLinks = "hover"'
+      assert_includes integration.text, 'tagger.DarkTheme = false'
+      assert_includes integration.text, 'const selector = ".b270-cbody"'
+      assert_includes integration.text, 'new MutationObserver'
+      assert_includes integration.text, 'Bible270ScripturePopups.configure(requestedTranslations)'
+      assert_includes integration.text, 'document.addEventListener("turbo:load"'
+      assert_includes integration.text, 'document.addEventListener("turbo:before-cache"'
+      refute_includes integration.text, 'window.location.reload'
+    ensure
+      Bible270.config.bible_version = previous_version
+    end
+
+    def test_blue_letter_bible_hover_previews_use_the_readers_selected_translation
+      @mary.update_bible_version('KJV')
+      reflection(@andrew, 1, 'John 3:16 gives hope', 1.hour.ago)
+      sign_in_as(@mary)
+
+      get "#{mount}/reflections"
+
+      assert_select 'script[data-old-testament-translation="KJV"]' \
+                    '[data-new-testament-translation="KJV"]'
+    end
+
+    def test_blue_letter_bible_hover_previews_map_original_languages_by_testament
+      @mary.update_bible_version('HEB/GRK')
+      reflection(@andrew, 1, 'Genesis 1:1 and John 1:1', 1.hour.ago)
+      sign_in_as(@mary)
+
+      get "#{mount}/reflections"
+
+      assert_select 'script[data-old-testament-translation="WLC"]' \
+                    '[data-new-testament-translation="mGNT"]'
+      integration = css_select('script[data-old-testament-translation="WLC"]').first
+      assert_includes integration.text, 'newTestamentReference(reference)'
+    end
 
     def test_the_references_link_to_the_passage
       reflection(@mary, 1, 'On day one', 1.hour.ago)

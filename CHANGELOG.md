@@ -4,6 +4,10 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+
+- show Blue Letter Bible Scripture popups when readers hover over references in rendered reflections, replies, and Markdown previews; popups follow each reader's selected translation, handle original-language choices by testament, and rescan content added by Turbo without forcing a page reload
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.6.2...main)**
 
 ## [1.6.2] - 2026-09-14

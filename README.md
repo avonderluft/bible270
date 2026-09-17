@@ -507,6 +507,21 @@ dedicated browser tab so moving among the day's passages does not
 leave a trail of open tabs; Ctrl-click, Cmd-click, middle-click, and the browser's context menu still
 open additional tabs when a reader wants to compare passages.
 
+Rendered reflections and replies also use [Blue Letter Bible ScriptTagger](https://www.blueletterbible.org/webtools/BLB_ScriptTagger.cfm)
+to show Scripture text when a reader hovers over a reference. The popup follows that reader's selected
+translation (or the site default for a visitor); `HEB/GRK` and `ALLGRK` choose the appropriate original
+language separately for Old and New Testament references. The engine layout loads this automatically.
+If `config.layout` points to a host layout, render the integration once near the end of its `<body>`:
+
+```erb
+<%= render "bible270/shared/scripture_popups" %>
+```
+
+ScriptTagger loads JavaScript and CSS from Blue Letter Bible at runtime. A host with Content Security
+Policy enabled must allow `https://www.blueletterbible.org` in its existing `script-src` and `style-src`
+directives. This sends the visitor's IP address and normal request metadata to Blue Letter Bible when an
+engine page loads; hovering a reference also sends that reference and selected translation to BLB.
+
 ## With ComfortableMediaSurfer
 
 The CMS serves your content; this is a separate mounted app. Either **just link to it** (mount, add a nav link, done — the engine renders its own themed pages), or **match your chrome** by setting `config.parent_controller = "::ApplicationController"` and `config.layout = "layouts/application"` so it sits inside your header and footer. All engine CSS is prefixed `b270-`, so nothing collides.

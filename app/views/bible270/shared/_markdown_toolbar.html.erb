@@ -139,7 +139,9 @@
         if (!response.ok) throw new Error("Preview unavailable");
         return response.text();
       }).then((html) => {
+        preview.removeAttribute("data-b270-blb-tagged");
         preview.innerHTML = html;
+        window.Bible270ScripturePopups?.scan(preview);
       }).catch((error) => {
         if (error.name !== "AbortError") preview.textContent = "Preview unavailable. Return to Write and try again.";
       });

@@ -404,8 +404,9 @@ if RAILS_LOADED
       get "#{mount}/day/1"
 
       assert_response :success
-      assert_match(%r{www\.bible\.com/bible/1/GEN\.1\.KJV}, response.body)
-      refute_match(%r{biblegateway\.com|blueletterbible\.org}, response.body)
+      passage_hrefs = css_select('a[data-b270-passage-link="true"]').map { |link| link['href'] }
+      assert(passage_hrefs.all? { |href| href.start_with?('https://www.bible.com/bible/') })
+      assert_includes passage_hrefs, 'https://www.bible.com/bible/1/GEN.1.KJV'
     end
 
     def test_original_languages_use_bible_com_when_selected

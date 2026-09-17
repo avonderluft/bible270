@@ -1,0 +1,131 @@
+<% popup_translations = Bible270::Translations.blue_letter_tagger_translations(b270_bible_version) %>
+<script src="https://www.blueletterbible.org/assets/scripts/blbToolTip/BLB_ScriptTagger-min.js"
+        type="text/javascript" nonce="<%= content_security_policy_nonce %>" data-turbo-eval="false"></script>
+<script nonce="<%= content_security_policy_nonce %>"
+        data-old-testament-translation="<%= popup_translations.fetch(:old_testament) %>"
+        data-new-testament-translation="<%= popup_translations.fetch(:new_testament) %>">
+  (() => {
+    const settings = document.currentScript.dataset;
+    const requestedTranslations = {
+      oldTestament: settings.oldTestamentTranslation,
+      newTestament: settings.newTestamentTranslation
+    };
+    if (window.Bible270ScripturePopups) {
+      window.Bible270ScripturePopups.configure(requestedTranslations);
+      window.Bible270ScripturePopups.scan();
+      return;
+    }
+
+    const tagger = window.BLB && window.BLB.Tagger;
+    if (!tagger) return;
+
+    const translations = { ...requestedTranslations };
+    const selector = ".b270-cbody";
+    const pending = new Set();
+    let retry;
+
+    function configure(requested) {
+      translations.oldTestament = requested.oldTestament;
+      translations.newTestament = requested.newTestament;
+      tagger.Translation = translations.oldTestament;
+    }
+
+    configure(requestedTranslations);
+    tagger.HyperLinks = "hover";
+    tagger.HideTanslationAbbrev = false;
+    tagger.HideTranslationAbbrev = false;
+    tagger.TargetNewWindow = true;
+    tagger.DarkTheme = false;
+    tagger.Style = "par";
+    tagger.NoSearchTagNames = "h1 h2 h3 h4";
+    tagger.NoSearchClassNames = "noTag doNotTag b270-ref b270-reflink b270-blb-existing-link";
+
+    function ready() {
+      return tagger.RegExSet && tagger.NoSearchTags && tagger.NoSearchClasses &&
+        window.YAHOO && window.YAHOO.util && window.YAHOO.util.Dom && window.BLB.BookNames;
+    }
+
+    function explicitTranslation(text, translation) {
+      const escaped = translation.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(?:^|[\\s,(])${escaped}\\)?$`, "i").test(text);
+    }
+
+    function newTestamentReference(reference) {
+      const normalized = tagger.normalizeReference(reference);
+      const book = normalized.split(" ", 1)[0].replaceAll("_", " ").toLowerCase();
+      const canonical = window.BLB.BookNames[book];
+      return Number(window.BLB.BookOrder[canonical]) >= 40;
+    }
+
+    const originalInsertRefNode = tagger.insertRefNode;
+    tagger.insertRefNode = function(reference, text, translation, node) {
+      let popupTranslation = translation;
+      const testamentSpecific = translations.oldTestament !== translations.newTestament;
+      if (testamentSpecific && !explicitTranslation(text, translation)) {
+        popupTranslation = newTestamentReference(reference) ?
+          translations.newTestament : translations.oldTestament;
+      }
+      return originalInsertRefNode.call(tagger, reference, text, popupTranslation, node);
+    };
+
+    const originalWalkDomTree = tagger.walkDomTree;
+    tagger.walkDomTree = function(root, linkedAnchor, depth) {
+      if (root === document.body) {
+        window.Bible270ScripturePopups.scan(root);
+        return 0;
+      }
+      return originalWalkDomTree.call(tagger, root, linkedAnchor, depth);
+    };
+
+    function collect(root) {
+      if (!root) return;
+      if (root.nodeType === Node.ELEMENT_NODE && root.matches(selector)) pending.add(root);
+      if (root.querySelectorAll) root.querySelectorAll(selector).forEach((body) => pending.add(body));
+    }
+
+    function flush() {
+      retry = null;
+      if (!ready()) {
+        retry = window.setTimeout(flush, 25);
+        return;
+      }
+
+      const bodies = Array.from(pending);
+      pending.clear();
+      bodies.forEach((body) => {
+        if (!body.isConnected || body.dataset.b270BlbTagged === "true") return;
+
+        body.querySelectorAll("a").forEach((link) => link.classList.add("b270-blb-existing-link"));
+        body.dataset.b270BlbTagged = "true";
+        tagger.walkDomTree(body);
+      });
+    }
+
+    function scan(root = document) {
+      collect(root);
+      if (pending.size && !retry) retry = window.setTimeout(flush, 0);
+    }
+
+    function reset(root = document) {
+      root.querySelectorAll(`${selector} a.BLBST_a`).forEach((link) => {
+        link.replaceWith(document.createTextNode(link.textContent));
+      });
+      root.querySelectorAll(selector).forEach((body) => {
+        body.removeAttribute("data-b270-blb-tagged");
+      });
+      document.getElementById("scriptDiv")?.remove();
+      tagger.ContainerToHide = null;
+    }
+
+    window.Bible270ScripturePopups = { configure, scan };
+    new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) scan(node);
+      }));
+    }).observe(document.documentElement, { childList: true, subtree: true });
+    document.addEventListener("turbo:load", () => scan());
+    document.addEventListener("turbo:before-cache", () => reset());
+    window.addEventListener("pageshow", () => scan());
+    scan();
+  })();
+</script>

@@ -70,6 +70,18 @@ class TranslationsTest < Minitest::Test
     assert_equal 'ALLGRK — LXX OT and Greek NT', T.options.last.first
   end
 
+  def test_script_tagger_uses_the_selected_english_translation
+    assert_equal({ old_testament: 'ESV', new_testament: 'ESV' },
+                 T.blue_letter_tagger_translations('ESV'))
+  end
+
+  def test_script_tagger_maps_original_languages_by_testament
+    assert_equal({ old_testament: 'WLC', new_testament: 'mGNT' },
+                 T.blue_letter_tagger_translations('HEB/GRK'))
+    assert_equal({ old_testament: 'LXX', new_testament: 'mGNT' },
+                 T.blue_letter_tagger_translations('ALLGRK'))
+  end
+
   def test_codes_are_case_and_whitespace_insensitive
     assert T.valid?('nasb95')
     assert T.valid?(' esv ')
