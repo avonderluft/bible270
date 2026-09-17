@@ -82,6 +82,31 @@ if RAILS_LOADED
       assert_select "a[aria-label='R Reader'][href='#{mount}/admin/readers/#{@reader.id}'] .b270-avatar", count: 1
     end
 
+    def test_the_reader_list_shows_each_readers_latest_reading_activity
+      completed_at = Time.utc(2026, 9, 15, 18)
+      @reader.mark_day_complete!(7)
+      @reader.checkoffs.where(day: 7).update_all(created_at: completed_at)
+
+      partial_reader = Bible270::Reader.create!(provider: 'email', uid: 'partial@example.org',
+                                                email: 'partial@example.org', display_name: 'Partial Reader')
+      partial_at = Time.utc(2026, 9, 16, 18)
+      partial_checkoff = partial_reader.checkoffs.create!(day: 13, track: 'ot', part: 0)
+      partial_checkoff.update_column(:created_at, partial_at)
+
+      sign_in_as_admin
+      get "#{mount}/admin"
+
+      completed_readings = Bible270::Plan.readings_for(7).values.compact.join(', ')
+      completed_date = Bible270.local_time(completed_at).strftime('%b %-d, %Y')
+      partial_reference = Bible270::Plan.parts_for(13, 'ot').first
+      partial_date = Bible270.local_time(partial_at).strftime('%b %-d, %Y')
+
+      assert_select '.b270-reader-activity', count: 3
+      assert_select '.b270-reader-activity', text: "#{completed_date}: completed Day 7 (#{completed_readings})"
+      assert_select '.b270-reader-activity', text: "#{partial_date}: checked off “#{partial_reference}” for Day 13"
+      assert_select '.b270-reader-activity', text: 'No reading activity yet', count: 1
+    end
+
     # The community page lists people by first name, so the admin list should too:
     # surname order read oddly beside names displayed first-name-first.
     def test_the_reader_list_is_ordered_by_first_name

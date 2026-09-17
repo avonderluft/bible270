@@ -89,6 +89,13 @@
             · <%= @days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days
             <% if reader.dated? %>· started <%= reader.effective_start_date.strftime('%b %-d, %Y') %><% end %>
           </div>
+          <div class="sub b270-reader-activity">
+            <% if (activity = @recent_reader_activities[reader.id]) %>
+              <%= b270_date(activity.occurred_at) %>: <%= b270_reader_activity_description(activity) %>
+            <% else %>
+              No reading activity yet
+            <% end %>
+          </div>
         </div>
         <div class="stat">
           <span class="big"><%= (@days_completed[reader.id].to_f / Bible270::Plan::DAYS * 100).round %>%</span>

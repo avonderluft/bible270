@@ -67,6 +67,7 @@ module Bible270
       @reader_sort = READER_SORT_OPTIONS.key?(params[:sort]) ? params[:sort] : 'first_name'
       @reader_report = ReaderProgressReport.new(completed_days: @days_completed, sort: @reader_sort)
       @readers = @reader_report.sorted_readers
+      @recent_reader_activities = Checkoff.recent_activity_by_reader(@readers.map(&:id))
       @run_start_date = Setting.run_start_date
       @configured_start_date = Bible270.config.start_date
       @run_start_date_overridden = Setting.run_start_date_overridden?

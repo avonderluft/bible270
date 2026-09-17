@@ -181,6 +181,16 @@ module Bible270
       local&.strftime('%b %-d, %Y at %-I:%M %p')
     end
 
+    def b270_reader_activity_description(activity)
+      if activity.day_completed?
+        readings = Plan.readings_for(activity.day).values.compact.join(', ')
+        "completed Day #{activity.day} (#{readings})"
+      else
+        reference = Plan.parts_for(activity.day, activity.track).fetch(activity.part)
+        "checked off “#{reference}” for Day #{activity.day}"
+      end
+    end
+
     # Writers may revise their own words; administrators may also correct or
     # moderate any reflection without changing its recorded author.
     def b270_can_edit?(comment)
