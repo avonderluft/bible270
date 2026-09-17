@@ -15,7 +15,9 @@ module Bible270
       'first_name' => 'First Name',
       'last_name' => 'Last Name',
       'most_completed' => 'Most days completed',
-      'least_completed' => 'Least days completed'
+      'least_completed' => 'Least days completed',
+      'most_recent_activity' => 'Most recent activity',
+      'least_recent_activity' => 'Least recent activity'
     }.freeze
 
     before_action :require_admin!
@@ -65,9 +67,15 @@ module Bible270
       @days_completed = Reader.completed_days_by_id
       @reader_sort_options = READER_SORT_OPTIONS
       @reader_sort = READER_SORT_OPTIONS.key?(params[:sort]) ? params[:sort] : 'first_name'
-      @reader_report = ReaderProgressReport.new(completed_days: @days_completed, sort: @reader_sort)
+      readers = Reader.all.load
+      @recent_reader_activities = Checkoff.recent_activity_by_reader(readers.map(&:id))
+      @reader_report = ReaderProgressReport.new(
+        readers: readers,
+        completed_days: @days_completed,
+        recent_activities: @recent_reader_activities,
+        sort: @reader_sort
+      )
       @readers = @reader_report.sorted_readers
-      @recent_reader_activities = Checkoff.recent_activity_by_reader(@readers.map(&:id))
       @run_start_date = Setting.run_start_date
       @configured_start_date = Bible270.config.start_date
       @run_start_date_overridden = Setting.run_start_date_overridden?

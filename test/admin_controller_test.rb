@@ -46,6 +46,20 @@ if RAILS_LOADED
       sign_in_as(@admin)
     end
 
+    def assert_reader_order(*readers)
+      reader_list = css_select('.b270-list').first.to_s
+      readers.each_cons(2) do |first, second|
+        assert_operator reader_list.index(first.display_name), :<, reader_list.index(second.display_name)
+      end
+    end
+
+    def assert_reader_stats_order(*readers)
+      stats = css_select('#b270-reader-stats-dialog pre').first.text
+      readers.each_cons(2) do |first, second|
+        assert_operator stats.index(first.display_name), :<, stats.index(second.display_name)
+      end
+    end
+
     def with_uploaded_avatar(content_type: 'image/png', contents: 'avatar')
       file = Tempfile.new(['avatar', '.png'])
       file.binmode
@@ -130,11 +144,13 @@ if RAILS_LOADED
 
       assert_select "form.b270-admin-reader-sort[action='#{mount}/admin'][method='get']" do
         assert_select 'select[name="sort"]' do
-          assert_select 'option', count: 4
+          assert_select 'option', count: 6
           assert_select 'option[value="first_name"]', text: 'First Name'
           assert_select 'option[value="last_name"][selected="selected"]', text: 'Last Name'
           assert_select 'option[value="most_completed"]', text: 'Most days completed'
           assert_select 'option[value="least_completed"]', text: 'Least days completed'
+          assert_select 'option[value="most_recent_activity"]', text: 'Most recent activity'
+          assert_select 'option[value="least_recent_activity"]', text: 'Least recent activity'
         end
         assert_select 'input[type="submit"][value="Sort"]'
       end
@@ -186,6 +202,32 @@ if RAILS_LOADED
       get "#{mount}/admin", params: { sort: 'least_completed' }
       assert_operator response.body.index(least.display_name), :<, response.body.index(most.display_name)
       assert_select 'option[value="least_completed"][selected="selected"]'
+    end
+
+    def test_the_reader_list_and_stats_can_be_ordered_by_recent_activity
+      oldest = Bible270::Reader.create!(provider: 'email', uid: 'oldest@example.org', email: 'oldest@example.org',
+                                        display_name: 'Oldest Activity')
+      newest = Bible270::Reader.create!(provider: 'email', uid: 'newest@example.org', email: 'newest@example.org',
+                                        display_name: 'Newest Activity')
+      no_activity = Bible270::Reader.create!(provider: 'email', uid: 'none@example.org', email: 'none@example.org',
+                                             display_name: 'No Activity')
+      oldest_checkoff = oldest.checkoffs.create!(day: 1, track: 'ot', part: 0)
+      newest_checkoff = newest.checkoffs.create!(day: 1, track: 'ot', part: 0)
+      oldest_checkoff.update_column(:created_at, Time.utc(2026, 9, 1, 12))
+      newest_checkoff.update_column(:created_at, Time.utc(2026, 9, 2, 12))
+      sign_in_as_admin
+
+      get "#{mount}/admin", params: { sort: 'most_recent_activity' }
+
+      assert_reader_order(newest, oldest, no_activity)
+      assert_reader_stats_order(newest, oldest, no_activity)
+      assert_select 'option[value="most_recent_activity"][selected="selected"]'
+
+      get "#{mount}/admin", params: { sort: 'least_recent_activity' }
+
+      assert_reader_order(oldest, newest, no_activity)
+      assert_reader_stats_order(oldest, newest, no_activity)
+      assert_select 'option[value="least_recent_activity"][selected="selected"]'
     end
 
     def test_an_unknown_reader_sort_falls_back_to_first_name

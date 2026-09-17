@@ -4,13 +4,17 @@ module Bible270
   # Builds the plain-text reader progress table used by administrative tasks.
   class ReaderProgressReport
     HEADERS = ['Name', 'Days Read', 'Status'].freeze
-    SORTS = %w[first_name last_name most_completed least_completed].freeze
+    SORTS = %w[
+      first_name last_name most_completed least_completed most_recent_activity least_recent_activity
+    ].freeze
     DEFAULT_SORT = 'most_completed'
     Row = Struct.new(:name, :days_read, :status, keyword_init: true)
 
-    def initialize(readers: Reader.all, completed_days: Reader.completed_days_by_id, sort: DEFAULT_SORT)
+    def initialize(readers: Reader.all, completed_days: Reader.completed_days_by_id, recent_activities: {},
+                   sort: DEFAULT_SORT)
       @readers = readers
       @completed_days = completed_days
+      @recent_activities = recent_activities
       @sort = SORTS.include?(sort.to_s) ? sort.to_s : DEFAULT_SORT
     end
 
@@ -40,7 +44,7 @@ module Bible270
 
   private
 
-    attr_reader :readers, :completed_days, :sort
+    attr_reader :readers, :completed_days, :recent_activities, :sort
 
     def reader_sort_key(reader)
       case sort
@@ -51,9 +55,19 @@ module Bible270
         [last_name.to_s.downcase, reader.sort_name, reader.id]
       when 'least_completed'
         [completed_days[reader.id].to_i, reader.sort_name, reader.id]
+      when 'most_recent_activity'
+        activity_sort_key(reader, descending: true)
+      when 'least_recent_activity'
+        activity_sort_key(reader, descending: false)
       else
         [-completed_days[reader.id].to_i, reader.sort_name, reader.id]
       end
+    end
+
+    def activity_sort_key(reader, descending:)
+      activity = recent_activities[reader.id]
+      timestamp = activity&.occurred_at&.to_f
+      [activity.nil? ? 1 : 0, descending && timestamp ? -timestamp : timestamp.to_f, reader.sort_name, reader.id]
     end
 
     def status(reader, days_read)
