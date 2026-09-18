@@ -69,7 +69,8 @@ if RAILS_LOADED
         end
         assert_select '[data-b270-formatting-drawer][aria-hidden="true"][inert]' do
           assert_select '[role="toolbar"][aria-label="Reflection formatting"]' do
-            assert_select 'button[type="button"][data-b270-markdown-action]', count: 6
+            assert_select 'button[type="button"][data-b270-markdown-action]', count: 7
+            assert_select 'button[data-b270-markdown-action="video"]', text: 'Video'
             assert_select '.b270-format-bold', text: 'B'
             assert_select '.b270-format-italic', text: 'I'
           end
@@ -119,6 +120,54 @@ if RAILS_LOADED
       assert_select 'a[href="https://example.org/news"]', text: 'https://example.org/news'
       refute_match(%r{<script\b}i, response.body)
       assert_equal 0, Bible270::Comment.count
+    end
+
+    def test_video_preview_is_a_click_to_load_card_without_remote_resources
+      sign_in_as(@reader)
+      body = '[YouTube video](https://youtu.be/aB3_dE-fG12 "bible270-video")'
+
+      post "#{mount}/comments/preview", params: { comment: { body: body } }
+
+      assert_response :success
+      assert_select '.b270-video[data-b270-video-id="aB3_dE-fG12"]' do
+        assert_select 'button[type="button"][data-b270-video-load][hidden][title]', text: 'View video'
+        assert_select 'a[href="https://www.youtube.com/watch?v=aB3_dE-fG12"][target="_blank"][title]',
+                      text: 'Open on YouTube'
+        assert_select 'p', count: 0
+      end
+      assert_select 'iframe, img, script', count: 0
+      assert_equal 0, Bible270::Comment.count
+    end
+
+    def test_video_reflections_and_replies_keep_their_source_and_render_in_turbo_and_day_pages
+      sign_in_as(@reader)
+      body = '[YouTube video](https://www.youtube.com/watch?v=aB3_dE-fG12 "bible270-video")'
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: body, body_format: 'markdown' } },
+           headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+      assert_response :success
+      reflection = Bible270::Comment.last
+      assert_equal body, reflection.body
+      assert_select "#comment-#{reflection.id} .b270-video[data-b270-video-id='aB3_dE-fG12']"
+      assert_select 'iframe', count: 0
+
+      post "#{mount}/day/1/comments",
+           params: { comment: { body: body, body_format: 'markdown', parent_id: reflection.id } },
+           headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+      assert_response :success
+      reply = Bible270::Comment.last
+      assert_equal reflection.id, reply.parent_id
+      assert_select "#comment-#{reply.id} .b270-video[data-b270-video-id='aB3_dE-fG12']"
+
+      get "#{mount}/day/1"
+
+      assert_response :success
+      assert_select '.b270-video', count: 2
+      assert_select 'iframe', count: 0
+      assert_includes response.body, 'window.Bible270Videos = { scan, reset };'
     end
 
     def test_preview_keeps_lists_compact_when_the_source_has_blank_lines

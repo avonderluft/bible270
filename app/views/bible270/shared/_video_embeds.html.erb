@@ -1,0 +1,46 @@
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270Videos) {
+      window.Bible270Videos.scan();
+      return;
+    }
+
+    function scan() {
+      document.querySelectorAll("[data-b270-video-load]").forEach((button) => {
+        button.hidden = !!button.closest(".b270-video")?.querySelector("iframe");
+      });
+    }
+
+    function reset(root = document) {
+      root.querySelectorAll(".b270-video iframe").forEach((frame) => frame.remove());
+      root.querySelectorAll("[data-b270-video-load]").forEach((button) => {
+        button.hidden = false;
+      });
+    }
+
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest?.("[data-b270-video-load]");
+      if (!button) return;
+      const card = button.closest("[data-b270-video-id]");
+      const id = card?.dataset.b270VideoId;
+      if (!/^[A-Za-z0-9_-]{11}$/.test(id || "") || card.querySelector("iframe")) return;
+
+      const frame = document.createElement("iframe");
+      frame.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=0`;
+      frame.title = "YouTube video player";
+      frame.allow = "encrypted-media; fullscreen; picture-in-picture";
+      frame.allowFullscreen = true;
+      // YouTube requires an origin referrer to identify the embedding site.
+      frame.referrerPolicy = "strict-origin-when-cross-origin";
+      card.insertBefore(frame, button);
+      button.hidden = true;
+      frame.focus();
+    });
+
+    scan();
+    new MutationObserver(scan).observe(document.documentElement, { childList: true, subtree: true });
+    document.addEventListener("turbo:load", scan);
+    document.addEventListener("turbo:before-cache", () => reset());
+    window.Bible270Videos = { scan, reset };
+  })();
+</script>

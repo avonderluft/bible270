@@ -219,6 +219,23 @@ if RAILS_LOADED
       refute_includes text, '**'
     end
 
+    def test_a_video_reflection_is_an_ordinary_link_in_both_email_parts
+      url = 'https://www.youtube.com/watch?v=aB3_dE-fG12'
+      comment = @mary.comments.create!(
+        day: 7, body: "[Grace and hope](#{url} \"bible270-video\")", body_format: 'markdown'
+      )
+      mail = mention_notice(comment)
+      html = mail.html_part.body.decoded
+      text = mail.text_part.body.decoded
+      fragment = Nokogiri::HTML.fragment(html)
+
+      assert_equal 'Grace and hope', fragment.at_css("a[href='#{url}']").text
+      assert_empty fragment.css('iframe, button, .b270-video, [data-b270-video-id]')
+      assert_includes text, "Grace and hope (#{url})"
+      refute_includes html, 'bible270-video'
+      refute_includes text, 'bible270-video'
+    end
+
     def test_the_mention_notice_explains_why_it_was_sent
       comment = @mary.comments.create!(day: 1, body: 'Hello @andrew')
       body = body_of(mention_notice(comment))

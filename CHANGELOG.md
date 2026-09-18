@@ -6,6 +6,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Added
 
+- add a YouTube Video formatting button for reflections and replies, with optional video names, validated click-to-load players in previews and web views, privacy tooltips, new-tab YouTube links, no autoplay or remote thumbnails, and ordinary video links in notification emails
 - show Blue Letter Bible Scripture popups when readers hover over references in rendered reflections, replies, and Markdown previews; popups follow each reader's selected translation, handle original-language choices by testament, and rescan content added by Turbo without forcing a page reload
 - let administrators sort the reader list and Reader Stats report by most or least recent reading activity, while keeping readers with no activity at the end
 

@@ -53,18 +53,18 @@ module Bible270
       end
     end
 
-    # Formats every reflection surface through the same sanitizer. Web views link
-    # resolved mentions; email can opt out because it has no mounted request path.
-    def b270_comment_body(comment, link_mentions: true)
+    # Formats every reflection surface through the same sanitizer. Emails opt out
+    # of interactive video cards and mention links requiring a mounted request path.
+    def b270_comment_body(comment, link_mentions: true, embed_videos: true)
       format = comment.rendered_body_format
       html = if link_mentions
                readers = Bible270::Reader.mentioned_in(comment.body)
-               Bible270::CommentFormatter.html(comment.body, format: format) do |handle|
+               Bible270::CommentFormatter.html(comment.body, format: format, embed_videos: embed_videos) do |handle|
                  reader = readers.find { |candidate| candidate.answers_to?(handle) }
                  reader_path(reader) if reader
                end
              else
-               Bible270::CommentFormatter.html(comment.body, format: format)
+               Bible270::CommentFormatter.html(comment.body, format: format, embed_videos: embed_videos)
              end
       html.html_safe
     end

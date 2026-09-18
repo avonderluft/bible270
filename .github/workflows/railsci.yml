@@ -42,6 +42,16 @@ jobs:
       - name: Run the test suite in two processes
         run: bundle exec rake test
 
+  javascript:
+    name: Video UI tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test test/javascript/*.cjs
+
   lint:
     name: RuboCop
     runs-on: ubuntu-latest

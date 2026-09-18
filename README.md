@@ -287,13 +287,38 @@ their previous visit. Reflection and reply drafts are retained for up to 30 days
 cleared after a successful post. On a shared device, clearing browser storage also removes saved drafts.
 Typing `@` in the composer offers up to five unambiguous reader handles; manual mentions continue to
 work without JavaScript. A quiet **Formatting** disclosure opens a toolbar for bold, italic,
-quotations, bulleted and numbered lists, and links without requiring readers to know Markdown syntax.
+quotations, bulleted and numbered lists, links, and YouTube videos without requiring readers to know Markdown syntax.
 A separate **Preview** control checks the current draft through the same server-side sanitizer used
 after posting; formatting tools stay out of sight until requested. The source remains
 editable in the ordinary textarea, drafts preserve its format, and all rendered HTML is restricted to that small safe
 set. Existing reflections remain literal plain text until a reader intentionally formats or converts
 them. Upgrading hosts must copy and run migration `20260101000021`, which records whether each body is
 plain text or Markdown; until then, the composer safely falls back to plain text.
+
+The **Video** button accepts YouTube watch, share (`youtu.be`), Shorts, live, and embed URLs,
+then asks for an optional video name. Leave it blank for **View video**, or name it to show
+**View video ‘Name’**. The name is stored as the link text and is also used in notification emails.
+It inserts an explicit Markdown link on its own paragraph, for example:
+
+```markdown
+[YouTube video](https://www.youtube.com/watch?v=aB3_dE-fG12 "bible270-video")
+```
+
+Preview and posted reflections/replies show a small **View video** card. No YouTube player or remote
+thumbnail is requested until the reader loads the video; the player uses `www.youtube-nocookie.com`
+and does not autoplay. Loading it shares the reader's IP address and request metadata with YouTube;
+privacy-enhanced mode does not make playback anonymous. The button tooltip reads “Loads player and
+shares data with YouTube”; the link tooltip reads “Opens YouTube in a new tab.” An **Open on YouTube** link opens in a new
+tab/window with `rel="nofollow ugc noopener"`, and remains available when JavaScript is disabled or
+the provider disallows embedding. Notification emails retain ordinary
+links, and unmarked links never become players automatically. Only validated YouTube URLs become
+cards; unsupported marked links remain links. No uploads, API keys, extra gems, or database migrations
+are needed for this feature. Shared links' start times and playlist parameters are not retained.
+
+Hosts using Content Security Policy must add `https://www.youtube-nocookie.com` to their existing
+`frame-src` directive. Do not replace the rest of the host's policy or broadly allow arbitrary frames.
+Hosts with a custom engine layout should also render `bible270/shared/video_embeds` once, alongside the
+other shared scripts, to enable click-to-load playback.
 
 When `config.mention_notifications` is enabled, each reader can request email for every new reflection
 and reply, only replies to their reflections and mentions of them, or none. Broad notifications are sent
@@ -632,6 +657,7 @@ The engine's CSS rides in a partial its own layout renders. Using your layout? A
 ```bash
 bundle install
 bundle exec rake test
+node --test test/javascript/*.cjs
 bundle exec rubocop --cache false
 ```
 
@@ -642,6 +668,11 @@ records per-file runtimes in `tmp/parallel_runtime_test.log` to improve
 subsequent balancing. Set `PARALLEL_WORKERS` to tune the worker count. Use
 `bundle exec rake test:serial` when a serial coverage run is specifically needed; it writes to the same
 project-local `coverage/` directory.
+
+The video UI tests use Node.js 22+ and its built-in test runner, with no npm dependencies. They run the
+actual toolbar/player scripts against a small mocked DOM and also run as a separate CI job. They do
+not contact YouTube; live playback should be checked in a browser on the deployed host, especially
+when a host supplies a Content Security Policy.
 
 ### Get an email link for local testing
 

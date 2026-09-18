@@ -105,6 +105,44 @@
       update(editor, textarea, replacement, start, finish, 1, selected.length + 1);
     }
 
+    function youtubeVideoId(href) {
+      if (/[\s\x00-\x1f\x7f]/.test(href) || /%(?![0-9a-f]{2})/i.test(href)) return null;
+      let url;
+      try { url = new URL(href); } catch { return null; }
+      const hosts = ["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "www.youtu.be"];
+      if (!/^https?:\/\//i.test(href) || !hosts.includes(url.hostname) || url.username || url.password || url.port) return null;
+
+      let id;
+      if (url.hostname === "youtu.be" || url.hostname === "www.youtu.be") id = url.pathname.slice(1);
+      else if (url.pathname === "/watch") {
+        const ids = url.searchParams.getAll("v");
+        if (ids.length === 1) id = ids[0];
+      } else id = url.pathname.match(/^\/(?:shorts|live|embed)\/([A-Za-z0-9_-]{11})$/)?.[1];
+      return /^[A-Za-z0-9_-]{11}$/.test(id || "") ? id : null;
+    }
+
+    function addVideo(editor, textarea) {
+      const href = window.prompt("YouTube video address (https://…)");
+      if (!href) return;
+      const id = youtubeVideoId(href.trim());
+      if (!id) {
+        window.alert("Enter a valid YouTube video URL. Use Link for other video sites.");
+        return;
+      }
+
+      const name = window.prompt("Video name (optional — leave blank for View video)");
+      if (name === null) return;
+      // Entity-encode punctuation so a name stays text, not Markdown or HTML.
+      const label = (name.trim().replace(/\s+/g, " ") || "YouTube video")
+        .replace(/[!-/:-@\[-`{-~]/g, (character) => `&#${character.codePointAt(0)};`);
+      const start = textarea.selectionStart;
+      const finish = textarea.selectionEnd;
+      const marker = `[${label}](https://www.youtube.com/watch?v=${id} "bible270-video")`;
+      const before = start > 0 ? "\n\n" : "";
+      const replacement = `${before}${marker}\n\n`;
+      update(editor, textarea, replacement, start, finish, replacement.length, replacement.length);
+    }
+
     function requestPreview(editor, state) {
       const textarea = editor.querySelector("textarea[name='comment[body]']");
       const preview = editor.querySelector("[data-b270-preview-panel]");
@@ -181,6 +219,7 @@
         setFormattingOpen(editor, false, false);
         requestPreview(editor, state);
       } else {
+        window.Bible270Videos?.reset(previewPanel);
         setFormattingOpen(editor, openEditors.has(editorKey(editor)), false);
         const textarea = editor.querySelector("textarea[name='comment[body]']");
         resizeTextarea(textarea);
@@ -198,6 +237,8 @@
         wrap(editor, textarea, "*", "*", "italic text");
       } else if (action === "link") {
         addLink(editor, textarea);
+      } else if (action === "video") {
+        addVideo(editor, textarea);
       } else {
         prefixLines(editor, textarea, action);
       }

@@ -5,6 +5,7 @@ require 'kramdown'
 require 'nokogiri'
 require 'rails-html-sanitizer'
 require 'bible270/mentions'
+require 'bible270/youtube_video'
 
 module Bible270
   # Converts stored reflection source into a deliberately small, safe subset of
@@ -15,22 +16,28 @@ module Bible270
     MARKDOWN = 'markdown'
     FORMATS = [PLAIN, MARKDOWN].freeze
     ALLOWED_TAGS = %w[p br strong em blockquote ul ol li a].freeze
-    ALLOWED_ATTRIBUTES = %w[href rel].freeze
+    ALLOWED_ATTRIBUTES = %w[href rel title].freeze
+    VIDEO_MARKER = 'bible270-video'
+    VIDEO_PRIVACY = 'Loads player and shares data with YouTube'
     LINK_REL = 'nofollow ugc noopener'
     URL_PATTERN = %r{https?://[^\s<>"]*[^\s<>".,;:!?)\]\}]}i
-    SKIP_MENTIONS_IN = %w[a code pre].freeze
+    SKIP_MENTIONS_IN = %w[a button code pre].freeze
 
   module_function
 
-    def html(body, format: PLAIN, &mention_path)
+    def html(body, format: PLAIN, embed_videos: false, &mention_path)
       source = body.to_s
       rendered = format == MARKDOWN ? markdown_html(source) : plain_html(source)
       fragment = fragment_for(sanitize(rendered))
       if format == MARKDOWN
+        replace_video_markers(fragment) if embed_videos
         normalize_lists(fragment)
         hard_wrap(fragment)
         link_urls(fragment)
       end
+      fragment.css('[title]').each { |node| node.remove_attribute('title') }
+      fragment.css('.b270-video button').each { |node| node['title'] = VIDEO_PRIVACY }
+      fragment.css('.b270-video a').each { |node| node['title'] = 'Opens YouTube in a new tab.' }
       decorate_links(fragment)
       link_mentions(fragment, &mention_path) if mention_path
       fragment.to_html
@@ -134,6 +141,43 @@ module Bible270
       end
     end
     private_class_method :link_urls
+
+    def replace_video_markers(fragment)
+      fragment.css('p').each do |paragraph|
+        children = paragraph.children.reject { |node| node.text? && node.text.strip.empty? }
+        next unless children.one?
+
+        link = children.first
+        next unless link.name == 'a' && link['title'] == VIDEO_MARKER
+
+        id = YouTubeVideo.id_from_url(link['href'].to_s)
+        paragraph.replace(video_card(id, fragment.document, name: link.text.strip)) if id
+      end
+    end
+    private_class_method :replace_video_markers
+
+    # These elements are generated only after sanitization; they are deliberately
+    # not part of the allowlist for user-supplied HTML.
+    def video_card(id, document, name:)
+      card = Nokogiri::XML::Node.new('div', document)
+      card['class'] = 'b270-video'
+      card['data-b270-video-id'] = id
+
+      button = Nokogiri::XML::Node.new('button', document)
+      button['type'] = 'button'
+      button['data-b270-video-load'] = ''
+      button['hidden'] = 'hidden'
+      button.content = name.empty? || name == 'YouTube video' ? 'View video' : "View video ‘#{name}’"
+      card.add_child(button)
+
+      link = Nokogiri::XML::Node.new('a', document)
+      link['href'] = "https://www.youtube.com/watch?v=#{id}"
+      link['target'] = '_blank'
+      link.content = 'Open on YouTube'
+      card.add_child(link)
+      card
+    end
+    private_class_method :video_card
 
     def decorate_links(fragment)
       fragment.css('a:not([href])').each do |link|
