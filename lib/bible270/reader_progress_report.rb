@@ -3,18 +3,18 @@
 module Bible270
   # Builds the plain-text reader progress table used by administrative tasks.
   class ReaderProgressReport
-    HEADERS = ['Name', 'Days Read', 'Status'].freeze
+    HEADERS = ['Name', 'Days Read', 'Status', 'Last Activity'].freeze
     SORTS = %w[
       first_name last_name most_completed least_completed most_recent_activity least_recent_activity
     ].freeze
     DEFAULT_SORT = 'most_completed'
-    Row = Struct.new(:name, :days_read, :status, keyword_init: true)
+    Row = Struct.new(:name, :days_read, :status, :last_activity, keyword_init: true)
 
-    def initialize(readers: Reader.all, completed_days: Reader.completed_days_by_id, recent_activities: {},
+    def initialize(readers: Reader.all, completed_days: Reader.completed_days_by_id, recent_activities: nil,
                    sort: DEFAULT_SORT)
-      @readers = readers
+      @readers = readers.to_a
       @completed_days = completed_days
-      @recent_activities = recent_activities
+      @recent_activities = recent_activities || Checkoff.recent_activity_by_reader(@readers.map(&:id))
       @sort = SORTS.include?(sort.to_s) ? sort.to_s : DEFAULT_SORT
     end
 
@@ -25,18 +25,23 @@ module Bible270
     def rows
       @rows ||= sorted_readers.map do |reader|
         days_read = completed_days.fetch(reader.id, 0)
-        Row.new(name: reader.display_name, days_read: days_read, status: status(reader, days_read))
+        Row.new(
+          name: reader.display_name,
+          days_read: days_read,
+          status: status(reader, days_read),
+          last_activity: last_activity_date(reader)
+        )
       end
     end
 
     def empty? = rows.empty?
 
     def to_table
-      values = rows.map { |row| [row.name, row.days_read.to_s, row.status] }
+      values = rows.map { |row| [row.name, row.days_read.to_s, row.status, row.last_activity] }
       widths = HEADERS.each_index.map do |index|
         ([HEADERS[index].length] + values.map { |value| value[index].length }).max
       end
-      format = "%-#{widths[0]}s  %#{widths[1]}s  %-#{widths[2]}s"
+      format = "%-#{widths[0]}s  %#{widths[1]}s  %-#{widths[2]}s  %-#{widths[3]}s"
       lines = [format % HEADERS, format % widths.map { |width| '-' * width }].map(&:rstrip)
       lines.concat(values.map { |value| (format % value).rstrip })
       lines.join("\n")
@@ -68,6 +73,11 @@ module Bible270
       activity = recent_activities[reader.id]
       timestamp = activity&.occurred_at&.to_f
       [activity.nil? ? 1 : 0, descending && timestamp ? -timestamp : timestamp.to_f, reader.sort_name, reader.id]
+    end
+
+    def last_activity_date(reader)
+      occurred_at = recent_activities[reader.id]&.occurred_at
+      occurred_at ? Bible270.local_time(occurred_at).strftime('%b %-d, %Y') : '—'
     end
 
     def status(reader, days_read)

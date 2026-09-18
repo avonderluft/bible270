@@ -12,6 +12,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 ### Changed
 
 - link reader email addresses directly to email composition and link recent-activity day labels to their Day pages with passage tooltips in Admin
+- include each reader's last reading-activity date in the `bible270:readers:list` and Admin Reader Stats reports
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.6.2...main)**
 

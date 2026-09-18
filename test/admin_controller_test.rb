@@ -175,7 +175,11 @@ if RAILS_LOADED
         assert_select 'form[method="dialog"] button[type="submit"]', text: 'Close'
       end
       expected = Bible270::ReaderProgressReport.new(sort: 'least_completed').to_table
-      assert_equal expected, css_select('#b270-reader-stats-dialog pre').first.text
+      stats = css_select('#b270-reader-stats-dialog pre').first.text
+      assert_equal expected, stats
+      assert_includes stats, 'Last Activity'
+      last_activity = Bible270.local_time(@reader.checkoffs.maximum(:created_at)).strftime('%b %-d, %Y')
+      assert_includes stats, last_activity
       assert_match(%r{Bible270ReaderStats.*showModal.*target\.close.*turbo:load}m, response.body)
     end
 

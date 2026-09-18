@@ -30,15 +30,26 @@ if RAILS_LOADED
 
     def test_list_prints_aligned_columns_in_descending_days_read_order
       output, = capture_io { task.invoke }
+      last_activity = Bible270.today.strftime('%b %-d, %Y')
 
       assert_equal <<~TABLE, output
-        Name             Days Read  Status
-        ---------------  ---------  -------------
-        Ahead Reader            12  2 days ahead
-        On Track Reader         10  on track
-        Undated Reader           9  undated
-        Behind Reader            7  3 days behind
+        Name             Days Read  Status         Last Activity
+        ---------------  ---------  -------------  -------------
+        Ahead Reader            12  2 days ahead   #{last_activity}
+        On Track Reader         10  on track       #{last_activity}
+        Undated Reader           9  undated        #{last_activity}
+        Behind Reader            7  3 days behind  #{last_activity}
       TABLE
+    end
+
+    def test_list_marks_readers_without_activity
+      Bible270::Checkoff.delete_all
+      task.reenable
+
+      output, = capture_io { task.invoke }
+      readers_without_activity = output.lines.count { |line| line.end_with?("—\n") }
+
+      assert_equal 4, readers_without_activity
     end
 
     def test_list_explains_an_empty_environment
