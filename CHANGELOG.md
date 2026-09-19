@@ -4,19 +4,60 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
-### Added
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.8.1...main)**
 
-- add a YouTube Video formatting button for reflections and replies, with optional video names, validated click-to-load players in previews and web views, privacy tooltips, new-tab YouTube links, no autoplay or remote thumbnails, and ordinary video links in notification emails
-- show Blue Letter Bible Scripture popups when readers hover over references in rendered reflections, replies, and Markdown previews; popups follow each reader's selected translation, handle original-language choices by testament, and rescan content added by Turbo without forcing a page reload
-- let administrators sort the reader list and Reader Stats report by most or least recent reading activity, while keeping readers with no activity at the end
+## [1.8.1] - 2026-09-19
 
 ### Changed
 
-- shorten the Community introduction and link signed-in readers to today's Day, make recent reflections editable from My Progress, expand the 270-day grids by default on reader and Profile pages, and move Admin completions below translation settings
-- link reader email addresses directly to email composition and link recent-activity day labels to their Day pages with passage tooltips in Admin
-- include each reader's last reading-activity date in the `bible270:readers:list` and Admin Reader Stats reports
+- add a Today link and shorter introduction to Community
+- allow readers to edit recent reflections from My Progress
+- open the day grid by default on reader and Profile pages
+- move Admin completions below translation settings
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.6.2...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.8.0...v1.8.1)**
+
+## [1.8.0] - 2026-09-18
+
+### Added
+
+- let readers add named YouTube videos to reflections and replies with on-demand playback
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.7.3...v1.8.0)**
+
+## [1.7.3] - 2026-09-17
+
+### Changed
+
+- show each reader's last activity date in Reader Stats and `bible270:readers:list`
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.7.2...v1.7.3)**
+
+## [1.7.2] - 2026-09-17
+
+### Changed
+
+- link reader emails and recent-activity days in Admin
+- show each activity day's readings on hover
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.7.1...v1.7.2)**
+
+## [1.7.1] - 2026-09-17
+
+### Added
+
+- sort Admin readers and Reader Stats by most or least recent activity
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.7.0...v1.7.1)**
+
+## [1.7.0] - 2026-09-17
+
+### Added
+
+- show each reader's latest reading activity in Admin
+- show Blue Letter Bible Scripture popups in reflections and previews using each reader's selected translation
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.6.2...v1.7.0)**
 
 ## [1.6.2] - 2026-09-14
 
@@ -737,7 +778,13 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.6.2...HEAD
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.8.1...HEAD
+[1.8.1]: https://github.com/avonderluft/bible270/releases/tag/v1.8.1
+[1.8.0]: https://github.com/avonderluft/bible270/releases/tag/v1.8.0
+[1.7.3]: https://github.com/avonderluft/bible270/releases/tag/v1.7.3
+[1.7.2]: https://github.com/avonderluft/bible270/releases/tag/v1.7.2
+[1.7.1]: https://github.com/avonderluft/bible270/releases/tag/v1.7.1
+[1.7.0]: https://github.com/avonderluft/bible270/releases/tag/v1.7.0
 [1.6.2]: https://github.com/avonderluft/bible270/releases/tag/v1.6.2
 [1.6.1]: https://github.com/avonderluft/bible270/releases/tag/v1.6.1
 [1.6.0]: https://github.com/avonderluft/bible270/releases/tag/v1.6.0
