@@ -1,7 +1,7 @@
 # Bible 270
 [![Rails CI](https://github.com/avonderluft/bible270/actions/workflows/railsci.yml/badge.svg)](https://github.com/avonderluft/comfortable-media-surfer/actions/workflows/rubyonrails.yml) [![Test Coverage](https://img.shields.io/coverallsCoverage/github/avonderluft/bible270?branch=main&cacheSeconds=300)](https://coveralls.io/github/avonderluft/bible270?branch=main) [![Gem Version](https://img.shields.io/gem/v/bible270)](https://rubygems.org/gems/bible270) [![Downloads](https://img.shields.io/gem/dt/bible270)](https://rubygems.org/gems/bible270) [![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/avonderluft/bible270?label=last%20release&color=seagreen)](https://github.com/avonderluft/bible270/releases)
 
-A mountable **Rails engine** that drops a 270-day (9 month) interactive Bible reading plan into any Rails app, built with [ComfortableMediaSurfer](https://github.com/shakacode/comfortable-media-surfer) CMS in mind. Readers tick off each day's readings, post reflections, and see how everyone else is getting on, much like the social plans on Bible.com.
+A mountable **Rails engine** that drops a 270-day (9 month) interactive Bible reading plan into any Rails app, built with [ComfyMiddleSeat](https://github.com/avonderluft/comfy-middle-seat) CMS in mind. Readers tick off each day's readings, post reflections, and see how everyone else is getting on, much like the social plans on Bible.com.
 
 Initially created for use by students and faculty of [Kingdom Movement School of Ministry](https://www.kmsm.life/), to read through all of Scripture together during the school year. Thus it is potentially useful for any Bible School, Seminary, or Discipleship school working on a 9 month schedule.
 
