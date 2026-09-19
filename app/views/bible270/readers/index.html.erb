@@ -1,7 +1,7 @@
 <% content_for :title, "Community — #{Bible270.config.app_name}" %>
 <p class="b270-eyebrow">Community</p>
 <h1>Reading together</h1>
-<p class="lede">A community walking through the Word, sharing reflections and encouraging one another.</p>
+<p class="lede">Walking through the Word, sharing reflections and encouraging one another.<% if @today_day %> <%= link_to "Go to today (Day #{@today_day})", day_path(@today_day), class: "b270-todaylink" %><% end %></p>
 
 <% if @readers.any? %>
   <div class="b270-list">

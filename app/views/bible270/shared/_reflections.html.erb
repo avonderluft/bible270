@@ -1,4 +1,4 @@
-<%# locals: (comments:, title: "Their reflections", moderate: false, empty_text: "None yet.") %>
+<%# locals: (comments:, title: "Their reflections", moderate: false, editable: false, empty_text: "None yet.") %>
 <%#
   A reader's reflections. Three views showed near-identical markup: the admin
   page, a reader's public page, and the progress page, differing only in whether
@@ -21,6 +21,10 @@
           <%= link_to "Day #{comment.day}", day_path(comment.day) %>
           · <%= b270_date(comment.created_at) %>
           <% if moderate && comment.hidden? %><span class="b270-badge">Hidden</span><% end %>
+          <% if editable && b270_can_edit?(comment) %>
+            <%= link_to "edit", day_path(comment.day, edit: comment.id, anchor: "comment-#{comment.id}"),
+                  class: "b270-cedit" %>
+          <% end %>
         </div>
 
         <div class="b270-cbody"><%= b270_comment_body(comment) %></div>

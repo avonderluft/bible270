@@ -12,6 +12,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ### Changed
 
+- shorten the Community introduction and link signed-in readers to today's Day, make recent reflections editable from My Progress, expand the 270-day grids by default on reader and Profile pages, and move Admin completions below translation settings
 - link reader email addresses directly to email composition and link recent-activity day labels to their Day pages with passage tooltips in Admin
 - include each reader's last reading-activity date in the `bible270:readers:list` and Admin Reader Stats reports
 

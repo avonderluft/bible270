@@ -13,7 +13,7 @@
 <% if @reader %>
   <div class="b270-panel">
     <%= render "bible270/shared/reflections", comments: @recent_comments,
-          title: "Your recent reflections",
+          title: "Your recent reflections", editable: true,
           empty_text: "You have not written any reflections yet." %>
   </div>
 <% end %>

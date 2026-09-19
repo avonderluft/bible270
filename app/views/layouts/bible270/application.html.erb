@@ -20,7 +20,7 @@
     <% if flash[:notice] %><div class="b270-flash notice"><%= flash[:notice] %></div><% end %>
     <%= yield %>
     <%# Pages with their own day grid opt out with content_for :hide_day_index %>
-    <%= render 'bible270/shared/day_index' unless content_for?(:hide_day_index) %>
+    <%= render 'bible270/shared/day_index', expanded: content_for?(:expand_day_index) unless content_for?(:hide_day_index) %>
     <%= b270_footer %>
   </div>
   <%= render "bible270/shared/scripture_popups" %>

@@ -113,27 +113,6 @@
      numbers and are not touched.</p>
 </div>
 
-<div class="b270-panel">
-  <h2 class="b270-subhead">Completions</h2>
-  <%= form_with url: admin_reader_through_path(@reader), method: :patch, class: "b270-startform" do %>
-    <label class="b270-field">
-      <span>Mark complete through day (0 clears everything)</span>
-      <%= number_field_tag :day, @days_completed, min: 0, max: Bible270::Plan::DAYS %>
-    </label>
-    <%= submit_tag 'Apply', class: 'b270-btn' %>
-  <% end %>
-  <p class="b270-hint">This also clears anything after that day, so it sets their progress exactly.</p>
-
-  <div class="b270-grid" style="margin-top:16px">
-    <% (1..Bible270::Plan::DAYS).each do |d| %>
-      <%= button_to d, admin_reader_day_path(@reader, d), method: :post,
-            class: b270_day_cell_classes(d, reader: @reader),
-            title: b270_day_readings(d),
-            form: { style: 'display:contents', id: "day-#{d}" } %>
-    <% end %>
-  </div>
-  <p class="b270-hint">Click a day to toggle it complete.</p>
-</div>
 
 <div class="b270-panel">
   <%= render "bible270/shared/reflections", comments: @comments, moderate: true %>
@@ -160,6 +139,28 @@
     <%= render "bible270/shared/passage_source", reader: @reader %>
     <%= submit_tag "Save", class: "b270-btn" %>
   <% end %>
+</div>
+
+<div class="b270-panel">
+  <h2 class="b270-subhead">Completions</h2>
+  <%= form_with url: admin_reader_through_path(@reader), method: :patch, class: "b270-startform" do %>
+    <label class="b270-field">
+      <span>Mark complete through day (0 clears everything)</span>
+      <%= number_field_tag :day, @days_completed, min: 0, max: Bible270::Plan::DAYS %>
+    </label>
+    <%= submit_tag 'Apply', class: 'b270-btn' %>
+  <% end %>
+  <p class="b270-hint">This also clears anything after that day, so it sets their progress exactly.</p>
+
+  <div class="b270-grid" style="margin-top:16px">
+    <% (1..Bible270::Plan::DAYS).each do |d| %>
+      <%= button_to d, admin_reader_day_path(@reader, d), method: :post,
+            class: b270_day_cell_classes(d, reader: @reader),
+            title: b270_day_readings(d),
+            form: { style: 'display:contents', id: "day-#{d}" } %>
+    <% end %>
+  </div>
+  <p class="b270-hint">Click a day to toggle it complete.</p>
 </div>
 
 <div class="b270-panel">

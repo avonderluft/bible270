@@ -6,6 +6,7 @@ module Bible270
       # Community is a directory of fellow readers, not a leaderboard. Keep the
       # order predictable without implying that progress determines standing.
       @readers = Reader.all.to_a.sort_by(&:sort_name)
+      @today_day = current_reader&.today_day
       @show_admin_progress = Bible270.config.admin?(current_reader)
       @days_completed = Reader.completed_days_by_id if @show_admin_progress
     end

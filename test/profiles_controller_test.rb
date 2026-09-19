@@ -62,6 +62,16 @@ if RAILS_LOADED
       assert_select "a[href='#{mount}/progress']", text: '← Back to your progress'
     end
 
+    def test_the_profile_page_expands_the_day_index
+      sign_in_as(@reader)
+
+      get "#{mount}/profile"
+
+      assert_select 'details.b270-index[open]' do
+        assert_select 'summary', text: 'View all 270 days'
+      end
+    end
+
     def test_original_languages_offer_blue_letter_bible_and_bible_com
       @reader.update_bible_version('HEB/GRK')
       sign_in_as(@reader)

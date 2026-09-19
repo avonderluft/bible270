@@ -1,8 +1,8 @@
-<%# locals: (reader: nil) %>
+<%# locals: (reader: nil, expanded: false) %>
 <% if Bible270::Plan::DAYS.positive? %>
   <% grid_reader = reader || current_reader %>
   <% today = signed_in? && grid_reader == current_reader ? current_reader.today_day : nil %>
-  <details class="b270-index">
+  <details class="b270-index"<%= " open" if expanded %>>
     <summary>View all <%= Bible270::Plan::DAYS %> days</summary>
     <div class="b270-grid">
       <% (1..Bible270::Plan::DAYS).each do |d| %>

@@ -79,10 +79,14 @@ if RAILS_LOADED
       end
 
       refute calculated
+      assert_select 'p.lede', text: 'Walking through the Word, sharing reflections and encouraging one another.' do
+        assert_select 'a', text: %r{Go to today}, count: 0
+      end
       assert_select '.b270-admin-progress', count: 0
     end
 
-    def test_community_does_not_calculate_or_show_progress_for_an_ordinary_reader
+    def test_community_does_not_calculate_progress_and_links_an_ordinary_reader_to_today
+      Bible270::Setting.set_run_start_date!(Bible270.today - 4)
       sign_in_as(@reader)
       calculated = false
       calculation = -> do
@@ -94,6 +98,9 @@ if RAILS_LOADED
       end
 
       refute calculated
+      assert_select 'p.lede', text: 'Walking through the Word, sharing reflections and encouraging one another. Go to today (Day 5)' do
+        assert_select "a.b270-todaylink[href='#{mount}/day/5']", text: 'Go to today (Day 5)'
+      end
       assert_select '.b270-admin-progress', count: 0
     end
 
@@ -248,13 +255,14 @@ if RAILS_LOADED
       assert_match(%r{Start reading — Day 1}, response.body)
     end
 
-    def test_the_progress_page_lists_recent_reflections
-      @reader.comments.create!(day: 2, body: 'A note to myself')
+    def test_the_progress_page_lists_recent_reflections_with_day_edit_links
+      comment = @reader.comments.create!(day: 2, body: 'A note to myself')
       sign_in_as(@reader)
 
       get "#{mount}/progress"
 
       assert_match(%r{A note to myself}, response.body)
+      assert_select "a.b270-cedit[href='#{mount}/day/2?edit=#{comment.id}#comment-#{comment.id}']", text: 'edit'
     end
 
     def test_the_progress_page_uses_the_standard_collapsed_day_index
@@ -265,6 +273,7 @@ if RAILS_LOADED
         assert_select 'summary', text: 'View all 270 days'
         assert_select '.b270-grid', count: 1
       end
+      assert_select 'details.b270-index[open]', count: 0
       refute_match(%r{Every day at a glance|How others are doing|Your profile}, response.body)
     end
 
@@ -275,7 +284,7 @@ if RAILS_LOADED
       assert_match(%r{R Reader}, response.body)
     end
 
-    def test_a_reader_page_uses_the_standard_collapsed_day_index_for_that_reader
+    def test_a_reader_page_uses_the_expanded_day_index_for_that_reader
       @reader.mark_day_complete!(1)
 
       get "#{mount}/readers/#{@reader.id}"
@@ -284,7 +293,7 @@ if RAILS_LOADED
         assert_select 'summary', text: 'View all 270 days'
         assert_select 'a.b270-cell.complete', text: '1', count: 1
       end
-      assert_select 'details.b270-index[open]', count: 0
+      assert_select 'details.b270-index[open]', count: 1
     end
 
     def test_an_unknown_reader_redirects_rather_than_erroring

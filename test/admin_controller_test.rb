@@ -260,6 +260,16 @@ if RAILS_LOADED
       assert_match(%r{R Reader}, response.body)
     end
 
+    def test_reader_detail_panels_place_completions_between_translation_and_remove
+      sign_in_as_admin
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      headings = css_select('.b270-panel > h2').map { |heading| heading.text.strip }
+      assert_equal 1, headings.count('Completions')
+      assert_operator headings.index('Which translation they read'), :<, headings.index('Completions')
+      assert_operator headings.index('Completions'), :<, headings.index('Remove')
+    end
+
     def test_a_stale_reader_id_redirects_with_an_alert_and_halts_the_action
       @reader.mark_day_complete!(1)
       original_checkoffs = @reader.checkoffs.count
