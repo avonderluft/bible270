@@ -4,6 +4,10 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Changed
+
+- keep Proverbs 7 whole and divide Proverbs 10 and 16 into four readings
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.8.1...main)**
 
 ## [1.8.1] - 2026-09-19

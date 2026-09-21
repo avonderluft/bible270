@@ -140,6 +140,21 @@ class PlanTest < Minitest::Test
     end
   end
 
+  def test_proverbs_7_is_whole_and_10_and_16_have_the_pinned_splits
+    segments = ->(chapter) { P.pp_readings.select { |segment| segment[0..1] == ['Proverbs', chapter] } }
+
+    assert_equal [['Proverbs', 7]], segments.call(7)
+    assert_equal [
+      ['Proverbs', 10, 1, 8], ['Proverbs', 10, 9, 16],
+      ['Proverbs', 10, 17, 24], ['Proverbs', 10, 25, 32]
+    ], segments.call(10)
+    assert_equal [
+      ['Proverbs', 16, 1, 9], ['Proverbs', 16, 10, 17],
+      ['Proverbs', 16, 18, 25], ['Proverbs', 16, 26, 33]
+    ], segments.call(16)
+    assert_equal 'Proverbs 7', P.readings_for(52)['pp']
+  end
+
   def test_psalms_of_25_verses_or_fewer_are_never_divided
     P.divided_psalms.each_key do |chapter|
       verses = Bible270::Versification.verses('Psalm', chapter)

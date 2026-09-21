@@ -442,9 +442,11 @@ module Bible270
       ['Proverbs', 4] => [9, 19],      # a father's teaching | the two paths | guard the heart
       ['Proverbs', 5] => [14],         # the adulteress | your own cistern
       ['Proverbs', 6] => [19],         # surety, sluggard, seven abominations | adultery
-      ['Proverbs', 7] => [5, 23],      # keep my commands | the seduction | her house
+      ['Proverbs', 7] => [],           # the seduction warning stays whole
       ['Proverbs', 8] => [11, 21],     # Wisdom calls | her worth | Wisdom at creation
       ['Proverbs', 9] => [6, 12],      # Wisdom's feast | scoffer and wise | Folly's feast
+      ['Proverbs', 10] => [8, 16, 24], # four groups of independent sayings
+      ['Proverbs', 16] => [9, 17, 25], # four near-even groups of independent sayings
       ['Proverbs', 30] => [9, 17],     # Agur's confession | four sayings | the numbered proverbs
       ['Proverbs', 22] => [16],        # sayings | words of the wise
       ['Proverbs', 23] => [8, 21, 28],
