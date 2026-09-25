@@ -90,8 +90,9 @@
             <% else %>
               <%= reader.provider %>
             <% end %>
-            · <%= @days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days
             <% if reader.dated? %>· started <%= reader.effective_start_date.strftime('%b %-d, %Y') %><% end %>
+            · <%= @days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days
+            · <%= @reader_report.status_for(reader) %>
           </div>
           <div class="sub b270-reader-activity">
             <% if (activity = @recent_reader_activities[reader.id]) %>

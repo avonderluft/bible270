@@ -97,6 +97,48 @@ if RAILS_LOADED
       assert_select "a[href='mailto:#{@reader.email}']", text: @reader.email
     end
 
+    def test_the_reader_list_shows_start_date_then_days_completed_then_status
+      Bible270.config.start_date = Bible270.today - 9
+      Bible270.config.allow_reader_start_date = false
+      sign_in_as_admin
+      start_date = Bible270.config.start_date.strftime('%b %-d, %Y')
+
+      { 0 => '10 days behind', 9 => '1 day behind', 10 => 'on track',
+        11 => '1 day ahead', 12 => '2 days ahead' }.each do |days, status|
+        @reader.mark_through!(days) if days.positive?
+
+        get "#{mount}/admin"
+
+        details = css_select(".b270-list a[href='mailto:#{@reader.email}']").first.parent.text.squish
+        assert_equal "#{@reader.email} · started #{start_date} · #{days}/270 days · #{status}", details
+      end
+    end
+
+    def test_the_reader_list_status_uses_the_readers_personal_start_date
+      Bible270.config.start_date = Bible270.today - 9
+      Bible270.config.allow_reader_start_date = true
+      @reader.update!(started_on: Bible270.today - 1)
+      @reader.mark_through!(3)
+      sign_in_as_admin
+
+      get "#{mount}/admin"
+
+      start_date = @reader.started_on.strftime('%b %-d, %Y')
+      details = css_select(".b270-list a[href='mailto:#{@reader.email}']").first.parent.text.squish
+      assert_equal "#{@reader.email} · started #{start_date} · 3/270 days · 1 day ahead", details
+    end
+
+    def test_the_reader_list_shows_undated_without_a_start_date
+      Bible270.config.start_date = nil
+      Bible270.config.allow_reader_start_date = false
+      sign_in_as_admin
+
+      get "#{mount}/admin"
+
+      details = css_select(".b270-list a[href='mailto:#{@reader.email}']").first.parent.text.squish
+      assert_equal "#{@reader.email} · 0/270 days · undated", details
+    end
+
     def test_the_reader_list_shows_each_readers_latest_reading_activity
       completed_at = Time.utc(2026, 9, 15, 18)
       @reader.mark_day_complete!(7)

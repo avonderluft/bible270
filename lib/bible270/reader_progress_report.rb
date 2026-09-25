@@ -34,6 +34,10 @@ module Bible270
       end
     end
 
+    def status_for(reader)
+      status(reader, completed_days.fetch(reader.id, 0))
+    end
+
     def empty? = rows.empty?
 
     def to_table
