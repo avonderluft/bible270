@@ -265,6 +265,100 @@ if RAILS_LOADED
       assert_select "a.b270-cedit[href='#{mount}/day/2?edit=#{comment.id}#comment-#{comment.id}']", text: 'edit'
     end
 
+    def test_reader_and_progress_pages_show_likes_and_visible_replies_in_order
+      reflection = @reader.comments.create!(day: 2, body: 'A shared thought')
+      first = @other.comments.create!(day: 2, body: 'First answer', parent: reflection,
+                                      created_at: 2.days.ago)
+      second = @other.comments.create!(day: 2, body: 'Second answer', parent: reflection,
+                                       created_at: 1.day.ago)
+      hidden = @other.comments.create!(day: 2, body: 'Hidden answer', parent: reflection, approved: false)
+      reflection.likes.create!(reader: @other)
+      first.likes.create!(reader: @reader)
+      sign_in_as(@reader)
+
+      ["#{mount}/progress", "#{mount}/readers/#{@reader.id}"].each do |path|
+        get path
+
+        assert_response :success
+        assert_select "#likes-#{reflection.id} .b270-likecount", text: '1'
+        assert_select "#likers-#{reflection.id} .b270-liker", text: @other.display_name
+        assert_select "#replies-#{reflection.id}" do
+          assert_select '.b270-reply', count: 2
+          assert_select "#comment-#{first.id} .b270-cmeta", text: %r{Other Reader}
+          assert_select "#likes-#{first.id} .b270-likecount", text: '1'
+          assert_select "#comment-#{hidden.id}", count: 0
+        end
+        replies = css_select("#replies-#{reflection.id} > .b270-reply").map { |node| node['id'] }
+        assert_equal ["comment-#{first.id}", "comment-#{second.id}"], replies
+        assert_select "form[action='#{mount}/comments/#{reflection.id}/like'][data-turbo-stream='true']"
+        assert_select '#b270-interaction-status', count: 1
+        assert_includes response.body, 'window.Bible270InteractionUI'
+      end
+    end
+
+    def test_self_replies_appear_only_once_and_other_contributions_are_preserved
+      reflection = @reader.comments.create!(day: 2, body: 'My thought')
+      own_reply = @reader.comments.create!(day: 2, body: 'My follow-up', parent: reflection)
+      other_reflection = @other.comments.create!(day: 3, body: 'Someone else starts')
+      contribution = @reader.comments.create!(day: 3, body: 'My answer elsewhere', parent: other_reflection)
+      sign_in_as(@reader)
+
+      ["#{mount}/progress", "#{mount}/readers/#{@reader.id}"].each do |path|
+        get path
+
+        assert_select "#comment-#{own_reply.id}", count: 1
+        assert_select "#replies-#{reflection.id} #comment-#{own_reply.id}", count: 1
+        assert_select "#likes-#{own_reply.id}", count: 1
+        assert_select "#comment-#{contribution.id}", count: 1
+        assert_select "#likes-#{contribution.id}", count: 1
+      end
+    end
+
+    def test_public_reader_likes_are_visible_but_not_mutable_to_visitors
+      reflection = @reader.comments.create!(day: 2, body: 'A thought to appreciate')
+      reflection.likes.create!(reader: @other)
+
+      get "#{mount}/readers/#{@reader.id}"
+
+      assert_select "#likes-#{reflection.id} .b270-likecount", text: '1'
+      assert_select "#likes-#{reflection.id} form", count: 0
+      assert_select '.b270-cedit', count: 0
+    end
+
+    def test_admins_can_edit_reader_reflections_and_replies_but_ordinary_readers_cannot
+      reflection = @reader.comments.create!(day: 2, body: 'Admin may edit this')
+      reply = @other.comments.create!(day: 2, body: 'Admin may edit this reply', parent: reflection)
+      sign_in_as(@reader)
+
+      get "#{mount}/readers/#{@reader.id}"
+      assert_select '.b270-cedit', count: 0
+
+      Bible270.config.admin_emails = [@other.email]
+      sign_in_as(@other)
+      get "#{mount}/readers/#{@reader.id}"
+
+      [reflection, reply].each do |comment|
+        assert_select "#comment-#{comment.id} > div > .b270-cmeta a.b270-cedit" \
+                      "[href='#{mount}/day/2?edit=#{comment.id}#comment-#{comment.id}']", text: 'edit'
+      end
+      assert_select 'form[action*="/admin/comments/"]', count: 0
+    end
+
+    def test_reflection_likes_on_progress_can_be_updated_with_turbo
+      reflection = @reader.comments.create!(day: 2, body: 'A thought')
+      sign_in_as(@reader)
+      get "#{mount}/progress"
+
+      assert_select "#likes-#{reflection.id}"
+      post "#{mount}/comments/#{reflection.id}/like", params: { liked: '1' },
+                                                      headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+
+      assert_response :success
+      assert_select "turbo-stream[action='replace'][target='likes-#{reflection.id}']" do
+        assert_select '.b270-likecount', text: '1'
+      end
+    end
+
     def test_the_progress_page_uses_the_standard_collapsed_day_index
       sign_in_as(@reader)
       get "#{mount}/progress"

@@ -16,8 +16,11 @@
 </div>
 
 <div class="b270-panel">
+  <%= render "bible270/shared/interaction_status" %>
   <%= render "bible270/shared/reflections", comments: @recent_comments,
-        title: "Their reflections", empty_text: "No reflections yet." %>
+        title: "Their reflections", empty_text: "No reflections yet.",
+        conversations: true, editable: Bible270.config.admin?(current_reader) %>
 </div>
 
 <%= render "bible270/shared/day_index", reader: @reader, expanded: true %>
+<%= render "bible270/shared/interaction_ui" %>

@@ -115,7 +115,8 @@
 
 
 <div class="b270-panel">
-  <%= render "bible270/shared/reflections", comments: @comments, moderate: true %>
+  <%= render "bible270/shared/interaction_status" %>
+  <%= render "bible270/shared/reflections", comments: @comments, moderate: true, editable: true, actions: true %>
 </div>
 
 <div class="b270-panel">
@@ -172,3 +173,4 @@
 </div>
 
 <p style="margin-top:18px"><%= link_to '← All readers', admin_path %></p>
+<%= render "bible270/shared/interaction_ui" %>

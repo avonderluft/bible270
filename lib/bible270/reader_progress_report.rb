@@ -28,14 +28,14 @@ module Bible270
         Row.new(
           name: reader.display_name,
           days_read: days_read,
-          status: status(reader, days_read),
+          status: reader.progress_status(completed_days: days_read),
           last_activity: last_activity_date(reader)
         )
       end
     end
 
     def status_for(reader)
-      status(reader, completed_days.fetch(reader.id, 0))
+      reader.progress_status(completed_days: completed_days.fetch(reader.id, 0))
     end
 
     def empty? = rows.empty?
@@ -82,17 +82,6 @@ module Bible270
     def last_activity_date(reader)
       occurred_at = recent_activities[reader.id]&.occurred_at
       occurred_at ? Bible270.local_time(occurred_at).strftime('%b %-d, %Y') : '—'
-    end
-
-    def status(reader, days_read)
-      calendar_day = reader.calendar_day
-      return 'undated' unless calendar_day
-
-      difference = days_read - calendar_day
-      return 'on track' if difference.zero?
-
-      amount = difference.abs
-      "#{amount} #{amount == 1 ? 'day' : 'days'} #{difference.positive? ? 'ahead' : 'behind'}"
     end
   end
 end

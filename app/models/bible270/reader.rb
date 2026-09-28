@@ -643,6 +643,17 @@ module Bible270
       Plan.day_for(Bible270.today, effective_start_date)
     end
 
+    def progress_status(completed_days: days_completed)
+      today = calendar_day
+      return 'undated' unless today
+
+      difference = completed_days - today
+      return 'on track' if difference.zero?
+
+      amount = difference.abs
+      "#{amount} #{amount == 1 ? 'day' : 'days'} #{difference.positive? ? 'ahead' : 'behind'}"
+    end
+
     # Raw, unclamped — lets callers distinguish "not started yet" / "finished".
     # The plan day that today actually is, or nil when today falls outside the
     # plan's window. calendar_day clamps, so before the start date it reports day

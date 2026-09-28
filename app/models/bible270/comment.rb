@@ -150,7 +150,14 @@ module Bible270
     def edited? = updated_at - created_at > 1
 
     # Visible replies, oldest first: a conversation reads forwards.
-    def visible_replies = replies.approved.order(created_at: :asc)
+    def visible_replies
+      if replies.loaded?
+        replies.select(&:approved?).sort_by { |reply| [reply.created_at, reply.id] }
+      else
+        replies.approved.order(created_at: :asc, id: :asc)
+      end
+    end
+
     def moderated? = moderated_at.present?
 
   private

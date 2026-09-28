@@ -14,6 +14,7 @@
             joined <%= Bible270.local_time(r.created_at).strftime("%b %-d %Y") %><% if @show_admin_progress %>
               · <%= link_to "#{@days_completed[r.id]} of #{Bible270::Plan::DAYS} days complete",
                     admin_reader_path(r), class: "b270-admin-progress" %>
+              · <%= r.progress_status(completed_days: @days_completed[r.id].to_i) %>
             <% end %>
           </div>
         </div>

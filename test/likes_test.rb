@@ -223,6 +223,17 @@ if RAILS_LOADED
       end
     end
 
+    def test_reply_links_do_not_inherit_the_general_link_button_top_margin
+      sign_in_as(@mary)
+      get "#{mount}/day/1"
+
+      assert_select "#comment-#{@thought.id} .b270-cactions" do
+        assert_select '.b270-likes'
+        assert_select 'a.b270-linkbtn', text: 'Reply'
+      end
+      assert_match(%r{\.b270-cactions \.b270-linkbtn\{margin:0\}}, response.body)
+    end
+
     def test_html_likes_return_a_success_message
       sign_in_as(@mary)
 

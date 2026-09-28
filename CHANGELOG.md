@@ -7,6 +7,9 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 ### Changed
 
 - keep Proverbs 7 whole and divide Proverbs 10 and 16 into four readings
+- show likes and replies on My Progress and reader pages, with admin edit links on reader pages
+- show each reader's pace beside their completed-day count for admins on Community
+- add edit, like, and reply controls to reflections on Admin reader pages
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.8.1...main)**
 

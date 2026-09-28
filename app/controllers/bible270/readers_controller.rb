@@ -17,7 +17,7 @@ module Bible270
     def progress
       @reader = current_reader
       # Defaults keep the open visitor page simple and make every view input explicit.
-      @recent_comments = @reader ? @reader.comments.recent.limit(5) : Comment.none
+      @recent_comments = @reader ? recent_reflections(@reader, limit: 5) : []
       @partial_day_tasks = []
       @remaining_partial_days = 0
       return unless @reader
@@ -34,7 +34,7 @@ module Bible270
       redirect_to(community_path, alert: 'Reader not found.') and return unless @reader
 
       @days_completed = @reader.days_completed
-      @recent_comments = @reader.comments.recent.limit(20)
+      @recent_comments = recent_reflections(@reader, limit: 20)
     end
 
     def mention_suggestions
@@ -42,6 +42,17 @@ module Bible270
 
       response.headers['Cache-Control'] = 'private, no-store'
       render json: { suggestions: Reader.mention_suggestions(params[:q], except: current_reader) }
+    end
+
+  private
+
+    def recent_reflections(reader, limit:)
+      comments = reader.comments.recent
+        .includes(:reader, { likes: :reader }, { replies: [:reader, { likes: :reader }] })
+        .limit(limit).to_a
+      ids = comments.map(&:id)
+      # A reader's own replies already appear beneath any listed parent reflection.
+      comments.reject { |comment| ids.include?(comment.parent_id) }
     end
   end
 end

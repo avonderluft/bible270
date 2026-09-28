@@ -77,6 +77,21 @@ if RAILS_LOADED
       assert_empty @thought.visible_replies
     end
 
+    def test_preloaded_replies_are_filtered_and_sorted_without_more_queries
+      later = @mary.comments.create!(day: 1, body: 'Later', parent: @thought, created_at: 1.day.ago)
+      earlier = @mary.comments.create!(day: 1, body: 'Earlier', parent: @thought, created_at: 2.days.ago)
+      @mary.comments.create!(day: 1, body: 'Hidden', parent: @thought, approved: false)
+      @thought.replies.load
+      queries = 0
+      counter = ->(*, payload) { queries += 1 if payload[:sql]&.include?('bible270_comments') }
+
+      ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+        assert_equal [earlier.id, later.id], @thought.visible_replies.map(&:id)
+      end
+
+      assert_equal 0, queries
+    end
+
     # ---- the page ----------------------------------------------------------
 
     def test_a_reply_renders_indented_under_its_parent

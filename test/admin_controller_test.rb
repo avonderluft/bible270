@@ -302,6 +302,48 @@ if RAILS_LOADED
       assert_match(%r{R Reader}, response.body)
     end
 
+    def test_reader_reflections_offer_edit_like_and_reply_controls_alongside_moderation
+      reflection = @reader.comments.create!(day: 2, body: 'A reflection')
+      reply = @reader.comments.create!(day: 2, body: 'A follow-up', parent: reflection)
+      reflection.likes.create!(reader: @admin)
+      sign_in_as_admin
+
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      [reflection, reply].each do |comment|
+        assert_select "#comment-#{comment.id}", count: 1 do
+          assert_select "a.b270-cedit[href='#{mount}/day/2?edit=#{comment.id}#comment-#{comment.id}']", text: 'edit'
+          assert_select "form[action='#{mount}/comments/#{comment.id}/like'][data-turbo-stream='true']"
+          assert_select "form[action='#{mount}/admin/comments/#{comment.id}/hide']"
+        end
+      end
+      assert_select "#likes-#{reflection.id} .b270-likecount", text: '1'
+      assert_select "#comment-#{reflection.id} a[href='#{mount}/day/2?reply_to=#{reflection.id}#new_comment_form']",
+                    text: 'Reply'
+      assert_select "#comment-#{reply.id} a", text: 'Reply', count: 0
+      assert_select '#b270-interaction-status', count: 1
+      assert_includes response.body, 'window.Bible270InteractionUI'
+
+      post "#{mount}/comments/#{reflection.id}/like", params: { liked: '0' },
+                                                      headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+      assert_response :success
+      assert_select "turbo-stream[action='replace'][target='likes-#{reflection.id}']"
+      assert_empty reflection.likes.reload
+    end
+
+    def test_hidden_reader_reflections_keep_restore_without_unavailable_interaction_links
+      comment = @reader.comments.create!(day: 2, body: 'Hidden reflection', approved: false)
+      sign_in_as_admin
+
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      assert_select "#comment-#{comment.id}" do
+        assert_select '.b270-badge', text: 'Hidden'
+        assert_select "form[action='#{mount}/admin/comments/#{comment.id}/unhide']"
+        assert_select '.b270-cedit, .b270-cactions', count: 0
+      end
+    end
+
     def test_reader_detail_panels_place_completions_between_translation_and_remove
       sign_in_as_admin
       get "#{mount}/admin/readers/#{@reader.id}"

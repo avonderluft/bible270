@@ -97,7 +97,7 @@ module Bible270
       @comment_notifications_available = comment_notifications_available_for?(@reader)
       @completion_dove_preference_available = completion_dove_available_for(@reader)
       @days_completed = @reader.days_completed
-      @comments = @reader.comments.order(created_at: :desc).limit(50)
+      @comments = @reader.comments.includes(likes: :reader).order(created_at: :desc).limit(50)
     end
 
     # ---- reflections ------------------------------------------------------
