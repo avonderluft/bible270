@@ -19,7 +19,7 @@ group :test do
   gem 'minitest-mock'
   gem 'minitest-reporters',       '>= 1.6.1'
   gem 'parallel_tests',           '~> 5.7', require: false
-  gem 'rubocop',                  '~> 1.90.0', require: false
+  gem 'rubocop',                  '~> 1.91.0', require: false
   gem 'rubocop-minitest'
   gem 'rubocop-rails'
   gem 'simplecov', '~> 1.1.1', require: false
