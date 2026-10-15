@@ -32,6 +32,7 @@ module Bible270
       'AddCompletionDoveDisabledToBible270Readers' => :check_completion_dove_disabled,
       'AddBodyFormatToBible270Comments' => :check_comment_body_format,
       'ChangeAllCommentNoticesDefaultToTrue' => :check_all_comment_notices_default,
+      'AddDisplayModeToBible270Readers' => :check_display_mode,
       'CreateActiveStorageTables' => :check_active_storage
     }.freeze
 
@@ -219,6 +220,16 @@ module Bible270
       missing = []
       missing << 'column bible270_comments.body_format default plain' unless column&.default == 'plain'
       missing << 'column bible270_comments.body_format null false' unless column && !column.null
+      missing
+    end
+
+    def check_display_mode
+      missing = table_missing(:bible270_readers, columns: %i[display_mode])
+      return missing if missing.any?
+
+      column = connection.columns(:bible270_readers).find { |candidate| candidate.name == 'display_mode' }
+      missing << 'column bible270_readers.display_mode default system' unless column&.default == 'system'
+      missing << 'column bible270_readers.display_mode null false' unless column && !column.null
       missing
     end
 

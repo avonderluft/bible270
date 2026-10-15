@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 module Bible270
-  # A reader editing their own name — the one thing about themselves they can
-  # change. Everything else about a reader comes from how they signed in.
+  # A reader editing their own details and preferences.
   class ProfilesController < ApplicationController
     before_action :require_signed_in_reader
 
     def edit
       @names = current_reader.suggested_names
+      @display_mode = current_reader.effective_display_mode
       load_comment_notification_state
       load_daily_reminder_state
     end
@@ -16,7 +16,8 @@ module Bible270
       @comment_notifications_available = comment_notifications_available?
       @comment_notification_level = requested_comment_notification_level
       @daily_reminders_available = daily_reminders_available?
-      problems = [comment_notification_problem].compact
+      @display_mode = params.fetch(:display_mode, current_reader.effective_display_mode).to_s
+      problems = [comment_notification_problem, display_mode_problem].compact
       problems << 'both a first and last name' unless current_reader.update_names(params[:first_name],
                                                                                   params[:last_name])
       if params[:bible_version].present? && !current_reader.update_bible_version(params[:bible_version])
@@ -35,6 +36,7 @@ module Bible270
       end
 
       if problems.empty?
+        save_display_mode
         current_reader.update_comment_notification_level!(@comment_notification_level) if @comment_notifications_available
         if @daily_reminders_available
           current_reader.update!(daily_reminders: requested_daily_reminders,
@@ -56,6 +58,17 @@ module Bible270
     end
 
   private
+
+    def display_mode_problem
+      return unless Reader.display_mode_column?
+      return if Reader::DISPLAY_MODES.include?(@display_mode)
+
+      'a display preference from the list'
+    end
+
+    def save_display_mode
+      current_reader.update!(display_mode: @display_mode) if Reader.display_mode_column?
+    end
 
     def load_comment_notification_state
       @comment_notifications_available = comment_notifications_available?

@@ -368,6 +368,24 @@ Psalm 35: []
 Psalm 78: [20, 39, 55]
 ```
 
+## Display preference
+
+Readers can choose **Light**, **Dark**, or **System** under **Profile → Display**, then save.
+The preference is stored with their account and applies throughout Bible270 on every device.
+System is the default for existing and new readers, follows the device's current appearance,
+and responds to changes without reloading. Signed-out visitors also use System.
+The completion dove retains its bright colors in either theme.
+
+Upgrading hosts must install and run migration `20260101000023`:
+
+```bash
+bin/rails bible270:install:migrations
+bin/rails db:migrate
+```
+
+Custom engine layouts must render the shared styles and set `data-display-mode` on the
+`.b270` element to `current_reader&.effective_display_mode || 'system'` to honor the preference.
+
 ## Start dates
 
 The plan runs **undated** (day numbers only) or **dated** (days mapped onto a calendar):

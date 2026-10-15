@@ -115,6 +115,15 @@ if RAILS_LOADED
                    Bible270::MigrationReconciler::CHECKS.fetch(migration.name)
     end
 
+    def test_display_mode_migration_is_recognized
+      migration = FakeMigration.new('AddDisplayModeToBible270Readers', 20_260_101_000_023)
+
+      status = build_reconciler(FakeContext.new([migration])).statuses.first
+
+      assert status.complete?
+      assert_equal :check_display_mode, Bible270::MigrationReconciler::CHECKS.fetch(migration.name)
+    end
+
     def test_only_pending_bible270_migrations_are_assessed
       migrations = [
         FakeMigration.new('CreateBible270Readers', 101),

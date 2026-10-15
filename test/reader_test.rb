@@ -21,6 +21,8 @@ class ReaderTest < Minitest::Test
     refute @reader.daily_reminders
     assert_equal '08:00', @reader.daily_reminder_time
     assert_nil @reader.last_daily_reminder_sent_on
+    assert_equal 'system', @reader.display_mode
+    assert_equal 'system', @reader.effective_display_mode
     assert_equal 'all', @reader.comment_notification_level
     refute @reader.completion_dove_disabled?
   end
@@ -30,6 +32,30 @@ class ReaderTest < Minitest::Test
     assert Bible270::Reader.reflections_seen_column?
     assert Bible270::Reader.comment_notification_columns?
     assert Bible270::Reader.completion_dove_column?
+  end
+
+  def test_display_modes_are_validated
+    %w[light dark system].each do |mode|
+      assert @reader.update(display_mode: mode)
+      assert_equal mode, @reader.reload.effective_display_mode
+    end
+    @reader.display_mode = 'unknown'
+    refute @reader.valid?
+    assert @reader.errors[:display_mode].any?
+    assert_equal 'system', @reader.effective_display_mode
+  end
+
+  def test_display_mode_falls_back_when_attribute_is_unavailable
+    @reader.stub(:has_attribute?, false) do
+      assert_equal 'system', @reader.effective_display_mode
+    end
+  end
+
+  def test_display_mode_column_check_handles_an_unavailable_database
+    assert Bible270::Reader.display_mode_column?
+    Bible270::Reader.stub(:column_names, -> { raise ActiveRecord::StatementInvalid }) do
+      refute Bible270::Reader.display_mode_column?
+    end
   end
 
   def test_completion_dove_preference_can_be_disabled

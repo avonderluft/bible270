@@ -38,6 +38,20 @@
     </label>
     <%= render "bible270/shared/passage_source", reader: current_reader %>
 
+    <% if Bible270::Reader.display_mode_column? %>
+      <label class="b270-field">
+        <span>Display</span>
+        <%= select_tag :display_mode,
+              options_for_select([["Light", "light"], ["Dark", "dark"], ["System", "system"]], @display_mode),
+              class: "b270-select", aria: { describedby: "b270-display-hint" } %>
+        <span id="b270-display-hint" class="b270-hint" style="margin:0">System follows your device's light or dark setting.</span>
+      </label>
+    <% else %>
+      <p class="b270-flash alert" style="margin:0">
+        Display settings are temporarily unavailable while this installation finishes a database update.
+      </p>
+    <% end %>
+
     <% if @comment_notifications_available %>
       <%= render "bible270/shared/comment_notification_choices",
             level: @comment_notification_level,

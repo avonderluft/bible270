@@ -266,16 +266,48 @@ class ViewsTest < Minitest::Test
 
   def test_readable_palette_colours_meet_aa_contrast
     styles = File.read(STYLES)
-    colours = styles.scan(%r{--([a-z-]+):#([0-9a-f]{6})}).to_h
+    ['.b270', '.b270[data-display-mode="dark"]', '.b270[data-display-mode="system"]'].each do |selector|
+      palette = styles.match(%r{#{Regexp.escape(selector)}\{([^\}]+)})[1]
+      colours = palette.scan(%r{--([a-z-]+):#([0-9a-f]{3,6})}).to_h.transform_values do |hex|
+        hex.length == 3 ? hex.chars.map { |char| char * 2 }.join : hex
+      end
 
-    %w[muted faint gold].each do |foreground|
-      %w[paper card].each do |background|
+      %w[ink muted faint gold teal oxblood].product(%w[paper card control]).each do |foreground, background|
         assert_operator contrast_ratio(colours.fetch(foreground), colours.fetch(background)), :>=, 4.5,
-                        "--#{foreground} must meet AA contrast against --#{background}"
+                        "#{selector}: --#{foreground} must meet AA contrast against --#{background}"
+      end
+      %w[gold-lite teal-fill oxblood-fill gold-fill].each do |background|
+        assert_operator contrast_ratio(colours.fetch('on-accent'), colours.fetch(background)), :>=, 4.5,
+                        "#{selector}: badge and checkmark text must contrast with --#{background}"
+      end
+      %w[button-surface button-hover].each do |background|
+        assert_operator contrast_ratio(colours.fetch('button-ink'), colours.fetch(background)), :>=, 4.5,
+                        "#{selector}: button text must contrast with --#{background}"
       end
     end
-    assert_operator contrast_ratio(colours.fetch('gold-lite'), 'ffffff'), :>=, 4.5,
-                    '--gold-lite must meet AA contrast with its white badge text'
+  end
+
+  def test_dark_theme_uses_dark_fills_and_separate_readable_text_colours
+    styles = File.read(STYLES)
+
+    assert_includes styles, '--paper:#39311f; --card:#322714; --ink:#ccc9bd'
+    assert_includes styles, '--control:#181b1b'
+    assert_includes styles, '--button-surface:#201c12; --button-ink:#ded8c5'
+    assert_includes styles, 'background:var(--button-surface);color:var(--button-ink)'
+    %w[teal oxblood gold].each do |accent|
+      assert_includes styles, "background:var(--#{accent}-fill);border-color:var(--#{accent}-mark)"
+    end
+  end
+
+  def test_system_theme_uses_a_media_query_and_matches_explicit_dark
+    styles = File.read(STYLES)
+    dark = styles.match(%r{\.b270\[data-display-mode="dark"\]\{([^\}]+)})[1]
+    system = styles.match(%r{@media \(prefers-color-scheme:dark\)\{\s*\.b270\[data-display-mode="system"\]\{([^\}]+)})[1]
+
+    assert_equal dark.split.join, system.split.join
+    assert_includes dark, 'color-scheme:dark'
+    assert_includes styles, '.b270[data-display-mode="light"]{color-scheme:light}'
+    assert_match(%r{\.b270-completion-dove\{[^\}]*color-scheme:only light;forced-color-adjust:none}, styles)
   end
 
 private

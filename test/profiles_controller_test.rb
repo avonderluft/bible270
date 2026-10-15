@@ -62,6 +62,78 @@ if RAILS_LOADED
       assert_select "a[href='#{mount}/progress']", text: '← Back to your progress'
     end
 
+    def test_display_defaults_to_system_for_readers_and_visitors
+      get "#{mount}/sign_in"
+      assert_select 'body[data-display-mode="system"]'
+
+      sign_in_as(@reader)
+      get "#{mount}/profile"
+      assert_select 'body[data-display-mode="system"]'
+      assert_select 'select[name="display_mode"]' do
+        assert_select 'option', count: 3
+        assert_select 'option[value="system"][selected]', text: 'System'
+      end
+    end
+
+    def test_each_display_preference_is_saved_and_applied_on_other_pages
+      sign_in_as(@reader)
+      %w[dark light system].each do |mode|
+        patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader', display_mode: mode }
+        assert_response :redirect
+        assert_equal mode, @reader.reload.display_mode
+
+        follow_redirect!
+        assert_select "body[data-display-mode='#{mode}']"
+        assert_select "select[name='display_mode'] option[value='#{mode}'][selected]"
+        get "#{mount}/progress"
+        assert_select "body[data-display-mode='#{mode}']"
+      end
+    end
+
+    def test_omitting_display_preference_preserves_the_saved_choice
+      @reader.update!(display_mode: 'dark')
+      sign_in_as(@reader)
+      patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader' }
+      assert_response :redirect
+      assert_equal 'dark', @reader.reload.display_mode
+    end
+
+    def test_invalid_display_preference_is_rejected
+      sign_in_as(@reader)
+      patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader', display_mode: 'sepia' }
+      assert_response :unprocessable_entity
+      assert_select '.b270-flash.alert', text: %r{a display preference from the list}
+      assert_equal 'system', @reader.reload.display_mode
+    end
+
+    def test_display_preference_is_not_saved_when_other_fields_are_invalid
+      sign_in_as(@reader)
+      patch "#{mount}/profile", params: { first_name: 'R', last_name: '', display_mode: 'dark' }
+      assert_response :unprocessable_entity
+      assert_equal 'system', @reader.reload.display_mode
+      assert_select 'select[name="display_mode"] option[value="dark"][selected]'
+    end
+
+    def test_display_settings_handle_a_pending_migration
+      sign_in_as(@reader)
+      Bible270::Reader.stub(:display_mode_column?, false) do
+        get "#{mount}/profile"
+        assert_response :success
+        assert_select 'select[name="display_mode"]', count: 0
+        assert_select '.b270-flash.alert', text: %r{Display settings.*database update}
+        patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader', display_mode: 'dark' }
+        assert_response :redirect
+      end
+      assert_equal 'system', @reader.reload.display_mode
+    end
+
+    def test_a_visitor_cannot_change_display_preferences
+      patch "#{mount}/profile", params: { display_mode: 'dark' }
+      assert_response :redirect
+      assert_match(%r{sign_in}, response.location)
+      assert_equal 'system', @reader.reload.display_mode
+    end
+
     def test_the_profile_page_expands_the_day_index
       sign_in_as(@reader)
 

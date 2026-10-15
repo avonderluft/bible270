@@ -27,6 +27,8 @@ module Bible270
 
     PASSAGE_SOURCES = %w[bible_com bible_gateway blue_letter_bible].freeze
     DEFAULT_PASSAGE_SOURCE = 'bible_com'
+    DISPLAY_MODES = %w[light dark system].freeze
+    DEFAULT_DISPLAY_MODE = 'system'
     DAILY_REMINDER_TIME_FORMAT = %r{\A(?:[01]\d|2[0-3]):[0-5]\d\z}
     DAILY_REMINDER_MINUTES = %w[00 15 30 45].freeze
     DAILY_REMINDER_COLUMNS = %w[daily_reminders daily_reminder_time last_daily_reminder_sent_on].freeze
@@ -39,6 +41,7 @@ module Bible270
     validates :display_name, presence: true
     validates :uid, uniqueness: { scope: :provider }, allow_nil: true
     validates :passage_source, inclusion: { in: PASSAGE_SOURCES }
+    validates :display_mode, inclusion: { in: DISPLAY_MODES }, if: -> { has_attribute?(:display_mode) }
     validates :daily_reminder_time,
               format: { with: DAILY_REMINDER_TIME_FORMAT, message: 'must use 24-hour HH:MM format' },
               if: -> { self.class.daily_reminder_columns? }
@@ -53,6 +56,17 @@ module Bible270
       (DAILY_REMINDER_COLUMNS - column_names).empty?
     rescue ActiveRecord::StatementInvalid
       false
+    end
+
+    def self.display_mode_column?
+      column_names.include?('display_mode')
+    rescue ActiveRecord::StatementInvalid
+      false
+    end
+
+    def effective_display_mode
+      value = self[:display_mode] if has_attribute?(:display_mode)
+      DISPLAY_MODES.include?(value) ? value : DEFAULT_DISPLAY_MODE
     end
 
     def self.valid_daily_reminder_time?(value)
