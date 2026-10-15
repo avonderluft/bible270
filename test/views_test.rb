@@ -264,6 +264,14 @@ class ViewsTest < Minitest::Test
     assert_match(%r{@media \(prefers-reduced-motion:reduce\)}, styles)
   end
 
+  def test_mobile_menu_icon_uses_theme_text_colour_instead_of_background_bars
+    styles = File.read(STYLES)
+
+    assert_includes styles, '.b270-menuicon{display:block;flex:none;color:var(--ink)}'
+    assert_includes styles, '.b270-navtoggle[aria-expanded="true"] .b270-menuicon{color:var(--gold)}'
+    refute_includes styles, '.b270-menuicon span'
+  end
+
   def test_readable_palette_colours_meet_aa_contrast
     styles = File.read(STYLES)
     ['.b270', '.b270[data-display-mode="dark"]', '.b270[data-display-mode="system"]'].each do |selector|

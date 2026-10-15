@@ -443,11 +443,10 @@
     .b270-navmenu{display:block}
     .b270-navtoggle{display:flex;align-items:center;justify-content:center;width:40px;height:38px;
                     cursor:pointer;padding:0;border:1px solid var(--line);color:var(--ink);
-                    border-radius:8px;background:var(--card)}
+                    border-radius:8px;background:var(--card);-webkit-appearance:none;appearance:none}
     .b270-navtoggle:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-    .b270-menuicon{display:flex;flex-direction:column;gap:4px}
-    .b270-menuicon span{display:block;width:18px;height:2px;border-radius:2px;background:var(--ink)}
-    .b270-navtoggle[aria-expanded="true"] .b270-menuicon span{background:var(--gold)}
+    .b270-menuicon{display:block;flex:none;color:var(--ink)}
+    .b270-navtoggle[aria-expanded="true"] .b270-menuicon{color:var(--gold)}
     .b270-navlinks[hidden]{display:none}
     .b270-navlinks{position:absolute;z-index:20;right:0;top:calc(100% + 7px);min-width:180px;
                    flex-direction:column;align-items:stretch;gap:0;padding:6px;

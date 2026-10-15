@@ -12,9 +12,11 @@
     <div class="b270-navmenu">
       <button type="button" class="b270-navtoggle" aria-label="Menu"
               aria-expanded="false" aria-controls="b270-mobile-navigation">
-        <span class="b270-menuicon" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </span>
+        <svg class="b270-menuicon" viewBox="0 0 18 14" width="18" height="14"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             aria-hidden="true" focusable="false">
+          <path d="M1 1h16M1 7h16M1 13h16" />
+        </svg>
       </button>
       <div id="b270-mobile-navigation" class="b270-navlinks" hidden>
         <%= render "bible270/shared/nav_links" %>
