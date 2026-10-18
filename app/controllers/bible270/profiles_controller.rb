@@ -17,39 +17,30 @@ module Bible270
       @comment_notification_level = requested_comment_notification_level
       @daily_reminders_available = daily_reminders_available?
       @display_mode = params.fetch(:display_mode, current_reader.effective_display_mode).to_s
-      problems = [comment_notification_problem, display_mode_problem].compact
-      problems << 'both a first and last name' unless current_reader.update_names(params[:first_name],
-                                                                                  params[:last_name])
-      if params[:bible_version].present? && !current_reader.update_bible_version(params[:bible_version])
+      @names = { first_name: params[:first_name], last_name: params[:last_name] }
+      @daily_reminders = params[:daily_reminders] == '1'
+      @daily_reminder_time = daily_reminder_time_param
+      names = Names.normalize(params[:first_name], params[:last_name])
+      source = (params[:passage_source].presence || Reader::DEFAULT_PASSAGE_SOURCE).to_s
+      problems = [comment_notification_problem, display_mode_problem, avatar_problem].compact
+      problems << 'both a first and last name' unless names
+      if params[:bible_version].present? && !Translations.valid?(params[:bible_version])
         problems << 'a translation from the list'
       end
-      source = params[:passage_source].presence || Reader::DEFAULT_PASSAGE_SOURCE
-      problems << 'a reading-link source from the list' unless current_reader.update_passage_source(source)
-      if params[:avatar].present? && !current_reader.attach_avatar(params[:avatar])
-        problems << (current_reader.errors[:avatar].first || 'a valid image')
-      end
-
-      requested_daily_reminders = params[:daily_reminders] == '1'
-      requested_daily_reminder_time = daily_reminder_time_param
-      if @daily_reminders_available && !Reader.valid_daily_reminder_time?(requested_daily_reminder_time)
+      problems << 'a reading-link source from the list' unless Reader::PASSAGE_SOURCES.include?(source)
+      if @daily_reminders_available && !Reader.valid_daily_reminder_time?(@daily_reminder_time)
         problems << 'a reminder time in 24-hour HH:MM format'
       end
+      return render_profile_error("Please give #{problems.to_sentence}.") if problems.any?
 
-      if problems.empty?
-        save_display_mode
-        current_reader.update_comment_notification_level!(@comment_notification_level) if @comment_notifications_available
-        if @daily_reminders_available
-          current_reader.update!(daily_reminders: requested_daily_reminders,
-                                 daily_reminder_time: requested_daily_reminder_time)
-        end
-        redirect_to profile_path, notice: 'Your profile has been updated.'
-      else
-        @names = { first_name: params[:first_name], last_name: params[:last_name] }
-        @daily_reminders = requested_daily_reminders
-        @daily_reminder_time = requested_daily_reminder_time
-        flash.now[:alert] = "Please give #{problems.to_sentence}."
-        render :edit, status: :unprocessable_entity
-      end
+      save_profile(names.merge(passage_source: source))
+      redirect_to profile_path, notice: 'Your profile has been updated.'
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+      message = e.record ? e.record.errors.full_messages.to_sentence : nil
+      # Reload does not discard Active Storage's deferred attachment changes.
+      current_reader.attachment_changes.clear if Reader.avatar_uploads?
+      current_reader.reload
+      render_profile_error("Your profile could not be saved. #{message.presence || 'Please try again.'}")
     end
 
     def remove_avatar
@@ -66,8 +57,38 @@ module Bible270
       'a theme from the list'
     end
 
-    def save_display_mode
-      current_reader.update!(display_mode: @display_mode) if Reader.display_mode_column?
+    def avatar_problem
+      upload = params[:avatar]
+      return if upload.blank?
+      return 'a valid image' unless Reader.avatar_uploads?
+
+      Avatars.problem_with(content_type: upload.content_type, byte_size: upload.size)
+    end
+
+    def save_profile(attributes)
+      attributes[:bible_version] = Translations.normalize(params[:bible_version]) if params[:bible_version].present?
+      attributes[:display_mode] = @display_mode if Reader.display_mode_column?
+      if @comment_notifications_available
+        attributes[:notify_on_mention] = @comment_notification_level != 'none'
+        attributes[:notify_on_all_comments] = @comment_notification_level == 'all'
+      end
+      if @daily_reminders_available
+        attributes[:daily_reminders] = @daily_reminders
+        attributes[:daily_reminder_time] = @daily_reminder_time
+      end
+
+      Reader.transaction do
+        current_reader.assign_attributes(attributes)
+        # Unlike attach, assignment never saves early. Active Storage persists the
+        # attachment with the reader and uploads only after a successful commit.
+        current_reader.avatar = params[:avatar] if params[:avatar].present?
+        current_reader.save!
+      end
+    end
+
+    def render_profile_error(message)
+      flash.now[:alert] = message
+      render :edit, status: :unprocessable_entity
     end
 
     def load_comment_notification_state

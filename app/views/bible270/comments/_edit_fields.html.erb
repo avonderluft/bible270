@@ -20,7 +20,7 @@
       <%= f.select :track,
             options_for_select([["The whole day", ""]] + Bible270::Plan::TRACKS.map { |k, v| [v[:label], k] },
                                comment.track.to_s),
-            {}, class: "b270-select", style: "width:auto" %>
+            {}, class: "b270-select", style: "width:auto", aria: { label: "Reading this reflection relates to" } %>
     <% end %>
     <%= f.submit "Save", class: "b270-btn" %>
     <%= link_to "Cancel", day_path(comment.day, anchor: "comment-#{comment.id}"), class: "b270-linkbtn" %>

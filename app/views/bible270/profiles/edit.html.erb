@@ -8,7 +8,7 @@
   <%= form_with url: profile_path, method: :patch, class: "b270-emailform",
                 html: { multipart: true } do %>
     <div class="b270-avatarrow">
-      <%= b270_avatar(current_reader, size: 72) %>
+      <%= b270_avatar(current_reader, size: 72, loading: 'eager') %>
       <% if Bible270::Reader.avatar_uploads? %>
         <div class="b270-avatarcontrols" style="flex:1;min-width:0">
           <label class="b270-field">
@@ -70,6 +70,13 @@
     <% end %>
 
     <% if @daily_reminders_available %>
+      <% reminder_local_time = Bible270.local_time(Time.now) %>
+      <% reminder_zone = if reminder_local_time.respond_to?(:time_zone)
+                           reminder_local_time.time_zone.tzinfo.name
+                         else
+                           ["Server time zone", reminder_local_time.zone.presence].compact.join(" — ")
+                         end %>
+      <% reminder_tooltip = "Uses the plan's time zone: #{reminder_zone}, not your device's time zone. You can turn reminders off here at any time." %>
       <% reminder_hour, reminder_minute = @daily_reminder_time.to_s.split(":", 2) %>
       <% reminder_minutes = (Bible270::Reader::DAILY_REMINDER_MINUTES + [reminder_minute]).compact.uniq.sort %>
       <div class="b270-field">
@@ -80,7 +87,7 @@
                   aria: { describedby: "daily-reminder-optin-hint" } %>
             <span>Email me each day's readings</span>
             <span class="b270-reminder-tooltip" id="daily-reminder-optin-hint" role="tooltip">
-              Uses the plan's configured time zone. You can turn reminders off here at any time.
+              <%= reminder_tooltip %>
             </span>
           </label>
           <div class="b270-reminder-time">
@@ -95,11 +102,14 @@
                     options_for_select(reminder_minutes, reminder_minute),
                     class: "b270-time-select", required: true, aria: { label: "Minute" } %>
               <span class="b270-reminder-tooltip" id="daily-reminder-time-hint" role="tooltip">
-                Uses the plan's configured time zone. You can turn reminders off here at any time.
+                <%= reminder_tooltip %>
               </span>
             </span>
           </div>
         </div>
+        <span id="daily-reminder-zone" class="b270-hint" style="margin:0;overflow-wrap:anywhere">
+          Plan time zone: <%= reminder_zone %>
+        </span>
       </div>
     <% elsif Bible270.config.daily_reminders? %>
       <p class="b270-flash alert" style="margin:0">

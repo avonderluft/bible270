@@ -226,6 +226,19 @@ if RAILS_LOADED
       assert_includes b270_avatar(@reader), 'face.png'
     end
 
+    def test_list_avatars_load_lazily_without_losing_dimensions_or_alt_text
+      @reader.update!(avatar_url: 'https://example.org/face.png')
+      image = Nokogiri::HTML.fragment(b270_avatar(@reader, size: 56)).at_css('img')
+
+      assert_equal 'lazy', image['loading']
+      assert_equal 'async', image['decoding']
+      assert_equal '56', image['width']
+      assert_equal '56', image['height']
+      assert_equal @reader.display_name, image['alt']
+      image = Nokogiri::HTML.fragment(b270_avatar(@reader, loading: 'eager')).at_css('img')
+      assert_equal 'eager', image['loading']
+    end
+
     def test_day_status_reflects_progress
       assert_equal '', b270_day_status_class(nil, 1), 'a visitor has no status'
       assert_equal '', b270_day_status_class(@reader, 1)

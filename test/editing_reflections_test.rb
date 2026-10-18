@@ -144,7 +144,9 @@ if RAILS_LOADED
       assert_select 'form[data-b270-submit="true"][data-b270-pending="Saving changes…"]'
       assert_match(%r{First thoughts}, response.body, 'the words are in the box')
       assert_match(%r{Cancel}, response.body)
+      assert_select '#new_comment_form select[name="comment[track]"][aria-label="Reading this reflection relates to"]'
       assert_select 'form.b270-editform' do
+        assert_select 'select[name="comment[track]"][aria-label="Reading this reflection relates to"]'
         assert_select 'input[data-b270-body-format][value="plain"]'
         assert_select '[role="toolbar"][aria-label="Reflection formatting"]'
         assert_select 'textarea[data-b270-autosize="true"][rows="4"]'

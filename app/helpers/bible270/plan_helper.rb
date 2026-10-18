@@ -159,10 +159,11 @@ module Bible270
       reader.avatar_url.presence
     end
 
-    def b270_avatar(reader, size: 72)
+    def b270_avatar(reader, size: 72, loading: 'lazy')
       src = b270_avatar_src(reader)
       if src
-        image_tag src, class: 'b270-avatar', width: size, height: size, alt: reader.display_name
+        image_tag src, class: 'b270-avatar', width: size, height: size, alt: reader.display_name,
+                       loading: loading, decoding: 'async'
       else
         content_tag :span, reader.initials, class: 'b270-avatar b270-avatar-fallback',
                                             style: "width:#{size}px;height:#{size}px;line-height:#{size}px"

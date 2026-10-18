@@ -29,18 +29,38 @@
   (() => {
     if (window.Bible270NavigationMenu) return;
 
+    function setExpanded(menu, expanded) {
+      const toggle = menu && menu.querySelector("button.b270-navtoggle");
+      const links = menu && menu.querySelector(".b270-navlinks");
+      if (!toggle || !links) return;
+
+      toggle.setAttribute("aria-expanded", String(expanded));
+      links.hidden = !expanded;
+    }
+
     document.addEventListener("click", (event) => {
       const target = event.target;
+      document.querySelectorAll(".b270-navmenu").forEach((menu) => {
+        if (!menu.contains(target)) setExpanded(menu, false);
+      });
+
       const toggle = target.closest && target.closest("button.b270-navtoggle");
       if (!toggle) return;
 
-      const menu = toggle.closest(".b270-navmenu");
-      const links = menu && menu.querySelector(".b270-navlinks");
-      if (!links) return;
+      setExpanded(toggle.closest(".b270-navmenu"), toggle.getAttribute("aria-expanded") !== "true");
+    });
 
-      const opening = toggle.getAttribute("aria-expanded") !== "true";
-      toggle.setAttribute("aria-expanded", String(opening));
-      links.hidden = !opening;
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+
+      const menu = event.target.closest && event.target.closest(".b270-navmenu");
+      const toggle = menu && menu.querySelector("button.b270-navtoggle");
+      if (!toggle || toggle.getAttribute("aria-expanded") !== "true") return;
+
+      const restoreFocus = menu.contains(document.activeElement);
+      setExpanded(menu, false);
+      event.preventDefault();
+      if (restoreFocus) toggle.focus();
     });
 
     window.Bible270NavigationMenu = true;

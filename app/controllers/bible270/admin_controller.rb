@@ -67,7 +67,7 @@ module Bible270
       @days_completed = Reader.completed_days_by_id
       @reader_sort_options = READER_SORT_OPTIONS
       @reader_sort = READER_SORT_OPTIONS.key?(params[:sort]) ? params[:sort] : 'first_name'
-      readers = Reader.all.load
+      readers = Reader.with_avatar.load
       @recent_reader_activities = Checkoff.recent_activity_by_reader(readers.map(&:id))
       @reader_report = ReaderProgressReport.new(
         readers: readers,
@@ -105,7 +105,7 @@ module Bible270
     # Everything is visible by default; this lists it all so anything unsuitable
     # can be taken down.
     def comments
-      scope = Comment.includes(:reader, parent: :reader).order(created_at: :desc)
+      scope = Comment.with_reader_avatars.includes(parent: :reader).order(created_at: :desc)
       @filter = params[:filter].to_s
       scope = scope.hidden if @filter == 'hidden'
       scope = scope.approved if @filter == 'visible'

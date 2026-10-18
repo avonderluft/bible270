@@ -284,7 +284,8 @@ From a reader's page you can:
 The Reflections page lists conversations by their latest approved reply, supports day and author
 filters, and paginates older threads. Signed-in readers see which conversations became active since
 their previous visit. Reflection and reply drafts are retained for up to 30 days in that browser and
-cleared after a successful post. On a shared device, clearing browser storage also removes saved drafts.
+cleared after a successful post. If browser storage is blocked or full, the composer warns that the draft
+could not be saved; posting still works. On a shared device, clearing browser storage also removes saved drafts.
 Typing `@` in the composer offers up to five unambiguous reader handles; manual mentions continue to
 work without JavaScript. A quiet **Formatting** disclosure opens a toolbar for bold, italic,
 quotations, bulleted and numbered lists, links, and YouTube videos without requiring readers to know Markdown syntax.
@@ -424,7 +425,8 @@ Daily reminders are optional at both levels: the host enables the feature, then 
 whether to receive it and at what local time from their profile. The feature and reader opt-in both
 default to off; each reader's time defaults to `08:00`. Profile times use quarter-hour choices so they
 match the recommended 15-minute scheduler interval. An existing off-quarter preference remains
-available until that reader chooses a new time.
+available until that reader chooses a new time. The profile shows the plan's effective time zone beside
+the reminder settings; this is not automatically the reader's device time zone.
 
 ```ruby
 # config/initializers/bible270.rb

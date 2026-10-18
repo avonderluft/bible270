@@ -20,8 +20,13 @@
         try { return area.getItem(key); } catch (_error) { return null; }
       },
       set(area, key, value) {
-        if (!area) return;
-        try { area.setItem(key, value); } catch (_error) { /* Drafts degrade safely. */ }
+        if (!area) return false;
+        try {
+          area.setItem(key, value);
+          return true;
+        } catch (_error) {
+          return false;
+        }
       },
       remove(area, key) {
         if (!area) return;
@@ -49,7 +54,7 @@
 
     function setStatus(form, message) {
       const status = form.querySelector("[data-b270-draft-status]");
-      if (status) status.textContent = message;
+      if (status && status.textContent !== message) status.textContent = message;
     }
 
     function save(form) {
@@ -81,8 +86,9 @@
         savedAt: Date.now(),
         revision: `${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`
       };
-      storage.set(local, key, JSON.stringify(draft));
-      setStatus(form, "Draft saved in this browser.");
+      const saved = storage.set(local, key, JSON.stringify(draft));
+      setStatus(form, saved ? "Draft saved in this browser." :
+        "Draft couldn’t be saved. Keep this page open until posting.");
     }
 
     function settlePending(key = null) {

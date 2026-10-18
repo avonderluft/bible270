@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require 'tempfile'
 
 if RAILS_LOADED
   class ProfilesControllerTest < ActionDispatch::IntegrationTest
     def setup
       needs_rails!
       clear_engine_tables!
+      @previous_time_zone = Bible270.config.time_zone
       @previous_daily_reminders = Bible270.config.daily_reminders
       Bible270.config.daily_reminders = false
       @reader = Bible270::Reader.create!(provider: 'email', uid: 'r@example.org',
@@ -15,6 +17,7 @@ if RAILS_LOADED
     end
 
     def teardown
+      Bible270.config.time_zone = @previous_time_zone
       Bible270.config.daily_reminders = @previous_daily_reminders
     end
 
@@ -248,11 +251,11 @@ if RAILS_LOADED
       assert_response :success
       assert_select '.b270-reminder-row' do
         assert_select 'label.b270-reminder-optin input[name="daily_reminders"][checked="checked"][aria-describedby="daily-reminder-optin-hint"]'
-        assert_select '#daily-reminder-optin-hint[role="tooltip"]', text: %r{Uses the plan's configured time zone}
+        assert_select '#daily-reminder-optin-hint[role="tooltip"]', text: %r{Uses the plan's time zone:}
         assert_select '.b270-reminder-time .b270-time-control[role="group"][aria-describedby="daily-reminder-time-hint"]' do
           assert_select 'select.b270-time-select[name="daily_reminder_hour"][aria-label="Hour"] option[selected="selected"]', text: '08'
           assert_select 'select.b270-time-select[name="daily_reminder_minute"][aria-label="Minute"] option[selected="selected"]', text: '00'
-          assert_select '#daily-reminder-time-hint[role="tooltip"]', text: %r{Uses the plan's configured time zone}
+          assert_select '#daily-reminder-time-hint[role="tooltip"]', text: %r{Uses the plan's time zone:}
         end
       end
       minute_options = css_select('select[name="daily_reminder_minute"] option').map { |option| option['value'] }
@@ -530,6 +533,159 @@ if RAILS_LOADED
       assert_match(%r{www\.bible\.com/bible/2270/MAT\.1\.THGNT}, response.body)
     end
 
+    def test_invalid_fields_leave_the_entire_profile_and_existing_avatar_untouched
+      prepare_profile_with_avatar
+      invalid_fields = [
+        { first_name: " \u00A0 " }, { last_name: '' }, { bible_version: 'unknown' },
+        { passage_source: 'unknown' }, { display_mode: 'sepia' },
+        { comment_notifications: 'unknown' }, { daily_reminder_minute: '99' },
+        { daily_reminder_hour: '', daily_reminder_minute: '' }
+      ]
+
+      invalid_fields.each do |invalid|
+        with_uploaded_avatar do |upload|
+          assert_profile_unchanged do
+            patch "#{mount}/profile", params: complete_profile_params.merge(avatar: upload).merge(invalid)
+          end
+        end
+        assert_response :unprocessable_entity
+        assert_select '.b270-flash.alert', text: %r{Please give}
+      end
+    end
+
+    def test_invalid_avatar_leaves_all_settings_and_existing_avatar_untouched
+      prepare_profile_with_avatar
+      [{ content_type: 'image/svg+xml' }, { contents: '' },
+       { contents: 'x' * (Bible270::Avatars.max_bytes + 1) }].each do |options|
+        with_uploaded_avatar(**options) do |upload|
+          assert_profile_unchanged do
+            patch "#{mount}/profile", params: complete_profile_params.merge(avatar: upload)
+          end
+        end
+        assert_response :unprocessable_entity
+      end
+    end
+
+    def test_a_valid_profile_saves_every_setting_and_replaces_the_avatar
+      prepare_profile_with_avatar
+      previous_blob_id = @reader.avatar.blob.id
+      with_uploaded_avatar do |upload|
+        patch "#{mount}/profile", params: complete_profile_params.merge(avatar: upload)
+      end
+
+      assert_response :redirect
+      assert_equal 'Your profile has been updated.', flash[:notice]
+      @reader.reload
+      assert_equal 'New First', @reader.first_name
+      assert_equal 'von Last', @reader.last_name
+      assert_equal 'New First von Last', @reader.display_name
+      assert_equal 'LSB', @reader.bible_version
+      assert_equal 'blue_letter_bible', @reader.passage_source
+      assert_equal 'dark_green', @reader.display_mode
+      assert_equal 'personal', @reader.comment_notification_level
+      assert @reader.notify_on_mention
+      refute @reader.notify_on_all_comments
+      assert @reader.daily_reminders
+      assert_equal '06:45', @reader.daily_reminder_time
+      refute_equal previous_blob_id, @reader.avatar.blob.id
+      assert_equal 'replacement avatar', @reader.avatar.download
+    end
+
+    def test_model_validation_failure_rerenders_without_saving_or_uploading
+      prepare_profile_with_avatar
+      other = Bible270::Reader.create!(provider: 'email', uid: 'other@example.org', display_name: 'Other')
+      resolver = ->(_controller) { @reader }
+
+      Bible270.config.stub(:current_reader_resolver, -> { resolver }) do
+        with_uploaded_avatar do |upload|
+          assert_profile_unchanged do
+            # Exercise a real AR validation failure after the form checks pass.
+            @reader.uid = other.uid
+            patch "#{mount}/profile", params: complete_profile_params.merge(avatar: upload)
+          end
+        end
+      end
+
+      assert_response :unprocessable_entity
+      assert_select '.b270-flash.alert', text: %r{Your profile could not be saved.*Uid has already been taken}
+      assert_empty @reader.attachment_changes
+      assert_select 'input[name="first_name"][value="  New   First  "]'
+      assert_select 'select[name="display_mode"] option[value="dark_green"][selected]'
+      assert_select 'select[name="daily_reminder_hour"] option[value="06"][selected]'
+      assert_select '.b270-avatarrow img[src*="original.png"]'
+    end
+
+    def test_omitting_translation_and_avatar_preserves_them
+      prepare_profile_with_avatar
+      blob_id = @reader.avatar.blob.id
+      patch "#{mount}/profile", params: complete_profile_params.except(:bible_version)
+
+      assert_response :redirect
+      assert_equal 'KJV', @reader.reload.bible_version
+      assert_equal blob_id, @reader.avatar.blob.id
+    end
+
+    def test_an_omitted_reminder_checkbox_disables_reminders_but_saves_the_time
+      Bible270.config.daily_reminders = true
+      @reader.update!(daily_reminders: true)
+      sign_in_as(@reader)
+      patch "#{mount}/profile", params: complete_profile_params.except(:daily_reminders)
+
+      assert_response :redirect
+      refute @reader.reload.daily_reminders
+      assert_equal '06:45', @reader.daily_reminder_time
+    end
+
+    def test_reminder_zone_shows_the_configured_named_zone_even_when_not_opted_in
+      Bible270.config.daily_reminders = true
+      Bible270.config.time_zone = 'Pacific Time (US & Canada)'
+      sign_in_as(@reader)
+      Time.use_zone('UTC') do
+        get "#{mount}/profile"
+      end
+
+      assert_select '#daily-reminder-zone', text: 'Plan time zone: America/Los_Angeles'
+      assert_select '#daily-reminder-optin-hint', text: %r{America/Los_Angeles, not your device's time zone}
+      assert_equal css_select('#daily-reminder-optin-hint').first.text.strip,
+                   css_select('#daily-reminder-time-hint').first.text.strip
+
+      patch "#{mount}/profile", params: complete_profile_params.merge(display_mode: 'invalid')
+      assert_response :unprocessable_entity
+      assert_select '#daily-reminder-zone', text: 'Plan time zone: America/Los_Angeles'
+    end
+
+    def test_reminder_zone_uses_the_machine_fallback_not_rails_default_zone
+      previous_tz = ENV.fetch('TZ', nil)
+      ENV['TZ'] = 'America/New_York'
+      Bible270.config.daily_reminders = true
+      sign_in_as(@reader)
+
+      Time.use_zone('UTC') do
+        travel_to Time.utc(2026, 7, 1, 12) do
+          [nil, '', 'Not/AZone'].each do |zone|
+            Bible270.config.time_zone = zone
+            get "#{mount}/profile"
+            assert_select '#daily-reminder-zone', text: 'Plan time zone: Server time zone — EDT'
+            assert_select '#daily-reminder-time-hint', text: %r{Server time zone — EDT, not your device's time zone}
+          end
+        end
+      end
+    ensure
+      ENV['TZ'] = previous_tz
+    end
+
+    def test_reminder_zone_is_hidden_when_reminders_are_disabled_or_migration_is_pending
+      sign_in_as(@reader)
+      get "#{mount}/profile"
+      assert_select '#daily-reminder-zone', count: 0
+
+      Bible270.config.daily_reminders = true
+      Bible270::Reader.stub(:daily_reminder_columns?, false) do
+        get "#{mount}/profile"
+        assert_select '#daily-reminder-zone', count: 0
+      end
+    end
+
     def test_remove_picture_is_beside_upload_controls_and_targets_a_separate_form
       skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
 
@@ -576,6 +732,53 @@ if RAILS_LOADED
 
       assert_response :redirect
       assert_match(%r{sign_in}, response.location)
+    end
+
+  private
+
+    def complete_profile_params
+      {
+        first_name: '  New   First  ', last_name: " von\u00A0 Last ", bible_version: ' lsb ',
+        passage_source: 'blue_letter_bible', display_mode: 'dark_green', comment_notifications: 'personal',
+        daily_reminders: '1', daily_reminder_hour: '06', daily_reminder_minute: '45'
+      }
+    end
+
+    def prepare_profile_with_avatar
+      skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
+
+      Bible270.config.daily_reminders = true
+      @reader.update!(bible_version: 'KJV', passage_source: 'bible_gateway', display_mode: 'dark_blue',
+                      notify_on_mention: false, notify_on_all_comments: false,
+                      daily_reminders: false, daily_reminder_time: '09:30')
+      @reader.avatar.attach(io: StringIO.new('original avatar'), filename: 'original.png', content_type: 'image/png')
+      sign_in_as(@reader)
+    end
+
+    def with_uploaded_avatar(content_type: 'image/png', contents: 'replacement avatar')
+      file = Tempfile.new(['avatar', '.png'])
+      file.binmode
+      file.write(contents)
+      file.rewind
+      yield Rack::Test::UploadedFile.new(file.path, content_type, true, original_filename: 'replacement.png')
+    ensure
+      file&.close!
+    end
+
+    def assert_profile_unchanged(&block)
+      attributes = @reader.reload.attributes
+      attachment = @reader.avatar.attachment.attributes
+      blob = @reader.avatar.blob.attributes
+      storage_writes = []
+      subscriber = ->(*event) { storage_writes << event.first }
+      ActiveSupport::Notifications.subscribed(subscriber, %r{service_(upload|delete|delete_prefixed)\.active_storage}) do
+        assert_no_difference ['ActiveStorage::Blob.count', 'ActiveStorage::Attachment.count'], &block
+      end
+      assert_empty storage_writes
+      assert_equal attributes, @reader.reload.attributes
+      assert_equal attachment, @reader.avatar.attachment.attributes
+      assert_equal blob, @reader.avatar.blob.attributes
+      assert_equal 'original avatar', @reader.avatar.download
     end
   end
 end

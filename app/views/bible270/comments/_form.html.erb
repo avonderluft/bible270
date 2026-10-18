@@ -25,7 +25,8 @@
   <div class="row">
     <%= f.select :track,
           options_for_select([["The whole day", ""]] + Bible270::Plan::TRACKS.map { |k, v| [v[:label], k] }),
-          {}, style: "font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff" %>
+          {}, aria: { label: "Reading this reflection relates to" },
+          style: "font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff" %>
     <%= f.submit "Post reflection", class: "b270-btn" %>
   </div>
 <% end %>

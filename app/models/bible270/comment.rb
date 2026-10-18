@@ -52,9 +52,14 @@ module Bible270
     # Only the reflections themselves: replies are rendered under their parent, so
     # listing them again at the top level would show each twice.
     scope :for_day,  ->(d) { approved.where(day: d, parent_id: nil).order(created_at: :asc) }
-    scope :threads_for_day, ->(d) {
-      for_day(d).includes(:reader, { likes: :reader }, { replies: [:reader, { likes: :reader }] })
+    scope :with_reader_avatars, -> {
+      Reader.avatar_uploads? ? includes(reader: { avatar_attachment: :blob }) : includes(:reader)
     }
+    scope :with_thread_details, -> {
+      reply_reader = Reader.avatar_uploads? ? { reader: { avatar_attachment: :blob } } : :reader
+      with_reader_avatars.includes({ likes: :reader }, { replies: [reply_reader, { likes: :reader }] })
+    }
+    scope :threads_for_day, ->(d) { for_day(d).with_thread_details }
     scope :recent, -> { approved.order(created_at: :desc) }
 
     def self.body_format_column?
@@ -95,9 +100,7 @@ module Bible270
       page = page.to_i.clamp(1, pages)
       page_rows = ordered.slice((page - 1) * per_page, per_page) || []
       ids = page_rows.map(&:first)
-      loaded = approved.where(id: ids)
-        .includes(:reader, { likes: :reader }, { replies: [:reader, { likes: :reader }] })
-        .index_by(&:id)
+      loaded = approved.where(id: ids).with_thread_details.index_by(&:id)
 
       ThreadPage.new(
         threads: ids.filter_map { |id| loaded[id] },

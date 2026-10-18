@@ -19,6 +19,8 @@ module Bible270
 
     def self.avatar_uploads? = AVATAR_UPLOADS
 
+    scope :with_avatar, -> { avatar_uploads? ? includes(avatar_attachment: :blob) : all }
+
     # Fires for every way a reader comes into existence — email sign-in, OmniAuth,
     # or a bridged host user — rather than in each controller, so no path can
     # quietly skip it. after_create_commit, so nothing is sent for a reader whose
@@ -87,7 +89,7 @@ module Bible270
         .having('COUNT(*) >= ?', Plan.total_parts(day))
         .order(Checkoff.arel_table[:created_at].maximum.asc, :reader_id)
         .pluck(:reader_id)
-      readers_by_id = where(id: reader_ids).index_by(&:id)
+      readers_by_id = with_avatar.where(id: reader_ids).index_by(&:id)
       reader_ids.filter_map { |reader_id| readers_by_id[reader_id] }
     end
 
