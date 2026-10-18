@@ -274,7 +274,8 @@ class ViewsTest < Minitest::Test
 
   def test_readable_palette_colours_meet_aa_contrast
     styles = File.read(STYLES)
-    ['.b270', '.b270[data-display-mode="dark"]', '.b270[data-display-mode="system"]'].each do |selector|
+    selectors = ['.b270'] + %w[dark dark_green dark_blue system].map { |mode| ".b270[data-display-mode=\"#{mode}\"]" }
+    selectors.each do |selector|
       palette = styles.match(%r{#{Regexp.escape(selector)}\{([^\}]+)})[1]
       colours = palette.scan(%r{--([a-z-]+):#([0-9a-f]{3,6})}).to_h.transform_values do |hex|
         hex.length == 3 ? hex.chars.map { |char| char * 2 }.join : hex
@@ -305,6 +306,24 @@ class ViewsTest < Minitest::Test
     %w[teal oxblood gold].each do |accent|
       assert_includes styles, "background:var(--#{accent}-fill);border-color:var(--#{accent}-mark)"
     end
+  end
+
+  def test_forest_and_midnight_themes_define_complete_distinct_dark_palettes
+    styles = File.read(STYLES)
+    brown = styles.match(%r{\.b270\[data-display-mode="dark"\]\{([^\}]+)})[1]
+    variables = brown.scan(%r{(--[a-z-]+):}).flatten.sort
+    palettes = %w[dark_green dark_blue].map do |mode|
+      palette = styles.match(%r{\.b270\[data-display-mode="#{mode}"\]\{([^\}]+)})[1]
+      assert_includes palette, 'color-scheme:dark'
+      assert_includes palette, 'background-image:none'
+      assert_equal variables, palette.scan(%r{(--[a-z-]+):}).flatten.sort
+      colours = palette.scan(%r{--([a-z-]+):#([0-9a-f]{6})}).to_h
+      %w[paper card control].each do |surface|
+        assert_operator contrast_ratio(colours.fetch('control-line'), colours.fetch(surface)), :>=, 3
+      end
+      colours.fetch('paper')
+    end
+    assert_equal %w[1c3027 182537], palettes
   end
 
   def test_system_theme_uses_a_media_query_and_matches_explicit_dark

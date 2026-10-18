@@ -63,7 +63,7 @@ module Bible270
       return unless Reader.display_mode_column?
       return if Reader::DISPLAY_MODES.include?(@display_mode)
 
-      'a display preference from the list'
+      'a theme from the list'
     end
 
     def save_display_mode

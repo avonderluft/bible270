@@ -35,7 +35,7 @@ class ReaderTest < Minitest::Test
   end
 
   def test_display_modes_are_validated
-    %w[light dark system].each do |mode|
+    %w[light dark dark_green dark_blue system].each do |mode|
       assert @reader.update(display_mode: mode)
       assert_equal mode, @reader.reload.effective_display_mode
     end

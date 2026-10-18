@@ -69,15 +69,21 @@ if RAILS_LOADED
       sign_in_as(@reader)
       get "#{mount}/profile"
       assert_select 'body[data-display-mode="system"]'
+      assert_select 'label.b270-field > span', text: 'Theme'
+      assert_select '#b270-display-hint', text: "System follows your device's setting: Parchment for light, Earth for dark."
       assert_select 'select[name="display_mode"]' do
-        assert_select 'option', count: 3
+        assert_select 'option', count: 5
+        assert_select 'option[value="light"]', text: 'Parchment'
+        assert_select 'option[value="dark"]', text: 'Earth'
+        assert_select 'option[value="dark_green"]', text: 'Forest'
+        assert_select 'option[value="dark_blue"]', text: 'Midnight'
         assert_select 'option[value="system"][selected]', text: 'System'
       end
     end
 
     def test_each_display_preference_is_saved_and_applied_on_other_pages
       sign_in_as(@reader)
-      %w[dark light system].each do |mode|
+      %w[dark dark_green dark_blue light system].each do |mode|
         patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader', display_mode: mode }
         assert_response :redirect
         assert_equal mode, @reader.reload.display_mode
@@ -88,6 +94,15 @@ if RAILS_LOADED
         get "#{mount}/progress"
         assert_select "body[data-display-mode='#{mode}']"
       end
+    end
+
+    def test_existing_dark_preference_is_shown_as_earth
+      @reader.update!(display_mode: 'dark')
+      sign_in_as(@reader)
+      get "#{mount}/profile"
+
+      assert_select 'body[data-display-mode="dark"]'
+      assert_select 'select[name="display_mode"] option[selected]', text: 'Earth'
     end
 
     def test_omitting_display_preference_preserves_the_saved_choice
@@ -102,7 +117,7 @@ if RAILS_LOADED
       sign_in_as(@reader)
       patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader', display_mode: 'sepia' }
       assert_response :unprocessable_entity
-      assert_select '.b270-flash.alert', text: %r{a display preference from the list}
+      assert_select '.b270-flash.alert', text: %r{a theme from the list}
       assert_equal 'system', @reader.reload.display_mode
     end
 
@@ -120,7 +135,7 @@ if RAILS_LOADED
         get "#{mount}/profile"
         assert_response :success
         assert_select 'select[name="display_mode"]', count: 0
-        assert_select '.b270-flash.alert', text: %r{Display settings.*database update}
+        assert_select '.b270-flash.alert', text: %r{Theme settings.*database update}
         patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader', display_mode: 'dark' }
         assert_response :redirect
       end

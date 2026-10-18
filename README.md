@@ -368,13 +368,17 @@ Psalm 35: []
 Psalm 78: [20, 39, 55]
 ```
 
-## Display preference
+## Theme
 
-Readers can choose **Light**, **Dark**, or **System** under **Profile → Display**, then save.
-The preference is stored with their account and applies throughout Bible270 on every device.
-System is the default for existing and new readers, follows the device's current appearance,
+Readers can choose **Parchment** (light), **Earth** (dark brown), **Forest** (dark green),
+**Midnight** (dark blue), or **System** under **Profile → Theme**, then save. The preference is stored
+with their account and applies throughout Bible270 on every device. System is the default for existing
+and new readers, follows the device's current appearance using Parchment for light or Earth for dark,
 and responds to changes without reloading. Signed-out visitors also use System.
-The completion dove retains its bright colors in either theme.
+The completion dove retains its bright colors in every theme.
+
+Existing preferences are preserved under the new names. Forest and Midnight require no additional
+migration once display preferences are installed.
 
 Upgrading hosts must install and run migration `20260101000023`:
 
