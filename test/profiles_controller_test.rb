@@ -530,6 +530,35 @@ if RAILS_LOADED
       assert_match(%r{www\.bible\.com/bible/2270/MAT\.1\.THGNT}, response.body)
     end
 
+    def test_remove_picture_is_beside_upload_controls_and_targets_a_separate_form
+      skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
+
+      @reader.avatar.attach(io: StringIO.new('x'), filename: 'a.png', content_type: 'image/png')
+      sign_in_as(@reader)
+      get "#{mount}/profile"
+
+      assert_select '.b270-avatarrow .b270-avatarcontrols' do
+        assert_select 'input[type="file"][name="avatar"]'
+        assert_select 'button[type="submit"][form="b270-remove-picture"]', text: 'Remove picture'
+      end
+      assert_select 'label button', count: 0
+      assert_select 'form form', count: 0
+      assert_select '.b270-panel > form#b270-remove-picture[hidden][method="post"]' \
+                    '[data-turbo-confirm="Remove your picture?"]' do |forms|
+        assert_equal "#{mount}/profile/avatar", forms.first['action']
+        assert_select 'input[name="_method"][value="delete"]'
+        assert_select 'input[name="first_name"], input[name="last_name"], input[name="avatar"]', count: 0
+      end
+    end
+
+    def test_remove_picture_is_hidden_without_an_uploaded_avatar
+      sign_in_as(@reader)
+      get "#{mount}/profile"
+
+      assert_select 'button[form="b270-remove-picture"]', count: 0
+      assert_select 'form#b270-remove-picture', count: 0
+    end
+
     def test_a_picture_can_be_removed
       skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
 

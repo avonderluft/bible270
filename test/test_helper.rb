@@ -36,6 +36,17 @@ unless ENV['SKIP_COV']
 end
 
 $LOAD_PATH.unshift File.expand_path('../lib', __dir__)
+require 'fileutils'
+require 'tmpdir'
+
+storage_parent = File.expand_path('dummy/tmp/storage', __dir__)
+FileUtils.mkdir_p(storage_parent)
+storage_root = Dir.mktmpdir("run-#{Process.pid}-", storage_parent)
+ENV['BIBLE270_TEST_STORAGE_ROOT'] = storage_root
+# Register before autorun: exit hooks run in reverse order, so uploads remain
+# available through test teardown, even on failed runs or a Rails boot error.
+at_exit { FileUtils.rm_rf(storage_root) }
+
 require 'minitest/autorun'
 require 'minitest/mock'
 require 'minitest/reporters'
@@ -51,10 +62,8 @@ require 'bible270/plan'
 dummy_root = File.expand_path('dummy', __dir__)
 
 FileUtils.mkdir_p File.join(dummy_root, 'log')
-FileUtils.mkdir_p File.join(dummy_root, 'tmp', 'storage')
 
 FileUtils.rm_f File.join(dummy_root, 'log', 'test.log')
-FileUtils.rm_rf Dir[File.join(dummy_root, 'tmp', 'storage', '*')]
 
 # ---- the dummy application ------------------------------------------------
 #

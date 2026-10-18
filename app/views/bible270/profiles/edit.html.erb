@@ -10,13 +10,19 @@
     <div class="b270-avatarrow">
       <%= b270_avatar(current_reader, size: 72) %>
       <% if Bible270::Reader.avatar_uploads? %>
-        <label class="b270-field" style="flex:1">
-          <span>Picture</span>
-          <%= file_field_tag :avatar, accept: Bible270::Avatars.content_types.join(',') %>
-          <span class="b270-hint" style="margin:0">
-            PNG, JPEG, GIF or WebP, up to <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %>.
-          </span>
-        </label>
+        <div class="b270-avatarcontrols" style="flex:1;min-width:0">
+          <label class="b270-field">
+            <span>Picture</span>
+            <%= file_field_tag :avatar, accept: Bible270::Avatars.content_types.join(',') %>
+            <span class="b270-hint" style="margin:0">
+              PNG, JPEG, GIF or WebP, up to <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %>.
+            </span>
+          </label>
+          <% if current_reader.avatar_uploaded? %>
+            <%= button_tag "Remove picture", type: "submit", class: "b270-linkbtn",
+                  form: "b270-remove-picture" %>
+          <% end %>
+        </div>
       <% end %>
     </div>
 
@@ -105,8 +111,11 @@
   <% end %>
 
   <% if current_reader.avatar_uploaded? %>
-    <%= button_to "Remove picture", profile_avatar_path, method: :delete, class: "b270-linkbtn",
-          form: { data: { turbo_confirm: "Remove your picture?" } } %>
+    <%# The picture button targets this separate form so it never submits profile edits. %>
+    <%= form_with url: profile_avatar_path, method: :delete,
+          html: { id: "b270-remove-picture", hidden: true },
+          data: { turbo_confirm: "Remove your picture?" } do %>
+    <% end %>
   <% end %>
 
   <% unless Bible270::Reader.avatar_uploads? %>
