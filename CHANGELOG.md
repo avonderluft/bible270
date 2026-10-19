@@ -4,14 +4,92 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.10.1...main)**
+
+## [1.10.1] - 2026-10-18
+
+### Added
+
+- let admins set each reader's theme
+
 ### Changed
 
-- keep Proverbs 7 whole and divide Proverbs 10 and 16 into four readings
+- show last activity with 24-hour time and keep completed-day passages in the Day link tooltip
+- link reader emails and move Remove picture beside the upload controls on Admin reader pages
+- move translation settings below Name and picture, followed by Theme and Email notifications
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.10.0...v1.10.1)**
+
+## [1.10.0] - 2026-10-18
+
+### Added
+
+- add Forest and Midnight themes; rename Light and Dark to Parchment and Earth
+
+### Changed
+
+- move Remove picture beside the Profile upload controls
+- reduce avatar queries and defer offscreen avatar loading
+- close the mobile menu on outside clicks or Escape
+- show the plan's time zone beside reminder settings
+- improve screen-reader labels for reflection reading selectors
+
+### Fixed
+
+- leave profile settings and pictures unchanged when a profile update is invalid
+- warn when a reflection draft cannot be saved in the browser
+- isolate test uploads between parallel workers and remove them after testing
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.9.1...v1.10.0)**
+
+## [1.9.1] - 2026-10-16
+
+### Fixed
+
+- keep the mobile menu icon readable in light and dark themes, including on iOS
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.9.0...v1.9.1)**
+
+## [1.9.0] - 2026-10-15
+
+### Added
+
+- let readers choose Light, Dark, or System in Profile, with System as the default
+- add a warm brown dark palette while keeping the completion dove bright
+
+Upgrading hosts must install and run the new reader display-preference migration.
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.8.5...v1.9.0)**
+
+## [1.8.5] - 2026-09-27
+
+### Changed
+
 - show likes and replies on My Progress and reader pages, with admin edit links on reader pages
 - show each reader's pace beside their completed-day count for admins on Community
 - add edit, like, and reply controls to reflections on Admin reader pages
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.8.1...main)**
+### Fixed
+
+- align like and reply controls across reflection listings
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.8.4...v1.8.5)**
+
+## [1.8.4] - 2026-09-25
+
+### Changed
+
+- show start date, completed days, and ahead/behind status together in the Admin reader list
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.8.3...v1.8.4)**
+
+## [1.8.3] - 2026-09-21
+
+### Changed
+
+- keep Proverbs 7 whole and divide Proverbs 10 and 16 into four readings
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.8.1...v1.8.3)**
 
 ## [1.8.1] - 2026-09-19
 
@@ -785,7 +863,14 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.10.1...HEAD
+[1.10.1]: https://github.com/avonderluft/bible270/releases/tag/v1.10.1
+[1.10.0]: https://github.com/avonderluft/bible270/releases/tag/v1.10.0
+[1.9.1]: https://github.com/avonderluft/bible270/releases/tag/v1.9.1
+[1.9.0]: https://github.com/avonderluft/bible270/releases/tag/v1.9.0
+[1.8.5]: https://github.com/avonderluft/bible270/releases/tag/v1.8.5
+[1.8.4]: https://github.com/avonderluft/bible270/releases/tag/v1.8.4
+[1.8.3]: https://github.com/avonderluft/bible270/releases/tag/v1.8.3
 [1.8.1]: https://github.com/avonderluft/bible270/releases/tag/v1.8.1
 [1.8.0]: https://github.com/avonderluft/bible270/releases/tag/v1.8.0
 [1.7.3]: https://github.com/avonderluft/bible270/releases/tag/v1.7.3
