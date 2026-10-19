@@ -22,7 +22,7 @@ module Bible270
 
     before_action :require_admin!
     before_action :load_reader,
-                  only: %i[show destroy update_start update_profile update_notifications update_completion_animation
+                  only: %i[show destroy update_start update_profile update_theme update_notifications update_completion_animation
                            remove_avatar complete_through toggle_day]
     before_action :load_comment, only: %i[hide_comment unhide_comment destroy_comment]
 
@@ -246,6 +246,22 @@ module Bible270
       else
         redirect_to admin_reader_path(@reader), alert: "Needs #{problems.to_sentence}."
       end
+    end
+
+    def update_theme
+      unless Reader.display_mode_column?
+        return redirect_to admin_reader_path(@reader),
+                           alert: 'Run the pending Bible270 database migration before changing the theme.'
+      end
+
+      mode = params[:display_mode].to_s
+      unless Reader::DISPLAY_MODES.include?(mode)
+        return redirect_to admin_reader_path(@reader), alert: 'Choose a theme from the list.'
+      end
+
+      @reader.reload unless @reader.has_attribute?(:display_mode)
+      @reader.update!(display_mode: mode)
+      redirect_to admin_reader_path(@reader), notice: 'Theme updated.'
     end
 
     def update_notifications

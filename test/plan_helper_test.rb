@@ -10,6 +10,7 @@ if RAILS_LOADED
       needs_rails!
       clear_engine_tables!
       @previous_from = Bible270.config.mailer_from
+      @previous_time_zone = Bible270.config.time_zone
       @previous_footer = {
         footer: Bible270.config.footer,
         html: Bible270.config.footer_html,
@@ -23,6 +24,7 @@ if RAILS_LOADED
 
     def teardown
       Bible270.config.mailer_from = @previous_from
+      Bible270.config.time_zone = @previous_time_zone
       Bible270.config.favicon = nil
       Bible270.config.footer = @previous_footer[:footer]
       Bible270.config.footer_html = @previous_footer[:html]
@@ -38,6 +40,63 @@ if RAILS_LOADED
     def signed_in? = !@current_reader.nil?
 
     def reader_path(reader) = Bible270::Engine.routes.url_helpers.reader_path(reader)
+
+    def day_path(day) = Bible270::Engine.routes.url_helpers.day_path(day)
+
+    def test_activity_datetime_uses_the_plan_zone_and_24_hour_time
+      Bible270.config.time_zone = 'America/Los_Angeles'
+
+      assert_equal 'Sep 15, 2026 23:05', b270_activity_datetime(Time.utc(2026, 9, 16, 6, 5))
+      assert_equal 'Jan 15, 2026 23:05', b270_activity_datetime(Time.utc(2026, 1, 16, 7, 5))
+    end
+
+    def test_activity_datetime_zero_pads_midnight_and_minutes
+      Bible270.config.time_zone = 'America/Los_Angeles'
+
+      assert_equal 'Sep 16, 2026 00:00', b270_activity_datetime(Time.utc(2026, 9, 16, 7))
+      assert_equal 'Sep 16, 2026 00:03', b270_activity_datetime(Time.utc(2026, 9, 16, 7, 3))
+    end
+
+    def test_activity_datetime_can_roll_into_the_next_year
+      Bible270.config.time_zone = 'Asia/Kolkata'
+
+      assert_equal 'Jan 1, 2027 00:05', b270_activity_datetime(Time.utc(2026, 12, 31, 18, 35))
+    end
+
+    def test_activity_datetime_accepts_a_missing_timestamp
+      assert_nil b270_activity_datetime(nil)
+    end
+
+    def test_default_datetime_keeps_its_existing_12_hour_format
+      Bible270.config.time_zone = 'America/Los_Angeles'
+
+      assert_equal 'Sep 15, 2026 at 11:05 PM', b270_datetime(Time.utc(2026, 9, 16, 6, 5))
+    end
+
+    def test_completed_activity_keeps_the_day_link_and_passage_tooltip_without_parentheses
+      activity = Bible270::Checkoff::RecentActivity.new(day: 7, day_completed?: true)
+      description = Nokogiri::HTML.fragment(b270_reader_activity_description(activity))
+      link = description.at_css('a')
+
+      assert_equal 'completed Day 7', description.text
+      assert_equal 1, description.css('a').size
+      assert_equal 'Day 7', link.text
+      assert_equal day_path(7), link['href']
+      assert_equal Bible270::Plan.readings_for(7).values.compact.join(' · '), link['title']
+    end
+
+    def test_checked_off_activity_keeps_the_specific_reference_and_day_tooltip
+      activity = Bible270::Checkoff::RecentActivity.new(day: 13, track: 'ot', part: 1, day_completed?: false)
+      description = Nokogiri::HTML.fragment(b270_reader_activity_description(activity))
+      reference = Bible270::Plan.parts_for(13, 'ot').fetch(1)
+      link = description.at_css('a')
+
+      assert_equal "checked off “#{reference}” for Day 13", description.text
+      assert_equal 1, description.css('a').size
+      assert_equal 'Day 13', link.text
+      assert_equal day_path(13), link['href']
+      assert_equal Bible270::Plan.readings_for(13).values.compact.join(' · '), link['title']
+    end
 
     def test_track_metadata
       assert_equal 'Old Testament', b270_track('ot')[:label]

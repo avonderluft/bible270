@@ -182,12 +182,16 @@ module Bible270
       local&.strftime('%b %-d, %Y at %-I:%M %p')
     end
 
+    def b270_activity_datetime(time)
+      local = Bible270.local_time(time)
+      local&.strftime('%b %-d, %Y %H:%M')
+    end
+
     def b270_reader_activity_description(activity)
       day_link = link_to "Day #{activity.day}", day_path(activity.day), title: b270_day_readings(activity.day)
 
       if activity.day_completed?
-        readings = Plan.readings_for(activity.day).values.compact.join(', ')
-        safe_join(['completed ', day_link, " (#{readings})"])
+        safe_join(['completed ', day_link])
       else
         reference = Plan.parts_for(activity.day, activity.track).fetch(activity.part)
         safe_join(["checked off “#{reference}” for ", day_link])

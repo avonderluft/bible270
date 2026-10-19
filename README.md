@@ -272,6 +272,8 @@ Admins get an extra "Admin" link in the header. The broadcast form can send an i
 message either to every reader with an email address or only to readers recognized as administrators.
 From a reader's page you can:
 
+- **set their theme** — Parchment, Earth, Forest, Midnight, or System, independently of your own theme;
+
 - **move them to a day** — "put them on day 42 as of today" back-dates the start date; check-offs are
   keyed to day numbers, so nothing in their history moves;
 - **set their progress** — mark complete through day N (this also clears anything after, so it sets

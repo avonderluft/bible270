@@ -23,6 +23,7 @@ Bible270::Engine.routes.draw do
   get    'admin/readers/:id',            to: 'admin#show',             as: :admin_reader
   delete 'admin/readers/:id',            to: 'admin#destroy'
   patch  'admin/readers/:id/profile',    to: 'admin#update_profile', as: :admin_reader_profile
+  patch  'admin/readers/:id/theme', to: 'admin#update_theme', as: :admin_reader_theme
   patch  'admin/readers/:id/notifications', to: 'admin#update_notifications', as: :admin_reader_notifications
   patch  'admin/readers/:id/completion-animation', to: 'admin#update_completion_animation',
                                                    as: :admin_reader_completion_animation

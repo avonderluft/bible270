@@ -3,7 +3,7 @@
 <p class="b270-eyebrow"><%= link_to 'Admin', admin_path %></p>
 <h1><%= @reader.display_name %></h1>
 <p class="lede">
-  <%= @reader.email.presence || @reader.provider %> ·
+  <%= @reader.email.present? ? mail_to(@reader.email) : @reader.provider %> ·
   <%= @days_completed %> of <%= Bible270::Plan::DAYS %> days ·
   <%= @reader.completion_percent %>%
   <% if @reader.today_day %>· day <%= @reader.today_day %> today
@@ -18,13 +18,19 @@
     <div class="b270-avatarrow">
       <%= b270_avatar(@reader, size: 72, loading: 'eager') %>
       <% if Bible270::Reader.avatar_uploads? %>
-        <label class="b270-field" style="flex:1">
-          <span>Picture</span>
-          <%= file_field_tag :avatar, accept: Bible270::Avatars.content_types.join(',') %>
-          <span class="b270-hint" style="margin:0">
-            PNG, JPEG, GIF or WebP, up to <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %>.
-          </span>
-        </label>
+        <div class="b270-avatarcontrols" style="flex:1;min-width:0">
+          <label class="b270-field">
+            <span>Picture</span>
+            <%= file_field_tag :avatar, accept: Bible270::Avatars.content_types.join(',') %>
+            <span class="b270-hint" style="margin:0">
+              PNG, JPEG, GIF or WebP, up to <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %>.
+            </span>
+          </label>
+          <% if @reader.avatar_uploaded? %>
+            <%= button_tag "Remove picture", type: "submit", class: "b270-linkbtn",
+                  form: "b270-remove-picture" %>
+          <% end %>
+        </div>
       <% end %>
     </div>
 
@@ -40,9 +46,54 @@
   <% end %>
 
   <% if @reader.avatar_uploaded? %>
-    <%= button_to "Remove picture", admin_reader_avatar_path(@reader), method: :delete,
-          class: 'b270-linkbtn',
-          form: { data: { turbo_confirm: "Remove #{@reader.display_name}'s picture?" } } %>
+    <%# Keep picture removal separate from unsaved name and upload changes. %>
+    <%= form_with url: admin_reader_avatar_path(@reader), method: :delete,
+          html: { id: "b270-remove-picture", hidden: true },
+          data: { turbo_confirm: "Remove #{@reader.display_name}'s picture?" } do %>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="b270-panel">
+  <h2 class="b270-subhead">Which translation they read</h2>
+  <p class="b270-hint" style="margin-top:0">
+    Reading links open in this translation.
+    <% if @reader.bible_version.blank? %>
+      They have expressed no preference, so they follow the site default
+      (<%= Bible270.config.bible_version %>).
+    <% end %>
+  </p>
+
+  <%= form_with url: admin_reader_version_path(@reader), method: :patch, class: "b270-form" do %>
+    <div class="row">
+      <%= select_tag :bible_version,
+            options_for_select([["Site default (#{Bible270.config.bible_version})", ""]] +
+                               Bible270::Translations.options,
+                               @reader.bible_version.to_s),
+            class: "b270-select", style: "width:auto" %>
+    </div>
+    <%= render "bible270/shared/passage_source", reader: @reader %>
+    <%= submit_tag "Save", class: "b270-btn" %>
+  <% end %>
+</div>
+
+<div class="b270-panel">
+  <h2 class="b270-subhead" id="b270-theme-heading">Theme</h2>
+  <% if Bible270::Reader.display_mode_column? %>
+    <%= form_with url: admin_reader_theme_path(@reader), method: :patch, class: "b270-emailform" do %>
+      <%= select_tag :display_mode,
+            options_for_select([["Parchment", "light"], ["Earth", "dark"], ["Forest", "dark_green"],
+                                ["Midnight", "dark_blue"], ["System", "system"]], @reader.effective_display_mode),
+            class: "b270-select", aria: { labelledby: "b270-theme-heading", describedby: "b270-theme-hint" } %>
+      <p id="b270-theme-hint" class="b270-hint" style="margin:0">
+        System follows the reader's device setting: Parchment for light, Earth for dark.
+      </p>
+      <%= submit_tag "Save", class: "b270-btn" %>
+    <% end %>
+  <% else %>
+    <p class="b270-flash alert" style="margin:0">
+      Run the pending Bible270 database migration before changing the theme.
+    </p>
   <% end %>
 </div>
 
@@ -119,28 +170,6 @@
   <%= render "bible270/shared/reflections", comments: @comments, moderate: true, editable: true, actions: true %>
 </div>
 
-<div class="b270-panel">
-  <h2 class="b270-subhead">Which translation they read</h2>
-  <p class="b270-hint" style="margin-top:0">
-    Reading links open in this translation.
-    <% if @reader.bible_version.blank? %>
-      They have expressed no preference, so they follow the site default
-      (<%= Bible270.config.bible_version %>).
-    <% end %>
-  </p>
-
-  <%= form_with url: admin_reader_version_path(@reader), method: :patch, class: "b270-form" do %>
-    <div class="row">
-      <%= select_tag :bible_version,
-            options_for_select([["Site default (#{Bible270.config.bible_version})", ""]] +
-                               Bible270::Translations.options,
-                               @reader.bible_version.to_s),
-            class: "b270-select", style: "width:auto" %>
-    </div>
-    <%= render "bible270/shared/passage_source", reader: @reader %>
-    <%= submit_tag "Save", class: "b270-btn" %>
-  <% end %>
-</div>
 
 <div class="b270-panel">
   <h2 class="b270-subhead">Completions</h2>

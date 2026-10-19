@@ -96,7 +96,7 @@
           </div>
           <div class="sub b270-reader-activity">
             <% if (activity = @recent_reader_activities[reader.id]) %>
-              <%= b270_date(activity.occurred_at) %>: <%= b270_reader_activity_description(activity) %>
+              <%= b270_activity_datetime(activity.occurred_at) %>: <%= b270_reader_activity_description(activity) %>
             <% else %>
               No reading activity yet
             <% end %>

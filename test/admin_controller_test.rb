@@ -153,15 +153,14 @@ if RAILS_LOADED
       sign_in_as_admin
       get "#{mount}/admin"
 
-      completed_readings = Bible270::Plan.readings_for(7).values.compact.join(', ')
       completed_tooltip = Bible270::Plan.readings_for(7).values.compact.join(' · ')
-      completed_date = Bible270.local_time(completed_at).strftime('%b %-d, %Y')
+      completed_date = Bible270.local_time(completed_at).strftime('%b %-d, %Y %H:%M')
       partial_reference = Bible270::Plan.parts_for(13, 'ot').first
       partial_tooltip = Bible270::Plan.readings_for(13).values.compact.join(' · ')
-      partial_date = Bible270.local_time(partial_at).strftime('%b %-d, %Y')
+      partial_date = Bible270.local_time(partial_at).strftime('%b %-d, %Y %H:%M')
 
       assert_select '.b270-reader-activity', count: 3
-      assert_select '.b270-reader-activity', text: "#{completed_date}: completed Day 7 (#{completed_readings})"
+      assert_select '.b270-reader-activity', text: "#{completed_date}: completed Day 7"
       assert_select ".b270-reader-activity a[href='#{mount}/day/7'][title='#{completed_tooltip}']", text: 'Day 7'
       assert_select '.b270-reader-activity', text: "#{partial_date}: checked off “#{partial_reference}” for Day 13"
       assert_select ".b270-reader-activity a[href='#{mount}/day/13'][title='#{partial_tooltip}']", text: 'Day 13'
@@ -349,9 +348,120 @@ if RAILS_LOADED
       get "#{mount}/admin/readers/#{@reader.id}"
 
       headings = css_select('.b270-panel > h2').map { |heading| heading.text.strip }
+      assert_equal ['Name and picture', 'Which translation they read', 'Theme', 'Email notifications'], headings.first(4)
+      assert_equal 1, headings.count('Which translation they read')
       assert_equal 1, headings.count('Completions')
       assert_operator headings.index('Which translation they read'), :<, headings.index('Completions')
       assert_operator headings.index('Completions'), :<, headings.index('Remove')
+    end
+
+    def test_reader_detail_email_is_a_mailto_link_with_provider_fallback
+      sign_in_as_admin
+      get "#{mount}/admin/readers/#{@reader.id}"
+      assert_select "p.lede a[href='mailto:#{@reader.email}']", text: @reader.email
+
+      @reader.update!(email: nil)
+      get "#{mount}/admin/readers/#{@reader.id}"
+      assert_select 'p.lede a[href^="mailto:"]', count: 0
+      assert_select 'p.lede', text: %r{email}
+    end
+
+    def test_reader_theme_selector_has_the_profile_options_and_saved_selection
+      @reader.update!(display_mode: 'dark_green')
+      sign_in_as_admin
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      assert_select "form[action='#{mount}/admin/readers/#{@reader.id}/theme']" do
+        assert_select 'input[name="_method"][value="patch"]'
+        assert_select 'select[name="display_mode"][aria-labelledby="b270-theme-heading"][aria-describedby="b270-theme-hint"]' do
+          assert_select 'option', count: 5
+          assert_select 'option[value="light"]', text: 'Parchment'
+          assert_select 'option[value="dark"]', text: 'Earth'
+          assert_select 'option[value="dark_green"][selected]', text: 'Forest'
+          assert_select 'option[value="dark_blue"]', text: 'Midnight'
+          assert_select 'option[value="system"]', text: 'System'
+        end
+        assert_select 'input[type="submit"][value="Save"]'
+      end
+      assert_select 'body[data-display-mode="system"]'
+    end
+
+    def test_admin_can_save_each_theme_without_changing_other_settings_or_their_own_theme
+      sign_in_as_admin
+      original = @reader.attributes.except('display_mode', 'updated_at')
+      %w[light dark dark_green dark_blue system].each do |mode|
+        patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: mode, first_name: 'Ignored' }
+        assert_redirected_to "#{mount}/admin/readers/#{@reader.id}"
+        assert_equal mode, @reader.reload.display_mode
+        assert_equal original, @reader.attributes.except('display_mode', 'updated_at')
+        assert_equal 'system', @admin.reload.display_mode
+        follow_redirect!
+        assert_select "select[name='display_mode'] option[value='#{mode}'][selected]"
+      end
+    end
+
+    def test_invalid_and_missing_admin_theme_choices_leave_the_preference_unchanged
+      @reader.update!(display_mode: 'dark_blue')
+      sign_in_as_admin
+      ['sepia', '', nil].each do |mode|
+        patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: mode }
+        assert_redirected_to "#{mount}/admin/readers/#{@reader.id}"
+        assert_equal 'dark_blue', @reader.reload.display_mode
+        assert_equal 'Choose a theme from the list.', flash[:alert]
+      end
+    end
+
+    def test_admin_theme_settings_explain_a_pending_migration
+      sign_in_as_admin
+      Bible270::Reader.stub(:display_mode_column?, false) do
+        get "#{mount}/admin/readers/#{@reader.id}"
+        assert_response :success
+        assert_select 'select[name="display_mode"]', count: 0
+        assert_select '.b270-flash.alert', text: %r{pending Bible270 database migration before changing the theme}
+        patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }
+        assert_redirected_to "#{mount}/admin/readers/#{@reader.id}"
+        assert_match(%r{pending Bible270 database migration}, flash[:alert])
+      end
+      assert_equal 'system', @reader.reload.display_mode
+    end
+
+    def test_visitors_and_ordinary_readers_cannot_use_the_admin_theme_action
+      patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }
+      assert_response :not_found
+      sign_in_as(@reader)
+      patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }
+      assert_response :not_found
+      assert_equal 'system', @reader.reload.display_mode
+    end
+
+    def test_admin_theme_action_handles_a_missing_reader
+      sign_in_as_admin
+      patch "#{mount}/admin/readers/999999/theme", params: { display_mode: 'dark' }
+      assert_redirected_to "#{mount}/admin"
+      assert_equal 'Reader not found.', flash[:alert]
+    end
+
+    def test_admin_picture_removal_is_next_to_upload_controls_with_a_separate_form
+      skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
+
+      sign_in_as_admin
+      get "#{mount}/admin/readers/#{@reader.id}"
+      assert_select 'button[form="b270-remove-picture"]', count: 0
+      assert_select 'form#b270-remove-picture', count: 0
+
+      @reader.avatar.attach(io: StringIO.new('avatar'), filename: 'avatar.png', content_type: 'image/png')
+      get "#{mount}/admin/readers/#{@reader.id}"
+      assert_select '.b270-avatarrow .b270-avatarcontrols' do
+        assert_select 'input[type="file"][name="avatar"]'
+        assert_select 'button[type="submit"][form="b270-remove-picture"]', text: 'Remove picture'
+      end
+      assert_select 'form form, label button', count: 0
+      assert_select '.b270-panel > form#b270-remove-picture[hidden][method="post"]' do |forms|
+        assert_equal "#{mount}/admin/readers/#{@reader.id}/avatar", forms.first['action']
+        assert_equal "Remove #{@reader.display_name}'s picture?", forms.first['data-turbo-confirm']
+        assert_select 'input[name="_method"][value="delete"]'
+        assert_select 'input[name="first_name"], input[name="last_name"], input[name="avatar"]', count: 0
+      end
     end
 
     def test_a_stale_reader_id_redirects_with_an_alert_and_halts_the_action
