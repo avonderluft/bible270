@@ -4,7 +4,16 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.10.1...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.10.2...main)**
+
+## [1.10.2] - 2026-10-18
+
+### Changed
+
+- show each Admin reader row in that reader's selected theme, with matching text and link colors
+- let System-themed rows follow the viewing browser's light or dark preference
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.10.1...v1.10.2)**
 
 ## [1.10.1] - 2026-10-18
 
@@ -863,7 +872,8 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.10.1...HEAD
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.10.2...HEAD
+[1.10.2]: https://github.com/avonderluft/bible270/releases/tag/v1.10.2
 [1.10.1]: https://github.com/avonderluft/bible270/releases/tag/v1.10.1
 [1.10.0]: https://github.com/avonderluft/bible270/releases/tag/v1.10.0
 [1.9.1]: https://github.com/avonderluft/bible270/releases/tag/v1.9.1
