@@ -326,10 +326,23 @@ class ViewsTest < Minitest::Test
     assert_equal %w[1c3027 182537], palettes
   end
 
+  def test_admin_reader_rows_share_all_palettes_without_inheriting_body_layout
+    styles = File.read(STYLES)
+    defaults = styles.match(%r{\.b270-reader-theme,\s*\.b270\{([^\}]+)})[1]
+    assert_includes defaults, '--paper:#ece6da'
+    assert_includes defaults, 'color-scheme:light'
+    refute_includes defaults, 'margin:'
+    refute_includes defaults, 'font-family:'
+    %w[light dark dark_green dark_blue system].each do |mode|
+      assert_match(%r{\.b270-reader-theme\[data-display-mode="#{mode}"\],\s*\.b270\[data-display-mode="#{mode}"\]\{}, styles)
+    end
+    assert_includes styles, '.b270-li.b270-reader-theme{background:var(--card);color:var(--ink)}'
+  end
+
   def test_system_theme_uses_a_media_query_and_matches_explicit_dark
     styles = File.read(STYLES)
     dark = styles.match(%r{\.b270\[data-display-mode="dark"\]\{([^\}]+)})[1]
-    system = styles.match(%r{@media \(prefers-color-scheme:dark\)\{\s*\.b270\[data-display-mode="system"\]\{([^\}]+)})[1]
+    system = styles.match(%r{@media \(prefers-color-scheme:dark\)\{\s*\.b270-reader-theme\[data-display-mode="system"\],\s*\.b270\[data-display-mode="system"\]\{([^\}]+)})[1]
 
     assert_equal dark.split.join, system.split.join
     assert_includes dark, 'color-scheme:dark'

@@ -97,6 +97,30 @@ if RAILS_LOADED
       assert_select "a[href='mailto:#{@reader.email}']", text: @reader.email
     end
 
+    def test_admin_reader_rows_use_each_readers_theme_without_changing_the_page_theme
+      @admin.update!(display_mode: 'dark_blue')
+      sign_in_as_admin
+      %w[light dark dark_green dark_blue system].each do |mode|
+        @reader.update!(display_mode: mode)
+        get "#{mount}/admin"
+
+        assert_response :success
+        assert_select 'body.b270[data-display-mode="dark_blue"]'
+        assert_select ".b270-reader-theme[data-display-mode='#{mode}'] a[href='mailto:#{@reader.email}']"
+        assert_select ".b270-reader-theme[data-display-mode='dark_blue'] a[href='mailto:#{@admin.email}']"
+      end
+    end
+
+    def test_reader_row_theming_is_limited_to_the_admin_list
+      @reader.update!(display_mode: 'dark_green')
+      sign_in_as_admin
+      get "#{mount}/community"
+
+      assert_response :success
+      assert_select '.b270-reader-theme', count: 0
+      assert_select '.b270-li[data-display-mode]', count: 0
+    end
+
     def test_the_reader_list_shows_start_date_then_days_completed_then_status
       Bible270.config.start_date = Bible270.today - 9
       Bible270.config.allow_reader_start_date = false

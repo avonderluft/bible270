@@ -1,4 +1,6 @@
 <style>
+  /* Reset every palette variable on themed rows so they do not inherit the admin's theme. */
+  .b270-reader-theme,
   .b270{
     --paper:#ece6da; --card:#f4efe6; --ink:#231f18; --muted:#5d564c; --faint:#6e665b;
     --line:#d7cfbf; --line-soft:#e2dbcd; --teal:#2f6a67; --oxblood:#8a2f3b; --gold:#80631d;
@@ -11,12 +13,16 @@
     --alert-surface:#f6e4e2; --alert-ink:#7a2b28; --alert-line:#e6c3bf;
     --notice-surface:#e7efe6; --notice-ink:#2f5d34; --notice-line:#c6dcc6;
     color-scheme:light;
+  }
+  .b270{
     margin:0; background:radial-gradient(120% 80% at 100% 0%,rgba(165,129,44,.06),transparent 55%),var(--paper);
     color:var(--ink); font-family:"Inter",system-ui,sans-serif; line-height:1.2; -webkit-font-smoothing:antialiased;
   }
   /* Explicit light keeps native controls light even when the OS is dark.
      Only system mode follows the media query, including live OS changes. */
+  .b270-reader-theme[data-display-mode="light"],
   .b270[data-display-mode="light"]{color-scheme:light}
+  .b270-reader-theme[data-display-mode="dark"],
   .b270[data-display-mode="dark"]{
     color-scheme:dark;
     background-image:none;
@@ -32,6 +38,7 @@
     --alert-surface:#42282a; --alert-ink:#ffc0b8; --alert-line:#a66d68;
     --notice-surface:#25382a; --notice-ink:#b6dfb6; --notice-line:#6d956e;
   }
+  .b270-reader-theme[data-display-mode="dark_green"],
   .b270[data-display-mode="dark_green"]{
     color-scheme:dark;
     background-image:none;
@@ -47,6 +54,7 @@
     --alert-surface:#3e282c; --alert-ink:#ffc1c2; --alert-line:#a87479;
     --notice-surface:#243b2b; --notice-ink:#c1e2b9; --notice-line:#779c70;
   }
+  .b270-reader-theme[data-display-mode="dark_blue"],
   .b270[data-display-mode="dark_blue"]{
     color-scheme:dark;
     background-image:none;
@@ -63,6 +71,7 @@
     --notice-surface:#1e3430; --notice-ink:#b7decc; --notice-line:#6b9787;
   }
   @media (prefers-color-scheme:dark){
+    .b270-reader-theme[data-display-mode="system"],
     .b270[data-display-mode="system"]{
       color-scheme:dark;
       background-image:none;
@@ -410,6 +419,7 @@
   .b270-reader-stats-dialog pre{max-height:65vh;overflow:auto;margin:0;padding:12px;border:1px solid var(--line-soft);border-radius:9px;background:var(--control);color:var(--ink);font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .b270-list{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
   .b270-li{display:flex;align-items:center;gap:14px;padding:14px 18px}
+  .b270-li.b270-reader-theme{background:var(--card);color:var(--ink)}
   .b270-li+.b270-li{border-top:1px solid var(--line-soft)}
   .b270-li .name{font-weight:600}
   .b270-li .sub{font-size:12.5px;color:var(--faint)}

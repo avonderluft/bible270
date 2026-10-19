@@ -77,7 +77,7 @@
 
   <div class="b270-list">
     <% @readers.each do |reader| %>
-      <div class="b270-li">
+      <div class="b270-li b270-reader-theme" data-display-mode="<%= reader.effective_display_mode %>">
         <%= link_to b270_avatar(reader, size: 72), admin_reader_path(reader),
               "aria-label": reader.display_name %>
         <div>
