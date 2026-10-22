@@ -33,7 +33,9 @@ function harness({ apply = 'true', url = '/profile/theme' } = {}) {
   const selects = [select];
   const region = { textContent: '', dataset: {} };
   const headerRegion = { textContent: '', dataset: {} };
-  const regions = { 'b270-theme-status': region, 'b270-header-theme-status': headerRegion };
+  const colorSchemeMeta = { content: 'light dark' };
+  const regions = { 'b270-theme-status': region, 'b270-header-theme-status': headerRegion,
+    'b270-color-scheme': colorSchemeMeta };
   const meta = { content: 'old-token' };
   const inputs = [{ value: 'old-token' }, { value: 'old-token' }];
   const fallbacks = [{ hidden: false }];
@@ -42,6 +44,7 @@ function harness({ apply = 'true', url = '/profile/theme' } = {}) {
   const document = {
     currentScript: { dataset: { refreshPath: '/refresh-session' } },
     body: { dataset: { displayMode: 'parchment' } },
+    documentElement: { dataset: {} },
     getElementById(id) { return regions[id] || null; },
     querySelector(value) {
       assert.equal(value, "meta[name='csrf-token']");
@@ -78,7 +81,8 @@ function harness({ apply = 'true', url = '/profile/theme' } = {}) {
     return event;
   };
   return {
-    document, select, selects, form, formFor, region, headerRegion, meta, inputs, fallbacks, listeners, requests, emit,
+    document, select, selects, form, formFor, region, headerRegion, meta, colorSchemeMeta,
+    inputs, fallbacks, listeners, requests, emit,
     addSelect(dataset) {
       const other = new Select(dataset);
       other.value = other.dataset.b270SavedTheme;
@@ -111,6 +115,8 @@ function assertFailed(h) {
   assert.equal(h.select.value, 'parchment');
   assert.equal(h.select.dataset.b270SavedTheme, 'parchment');
   assert.equal(h.document.body.dataset.displayMode, 'parchment');
+  assert.equal(h.document.documentElement.dataset.b270DisplayMode, 'parchment');
+  assert.equal(h.colorSchemeMeta.content, 'light dark');
   assert.equal(h.region.textContent, 'Couldn’t save the theme. Please select it again to retry.');
   assertIdle(h.select);
 }
@@ -563,6 +569,102 @@ test('disconnected controls and new Turbo page controls are not included in an i
   [h.header, h.select].forEach(assertIdle);
   assert.equal(h.headerRegion.textContent, 'New page status');
   assert.equal(h.document.body.dataset.displayMode, 'sepia');
+});
+
+const colorSchemes = [
+  ['light', 'only light'], ['sage', 'only light'], ['mist', 'only light'],
+  ['dark', 'dark'], ['dark_green', 'dark'], ['dark_blue', 'dark'],
+  ['system', 'light dark']
+];
+
+function assertColorScheme(h, mode, scheme) {
+  assert.equal(h.document.documentElement.dataset.b270DisplayMode, mode);
+  assert.equal(h.colorSchemeMeta.content, scheme);
+}
+
+for (const [mode, scheme] of [...colorSchemes, ['unknown', 'light dark'], [undefined, 'light dark']]) {
+  test(`initialization synchronizes root and color-scheme for ${mode ?? 'missing mode'}`, () => {
+    const h = harness();
+    if (mode === undefined) delete h.document.body.dataset.displayMode;
+    else h.document.body.dataset.displayMode = mode;
+    h.evaluate();
+    assertColorScheme(h, mode ?? 'system', scheme);
+    assert.equal(h.requests.length, 0);
+  });
+}
+
+for (const initiating of ['header', 'select']) {
+  test(`${initiating} switches root and color-scheme through all modes without reload, only after save`, async () => {
+    const h = pairedHarness();
+    let previous = ['light', 'only light'];
+    for (const [mode, scheme] of colorSchemes) {
+      const next = h.requests.length;
+      h[initiating].value = mode;
+      const change = h.change(h[initiating]);
+      assertColorScheme(h, ...previous);
+      await h.reply(next, sessionResponse());
+      assertColorScheme(h, ...previous);
+      await h.reply(next + 1, themeResponse({ mode }));
+      await change.done;
+      assertColorScheme(h, mode, scheme);
+      assert.equal(h.document.body.dataset.displayMode, mode);
+      previous = [mode, scheme];
+    }
+  });
+}
+
+for (const phase of ['session', 'PATCH']) {
+  test(`${phase} failure preserves the applied root mode and color-scheme`, async () => {
+    const h = pairedHarness();
+    h.header.value = 'dark_blue';
+    const change = h.change(h.header);
+    if (phase === 'session') await h.reply(0, sessionResponse({ ok: false }));
+    else {
+      await h.reply(0, sessionResponse());
+      await h.reply(1, themeResponse({ ok: false, mode: 'dark_blue' }));
+    }
+    await change.done;
+    assertColorScheme(h, 'light', 'only light');
+    assert.equal(h.document.body.dataset.displayMode, 'light');
+  });
+}
+
+test('another reader’s save does not overwrite root or color-scheme applied by the header', async () => {
+  const h = pairedHarness({ apply: 'false', url: '/admin/readers/8/theme' });
+  h.select.value = 'mist';
+  const otherChange = h.change();
+  h.header.value = 'dark_green';
+  const headerChange = h.change(h.header);
+  await h.reply(0, sessionResponse());
+  await h.reply(1, sessionResponse());
+  await h.reply(3, themeResponse({ mode: 'dark_green' }));
+  await headerChange.done;
+  assertColorScheme(h, 'dark_green', 'dark');
+  await h.reply(2, themeResponse({ mode: 'mist' }));
+  await otherChange.done;
+  assert.equal(h.select.dataset.b270SavedTheme, 'mist');
+  assert.equal(h.document.body.dataset.displayMode, 'dark_green');
+  assertColorScheme(h, 'dark_green', 'dark');
+});
+
+test('Turbo loads and repeated script initialization refresh root and color-scheme from the new body', async () => {
+  const h = pairedHarness();
+  for (const [mode, scheme] of colorSchemes) {
+    h.document.body = { dataset: { displayMode: mode } };
+    h.document.documentElement.dataset.b270DisplayMode = 'stale';
+    h.colorSchemeMeta.content = 'stale';
+    await h.emit('turbo:load', h.document).done;
+    assertColorScheme(h, mode, scheme);
+
+    h.document.documentElement.dataset.b270DisplayMode = 'stale';
+    h.colorSchemeMeta.content = 'stale';
+    h.evaluate();
+    assertColorScheme(h, mode, scheme);
+  }
+  for (const type of ['change', 'submit', 'turbo:load']) {
+    assert.equal(h.listeners.get(type).length, 1);
+  }
+  assert.equal(h.requests.length, 0);
 });
 
 test('a missing explicit status region does not write to the default region or prevent saving', async () => {

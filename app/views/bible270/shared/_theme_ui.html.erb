@@ -16,7 +16,18 @@
       }
     }
 
+    function syncColorScheme() {
+      const mode = document.body.dataset.displayMode || "system";
+      document.documentElement.dataset.b270DisplayMode = mode;
+      const meta = document.getElementById("b270-color-scheme");
+      if (meta) {
+        meta.content = ["light", "sage", "mist"].includes(mode) ? "only light" :
+          ["dark", "dark_green", "dark_blue"].includes(mode) ? "dark" : "light dark";
+      }
+    }
+
     function initialize() {
+      syncColorScheme();
       document.querySelectorAll("[data-b270-theme-fallback]").forEach((button) => { button.hidden = true; });
     }
 
@@ -65,7 +76,10 @@
           other.dataset.b270SavedTheme = mode;
         });
         if (!select.isConnected) return;
-        if (select.dataset.b270ThemeApply === "true") document.body.dataset.displayMode = mode;
+        if (select.dataset.b270ThemeApply === "true") {
+          document.body.dataset.displayMode = mode;
+          syncColorScheme();
+        }
         status(select, "Theme saved.");
       } catch (_error) {
         group.forEach(({ select: other, previous }) => { other.value = previous; });

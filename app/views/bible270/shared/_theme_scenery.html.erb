@@ -48,7 +48,7 @@
     <path d="M0 181Q150 174 294 181T601 184M728 182Q874 175 1028 181T1370 180M1442 183H1600" stroke-width="1.4" />
     <path d="M43 216Q193 203 353 214T691 213M821 220Q970 208 1128 218T1510 215" stroke-width="2" />
   </g>
-  <g fill="none" stroke="url(#b270-ocean-shimmer)" stroke-linecap="round">
+  <g id="b270-ocean-glints" fill="none" stroke="url(#b270-ocean-shimmer)" stroke-linecap="round">
     <path d="M880 170H1360M808 196H1434M751 230H1507" stroke-width="3" />
     <path d="M685 269Q1050 253 1560 272" stroke-width="5" />
   </g>
@@ -61,7 +61,7 @@
     <path d="M0 292C208 270 381 310 593 289S973 254 1181 266 1444 288 1600 257" stroke-width="2" opacity=".38" />
     <path d="M50 365Q174 352 282 366M370 381Q499 389 611 374M745 352Q887 326 1012 328M1194 339Q1335 359 1450 344" stroke-width="1.4" opacity=".38" />
   </g>
-  <g fill="none" stroke="#b4a88c" stroke-linecap="round" opacity=".17">
+  <g id="b270-ocean-sand-detail" fill="none" stroke="#b4a88c" stroke-linecap="round" opacity=".17">
     <path d="M105 414Q228 401 347 413M530 424Q669 412 777 417M1007 386Q1110 379 1227 391M1337 420Q1450 406 1562 411" />
   </g>
 </svg>
@@ -238,12 +238,12 @@
         <path d="M372 0 359 104 371 193 356 283 369 369 358 460 372 547 359 635 373 723 362 815 372 900H385L375 814 387 723 373 635 386 547 372 459 383 369 370 282 385 193 373 105 385 0Z" />
         <path d="M529 0 538 92 523 184 536 276 522 362 533 451 518 542 531 636 520 726 534 813 529 900H540L547 813 533 726 544 636 532 542 546 452 535 362 549 276 537 184 551 92 540 0Z" />
       </g>
-      <g fill="none" stroke="#ad8359" stroke-linecap="round" opacity=".17">
+      <g id="b270-cedar-fine-grain" fill="none" stroke="#ad8359" stroke-linecap="round" opacity=".17">
         <path stroke-width="2" d="M75 0C51 134 85 209 65 330S79 525 62 653 82 811 75 900M241 0C260 112 231 202 250 314S229 511 247 629 225 802 241 900M402 0C383 127 413 223 393 345S418 534 398 665 414 810 402 900M565 0C581 123 552 223 574 348S552 548 571 677 552 807 565 900" />
         <path d="M97 51 88 147 99 232M95 468 84 556 94 631 85 710M272 79 264 164 276 245 267 320M272 502 261 588 273 667 264 757 272 830M455 43 446 132 458 219 449 295M471 408 459 486 471 568M472 767 461 842" />
         <path d="M163 47C150 163 167 221 150 271M150 416C165 481 151 539 160 617M316 171 307 262 318 347 308 429M311 671 302 753 313 845M491 109 481 195 492 281 482 359" />
       </g>
-      <g fill="none" stroke="#9b744e" stroke-width="1.5" opacity=".2">
+      <g id="b270-cedar-knots" fill="none" stroke="#9b744e" stroke-width="1.5" opacity=".2">
         <path d="M143 261C113 290 108 342 126 385L143 425C158 390 175 346 162 302Z" />
         <path d="M142 288C126 310 124 340 135 365L144 387C152 359 158 329 149 307Z" />
         <path d="M141 315Q134 335 144 352Q150 332 141 315Z" />
@@ -264,11 +264,11 @@
   <rect width="100%" height="100%" fill="url(#b270-cedar-grain)" mask="url(#b270-cedar-mask)" />
 </svg>
 
+<%# Direct paths avoid SVG use-instance repainting when a hidden theme is revealed. %>
+<% spruce_tree_path = "M0 0-9 29-5 27-20 55-11 52-29 85-18 81-39 119-26 113-48 154-32 146-57 194-6 181-6 218H6V181L57 194 32 146 48 154 26 113 39 119 18 81 29 85 11 52 20 55 5 27 9 29Z" %>
 <svg class="b270-theme-scenery" data-scenery="dark_green" viewBox="0 0 1600 440" preserveAspectRatio="xMidYMax slice"
      xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
   <defs>
-    <path id="b270-spruce-tree"
-          d="M0 0-9 29-5 27-20 55-11 52-29 85-18 81-39 119-26 113-48 154-32 146-57 194-6 181-6 218H6V181L57 194 32 146 48 154 26 113 39 119 18 81 29 85 11 52 20 55 5 27 9 29Z" />
     <linearGradient id="b270-spruce-fade" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="white" />
       <stop offset=".75" stop-color="white" stop-opacity=".9" />
@@ -281,70 +281,70 @@
   <g id="b270-spruce-treeline" transform="translate(0 -24)">
     <g id="b270-spruce-distant" fill="#66816b" opacity=".19" mask="url(#b270-spruce-mask)">
       <rect id="b270-spruce-distant-ground" y="300" width="1600" height="164" />
-      <use href="#b270-spruce-tree" transform="translate(15 145) scale(.64 .95)" />
-      <use href="#b270-spruce-tree" transform="translate(90 171) scale(.55 .82)" />
-      <use href="#b270-spruce-tree" transform="translate(164 112) scale(.7 1.1)" />
-      <use href="#b270-spruce-tree" transform="translate(244 157) scale(.6 .92)" />
-      <use href="#b270-spruce-tree" transform="translate(321 137) scale(.66 1.02)" />
-      <use href="#b270-spruce-tree" transform="translate(405 186) scale(.55 .82)" />
-      <use href="#b270-spruce-tree" transform="translate(478 163) scale(.67 .96)" />
-      <use href="#b270-spruce-tree" transform="translate(560 194) scale(.58 .83)" />
-      <use href="#b270-spruce-tree" transform="translate(643 180) scale(.6 .91)" />
-      <use href="#b270-spruce-tree" transform="translate(719 212) scale(.5 .77)" />
-      <use href="#b270-spruce-tree" transform="translate(790 192) scale(.58 .88)" />
-      <use href="#b270-spruce-tree" transform="translate(875 211) scale(.52 .78)" />
-      <use href="#b270-spruce-tree" transform="translate(950 174) scale(.62 .96)" />
-      <use href="#b270-spruce-tree" transform="translate(1030 193) scale(.54 .84)" />
-      <use href="#b270-spruce-tree" transform="translate(1110 148) scale(.7 1.02)" />
-      <use href="#b270-spruce-tree" transform="translate(1195 166) scale(.58 .91)" />
-      <use href="#b270-spruce-tree" transform="translate(1270 108) scale(.7 1.15)" />
-      <use href="#b270-spruce-tree" transform="translate(1350 153) scale(.6 .94)" />
-      <use href="#b270-spruce-tree" transform="translate(1435 129) scale(.64 1.05)" />
-      <use href="#b270-spruce-tree" transform="translate(1515 168) scale(.58 .88)" />
-      <use href="#b270-spruce-tree" transform="translate(1590 139) scale(.7 1)" />
-      <use href="#b270-spruce-tree" transform="translate(53 237) scale(.3 .36)" />
-      <use href="#b270-spruce-tree" transform="translate(205 225) scale(.34 .43)" />
-      <use href="#b270-spruce-tree" transform="translate(365 247) scale(.28 .31)" />
-      <use href="#b270-spruce-tree" transform="translate(520 231) scale(.33 .4)" />
-      <use href="#b270-spruce-tree" transform="translate(681 241) scale(.29 .34)" />
-      <use href="#b270-spruce-tree" transform="translate(834 218) scale(.36 .47)" />
-      <use href="#b270-spruce-tree" transform="translate(1068 237) scale(.31 .37)" />
-      <use href="#b270-spruce-tree" transform="translate(1235 244) scale(.28 .33)" />
-      <use href="#b270-spruce-tree" transform="translate(1394 228) scale(.34 .42)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(15 145) scale(.64 .95)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(90 171) scale(.55 .82)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(164 112) scale(.7 1.1)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(244 157) scale(.6 .92)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(321 137) scale(.66 1.02)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(405 186) scale(.55 .82)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(478 163) scale(.67 .96)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(560 194) scale(.58 .83)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(643 180) scale(.6 .91)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(719 212) scale(.5 .77)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(790 192) scale(.58 .88)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(875 211) scale(.52 .78)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(950 174) scale(.62 .96)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1030 193) scale(.54 .84)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1110 148) scale(.7 1.02)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1195 166) scale(.58 .91)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1270 108) scale(.7 1.15)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1350 153) scale(.6 .94)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1435 129) scale(.64 1.05)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1515 168) scale(.58 .88)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1590 139) scale(.7 1)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(53 237) scale(.3 .36)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(205 225) scale(.34 .43)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(365 247) scale(.28 .31)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(520 231) scale(.33 .4)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(681 241) scale(.29 .34)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(834 218) scale(.36 .47)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1068 237) scale(.31 .37)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1235 244) scale(.28 .33)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#66816b" transform="translate(1394 228) scale(.34 .42)" />
     </g>
     <%# Keep the foreground outside the distant haze mask so no trees show through it. %>
     <g id="b270-spruce-near" fill="#0c2017">
       <rect id="b270-spruce-near-ground" y="350" width="1600" height="114" />
-      <use href="#b270-spruce-tree" transform="translate(-15 104) scale(1.1 1.65)" />
-      <use href="#b270-spruce-tree" transform="translate(115 64) scale(1.08 1.78)" />
-      <use href="#b270-spruce-tree" transform="translate(228 153) scale(.87 1.4)" />
-      <use href="#b270-spruce-tree" transform="translate(343 121) scale(1 1.56)" />
-      <use href="#b270-spruce-tree" transform="translate(455 189) scale(.83 1.26)" />
-      <use href="#b270-spruce-tree" transform="translate(561 161) scale(.94 1.4)" />
-      <use href="#b270-spruce-tree" transform="translate(676 227) scale(.75 1.12)" />
-      <use href="#b270-spruce-tree" transform="translate(781 202) scale(.88 1.25)" />
-      <use href="#b270-spruce-tree" transform="translate(890 231) scale(.76 1.1)" />
-      <use href="#b270-spruce-tree" transform="translate(998 182) scale(.89 1.32)" />
-      <use href="#b270-spruce-tree" transform="translate(1112 153) scale(.98 1.46)" />
-      <use href="#b270-spruce-tree" transform="translate(1227 106) scale(1.03 1.65)" />
-      <use href="#b270-spruce-tree" transform="translate(1343 162) scale(.9 1.38)" />
-      <use href="#b270-spruce-tree" transform="translate(1460 73) scale(1.12 1.78)" />
-      <use href="#b270-spruce-tree" transform="translate(1580 133) scale(.97 1.5)" />
-      <use href="#b270-spruce-tree" transform="translate(55 213) scale(.62 1.08)" />
-      <use href="#b270-spruce-tree" transform="translate(394 245) scale(.58 .94)" />
-      <use href="#b270-spruce-tree" transform="translate(622 132) scale(.78 1.52)" />
-      <use href="#b270-spruce-tree" transform="translate(944 263) scale(.55 .88)" />
-      <use href="#b270-spruce-tree" transform="translate(1171 230) scale(.65 1.04)" />
-      <use href="#b270-spruce-tree" transform="translate(1524 201) scale(.7 1.17)" />
-      <use href="#b270-spruce-tree" transform="translate(173 282) scale(.34 .4)" />
-      <use href="#b270-spruce-tree" transform="translate(283 265) scale(.4 .49)" />
-      <use href="#b270-spruce-tree" transform="translate(506 290) scale(.32 .35)" />
-      <use href="#b270-spruce-tree" transform="translate(727 271) scale(.38 .46)" />
-      <use href="#b270-spruce-tree" transform="translate(835 297) scale(.3 .31)" />
-      <use href="#b270-spruce-tree" transform="translate(1054 277) scale(.36 .43)" />
-      <use href="#b270-spruce-tree" transform="translate(1284 288) scale(.33 .36)" />
-      <use href="#b270-spruce-tree" transform="translate(1398 260) scale(.42 .52)" />
-      <use href="#b270-spruce-tree" transform="translate(1552 294) scale(.31 .33)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(-15 104) scale(1.1 1.65)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(115 64) scale(1.08 1.78)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(228 153) scale(.87 1.4)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(343 121) scale(1 1.56)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(455 189) scale(.83 1.26)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(561 161) scale(.94 1.4)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(676 227) scale(.75 1.12)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(781 202) scale(.88 1.25)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(890 231) scale(.76 1.1)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(998 182) scale(.89 1.32)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1112 153) scale(.98 1.46)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1227 106) scale(1.03 1.65)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1343 162) scale(.9 1.38)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1460 73) scale(1.12 1.78)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1580 133) scale(.97 1.5)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(55 213) scale(.62 1.08)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(394 245) scale(.58 .94)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(622 132) scale(.78 1.52)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(944 263) scale(.55 .88)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1171 230) scale(.65 1.04)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1524 201) scale(.7 1.17)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(173 282) scale(.34 .4)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(283 265) scale(.4 .49)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(506 290) scale(.32 .35)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(727 271) scale(.38 .46)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(835 297) scale(.3 .31)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1054 277) scale(.36 .43)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1284 288) scale(.33 .36)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1398 260) scale(.42 .52)" />
+      <path class="b270-spruce-tree" d="<%= spruce_tree_path %>" fill="#0c2017" transform="translate(1552 294) scale(.31 .33)" />
     </g>
   </g>
 </svg>
@@ -398,6 +398,11 @@
         </g>
       </g>
     </mask>
+    <radialGradient id="b270-moon-mobile-glow">
+      <stop offset="0" stop-color="#c6d6e9" stop-opacity=".18" />
+      <stop offset=".5" stop-color="#abc3df" stop-opacity=".07" />
+      <stop offset="1" stop-color="#abc3df" stop-opacity="0" />
+    </radialGradient>
     <clipPath id="b270-lake-clip">
       <rect y="240" width="1600" height="200" />
     </clipPath>
@@ -416,7 +421,9 @@
     <ellipse cx="1510" cy="305" rx="145" ry="125" fill="url(#b270-moon-halo)" opacity=".6" />
     <rect id="b270-lake-reflection" fill="url(#b270-moon-reflection)"
           x="0" y="240" width="1600" height="200" mask="url(#b270-greek-reflection)" />
-    <%# The rippled letters supply the water texture without straight lines crossing the reflections. %>
+    <%# Phones use a quiet pool of moonlight instead of the reflected scripture. %>
+    <ellipse class="b270-mobile-scenery" cx="1510" cy="332" rx="65" ry="92" fill="url(#b270-moon-mobile-glow)" />
+    <%# The rippled letters supply the desktop water texture without straight lines crossing the reflections. %>
   </g>
 </svg>
 

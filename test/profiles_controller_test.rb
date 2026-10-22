@@ -123,7 +123,9 @@ if RAILS_LOADED
 
     def test_each_display_preference_is_saved_and_applied_on_other_pages
       sign_in_as(@reader)
-      %w[light sage mist dark dark_green dark_blue system].each do |mode|
+      schemes = { 'light' => 'only light', 'sage' => 'only light', 'mist' => 'only light',
+                  'dark' => 'dark', 'dark_green' => 'dark', 'dark_blue' => 'dark', 'system' => 'light dark' }
+      schemes.each do |mode, scheme|
         patch "#{mount}/profile", params: { first_name: 'R', last_name: 'Reader', display_mode: mode }
         assert_response :redirect
         assert_equal mode, @reader.reload.display_mode
@@ -133,6 +135,9 @@ if RAILS_LOADED
         assert_select "select[name='display_mode'] option[value='#{mode}'][selected]"
         get "#{mount}/progress"
         assert_select "body[data-display-mode='#{mode}']"
+        assert_select "html[data-b270-display-mode='#{mode}']"
+        assert_select "head meta#b270-color-scheme[name='color-scheme'][content='#{scheme}']", count: 1
+        assert_operator response.body.index('name="color-scheme"'), :<, response.body.index('<style>')
       end
     end
 

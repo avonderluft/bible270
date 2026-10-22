@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require 'erb'
 
 # Rails compiles a template into a method on an anonymous ActionView subclass.
 # Its lexical scope is Object, *not* Bible270 — including PlanHelper doesn't
@@ -113,7 +114,7 @@ class ViewsTest < Minitest::Test
     assert_includes styles, '.b270-header-theme-select{font:inherit;font-size:12px;width:6.5em;height:28px;padding:2px;margin:0;'
     assert_includes styles, '.b270-header-theme-select{field-sizing:content;width:auto}'
     assert_equal 1, styles.scan(%r{\.b270-header-theme-select\{[^\}]*font-size:}).size
-    assert_includes styles, '.b270-brand{display:flex;align-items:baseline;gap:4px;'
+    assert_includes styles, '.b270-brand{display:flex;align-items:baseline;gap:14px;'
     assert_includes styles, '.b270-header-theme{position:relative;display:flex;align-items:baseline;'
     assert_includes styles, '.b270-brandlink{display:flex;align-items:baseline;'
     assert_match(%r{\.b270-topbar\{[^\}]*flex-wrap:nowrap}, styles)
@@ -365,7 +366,7 @@ class ViewsTest < Minitest::Test
     variables = defaults.scan(%r{(--[a-z-]+):}).flatten.sort
     palettes = %w[sage mist].map do |mode|
       palette = styles.match(%r{\.b270\[data-display-mode="#{mode}"\]\{([^\}]+)})[1]
-      assert_includes palette, 'color-scheme:light'
+      assert_includes palette, 'color-scheme:only light'
       assert_includes palette, 'background-image:none'
       assert_equal variables, palette.scan(%r{(--[a-z-]+):}).flatten.sort
       colours = palette.scan(%r{--([a-z-]+):#([0-9a-f]{6})}).to_h
@@ -378,6 +379,28 @@ class ViewsTest < Minitest::Test
       colours.fetch('paper')
     end
     assert_equal %w[e1e8df e2e7ed], palettes
+  end
+
+  def test_explicit_light_palettes_force_light_on_the_page_root_but_not_system_or_defaults
+    styles = File.read(STYLES)
+    defaults = styles.match(%r{\.b270-reader-theme,\s*\.b270\{([^\}]+)})[1]
+    assert_includes defaults, 'color-scheme:light;'
+    refute_includes defaults, 'color-scheme:only light'
+
+    root = styles.match(%r{(:root\[data-b270-display-mode="light"\][^{}]+)\{([^{}]+)\}})
+    refute_nil root
+    assert_equal %w[light sage mist].map { |mode| ":root[data-b270-display-mode=\"#{mode}\"]" }, root[1].split(',').map(&:strip)
+    assert_equal 'color-scheme:only light', root[2]
+    refute_includes styles, ':root:has('
+    assert_includes styles, ':root[data-b270-display-mode="system"]{color-scheme:light dark}'
+    %w[light sage mist].each do |mode|
+      assert_match(%r{\.b270-reader-theme\[data-display-mode="#{mode}"\],\s*\.b270\[data-display-mode="#{mode}"\]\{\s*color-scheme:only light[;\}]}, styles)
+    end
+    scenery_css_rules(styles).each do |selector, declarations|
+      next unless selector.include?('[data-display-mode="system"]')
+
+      refute_includes declarations, 'color-scheme:only light'
+    end
   end
 
   def test_light_theme_surfaces_match_papyrus_brightness
@@ -432,6 +455,120 @@ class ViewsTest < Minitest::Test
     end
     assert_match(%r{@media print\{\s*\.b270\[data-display-mode\] > \.b270-theme-scenery\[data-scenery\]\{display:none\}}, styles)
     refute_includes styles, '.b270-reader-theme > .b270-theme-scenery'
+  end
+
+  def test_phone_scenery_reduces_height_and_hides_scripture_without_changing_desktop_defaults
+    styles = File.read(STYLES)
+    phone = phone_scenery_styles(styles)
+    rules = scenery_css_rules(phone).to_h
+    desktop = styles.sub(phone, '')
+
+    assert_equal '--b270-scene-height:clamp(180px,30vh,260px)', rules.fetch('.b270-theme-scenery')
+    assert_equal 'display:none', rules.fetch('.b270[data-display-mode] > .b270-theme-scripture')
+    assert_equal 'display:none', rules.fetch('.b270[data-display-mode] > .b270-theme-scenery[data-scenery="hebrew_water"]')
+    assert_match(%r{\.b270-theme-scenery\{display:none;--b270-scene-height:clamp\(280px,52vh,560px\);[^\}]*height:var\(--b270-scene-height\)}, desktop)
+    assert_includes desktop, '.b270 > .b270-theme-scripture{display:block;color:var(--gold)}'
+    assert_includes desktop, '.b270-theme-scripture{height:clamp(380px,76vh,820px)}'
+    assert_includes scenery_css_rules(desktop), ['.b270[data-display-mode="dark_blue"] > .b270-theme-scenery[data-scenery="hebrew_water"]', 'display:block']
+    refute_includes desktop, '#b270-lake-reflection'
+    refute_match(%r{\.b270-theme-scripture[^{}]*\{[^\}]*display:none}, desktop)
+    refute_match(%r{\[data-scenery="hebrew_water"\][^{}]*\{[^\}]*display:none}, desktop)
+
+    outside_rules = scenery_css_rules(desktop)
+    scenery_css_rules(phone).each do |rule|
+      refute_includes outside_rules, rule, "phone simplification must not escape max-width:600px: #{rule.first}"
+    end
+  end
+
+  def test_phone_artwork_simplifications_cover_all_six_themes_and_target_existing_layers
+    styles = File.read(STYLES)
+    rules = scenery_css_rules(phone_scenery_styles(styles)).to_h
+    artwork = Nokogiri::HTML.fragment(File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb')))
+    accents = {
+      '.b270-papyrus-grid' => 'opacity:.2',
+      '.b270-papyrus-edges' => 'opacity:.55',
+      '.b270-theme-scenery[data-scenery="sage_sky"]' => 'opacity:.3',
+      '#b270-meadow-clouds' => 'opacity:.5',
+      '#b270-meadow-grass-near' => 'opacity:.15',
+      '.b270-theme-scenery[data-scenery="sage"] [fill="url(#b270-meadow-rays)"]' => 'opacity:.25',
+      '.b270-theme-scenery[data-scenery="mist_sky"]' => 'opacity:.2',
+      '.b270-theme-scenery[data-scenery="mist"]' => 'opacity:.45',
+      '.b270-theme-scenery[data-scenery="dark"]' => 'height:clamp(240px,42vh,380px);opacity:.45'
+    }
+    hidden_details = [
+      '#b270-meadow-clouds path:nth-child(even)',
+      '#b270-meadow-grass-distant',
+      '#b270-meadow-grass-near path:not(:nth-child(3n + 1))',
+      '#b270-ocean-clouds', '#b270-ocean-distant-waves', '#b270-ocean-glints', '#b270-ocean-sand-detail',
+      '#b270-ocean-surf path:not(:first-child)',
+      '#b270-cedar-fine-grain path:not(:first-child)', '#b270-cedar-knots path:nth-child(n + 4)',
+      '#b270-spruce-distant path:nth-of-type(even)', '#b270-spruce-near path:nth-of-type(even)',
+      '#b270-spruce-distant path:nth-of-type(n + 22)', '#b270-spruce-near path:nth-of-type(n + 22)',
+      '#b270-lake-reflection'
+    ]
+    accents.merge(hidden_details.to_h { |selector| [selector, 'display:none'] }).each do |selector, declarations|
+      assert_equal declarations, rules.fetch(selector), selector
+      refute_empty artwork.css(selector), "phone selector must match artwork: #{selector}"
+    end
+  end
+
+  def test_phone_forest_thins_trees_without_fading_the_opaque_near_layer_or_hiding_ground
+    rules = scenery_css_rules(phone_scenery_styles(File.read(STYLES)))
+    artwork = Nokogiri::HTML.fragment(File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb')))
+    near = artwork.at_css('#b270-spruce-near')
+    protected_layers = [near, near.at_css('#b270-spruce-near-ground')] + near.ancestors.select(&:element?)
+
+    rules.each do |selector, declarations|
+      next unless artwork.css(selector).to_a.intersect?(protected_layers)
+
+      refute_match(%r{(?:opacity|fill-opacity|mask|filter):|display:none}, declarations, selector)
+    end
+    %w[distant near].each do |depth|
+      trees = artwork.css("#b270-spruce-#{depth} path")
+      hidden = artwork.css("#b270-spruce-#{depth} path:nth-of-type(even), #b270-spruce-#{depth} path:nth-of-type(n + 22)")
+      assert_equal 11, (trees.to_a - hidden.to_a).size
+    end
+  end
+
+  def test_mobile_moonlight_is_a_clipped_ellipse_hidden_on_desktop_instead_of_reflected_letters
+    styles = File.read(STYLES)
+    phone = phone_scenery_styles(styles)
+    artwork = Nokogiri::HTML.fragment(File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb')))
+    lake = artwork.at_css('svg[data-scenery="dark_blue"]')
+    glow = lake.at_css('ellipse.b270-mobile-scenery')
+
+    refute_nil glow
+    assert_equal 1, artwork.css('.b270-mobile-scenery').size
+    assert_equal(%w[1510 332 65 92], %w[cx cy rx ry].map { |attribute| glow[attribute] })
+    assert_equal 'url(#b270-moon-mobile-glow)', glow['fill']
+    assert_equal 'url(#b270-lake-clip)', glow.parent['clip-path']
+    assert_equal(%w[.18 .07 0], lake.css('#b270-moon-mobile-glow stop').map { |stop| stop['stop-opacity'] })
+    assert_equal 'url(#b270-greek-reflection)', glow.parent.at_css('#b270-lake-reflection')['mask']
+    assert_includes styles.sub(phone, ''), '.b270-mobile-scenery{display:none}'
+    assert_equal 'display:block', scenery_css_rules(phone).to_h.fetch('.b270-mobile-scenery')
+    assert_equal 'display:none', scenery_css_rules(phone).to_h.fetch('#b270-lake-reflection')
+  end
+
+  def test_phone_scenery_preserves_system_switching_and_print_hides_every_layer
+    styles = File.read(STYLES)
+    phone = phone_scenery_styles(styles)
+    system = styles.match(%r{@media \(prefers-color-scheme:dark\)\{\s*\.b270\[data-display-mode="system"\] > \.b270-theme-scenery.*?\n  \}}m)[0]
+    print_styles = styles.match(%r{@media print\{[^{}]*\{[^{}]*\}\s*\}})[0]
+    print_selector, print_declarations = scenery_css_rules(print_styles).first
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+
+    refute_includes phone, 'data-display-mode="system"'
+    refute_includes phone, 'color-scheme:'
+    assert_includes system, '[data-scenery="light"]{display:none}'
+    assert_includes system, '[data-scenery="dark"]{display:block}'
+    assert_operator styles.index(phone), :>, styles.index(system)
+    assert_operator styles.index(print_styles), :>, styles.index(phone)
+    assert_equal 'display:none', print_declarations
+    %w[light sage mist dark dark_green dark_blue system].each do |mode|
+      page = Nokogiri::HTML.fragment("<div class=\"b270\" data-display-mode=\"#{mode}\">#{scenery}</div>")
+      assert_equal page.css('svg.b270-theme-scenery').to_a, page.css(print_selector).to_a, mode
+      assert_includes page.css(print_selector).to_a, page.at_css('.b270-mobile-scenery').ancestors('svg').first
+    end
   end
 
   def test_ocean_replaces_mountains_with_an_afternoon_sky_sea_and_sandy_shore
@@ -530,16 +667,19 @@ class ViewsTest < Minitest::Test
     assert_includes styles, '.b270[data-display-mode="dark_blue"] > .b270-theme-scenery[data-scenery="hebrew_water"]'
   end
 
-  def test_spruce_forest_uses_two_static_layers_of_local_tree_silhouettes
-    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+  def test_spruce_forest_draws_explicitly_coloured_paths_without_use_instances
+    scenery = ERB.new(File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))).result
     forest = scenery.match(%r{<svg[^>]*data-scenery="dark_green"[^>]*>(.*?)</svg>}m)[1]
 
     assert_includes forest, 'id="b270-spruce-distant"'
     assert_includes forest, 'id="b270-spruce-near"'
     assert_includes forest, 'mask="url(#b270-spruce-mask)"'
-    assert_includes forest, '<path id="b270-spruce-tree"'
-    assert_equal 60, forest.scan('href="#b270-spruce-tree"').size
-    refute_match(%r{<(?:image|script|animate|text)\b}, forest)
+    assert_equal 60, forest.scan('class="b270-spruce-tree"').size
+    refute_match(%r{<(?:use|image|script|animate|text)\b}, forest)
+    refute_includes forest, '<%'
+    paths = Nokogiri::HTML.fragment(forest).css('path.b270-spruce-tree')
+    assert_equal 1, paths.map { |tree| tree['d'] }.uniq.size
+    assert_match(%r{\AM0 0.*Z\z}, paths.first['d'])
 
     artwork = Nokogiri::HTML.fragment(scenery)
     near = artwork.at_css('#b270-spruce-near')
@@ -547,8 +687,8 @@ class ViewsTest < Minitest::Test
     ([near] + near.ancestors.to_a).each do |element|
       %w[opacity fill-opacity mask filter].each { |attribute| assert_nil element[attribute] }
     end
-    assert_equal 30, near.css('use').size
-    heights = near.css('use').map { |tree| tree['transform'].match(%r{scale\([\d.]+ ([\d.]+)\)})[1].to_f }
+    assert_equal 30, near.css('path').size
+    heights = near.css('path').map { |tree| tree['transform'].match(%r{scale\([\d.]+ ([\d.]+)\)})[1].to_f }
     assert_operator heights.max / heights.min, :>, 2
     assert_equal 'url(#b270-spruce-mask)', artwork.at_css('#b270-spruce-distant')['mask']
     assert_equal 'translate(0 -24)', artwork.at_css('#b270-spruce-treeline')['transform']
@@ -557,7 +697,8 @@ class ViewsTest < Minitest::Test
       ground = layer.at_css("rect#b270-spruce-#{depth}-ground")
       assert_equal '1600', ground['width']
       assert_equal 464, ground['y'].to_i + ground['height'].to_i
-      small_trees = layer.css('use').count do |tree|
+      assert_equal [layer['fill']], layer.css('path').map { |tree| tree['fill'] }.uniq
+      small_trees = layer.css('path').count do |tree|
         tree['transform'].match(%r{scale\([\d.]+ ([\d.]+)\)})[1].to_f < 0.6
       end
       assert_equal 9, small_trees
@@ -638,11 +779,25 @@ class ViewsTest < Minitest::Test
 
     assert_equal dark.split.join, system.split.join
     assert_includes dark, 'color-scheme:dark'
-    assert_includes styles, '.b270[data-display-mode="light"]{color-scheme:light}'
+    assert_includes styles, '.b270[data-display-mode="light"]{color-scheme:only light}'
     assert_match(%r{\.b270-completion-dove\{[^\}]*color-scheme:only light;forced-color-adjust:none}, styles)
   end
 
 private
+
+  def phone_scenery_styles(styles)
+    # Match complete media blocks, not just the first nested rule or the separate corner-size block.
+    blocks = styles.scan(%r{@media \(max-width:600px\)\{(?:[^{}]|\{[^{}]*\})*\}})
+      .select { |block| block.include?('--b270-scene-height:') }
+    assert_equal 1, blocks.size, 'expected one phone-scoped scenery block'
+    blocks.first
+  end
+
+  def scenery_css_rules(styles)
+    styles.gsub(%r{/\*.*?\*/}m, '').scan(%r{([^{}]+)\{([^{}]*)\}}).flat_map do |selectors, declarations|
+      selectors.split(',').map { |selector| [selector.strip, declarations.strip] }
+    end
+  end
 
   def contrast_ratio(first, second)
     lighter, darker = [relative_luminance(first), relative_luminance(second)].sort.reverse

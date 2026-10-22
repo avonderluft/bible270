@@ -1,7 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<%
+  display_mode = current_reader&.effective_display_mode || Bible270::Reader::DEFAULT_DISPLAY_MODE
+  color_scheme = case display_mode
+                 when "light", "sage", "mist" then "only light"
+                 when "system" then "light dark"
+                 else "dark"
+                 end
+%>
+<html lang="en" data-b270-display-mode="<%= display_mode %>">
 <head>
   <meta charset="utf-8">
+  <meta id="b270-color-scheme" name="color-scheme" content="<%= color_scheme %>">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= content_for?(:title) ? yield(:title) : Bible270.config.app_name %></title>
   <%= csrf_meta_tags %>
@@ -13,7 +22,7 @@
   <%= render "bible270/shared/styles" %>
   <%= yield :head %>
 </head>
-<body class="b270" data-display-mode="<%= current_reader&.effective_display_mode || Bible270::Reader::DEFAULT_DISPLAY_MODE %>">
+<body class="b270" data-display-mode="<%= display_mode %>">
   <%= render "bible270/shared/theme_scenery" %>
   <div class="b270-wrap">
     <%= render "bible270/shared/header" %>
