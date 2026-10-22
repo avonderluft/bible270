@@ -4,7 +4,32 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.10.2...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.11.0...main)**
+
+## [1.11.0] - 2026-10-22
+
+### Added
+
+- add Meadow and Ocean light themes alongside Papyrus, Cedar, Forest, and Moonlight
+- add muted artwork for each theme: textured papyrus with ragged edges and curled corners, a sunrise meadow, an afternoon coast with gulls, cedar grain, layered forest silhouettes, and a moonlit lake
+- add shared Hebrew and Greek scripture backgrounds, with rippled reflections in Moonlight
+- add a compact theme selector beside the app title on every signed-in page
+
+### Changed
+
+- save and apply theme selections immediately from the header, Profile, and Admin without submitting unrelated edits
+- synchronize controls for the same reader while keeping an admin's own theme independent of another reader's setting
+- use short theme names, list light themes first, and retain Light/Dark descriptions in Profile and Admin
+- keep the header icon, title, spacing, and theme selector consistently compact across desktop and mobile, without wrapping the navigation
+- let System follow the device appearance using Papyrus for light and Cedar for dark, including their artwork
+
+### Fixed
+
+- restore the previous theme selection and show an error when saving fails; prevent overlapping saves for the same reader
+
+Existing saved theme preferences are preserved; no additional migration is required for installations with display preferences already enabled.
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.10.2...v1.11.0)**
 
 ## [1.10.2] - 2026-10-18
 
@@ -872,7 +897,8 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.10.2...HEAD
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/avonderluft/bible270/releases/tag/v1.11.0
 [1.10.2]: https://github.com/avonderluft/bible270/releases/tag/v1.10.2
 [1.10.1]: https://github.com/avonderluft/bible270/releases/tag/v1.10.1
 [1.10.0]: https://github.com/avonderluft/bible270/releases/tag/v1.10.0
