@@ -29,7 +29,16 @@ module Bible270
 
     PASSAGE_SOURCES = %w[bible_com bible_gateway blue_letter_bible].freeze
     DEFAULT_PASSAGE_SOURCE = 'bible_com'
-    DISPLAY_MODES = %w[light dark dark_green dark_blue system].freeze
+    DISPLAY_OPTIONS = {
+      'Papyrus (Light)' => 'light',
+      'Meadow (Light)' => 'sage',
+      'Ocean (Light)' => 'mist',
+      'Cedar (Dark)' => 'dark',
+      'Forest (Dark)' => 'dark_green',
+      'Moonlight (Dark)' => 'dark_blue',
+      'System' => 'system'
+    }.freeze
+    DISPLAY_MODES = DISPLAY_OPTIONS.values.freeze
     DEFAULT_DISPLAY_MODE = 'system'
     DAILY_REMINDER_TIME_FORMAT = %r{\A(?:[01]\d|2[0-3]):[0-5]\d\z}
     DAILY_REMINDER_MINUTES = %w[00 15 30 45].freeze

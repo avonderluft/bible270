@@ -1,0 +1,94 @@
+<script nonce="<%= content_security_policy_nonce %>" data-refresh-path="<%= refresh_session_path %>">
+  (() => {
+    if (window.Bible270ThemeUI) {
+      window.Bible270ThemeUI.initialize();
+      return;
+    }
+
+    const refreshPath = document.currentScript.dataset.refreshPath;
+    const selector = "select[data-b270-theme-url]";
+
+    function status(select, message) {
+      const region = document.getElementById(select.dataset.b270ThemeStatus || "b270-theme-status");
+      if (region) {
+        region.textContent = message;
+        region.dataset.error = String(message.startsWith("Couldn’t save"));
+      }
+    }
+
+    function initialize() {
+      document.querySelectorAll("[data-b270-theme-fallback]").forEach((button) => { button.hidden = true; });
+    }
+
+    document.addEventListener("change", async (event) => {
+      const select = event.target;
+      if (!select.matches(selector) || select.disabled) return;
+
+      const mode = select.value;
+      const group = Array.from(document.querySelectorAll(selector))
+        .filter((other) => other.isConnected && (
+          other.dataset.b270ThemeUrl === select.dataset.b270ThemeUrl ||
+          (other.dataset.b270ThemeApply === "true" && select.dataset.b270ThemeApply === "true")
+        ))
+        .map((other) => ({ select: other, previous: other.dataset.b270SavedTheme }));
+      group.forEach(({ select: other }) => {
+        other.disabled = true;
+        other.setAttribute("aria-busy", "true");
+        if (other !== select) {
+          const region = document.getElementById(other.dataset.b270ThemeStatus || "b270-theme-status");
+          if (region?.dataset.error === "true") status(other, "");
+        }
+      });
+      status(select, "Saving theme…");
+
+      try {
+        // A suspended mobile tab may need a fresh session and CSRF token.
+        const session = await fetch(refreshPath, {
+          credentials: "same-origin", cache: "no-store", headers: { Accept: "text/plain" }
+        });
+        const token = session.headers.get("X-CSRF-Token");
+        if (!session.ok || !token) throw new Error("Could not refresh the session.");
+        const meta = document.querySelector("meta[name='csrf-token']");
+        if (meta) meta.content = token;
+        document.querySelectorAll("input[name='authenticity_token']").forEach((input) => { input.value = token; });
+
+        const response = await fetch(select.dataset.b270ThemeUrl, {
+          method: "PATCH", credentials: "same-origin", cache: "no-store",
+          headers: { Accept: "application/json", "Content-Type": "application/json", "X-CSRF-Token": token },
+          body: JSON.stringify({ display_mode: mode })
+        });
+        const result = await response.json();
+        if (!response.ok || result.display_mode !== mode) throw new Error("Theme was not saved.");
+
+        group.forEach(({ select: other }) => {
+          other.value = mode;
+          other.dataset.b270SavedTheme = mode;
+        });
+        if (!select.isConnected) return;
+        if (select.dataset.b270ThemeApply === "true") document.body.dataset.displayMode = mode;
+        status(select, "Theme saved.");
+      } catch (_error) {
+        group.forEach(({ select: other, previous }) => { other.value = previous; });
+        if (select.isConnected) status(select, "Couldn’t save the theme. Please select it again to retry.");
+      } finally {
+        group.forEach(({ select: other }) => {
+          other.disabled = false;
+          other.removeAttribute("aria-busy");
+        });
+      }
+    });
+
+    // Do not race a profile submission against an in-flight theme update.
+    document.addEventListener("submit", (event) => {
+      const select = event.target.querySelector(selector);
+      if (select?.disabled) {
+        event.preventDefault();
+        status(select, "Please wait for the theme to finish saving.");
+      }
+    });
+
+    document.addEventListener("turbo:load", initialize);
+    window.Bible270ThemeUI = { initialize };
+    initialize();
+  })();
+</script>

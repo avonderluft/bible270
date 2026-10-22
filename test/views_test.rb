@@ -98,6 +98,39 @@ class ViewsTest < Minitest::Test
       .select { |_, body| body.match?(%r{(?<![\w-])color\s*:}) }
   end
 
+  def test_theme_script_is_loaded_globally_and_header_control_is_compact_and_accessible
+    layout = File.read(File.join(VIEW_ROOT, 'layouts/bible270/application.html.erb'))
+    header = File.read(File.join(VIEW_ROOT, 'bible270/shared/_header.html.erb'))
+    styles = File.read(STYLES)
+
+    assert_includes layout, 'render "bible270/shared/theme_ui"'
+    %w[bible270/profiles/edit.html.erb bible270/admin/show.html.erb].each do |path|
+      refute_includes File.read(File.join(VIEW_ROOT, path)), 'render "bible270/shared/theme_ui"'
+    end
+    assert_includes header, 'current_reader && Bible270::Reader.display_mode_column?'
+    assert_includes header, 'aria: { label: "Theme", describedby: "b270-header-theme-status" }'
+    assert_includes styles, '.b270-header-theme-select{font:inherit;'
+    assert_includes styles, '.b270-header-theme-select{font:inherit;font-size:12px;width:6.5em;height:28px;padding:2px;margin:0;'
+    assert_includes styles, '.b270-header-theme-select{field-sizing:content;width:auto}'
+    assert_equal 1, styles.scan(%r{\.b270-header-theme-select\{[^\}]*font-size:}).size
+    assert_includes styles, '.b270-brand{display:flex;align-items:baseline;gap:4px;'
+    assert_includes styles, '.b270-header-theme{position:relative;display:flex;align-items:baseline;'
+    assert_includes styles, '.b270-brandlink{display:flex;align-items:baseline;'
+    assert_match(%r{\.b270-topbar\{[^\}]*flex-wrap:nowrap}, styles)
+    assert_match(%r{@media \(max-width:820px\)\{.*?\.b270-desktopnav\{display:none\}.*?\.b270-navmenu\{display:block\}}m, styles)
+    assert_includes styles, '.b270-header-theme-status[data-error="true"]'
+  end
+
+  def test_header_brand_uses_the_same_small_size_and_spacing_at_every_breakpoint
+    styles = File.read(STYLES)
+
+    assert_includes styles, '.b270-brandlink{display:flex;align-items:baseline;gap:6px;'
+    assert_includes styles, '.b270-mark svg,.b270-mark img,.b270-brandlink > img.b270-mark{display:block;width:28px;height:28px;border-radius:8px}'
+    assert_match(%r{\.b270-title\{[^\}]*font-size:18px;}, styles)
+    assert_equal 1, styles.scan(%r{\.b270-title\{}).size
+    assert_equal 1, styles.scan(%r{\.b270-brandlink\{}).size
+  end
+
   def test_admin_progress_link_is_quiet_until_hover_or_focus
     styles = File.read(STYLES)
 
@@ -274,7 +307,7 @@ class ViewsTest < Minitest::Test
 
   def test_readable_palette_colours_meet_aa_contrast
     styles = File.read(STYLES)
-    selectors = ['.b270'] + %w[dark dark_green dark_blue system].map { |mode| ".b270[data-display-mode=\"#{mode}\"]" }
+    selectors = ['.b270'] + %w[sage mist dark dark_green dark_blue system].map { |mode| ".b270[data-display-mode=\"#{mode}\"]" }
     selectors.each do |selector|
       palette = styles.match(%r{#{Regexp.escape(selector)}\{([^\}]+)})[1]
       colours = palette.scan(%r{--([a-z-]+):#([0-9a-f]{3,6})}).to_h.transform_values do |hex|
@@ -326,6 +359,42 @@ class ViewsTest < Minitest::Test
     assert_equal %w[1c3027 182537], palettes
   end
 
+  def test_sage_and_mist_themes_define_complete_distinct_light_palettes
+    styles = File.read(STYLES)
+    defaults = styles.match(%r{\.b270-reader-theme,\s*\.b270\{([^\}]+)})[1]
+    variables = defaults.scan(%r{(--[a-z-]+):}).flatten.sort
+    palettes = %w[sage mist].map do |mode|
+      palette = styles.match(%r{\.b270\[data-display-mode="#{mode}"\]\{([^\}]+)})[1]
+      assert_includes palette, 'color-scheme:light'
+      assert_includes palette, 'background-image:none'
+      assert_equal variables, palette.scan(%r{(--[a-z-]+):}).flatten.sort
+      colours = palette.scan(%r{--([a-z-]+):#([0-9a-f]{6})}).to_h
+      %w[paper card control].each do |surface|
+        assert_operator contrast_ratio(colours.fetch('control-line'), colours.fetch(surface)), :>=, 3
+      end
+      %w[alert notice].each do |type|
+        assert_operator contrast_ratio(colours.fetch("#{type}-ink"), colours.fetch("#{type}-surface")), :>=, 4.5
+      end
+      colours.fetch('paper')
+    end
+    assert_equal %w[e1e8df e2e7ed], palettes
+  end
+
+  def test_light_theme_surfaces_match_papyrus_brightness
+    styles = File.read(STYLES)
+    defaults = styles.match(%r{\.b270-reader-theme,\s*\.b270\{([^\}]+)})[1]
+    papyrus = defaults.scan(%r{--([a-z-]+):#([0-9a-f]{6})}).to_h
+
+    %w[sage mist].each do |mode|
+      palette = styles.match(%r{\.b270\[data-display-mode="#{mode}"\]\{([^\}]+)})[1]
+      colours = palette.scan(%r{--([a-z-]+):#([0-9a-f]{6})}).to_h
+      %w[paper card].each do |surface|
+        assert_in_delta relative_luminance(papyrus.fetch(surface)), relative_luminance(colours.fetch(surface)), 0.01,
+                        "#{mode}: --#{surface} should have similar brightness to Papyrus"
+      end
+    end
+  end
+
   def test_admin_reader_rows_share_all_palettes_without_inheriting_body_layout
     styles = File.read(STYLES)
     defaults = styles.match(%r{\.b270-reader-theme,\s*\.b270\{([^\}]+)})[1]
@@ -333,10 +402,233 @@ class ViewsTest < Minitest::Test
     assert_includes defaults, 'color-scheme:light'
     refute_includes defaults, 'margin:'
     refute_includes defaults, 'font-family:'
-    %w[light dark dark_green dark_blue system].each do |mode|
+    %w[light sage mist dark dark_green dark_blue system].each do |mode|
       assert_match(%r{\.b270-reader-theme\[data-display-mode="#{mode}"\],\s*\.b270\[data-display-mode="#{mode}"\]\{}, styles)
     end
     assert_includes styles, '.b270-li.b270-reader-theme{background:var(--card);color:var(--ink)}'
+  end
+
+  def test_theme_scenery_is_decorative_and_scoped_to_its_own_page_theme
+    styles = File.read(STYLES)
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    layout = File.read(File.join(VIEW_ROOT, 'layouts/bible270/application.html.erb'))
+    illustrations = scenery.scan(%r{<svg[^>]*data-scenery="([^"]+)"[^>]*>(.*?)</svg>}m).to_h
+
+    assert_includes layout, 'render "bible270/shared/theme_scenery"'
+    assert_equal %w[mist_sky mist ocean_gulls sage_sky sage light dark dark_green dark_blue hebrew_water scripture], illustrations.keys
+    assert_equal 11, scenery.scan('aria-hidden="true" focusable="false"').size
+    assert_includes illustrations.fetch('mist'), 'id="b270-ocean-beach"'
+    assert_includes illustrations.fetch('sage'), 'fill="url(#b270-meadow-rays)"'
+    assert_includes illustrations.fetch('sage'), '<circle cx="1560"'
+    assert_match(%r{data-scenery="sage"[^>]*preserveAspectRatio="xMaxYMax slice"}, scenery)
+    refute_match(%r{<(?:image|script|animate)\b}, scenery)
+    ids = scenery.scan(%r{\bid="([^"]+)"}).flatten
+    assert_equal ids.uniq, ids
+    assert_match(%r{\.b270-theme-scenery\{display:none;[^\}]*position:fixed;[^\}]*z-index:-1;pointer-events:none}, styles)
+    assert_includes styles, '.b270{isolation:isolate}'
+    assert_includes styles, '.b270 > .b270-theme-scripture{display:block;color:var(--gold)}'
+    %w[mist sage light dark dark_green dark_blue].each do |mode|
+      assert_includes styles, ".b270[data-display-mode=\"#{mode}\"] > .b270-theme-scenery[data-scenery=\"#{mode}\"]"
+    end
+    assert_match(%r{@media print\{\s*\.b270\[data-display-mode\] > \.b270-theme-scenery\[data-scenery\]\{display:none\}}, styles)
+    refute_includes styles, '.b270-reader-theme > .b270-theme-scenery'
+  end
+
+  def test_ocean_replaces_mountains_with_an_afternoon_sky_sea_and_sandy_shore
+    styles = File.read(STYLES)
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    ocean = scenery.match(%r{<svg[^>]*data-scenery="mist"[^>]*>(.*?)</svg>}m)[1]
+    sky = scenery.match(%r{<svg[^>]*data-scenery="mist_sky"[^>]*>(.*?)</svg>}m)[1]
+
+    assert_includes styles, '.b270[data-display-mode="mist"] > .b270-theme-scenery[data-scenery="mist_sky"]'
+    assert_includes styles, '.b270-theme-scenery[data-scenery="mist_sky"]{height:100%}'
+    assert_includes sky, 'fill="url(#b270-ocean-sky)"'
+    assert_includes sky, 'fill="url(#b270-ocean-afternoon-glow)"'
+    %w[horizon beach wash surf distant-waves].each do |feature|
+      assert_includes ocean, "id=\"b270-ocean-#{feature}\""
+    end
+    %w[water sand shimmer].each do |material|
+      assert_includes ocean, "url(#b270-ocean-#{material})"
+    end
+    refute_match(%r{b270-mist-(?:distant|middle|near)}, scenery)
+    assert_match(%r{data-scenery="mist"[^>]*preserveAspectRatio="xMidYMax slice"}, scenery)
+  end
+
+  def test_ocean_has_two_decorative_gulls_anchored_to_the_lower_right_sand
+    styles = File.read(STYLES)
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    gulls = Nokogiri::HTML.fragment(scenery).at_css('svg[data-scenery="ocean_gulls"]')
+
+    assert_equal 'true', gulls['aria-hidden']
+    assert_equal 'false', gulls['focusable']
+    assert_equal 2, gulls.css('use[href="#b270-ocean-gull"]').size
+    assert_equal '.65', gulls.at_css('.b270-ocean-gulls')['opacity']
+    assert_includes styles, '.b270[data-display-mode="mist"] > .b270-theme-scenery[data-scenery="ocean_gulls"]'
+    assert_includes styles, '.b270-ocean-gulls{transform-box:view-box;transform:translate(calc(100% - 115px),calc(100% - 35px))}'
+  end
+
+  def test_meadow_has_a_full_height_blue_sky_wispy_clouds_and_layered_grass
+    styles = File.read(STYLES)
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    sky = scenery.match(%r{<svg[^>]*data-scenery="sage_sky"[^>]*>(.*?)</svg>}m)[1]
+    meadow = scenery.match(%r{<svg[^>]*data-scenery="sage"[^>]*>(.*?)</svg>}m)[1]
+
+    assert_includes styles, '.b270[data-display-mode="sage"] > .b270-theme-scenery[data-scenery="sage_sky"]'
+    assert_includes styles, '.b270-theme-scenery[data-scenery="sage_sky"]{height:100%}'
+    assert_includes sky, 'fill="url(#b270-meadow-blue-sky)"'
+    assert_includes sky, 'stop-color="#bdd8eb"'
+    clouds = sky.match(%r{<g id="b270-meadow-clouds"[^>]*>(.*?)</g>}m)[1]
+    assert_equal 4, clouds.scan(%r{<path\b}).size
+    { 'distant' => 6, 'near' => 11 }.each do |depth, count|
+      grass = meadow.match(%r{<g id="b270-meadow-grass-#{depth}"[^>]*>(.*?)</g>}m)[1]
+      assert_equal count, grass.scan(%r{<path\b}).size
+    end
+    assert_includes meadow, 'clip-path="url(#b270-meadow-sky)"'
+    assert_includes meadow, '<circle cx="1560" cy="260" r="61"'
+  end
+
+  def test_midnight_moon_has_a_static_lake_and_clipped_moonlight_reflection
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    lake = scenery.match(%r{<svg[^>]*data-scenery="dark_blue"[^>]*>(.*?)</svg>}m)[1]
+
+    assert_match(%r{data-scenery="dark_blue"[^>]*preserveAspectRatio="xMaxYMax slice"}, scenery)
+    assert_includes lake, 'id="b270-midnight-moon"'
+    assert_includes lake, 'id="b270-lake-shore"'
+    assert_includes lake, 'id="b270-lake-reflection" fill="url(#b270-moon-reflection)"'
+    assert_includes lake, 'clip-path="url(#b270-lake-clip)"'
+    reflection_colour = lake.match(%r{id="b270-moon-reflection"[^>]*>\s*<stop[^>]*stop-color="([^"]+)"})[1]
+    assert_includes File.read(STYLES), ".b270[data-display-mode=\"dark_blue\"] > .b270-theme-scripture{color:#{reflection_colour}}"
+    refute_match(%r{<(?:image|script|animate)\b}, lake)
+    reflected_lines = lake.scan(%r{<text transform="translate\(1510 \d+\) scale\([\d.]+ -[\d.]+\)">(.*?)</text>}).flatten
+    assert_equal %w[ΟΛΟΓΟΣ ΘΕΟΣΗΝ ΘΕΟΝΚΑΙ ΗΝΠΡΟΣΤΟΝ ΚΑΙΟΛΟΓΟΣ ΗΝΟΛΟΓΟΣ ΕΝΑΡΧΗ], reflected_lines
+    assert_includes lake, 'mask="url(#b270-greek-reflection)"'
+    water = lake.match(%r{<g clip-path="url\(#b270-lake-clip\)">(.*?)</g>}m)[1]
+    refute_match(%r{<path\b}, water)
+  end
+
+  def test_water_reflections_grow_and_soften_towards_the_viewer_with_fainter_hebrew
+    styles = File.read(STYLES)
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    lake = scenery.match(%r{<svg[^>]*data-scenery="dark_blue"[^>]*>(.*?)</svg>}m)[1]
+    hebrew = scenery.match(%r{<svg[^>]*data-scenery="hebrew_water"[^>]*>(.*?)</svg>}m)[1]
+
+    scales = lake.scan(%r{translate\(1510 \d+\) scale\(([\d.]+) -[\d.]+\)}).flatten.map(&:to_f)
+    assert_equal scales.sort, scales
+    assert_operator scales.last / scales.first, :>, 3
+    blur = %w[far middle near].map do |depth|
+      filter = lake.match(%r{<filter id="b270-water-#{depth}"[^>]*>(.*?)</filter>}m)[1]
+      assert_includes filter, '<feTurbulence'
+      assert_includes filter, '<feDisplacementMap'
+      filter.match(%r{stdDeviation="([\d.]+)"})[1].to_f
+    end
+    assert_equal blur.sort, blur
+    assert_operator blur.last, :>, blur.first
+    assert_equal %w[הארץ ואת השּׁמים את אלהים בּרא בּראשׁית], hebrew.scan(%r{<text[^>]*>(.*?)</text>}).flatten
+    assert_includes hebrew, 'opacity=".4"'
+    assert_includes styles, '.b270-hebrew-water{font-size:max(2vw, var(--b270-scene-height) * 32 / 440);'
+    assert_includes hebrew, 'direction="rtl" unicode-bidi="isolate"'
+    assert_includes styles, '.b270[data-display-mode="dark_blue"] > .b270-theme-scenery[data-scenery="hebrew_water"]'
+  end
+
+  def test_spruce_forest_uses_two_static_layers_of_local_tree_silhouettes
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    forest = scenery.match(%r{<svg[^>]*data-scenery="dark_green"[^>]*>(.*?)</svg>}m)[1]
+
+    assert_includes forest, 'id="b270-spruce-distant"'
+    assert_includes forest, 'id="b270-spruce-near"'
+    assert_includes forest, 'mask="url(#b270-spruce-mask)"'
+    assert_includes forest, '<path id="b270-spruce-tree"'
+    assert_equal 60, forest.scan('href="#b270-spruce-tree"').size
+    refute_match(%r{<(?:image|script|animate|text)\b}, forest)
+
+    artwork = Nokogiri::HTML.fragment(scenery)
+    near = artwork.at_css('#b270-spruce-near')
+    assert_equal '#0c2017', near['fill']
+    ([near] + near.ancestors.to_a).each do |element|
+      %w[opacity fill-opacity mask filter].each { |attribute| assert_nil element[attribute] }
+    end
+    assert_equal 30, near.css('use').size
+    heights = near.css('use').map { |tree| tree['transform'].match(%r{scale\([\d.]+ ([\d.]+)\)})[1].to_f }
+    assert_operator heights.max / heights.min, :>, 2
+    assert_equal 'url(#b270-spruce-mask)', artwork.at_css('#b270-spruce-distant')['mask']
+    assert_equal 'translate(0 -24)', artwork.at_css('#b270-spruce-treeline')['transform']
+    %w[distant near].each do |depth|
+      layer = artwork.at_css("#b270-spruce-#{depth}")
+      ground = layer.at_css("rect#b270-spruce-#{depth}-ground")
+      assert_equal '1600', ground['width']
+      assert_equal 464, ground['y'].to_i + ground['height'].to_i
+      small_trees = layer.css('use').count do |tree|
+        tree['transform'].match(%r{scale\([\d.]+ ([\d.]+)\)})[1].to_f < 0.6
+      end
+      assert_equal 9, small_trees
+    end
+  end
+
+  def test_cedar_bark_has_local_grain_and_follows_system_dark_appearance
+    styles = File.read(STYLES)
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    cedar = scenery.match(%r{<svg[^>]*data-scenery="dark"[^>]*>(.*?)</svg>}m)[1]
+
+    assert_includes cedar, '<pattern id="b270-cedar-grain"'
+    assert_includes cedar, 'fill="url(#b270-cedar-grain)" mask="url(#b270-cedar-mask)"'
+    refute_match(%r{<(?:image|script|animate|text)\b}, cedar)
+    assert_includes styles, '.b270-theme-scenery[data-scenery="dark"]{height:100%}'
+    assert_match(%r{@media \(prefers-color-scheme:dark\)\{\s*\.b270\[data-display-mode="system"\] > \.b270-theme-scenery\[data-scenery="light"\]\{display:none\}\s*\.b270\[data-display-mode="system"\] > \.b270-theme-scenery\[data-scenery="dark"\]\{display:block\}}, styles)
+  end
+
+  def test_shared_scripture_preserves_text_and_positions_independently_of_papyrus_grid
+    styles = File.read(STYLES)
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    papyrus = scenery.match(%r{<svg[^>]*data-scenery="light"[^>]*>(.*?)</svg>}m)[1]
+    scripture = scenery.match(%r{<svg class="b270-theme-scenery b270-theme-scripture" data-scenery="scripture"[^>]*>(.*?)</svg>}m)[1]
+    hebrew = scripture.match(%r{<g lang="he"[^>]*>(.*?)</g>}m)[1]
+    greek = scripture.match(%r{<g lang="el"[^>]*>(.*?)</g>}m)[1]
+    refute_match(%r{<(?:text|tspan)\b}, papyrus)
+    assert_equal 14, scripture.scan(%r{<text\b}).size
+    assert_includes scripture, 'fill="currentColor" text-anchor="middle" opacity=".22"'
+
+    hebrew_lines = hebrew.scan(%r{<text[^>]*>(.*?)</text>}).flatten
+    greek_lines = greek.scan(%r{<tspan[^>]*>(.*?)</tspan>}).flatten
+    assert_equal %w[בּראשׁית בּרא אלהים את השּׁמים ואת הארץ], hebrew_lines
+    assert_equal %w[ΕΝΑΡΧΗ ΗΝΟΛΟΓΟΣ ΚΑΙΟΛΟΓΟΣ ΗΝΠΡΟΣΤΟΝ ΘΕΟΝΚΑΙ ΘΕΟΣΗΝ ΟΛΟΓΟΣ], greek_lines
+    [hebrew, greek].each do |column|
+      assert_equal %w[-3.2em -2em -.8em .4em 1.6em 2.8em 4em], column.scan(%r{dy="([^"]+)"}).flatten
+    end
+    assert_includes hebrew, '<text x="10%" y="30%" dy="-3.2em">'
+    assert_includes greek, '<text y="30%" dy="-3.2em">'
+
+    assert_includes scripture, 'lang="el" direction="ltr" text-anchor="middle"'
+    assert_includes styles, '.b270-scripture-letters [lang="el"] tspan{font-size:.9em}'
+    assert_includes papyrus, 'width="4em" height="3.6em"'
+    assert_includes styles, '.b270-papyrus-grid{transform-box:view-box;transform:translateY(calc(100% - clamp(380px,76vh,820px) * .7))}'
+    assert_includes papyrus, 'viewBox="0 0 120 108"'
+    assert_includes papyrus, 'd="M0 12H120M0 48H120M0 84H120"'
+    assert_includes scripture, 'lang="he" direction="rtl" unicode-bidi="isolate"'
+    assert_includes styles, '.b270-theme-scenery[data-scenery="light"],.b270-theme-scripture{font-size:clamp(12px,2.2vw,30px)}'
+    assert_includes styles, '.b270-theme-scripture{height:clamp(380px,76vh,820px)}'
+    hebrew.scan(%r{<text x="(\d+)%"}).flatten.each { |x| assert_operator x.to_i, :<=, 12 }
+    assert_includes styles, '.b270-scripture-letters [lang="el"]{transform-box:view-box;transform:translateX(calc(100% - max(5.625%, var(--b270-scene-height) * 90 / 440)))}'
+    assert_includes papyrus, 'fill="url(#b270-papyrus-fibres)"'
+    assert_includes styles, '.b270[data-display-mode="system"] > .b270-theme-scenery[data-scenery="light"]{display:block}'
+    assert_match(%r{@media \(prefers-color-scheme:dark\)\{\s*\.b270\[data-display-mode="system"\] > \.b270-theme-scenery\[data-scenery="light"\]\{display:none\}}, styles)
+  end
+
+  def test_papyrus_has_a_full_page_grid_ragged_edges_and_responsive_curled_corners
+    styles = File.read(STYLES)
+    scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))
+    papyrus = scenery.match(%r{<svg[^>]*data-scenery="light"[^>]*>(.*?)</svg>}m)[1]
+
+    assert_includes styles, '.b270-theme-scenery[data-scenery="light"]{height:100%;overflow:hidden}'
+    assert_includes papyrus, '<rect y="-100%" width="100%" height="200%" fill="url(#b270-papyrus-fibres)"'
+    refute_includes papyrus, 'b270-papyrus-fade'
+    %w[top side].each do |edge|
+      assert_equal 2, papyrus.scan("fill=\"url(#b270-papyrus-edge-#{edge})\"").size
+    end
+    assert_equal 2, papyrus.scan('href="#b270-papyrus-corner"').size
+    assert_includes papyrus, 'fill="url(#b270-papyrus-curl)"'
+    assert_includes papyrus, 'fill="url(#b270-papyrus-curl-shadow)"'
+    assert_includes styles, 'transform:translate(100%,100%) rotate(180deg)'
+    assert_match(%r{@media \(max-width:600px\)\{\s*\.b270-papyrus-corner\{transform:scale\(\.55\)\}}, styles)
   end
 
   def test_system_theme_uses_a_media_query_and_matches_explicit_dark

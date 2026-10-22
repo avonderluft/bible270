@@ -43,12 +43,38 @@ module Bible270
       render_profile_error("Your profile could not be saved. #{message.presence || 'Please try again.'}")
     end
 
+    def update_theme
+      unless Reader.display_mode_column?
+        return render_theme_error('Run the pending Bible270 database migration before changing the theme.')
+      end
+
+      mode = params[:display_mode].to_s
+      return render_theme_error('Choose a theme from the list.') unless Reader::DISPLAY_MODES.include?(mode)
+
+      current_reader.reload unless current_reader.has_attribute?(:display_mode)
+      current_reader.update!(display_mode: mode)
+      respond_to do |format|
+        format.json { render json: { display_mode: current_reader.display_mode } }
+        format.html { redirect_to profile_path, notice: 'Theme updated.' }
+      end
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+      message = e.record ? e.record.errors.full_messages.to_sentence : nil
+      render_theme_error("Your theme could not be saved. #{message.presence || 'Please try again.'}")
+    end
+
     def remove_avatar
       current_reader.remove_avatar!
       redirect_to profile_path, notice: 'Your picture has been removed.'
     end
 
   private
+
+    def render_theme_error(message)
+      respond_to do |format|
+        format.json { render json: { error: message }, status: :unprocessable_entity }
+        format.html { redirect_to profile_path, alert: message }
+      end
+    end
 
     def display_mode_problem
       return unless Reader.display_mode_column?
@@ -143,6 +169,9 @@ module Bible270
     # visitor who isn't signed in, so send them to sign in rather than 404.
     def require_signed_in_reader
       return if signed_in?
+      if action_name == 'update_theme' && request.format.json?
+        return render_theme_error('Please sign in first.')
+      end
 
       redirect_to sign_in_path(origin: request.fullpath), alert: 'Please sign in first.'
     end

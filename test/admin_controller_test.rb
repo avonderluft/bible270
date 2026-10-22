@@ -100,7 +100,7 @@ if RAILS_LOADED
     def test_admin_reader_rows_use_each_readers_theme_without_changing_the_page_theme
       @admin.update!(display_mode: 'dark_blue')
       sign_in_as_admin
-      %w[light dark dark_green dark_blue system].each do |mode|
+      %w[light sage mist dark dark_green dark_blue system].each do |mode|
         @reader.update!(display_mode: mode)
         get "#{mount}/admin"
 
@@ -397,15 +397,25 @@ if RAILS_LOADED
 
       assert_select "form[action='#{mount}/admin/readers/#{@reader.id}/theme']" do
         assert_select 'input[name="_method"][value="patch"]'
-        assert_select 'select[name="display_mode"][aria-labelledby="b270-theme-heading"][aria-describedby="b270-theme-hint"]' do
-          assert_select 'option', count: 5
-          assert_select 'option[value="light"]', text: 'Parchment'
-          assert_select 'option[value="dark"]', text: 'Earth'
-          assert_select 'option[value="dark_green"][selected]', text: 'Forest'
-          assert_select 'option[value="dark_blue"]', text: 'Midnight'
-          assert_select 'option[value="system"]', text: 'System'
+        assert_select 'select[name="display_mode"][aria-labelledby="b270-theme-heading"][aria-describedby="b270-theme-hint b270-theme-status"]' do
+          assert_select 'option', count: 7 do |options|
+            choices = options.map { |option| [option.text, option['value']] }
+            assert_equal [
+              ['Papyrus (Light)', 'light'],
+              ['Meadow (Light)', 'sage'],
+              ['Ocean (Light)', 'mist'],
+              ['Cedar (Dark)', 'dark'],
+              ['Forest (Dark)', 'dark_green'],
+              ['Moonlight (Dark)', 'dark_blue'],
+              ['System', 'system']
+            ], choices
+          end
+          assert_select 'option[value="dark_green"][selected]', text: 'Forest (Dark)'
         end
-        assert_select 'input[type="submit"][value="Save"]'
+        assert_select 'input[type="submit"][value="Save"][data-b270-theme-fallback="true"]'
+        assert_select "select[data-b270-theme-url='#{mount}/admin/readers/#{@reader.id}/theme'][data-b270-theme-apply='false']"
+        assert_select '#b270-theme-status[role="status"]'
+        assert_select '#b270-theme-hint', text: "System follows the reader's device setting: Papyrus for light, Cedar for dark."
       end
       assert_select 'body[data-display-mode="system"]'
     end
@@ -413,7 +423,7 @@ if RAILS_LOADED
     def test_admin_can_save_each_theme_without_changing_other_settings_or_their_own_theme
       sign_in_as_admin
       original = @reader.attributes.except('display_mode', 'updated_at')
-      %w[light dark dark_green dark_blue system].each do |mode|
+      %w[light sage mist dark dark_green dark_blue system].each do |mode|
         patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: mode, first_name: 'Ignored' }
         assert_redirected_to "#{mount}/admin/readers/#{@reader.id}"
         assert_equal mode, @reader.reload.display_mode
@@ -463,6 +473,146 @@ if RAILS_LOADED
       patch "#{mount}/admin/readers/999999/theme", params: { display_mode: 'dark' }
       assert_redirected_to "#{mount}/admin"
       assert_equal 'Reader not found.', flash[:alert]
+    end
+
+    def test_admin_theme_autosave_saves_every_mode_as_json_without_changing_other_settings_or_admin
+      @admin.update!(display_mode: 'dark_blue')
+      sign_in_as_admin
+      original = @reader.attributes.except('display_mode', 'updated_at')
+      admin_original = @admin.reload.attributes
+
+      Bible270::Reader::DISPLAY_MODES.each do |mode|
+        patch "#{mount}/admin/readers/#{@reader.id}/theme", as: :json, params: {
+          display_mode: mode, reader_id: @admin.id,
+          first_name: 'Changed', last_name: '', email: 'attacker@example.org',
+          bible_version: 'KJV', passage_source: 'bible_gateway', avatar: 'ignored',
+          comment_notifications: 'none', notify_on_mention: false, notify_on_all_comments: false,
+          daily_reminders: '1', daily_reminder_time: '12:00', completion_dove_disabled: '1',
+          reader: { display_mode: 'sepia', first_name: 'Nested' }
+        }
+
+        assert_response :success
+        assert_equal 'application/json', response.media_type
+        assert_equal({ 'display_mode' => mode }, response.parsed_body)
+        assert_equal mode, @reader.reload.display_mode
+        assert_equal original, @reader.attributes.except('display_mode', 'updated_at')
+        assert_equal admin_original, @admin.reload.attributes
+      end
+    end
+
+    def test_admin_theme_autosave_rejects_invalid_blank_null_and_missing_modes_as_json
+      @reader.update!(display_mode: 'dark_blue')
+      sign_in_as_admin
+      original = @reader.attributes
+      [{ display_mode: 'sepia' }, { display_mode: '' }, { display_mode: nil }, {}].each do |parameters|
+        patch "#{mount}/admin/readers/#{@reader.id}/theme", params: parameters, as: :json
+
+        assert_response :unprocessable_entity
+        assert_equal({ 'error' => 'Choose a theme from the list.' }, response.parsed_body)
+        assert_equal original, @reader.reload.attributes
+      end
+    end
+
+    def test_admin_theme_autosave_reports_a_pending_migration_as_json
+      sign_in_as_admin
+      original = @reader.attributes
+      Bible270::Reader.stub(:display_mode_column?, false) do
+        patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }, as: :json
+      end
+
+      assert_response :unprocessable_entity
+      assert_equal ['error'], response.parsed_body.keys
+      assert_match(%r{pending Bible270 database migration}, response.parsed_body['error'])
+      assert_equal original, @reader.reload.attributes
+    end
+
+    def test_admin_theme_autosave_is_hidden_from_visitors_ordinary_readers_and_unconfigured_admins
+      Bible270.config.admin_emails = [@admin.email]
+      patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }, as: :json
+      assert_response :not_found
+
+      sign_in_as(@reader)
+      patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }, as: :json
+      assert_response :not_found
+
+      sign_in_as_admin
+      Bible270.config.admin_emails = []
+      patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }, as: :json
+      assert_response :not_found
+      assert_equal 'system', @reader.reload.display_mode
+    end
+
+    def test_admin_theme_autosave_honors_the_custom_admin_resolver
+      sign_in_as(@admin)
+      Bible270.config.admin_emails = []
+      Bible270.config.admin_resolver = ->(reader) { reader&.id == @admin.id }
+      patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'mist' }, as: :json
+
+      assert_response :success
+      assert_equal({ 'display_mode' => 'mist' }, response.parsed_body)
+      assert_equal 'mist', @reader.reload.display_mode
+      assert_equal 'system', @admin.reload.display_mode
+    end
+
+    def test_admin_theme_autosave_reports_a_missing_reader_as_json
+      sign_in_as_admin
+      patch "#{mount}/admin/readers/999999/theme", params: { display_mode: 'dark' }, as: :json
+
+      assert_response :unprocessable_entity
+      assert_equal({ 'error' => 'Reader not found.' }, response.parsed_body)
+      assert_equal 'system', @admin.reload.display_mode
+    end
+
+    def test_admin_theme_autosave_reloads_a_reader_missing_the_display_attribute
+      sign_in_as_admin
+      columns = Bible270::Reader.column_names - ['display_mode']
+      partial_reader = Bible270::Reader.select(*columns).find(@reader.id)
+      refute partial_reader.has_attribute?(:display_mode)
+      resolver = ->(_controller) { @admin }
+      Bible270.config.stub(:current_reader_resolver, -> { resolver }) do
+        Bible270::Reader.stub(:find_by, partial_reader) do
+          patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'sage' }, as: :json
+        end
+      end
+
+      assert_response :success
+      assert_equal({ 'display_mode' => 'sage' }, response.parsed_body)
+      assert_equal 'sage', @reader.reload.display_mode
+      assert_equal 'system', @admin.reload.display_mode
+    end
+
+    def test_admin_theme_autosave_returns_json_for_persistence_validation_errors
+      sign_in_as_admin
+      @reader.update_column(:display_name, '')
+      original = @reader.attributes
+      patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }, as: :json
+
+      assert_response :unprocessable_entity
+      assert_equal ['error'], response.parsed_body.keys
+      assert_match(%r{Display name can't be blank}, response.parsed_body['error'])
+      assert_equal original, @reader.reload.attributes
+
+      patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }
+      assert_redirected_to "#{mount}/admin/readers/#{@reader.id}"
+      assert_match(%r{Display name can't be blank}, flash[:alert])
+      assert_equal original, @reader.reload.attributes
+    end
+
+    def test_admin_theme_autosave_returns_json_when_persistence_is_aborted
+      sign_in_as_admin
+      resolver = ->(_controller) { @admin }
+      failure = ->(*) { raise ActiveRecord::RecordNotSaved, 'Save aborted' }
+      Bible270.config.stub(:current_reader_resolver, -> { resolver }) do
+        Bible270::Reader.stub(:find_by, @reader) do
+          @reader.stub(:update!, failure) do
+            patch "#{mount}/admin/readers/#{@reader.id}/theme", params: { display_mode: 'dark' }, as: :json
+          end
+        end
+      end
+
+      assert_response :unprocessable_entity
+      assert_equal({ 'error' => 'The theme could not be saved. Please try again.' }, response.parsed_body)
+      assert_equal 'system', @reader.reload.display_mode
     end
 
     def test_admin_picture_removal_is_next_to_upload_controls_with_a_separate_form

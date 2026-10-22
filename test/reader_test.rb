@@ -34,8 +34,21 @@ class ReaderTest < Minitest::Test
     assert Bible270::Reader.completion_dove_column?
   end
 
+  def test_theme_labels_preserve_existing_display_mode_values
+    expected = {
+      'Papyrus (Light)' => 'light',
+      'Meadow (Light)' => 'sage',
+      'Ocean (Light)' => 'mist',
+      'Cedar (Dark)' => 'dark',
+      'Forest (Dark)' => 'dark_green',
+      'Moonlight (Dark)' => 'dark_blue',
+      'System' => 'system'
+    }
+    assert_equal expected, Bible270::Reader::DISPLAY_OPTIONS
+  end
+
   def test_display_modes_are_validated
-    %w[light dark dark_green dark_blue system].each do |mode|
+    %w[light sage mist dark dark_green dark_blue system].each do |mode|
       assert @reader.update(display_mode: mode)
       assert_equal mode, @reader.reload.effective_display_mode
     end

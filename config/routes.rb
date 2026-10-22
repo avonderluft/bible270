@@ -44,6 +44,7 @@ Bible270::Engine.routes.draw do
 
   get   'profile',                       to: 'profiles#edit', as: :profile
   patch 'profile',                       to: 'profiles#update'
+  patch 'profile/theme',                 to: 'profiles#update_theme', as: :profile_theme
   delete 'profile/avatar', to: 'profiles#remove_avatar', as: :profile_avatar
 
   get 'reflections', to: 'comments#index', as: :reflections

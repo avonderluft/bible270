@@ -82,13 +82,15 @@
   <% if Bible270::Reader.display_mode_column? %>
     <%= form_with url: admin_reader_theme_path(@reader), method: :patch, class: "b270-emailform" do %>
       <%= select_tag :display_mode,
-            options_for_select([["Parchment", "light"], ["Earth", "dark"], ["Forest", "dark_green"],
-                                ["Midnight", "dark_blue"], ["System", "system"]], @reader.effective_display_mode),
-            class: "b270-select", aria: { labelledby: "b270-theme-heading", describedby: "b270-theme-hint" } %>
+            options_for_select(Bible270::Reader::DISPLAY_OPTIONS, @reader.effective_display_mode),
+            class: "b270-select", aria: { labelledby: "b270-theme-heading", describedby: "b270-theme-hint b270-theme-status" },
+            data: { b270_theme_url: admin_reader_theme_path(@reader), b270_theme_apply: @reader == current_reader,
+                    b270_saved_theme: @reader.effective_display_mode } %>
       <p id="b270-theme-hint" class="b270-hint" style="margin:0">
-        System follows the reader's device setting: Parchment for light, Earth for dark.
+        System follows the reader's device setting: Papyrus for light, Cedar for dark.
       </p>
-      <%= submit_tag "Save", class: "b270-btn" %>
+      <p id="b270-theme-status" class="b270-hint" role="status" aria-live="polite" style="margin:0"></p>
+      <%= submit_tag "Save", class: "b270-btn", data: { b270_theme_fallback: true } %>
     <% end %>
   <% else %>
     <p class="b270-flash alert" style="margin:0">
@@ -96,6 +98,7 @@
     </p>
   <% end %>
 </div>
+
 
 <div class="b270-panel">
   <h2 class="b270-subhead">Email notifications</h2>

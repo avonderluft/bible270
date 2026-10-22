@@ -14,6 +14,7 @@
   <%= yield :head %>
 </head>
 <body class="b270" data-display-mode="<%= current_reader&.effective_display_mode || Bible270::Reader::DEFAULT_DISPLAY_MODE %>">
+  <%= render "bible270/shared/theme_scenery" %>
   <div class="b270-wrap">
     <%= render "bible270/shared/header" %>
     <% if flash[:alert] %><div class="b270-flash alert"><%= flash[:alert] %></div><% end %>
@@ -23,6 +24,7 @@
     <%= render 'bible270/shared/day_index', expanded: content_for?(:expand_day_index) unless content_for?(:hide_day_index) %>
     <%= b270_footer %>
   </div>
+  <%= render "bible270/shared/theme_ui" %>
   <%= render "bible270/shared/scripture_popups" %>
   <%= render "bible270/shared/video_embeds" %>
 </body>

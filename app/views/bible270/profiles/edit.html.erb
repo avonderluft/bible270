@@ -48,11 +48,13 @@
       <label class="b270-field">
         <span>Theme</span>
         <%= select_tag :display_mode,
-              options_for_select([["Parchment", "light"], ["Earth", "dark"], ["Forest", "dark_green"],
-                                  ["Midnight", "dark_blue"], ["System", "system"]], @display_mode),
-              class: "b270-select", aria: { describedby: "b270-display-hint" } %>
-        <span id="b270-display-hint" class="b270-hint" style="margin:0">System follows your device's setting: Parchment for light, Earth for dark.</span>
+              options_for_select(Bible270::Reader::DISPLAY_OPTIONS, @display_mode),
+              class: "b270-select", aria: { describedby: "b270-display-hint b270-theme-status" },
+              data: { b270_theme_url: profile_theme_path, b270_theme_apply: true,
+                      b270_saved_theme: current_reader.effective_display_mode } %>
+        <span id="b270-display-hint" class="b270-hint" style="margin:0">System follows your device's setting: Papyrus for light, Cedar for dark.</span>
       </label>
+      <p id="b270-theme-status" class="b270-hint" role="status" aria-live="polite" style="margin:0"></p>
     <% else %>
       <p class="b270-flash alert" style="margin:0">
         Theme settings are temporarily unavailable while this installation finishes a database update.

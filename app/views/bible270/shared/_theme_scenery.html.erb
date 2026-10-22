@@ -1,0 +1,467 @@
+<%# Kept in the DOM so changing themes can reveal the artwork without a page reload. %>
+<%# Keep the saved "mist" preference compatible while presenting it as Ocean. %>
+<svg class="b270-theme-scenery" data-scenery="mist_sky" viewBox="0 0 1600 1000" preserveAspectRatio="none"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="b270-ocean-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b9d2e5" stop-opacity=".7" />
+      <stop offset=".5" stop-color="#dce6e9" stop-opacity=".45" />
+      <stop offset=".75" stop-color="#eee5d3" stop-opacity=".25" />
+      <stop offset="1" stop-color="#e2e7ed" stop-opacity="0" />
+    </linearGradient>
+    <radialGradient id="b270-ocean-afternoon-glow">
+      <stop offset="0" stop-color="#fff1ce" stop-opacity=".4" />
+      <stop offset="1" stop-color="#fff1ce" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#b270-ocean-sky)" />
+  <ellipse cx="1420" cy="180" rx="460" ry="340" fill="url(#b270-ocean-afternoon-glow)" />
+  <g id="b270-ocean-clouds" fill="#fffdf7" opacity=".25">
+    <path d="M45 148Q154 127 242 130T409 115Q343 143 245 144T45 148Z" />
+    <path d="M948 87Q1050 69 1141 73T1322 57Q1237 84 1144 86T948 87Z" />
+  </g>
+</svg>
+
+<svg class="b270-theme-scenery" data-scenery="mist" viewBox="0 0 1600 440" preserveAspectRatio="xMidYMax slice"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="b270-ocean-water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#91b2c6" stop-opacity=".65" />
+      <stop offset=".55" stop-color="#a3c6ce" stop-opacity=".75" />
+      <stop offset="1" stop-color="#b9d4cf" stop-opacity=".7" />
+    </linearGradient>
+    <linearGradient id="b270-ocean-sand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c8c9b6" stop-opacity=".8" />
+      <stop offset=".35" stop-color="#d9cfb9" stop-opacity=".85" />
+      <stop offset="1" stop-color="#e6ddcb" stop-opacity=".9" />
+    </linearGradient>
+    <linearGradient id="b270-ocean-shimmer" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff6de" stop-opacity="0" />
+      <stop offset=".65" stop-color="#fff6de" stop-opacity=".35" />
+      <stop offset="1" stop-color="#fff6de" stop-opacity=".1" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="135" width="1600" height="305" fill="url(#b270-ocean-water)" />
+  <path id="b270-ocean-horizon" d="M0 135H1600" fill="none" stroke="#7f9eae" stroke-width="1" opacity=".3" />
+  <g id="b270-ocean-distant-waves" fill="none" stroke="#f5f5eb" stroke-linecap="round" opacity=".35">
+    <path d="M22 154H178M235 158H442M532 151H708M811 159H1032M1119 153H1385M1460 160H1590" stroke-width="1" />
+    <path d="M0 181Q150 174 294 181T601 184M728 182Q874 175 1028 181T1370 180M1442 183H1600" stroke-width="1.4" />
+    <path d="M43 216Q193 203 353 214T691 213M821 220Q970 208 1128 218T1510 215" stroke-width="2" />
+  </g>
+  <g fill="none" stroke="url(#b270-ocean-shimmer)" stroke-linecap="round">
+    <path d="M880 170H1360M808 196H1434M751 230H1507" stroke-width="3" />
+    <path d="M685 269Q1050 253 1560 272" stroke-width="5" />
+  </g>
+  <path id="b270-ocean-beach" fill="url(#b270-ocean-sand)"
+        d="M0 365C230 338 396 388 617 361S981 304 1190 322 1450 346 1600 310V440H0Z" />
+  <path id="b270-ocean-wash" fill="#f9f8ed" opacity=".24"
+        d="M0 343C230 318 396 367 617 340S981 283 1190 301 1450 325 1600 289V310C1450 346 1399 340 1190 322S838 334 617 361 230 338 0 365Z" />
+  <g id="b270-ocean-surf" fill="none" stroke="#fffdf2" stroke-linecap="round">
+    <path d="M0 343C230 318 396 367 617 340S981 283 1190 301 1450 325 1600 289" stroke-width="2.8" opacity=".6" />
+    <path d="M0 292C208 270 381 310 593 289S973 254 1181 266 1444 288 1600 257" stroke-width="2" opacity=".38" />
+    <path d="M50 365Q174 352 282 366M370 381Q499 389 611 374M745 352Q887 326 1012 328M1194 339Q1335 359 1450 344" stroke-width="1.4" opacity=".38" />
+  </g>
+  <g fill="none" stroke="#b4a88c" stroke-linecap="round" opacity=".17">
+    <path d="M105 414Q228 401 347 413M530 424Q669 412 777 417M1007 386Q1110 379 1227 391M1337 420Q1450 406 1562 411" />
+  </g>
+</svg>
+
+<svg class="b270-theme-scenery" data-scenery="ocean_gulls"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <%# A viewport-based layer keeps both birds on the lower-right sand when the coast is cropped on phones. %>
+  <defs>
+    <g id="b270-ocean-gull">
+      <ellipse cx="0" cy="12" rx="17" ry="2.5" fill="#968e78" opacity=".2" />
+      <path d="M-3 3-4 11-8 12M4 3 6 11 10 12" fill="none" stroke="#a18a60" stroke-width="1.2" stroke-linecap="round" />
+      <path d="M-19-5-11-4Q-6-11 4-8L8-15Q11-19 15-15Q18-11 13-8L11-1Q7 7-5 4Q-12 2-19-5Z" fill="#f7f5eb" />
+      <path d="M-17-5Q-5-11 5-6Q2 1-9 0Z" fill="#8898a0" />
+      <path d="M-17-5-10-3-7 0-12-1Z" fill="#52656c" />
+      <path d="M15-14 22-11 15-10Z" fill="#b49a63" />
+      <circle cx="13" cy="-14" r=".8" fill="#53636a" />
+    </g>
+  </defs>
+  <g class="b270-ocean-gulls" opacity=".65">
+    <use href="#b270-ocean-gull" transform="translate(0 -8) scale(.95 .95)" />
+    <use href="#b270-ocean-gull" transform="translate(60 3) scale(-1.15 1.15)" />
+  </g>
+</svg>
+
+<svg class="b270-theme-scenery" data-scenery="sage_sky" viewBox="0 0 1600 1000" preserveAspectRatio="none"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="b270-meadow-blue-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#bdd8eb" stop-opacity=".8" />
+      <stop offset=".4" stop-color="#d1e2ea" stop-opacity=".55" />
+      <stop offset=".75" stop-color="#e1e8df" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="b270-meadow-cloud-fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fffdf5" stop-opacity="0" />
+      <stop offset=".35" stop-color="#fffdf5" stop-opacity=".5" />
+      <stop offset=".7" stop-color="#fffdf5" stop-opacity=".35" />
+      <stop offset="1" stop-color="#fffdf5" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#b270-meadow-blue-sky)" />
+  <g id="b270-meadow-clouds" fill="url(#b270-meadow-cloud-fade)">
+    <path d="M20 105Q105 99 162 84T275 81Q322 82 376 72Q317 94 253 94T142 106Q78 111 20 105Z" />
+    <path d="M368 51Q448 45 497 34T586 36Q635 37 690 26Q628 46 562 47T458 52Q407 55 368 51Z" />
+    <path d="M1002 99Q1098 90 1160 74T1265 73Q1329 76 1400 61Q1328 86 1247 87T1130 99Q1065 105 1002 99Z" />
+    <path d="M1270 161Q1352 153 1405 139T1502 140Q1553 141 1610 128Q1546 151 1481 152T1371 163Q1315 166 1270 161Z" />
+  </g>
+</svg>
+
+<svg class="b270-theme-scenery" data-scenery="sage" viewBox="0 0 1600 440" preserveAspectRatio="xMaxYMax slice"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <clipPath id="b270-meadow-sky">
+      <path d="M0 280C160 180 360 180 560 250S900 260 1040 210 1400 200 1600 270V0H0Z" />
+    </clipPath>
+    <radialGradient id="b270-meadow-glow">
+      <stop offset="0" stop-color="#f8e8b6" stop-opacity=".55" />
+      <stop offset=".5" stop-color="#f6e8c4" stop-opacity=".25" />
+      <stop offset="1" stop-color="#f6e8c4" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="b270-meadow-rays" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8e8b6" stop-opacity="0" />
+      <stop offset=".45" stop-color="#f8e8b6" stop-opacity=".22" />
+      <stop offset="1" stop-color="#f8e8b6" stop-opacity=".4" />
+    </linearGradient>
+    <linearGradient id="b270-meadow-distant" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c2cfb7" />
+      <stop offset="1" stop-color="#e1e8df" />
+    </linearGradient>
+    <linearGradient id="b270-meadow-middle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#afc1a3" />
+      <stop offset="1" stop-color="#e1e8df" />
+    </linearGradient>
+    <linearGradient id="b270-meadow-near" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fb693" />
+      <stop offset="1" stop-color="#e1e8df" />
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#b270-meadow-sky)">
+    <ellipse cx="1560" cy="245" rx="440" ry="200" fill="url(#b270-meadow-glow)" />
+    <path fill="url(#b270-meadow-rays)"
+          d="M1560 260 860 0 1020 0Z M1560 260 1180 0 1295 0Z M1560 260 1435 0 1515 0Z M1560 260 1605 0 1685 0Z M1560 260 1825 0 1940 0Z M1560 260 2100 0 2260 0Z" />
+    <circle cx="1560" cy="260" r="61" fill="#f6e5b0" opacity=".55" />
+  </g>
+  <path fill="url(#b270-meadow-distant)" opacity=".65"
+        d="M0 280C160 180 360 180 560 250S900 260 1040 210 1400 200 1600 270V440H0Z" />
+  <path fill="url(#b270-meadow-middle)" opacity=".55"
+        d="M0 320C240 260 350 260 550 300S850 340 1090 290 1420 260 1600 320V440H0Z" />
+  <path fill="url(#b270-meadow-near)" opacity=".45"
+        d="M0 370C200 340 430 350 640 375S1030 340 1220 360 1480 400 1600 370V440H0Z" />
+  <g id="b270-meadow-grass-distant" fill="none" stroke="#7e9672" stroke-width="1" stroke-linecap="round" opacity=".16">
+    <path d="M232 287Q232 275 226 269M232 287Q236 277 242 274" />
+    <path d="M405 301Q408 286 402 280M405 301Q399 292 393 290" />
+    <path d="M708 317Q706 305 711 299M708 317Q714 309 720 307" />
+    <path d="M1015 302Q1015 287 1009 281M1015 302Q1020 291 1026 289" />
+    <path d="M1278 287Q1280 273 1274 266M1278 287Q1284 278 1290 275" />
+    <path d="M1540 320Q1538 306 1544 299M1540 320Q1534 310 1528 308" />
+  </g>
+  <g id="b270-meadow-grass-near" fill="none" stroke="#7e9672" stroke-width="1.6" stroke-linecap="round" opacity=".24">
+    <path d="M110 409Q112 380 99 364M110 409Q119 387 130 380M110 409Q101 393 91 389" />
+    <path d="M153 415Q150 394 159 378M153 415Q145 402 136 398" />
+    <path d="M1434 418Q1433 392 1446 375M1434 418Q1424 399 1412 393" />
+    <path d="M1480 411Q1482 381 1470 366M1480 411Q1491 387 1505 380M1480 411Q1471 397 1463 393" />
+    <path d="M285 388Q287 367 279 356M285 388Q293 372 301 368M285 388Q278 378 271 375" />
+    <path d="M451 420Q448 398 457 385M451 420Q442 407 435 404" />
+    <path d="M635 408Q637 385 629 374M635 408Q644 391 653 387" />
+    <path d="M850 383Q849 363 855 354M850 383Q842 369 833 366" />
+    <path d="M1064 409Q1066 384 1057 371M1064 409Q1074 390 1084 386M1064 409Q1056 397 1047 393" />
+    <path d="M1227 425Q1224 403 1232 391M1227 425Q1218 410 1209 407" />
+    <path d="M1570 404Q1572 383 1564 371M1570 404Q1578 389 1587 385" />
+  </g>
+</svg>
+
+<svg class="b270-theme-scenery" data-scenery="light"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <%# CSS anchors the full-page grid to the unchanged scripture baseline. %>
+    <pattern id="b270-papyrus-fibres" width="4em" height="3.6em"
+             viewBox="0 0 120 108" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#a48b60" stroke-width=".85" opacity=".23">
+        <path d="M0 12H120M0 48H120M0 84H120" />
+        <path d="M18 0Q16 28 19 60T18 108M55 0Q58 35 54 72T55 108M96 0Q94 30 97 67T96 108" />
+      </g>
+      <path d="M8 25H43M78 52H111M32 76H67" stroke="#fff9ed" stroke-width="1" opacity=".3" />
+    </pattern>
+    <pattern id="b270-papyrus-edge-top" width="240" height="12" patternUnits="userSpaceOnUse">
+      <path d="M0 0H240V5L228 7 218 4 203 6 191 3 175 7 162 5 149 8 132 5 118 6 103 3 91 7 77 5 61 8 49 4 35 6 22 3 10 7 0 5Z" fill="#c9bda4" />
+      <path d="M0 5L10 7 22 3 35 6 49 4 61 8 77 5 91 7 103 3 118 6 132 5 149 8 162 5 175 7 191 3 203 6 218 4 228 7 240 5" fill="none" stroke="#a48b60" stroke-opacity=".32" />
+    </pattern>
+    <pattern id="b270-papyrus-edge-side" width="12" height="240" patternUnits="userSpaceOnUse">
+      <path d="M0 0H5L7 14 4 28 6 43 3 59 7 74 5 89 8 105 4 121 6 137 3 152 7 168 5 186 8 203 4 221 5 240H0Z" fill="#c9bda4" />
+      <path d="M5 0L7 14 4 28 6 43 3 59 7 74 5 89 8 105 4 121 6 137 3 152 7 168 5 186 8 203 4 221 5 240" fill="none" stroke="#a48b60" stroke-opacity=".32" />
+    </pattern>
+    <linearGradient id="b270-papyrus-curl" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#bbaa89" />
+      <stop offset=".45" stop-color="#dfd3b9" />
+      <stop offset=".78" stop-color="#fff7e5" />
+      <stop offset="1" stop-color="#c5b38f" />
+    </linearGradient>
+    <radialGradient id="b270-papyrus-curl-shadow">
+      <stop offset="0" stop-color="#705b37" stop-opacity=".25" />
+      <stop offset="1" stop-color="#705b37" stop-opacity="0" />
+    </radialGradient>
+    <g id="b270-papyrus-corner">
+      <ellipse cx="29" cy="31" rx="43" ry="31" fill="url(#b270-papyrus-curl-shadow)" transform="rotate(-42 29 31)" />
+      <path d="M0 0H64Q31 14 0 64Z" fill="#c9bda4" />
+      <path d="M0 64Q15 27 64 0Q48 24 54 49Q29 43 0 64Z" fill="url(#b270-papyrus-curl)" stroke="#a48b60" stroke-opacity=".3" stroke-width=".7" />
+      <path d="M3 61Q26 43 54 49" fill="none" stroke="#fff9ed" stroke-opacity=".65" />
+    </g>
+  </defs>
+  <g class="b270-papyrus-grid">
+    <rect y="-100%" width="100%" height="200%" fill="url(#b270-papyrus-fibres)" />
+  </g>
+  <g class="b270-papyrus-edges">
+    <rect width="100%" height="12" fill="url(#b270-papyrus-edge-top)" />
+    <rect width="12" height="100%" fill="url(#b270-papyrus-edge-side)" />
+  </g>
+  <g class="b270-papyrus-edges b270-papyrus-opposite">
+    <rect width="100%" height="12" fill="url(#b270-papyrus-edge-top)" />
+    <rect width="12" height="100%" fill="url(#b270-papyrus-edge-side)" />
+  </g>
+  <use class="b270-papyrus-corner" href="#b270-papyrus-corner" />
+  <g class="b270-papyrus-opposite">
+    <use class="b270-papyrus-corner" href="#b270-papyrus-corner" />
+  </g>
+</svg>
+
+<svg class="b270-theme-scenery" data-scenery="dark"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="b270-cedar-grain" width="600" height="900" patternUnits="userSpaceOnUse">
+      <g fill="#20190f" opacity=".32">
+        <path d="M44 0 38 92 49 166 35 246 43 325 30 412 40 492 29 578 42 659 34 744 48 825 44 900H57L61 824 48 743 57 658 43 578 53 492 44 413 56 326 48 248 62 166 51 92 57 0Z" />
+        <path d="M204 0 215 116 201 210 210 294 195 378 207 469 194 559 205 648 193 735 208 819 204 900H217L220 818 207 735 218 648 207 559 220 468 209 378 223 295 215 210 227 116 217 0Z" />
+        <path d="M372 0 359 104 371 193 356 283 369 369 358 460 372 547 359 635 373 723 362 815 372 900H385L375 814 387 723 373 635 386 547 372 459 383 369 370 282 385 193 373 105 385 0Z" />
+        <path d="M529 0 538 92 523 184 536 276 522 362 533 451 518 542 531 636 520 726 534 813 529 900H540L547 813 533 726 544 636 532 542 546 452 535 362 549 276 537 184 551 92 540 0Z" />
+      </g>
+      <g fill="none" stroke="#ad8359" stroke-linecap="round" opacity=".17">
+        <path stroke-width="2" d="M75 0C51 134 85 209 65 330S79 525 62 653 82 811 75 900M241 0C260 112 231 202 250 314S229 511 247 629 225 802 241 900M402 0C383 127 413 223 393 345S418 534 398 665 414 810 402 900M565 0C581 123 552 223 574 348S552 548 571 677 552 807 565 900" />
+        <path d="M97 51 88 147 99 232M95 468 84 556 94 631 85 710M272 79 264 164 276 245 267 320M272 502 261 588 273 667 264 757 272 830M455 43 446 132 458 219 449 295M471 408 459 486 471 568M472 767 461 842" />
+        <path d="M163 47C150 163 167 221 150 271M150 416C165 481 151 539 160 617M316 171 307 262 318 347 308 429M311 671 302 753 313 845M491 109 481 195 492 281 482 359" />
+      </g>
+      <g fill="none" stroke="#9b744e" stroke-width="1.5" opacity=".2">
+        <path d="M143 261C113 290 108 342 126 385L143 425C158 390 175 346 162 302Z" />
+        <path d="M142 288C126 310 124 340 135 365L144 387C152 359 158 329 149 307Z" />
+        <path d="M141 315Q134 335 144 352Q150 332 141 315Z" />
+        <path d="M433 576C410 608 405 650 424 695L434 731C449 694 463 655 452 614Z" />
+        <path d="M433 604C421 627 420 650 430 677L435 695C443 671 448 646 440 624Z" />
+      </g>
+    </pattern>
+    <linearGradient id="b270-cedar-fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="white" stop-opacity="0" />
+      <stop offset=".28" stop-color="white" stop-opacity=".5" />
+      <stop offset=".7" stop-color="white" stop-opacity=".9" />
+      <stop offset="1" stop-color="white" />
+    </linearGradient>
+    <mask id="b270-cedar-mask">
+      <rect width="100%" height="100%" fill="url(#b270-cedar-fade)" />
+    </mask>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#b270-cedar-grain)" mask="url(#b270-cedar-mask)" />
+</svg>
+
+<svg class="b270-theme-scenery" data-scenery="dark_green" viewBox="0 0 1600 440" preserveAspectRatio="xMidYMax slice"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <path id="b270-spruce-tree"
+          d="M0 0-9 29-5 27-20 55-11 52-29 85-18 81-39 119-26 113-48 154-32 146-57 194-6 181-6 218H6V181L57 194 32 146 48 154 26 113 39 119 18 81 29 85 11 52 20 55 5 27 9 29Z" />
+    <linearGradient id="b270-spruce-fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="white" />
+      <stop offset=".75" stop-color="white" stop-opacity=".9" />
+      <stop offset="1" stop-color="white" stop-opacity="0" />
+    </linearGradient>
+    <mask id="b270-spruce-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1600" height="440">
+      <rect width="1600" height="440" fill="url(#b270-spruce-fade)" />
+    </mask>
+  </defs>
+  <g id="b270-spruce-treeline" transform="translate(0 -24)">
+    <g id="b270-spruce-distant" fill="#66816b" opacity=".19" mask="url(#b270-spruce-mask)">
+      <rect id="b270-spruce-distant-ground" y="300" width="1600" height="164" />
+      <use href="#b270-spruce-tree" transform="translate(15 145) scale(.64 .95)" />
+      <use href="#b270-spruce-tree" transform="translate(90 171) scale(.55 .82)" />
+      <use href="#b270-spruce-tree" transform="translate(164 112) scale(.7 1.1)" />
+      <use href="#b270-spruce-tree" transform="translate(244 157) scale(.6 .92)" />
+      <use href="#b270-spruce-tree" transform="translate(321 137) scale(.66 1.02)" />
+      <use href="#b270-spruce-tree" transform="translate(405 186) scale(.55 .82)" />
+      <use href="#b270-spruce-tree" transform="translate(478 163) scale(.67 .96)" />
+      <use href="#b270-spruce-tree" transform="translate(560 194) scale(.58 .83)" />
+      <use href="#b270-spruce-tree" transform="translate(643 180) scale(.6 .91)" />
+      <use href="#b270-spruce-tree" transform="translate(719 212) scale(.5 .77)" />
+      <use href="#b270-spruce-tree" transform="translate(790 192) scale(.58 .88)" />
+      <use href="#b270-spruce-tree" transform="translate(875 211) scale(.52 .78)" />
+      <use href="#b270-spruce-tree" transform="translate(950 174) scale(.62 .96)" />
+      <use href="#b270-spruce-tree" transform="translate(1030 193) scale(.54 .84)" />
+      <use href="#b270-spruce-tree" transform="translate(1110 148) scale(.7 1.02)" />
+      <use href="#b270-spruce-tree" transform="translate(1195 166) scale(.58 .91)" />
+      <use href="#b270-spruce-tree" transform="translate(1270 108) scale(.7 1.15)" />
+      <use href="#b270-spruce-tree" transform="translate(1350 153) scale(.6 .94)" />
+      <use href="#b270-spruce-tree" transform="translate(1435 129) scale(.64 1.05)" />
+      <use href="#b270-spruce-tree" transform="translate(1515 168) scale(.58 .88)" />
+      <use href="#b270-spruce-tree" transform="translate(1590 139) scale(.7 1)" />
+      <use href="#b270-spruce-tree" transform="translate(53 237) scale(.3 .36)" />
+      <use href="#b270-spruce-tree" transform="translate(205 225) scale(.34 .43)" />
+      <use href="#b270-spruce-tree" transform="translate(365 247) scale(.28 .31)" />
+      <use href="#b270-spruce-tree" transform="translate(520 231) scale(.33 .4)" />
+      <use href="#b270-spruce-tree" transform="translate(681 241) scale(.29 .34)" />
+      <use href="#b270-spruce-tree" transform="translate(834 218) scale(.36 .47)" />
+      <use href="#b270-spruce-tree" transform="translate(1068 237) scale(.31 .37)" />
+      <use href="#b270-spruce-tree" transform="translate(1235 244) scale(.28 .33)" />
+      <use href="#b270-spruce-tree" transform="translate(1394 228) scale(.34 .42)" />
+    </g>
+    <%# Keep the foreground outside the distant haze mask so no trees show through it. %>
+    <g id="b270-spruce-near" fill="#0c2017">
+      <rect id="b270-spruce-near-ground" y="350" width="1600" height="114" />
+      <use href="#b270-spruce-tree" transform="translate(-15 104) scale(1.1 1.65)" />
+      <use href="#b270-spruce-tree" transform="translate(115 64) scale(1.08 1.78)" />
+      <use href="#b270-spruce-tree" transform="translate(228 153) scale(.87 1.4)" />
+      <use href="#b270-spruce-tree" transform="translate(343 121) scale(1 1.56)" />
+      <use href="#b270-spruce-tree" transform="translate(455 189) scale(.83 1.26)" />
+      <use href="#b270-spruce-tree" transform="translate(561 161) scale(.94 1.4)" />
+      <use href="#b270-spruce-tree" transform="translate(676 227) scale(.75 1.12)" />
+      <use href="#b270-spruce-tree" transform="translate(781 202) scale(.88 1.25)" />
+      <use href="#b270-spruce-tree" transform="translate(890 231) scale(.76 1.1)" />
+      <use href="#b270-spruce-tree" transform="translate(998 182) scale(.89 1.32)" />
+      <use href="#b270-spruce-tree" transform="translate(1112 153) scale(.98 1.46)" />
+      <use href="#b270-spruce-tree" transform="translate(1227 106) scale(1.03 1.65)" />
+      <use href="#b270-spruce-tree" transform="translate(1343 162) scale(.9 1.38)" />
+      <use href="#b270-spruce-tree" transform="translate(1460 73) scale(1.12 1.78)" />
+      <use href="#b270-spruce-tree" transform="translate(1580 133) scale(.97 1.5)" />
+      <use href="#b270-spruce-tree" transform="translate(55 213) scale(.62 1.08)" />
+      <use href="#b270-spruce-tree" transform="translate(394 245) scale(.58 .94)" />
+      <use href="#b270-spruce-tree" transform="translate(622 132) scale(.78 1.52)" />
+      <use href="#b270-spruce-tree" transform="translate(944 263) scale(.55 .88)" />
+      <use href="#b270-spruce-tree" transform="translate(1171 230) scale(.65 1.04)" />
+      <use href="#b270-spruce-tree" transform="translate(1524 201) scale(.7 1.17)" />
+      <use href="#b270-spruce-tree" transform="translate(173 282) scale(.34 .4)" />
+      <use href="#b270-spruce-tree" transform="translate(283 265) scale(.4 .49)" />
+      <use href="#b270-spruce-tree" transform="translate(506 290) scale(.32 .35)" />
+      <use href="#b270-spruce-tree" transform="translate(727 271) scale(.38 .46)" />
+      <use href="#b270-spruce-tree" transform="translate(835 297) scale(.3 .31)" />
+      <use href="#b270-spruce-tree" transform="translate(1054 277) scale(.36 .43)" />
+      <use href="#b270-spruce-tree" transform="translate(1284 288) scale(.33 .36)" />
+      <use href="#b270-spruce-tree" transform="translate(1398 260) scale(.42 .52)" />
+      <use href="#b270-spruce-tree" transform="translate(1552 294) scale(.31 .33)" />
+    </g>
+  </g>
+</svg>
+
+<svg class="b270-theme-scenery" data-scenery="dark_blue" viewBox="0 0 1600 440" preserveAspectRatio="xMaxYMax slice"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <radialGradient id="b270-moon-halo">
+      <stop offset="0" stop-color="#c7d8ec" stop-opacity=".16" />
+      <stop offset=".45" stop-color="#9fb7d3" stop-opacity=".07" />
+      <stop offset="1" stop-color="#9fb7d3" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="b270-lake-water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#526e91" stop-opacity=".14" />
+      <stop offset="1" stop-color="#526e91" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="b270-moon-reflection" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c6d6e9" stop-opacity=".3" />
+      <stop offset=".5" stop-color="#abc3df" stop-opacity=".17" />
+      <stop offset="1" stop-color="#abc3df" stop-opacity="0" />
+    </linearGradient>
+    <filter id="b270-water-far" x="-20%" y="-50%" width="140%" height="200%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".008 .14" numOctaves="1" seed="7" result="ripples" />
+      <feDisplacementMap in="SourceGraphic" in2="ripples" scale="2" xChannelSelector="R" yChannelSelector="G" />
+      <feGaussianBlur stdDeviation=".15" />
+    </filter>
+    <filter id="b270-water-middle" x="-20%" y="-50%" width="140%" height="200%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".008 .14" numOctaves="1" seed="7" result="ripples" />
+      <feDisplacementMap in="SourceGraphic" in2="ripples" scale="5" xChannelSelector="R" yChannelSelector="G" />
+      <feGaussianBlur stdDeviation=".45" />
+    </filter>
+    <filter id="b270-water-near" x="-20%" y="-50%" width="140%" height="200%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency=".008 .14" numOctaves="1" seed="7" result="ripples" />
+      <feDisplacementMap in="SourceGraphic" in2="ripples" scale="9" xChannelSelector="R" yChannelSelector="G" />
+      <feGaussianBlur stdDeviation="1.1" />
+    </filter>
+    <mask id="b270-greek-reflection" maskUnits="userSpaceOnUse" x="0" y="240" width="1600" height="200">
+      <g fill="white" font-family="Georgia, Times New Roman, serif" font-size="28" text-anchor="middle">
+        <g filter="url(#b270-water-far)">
+          <text transform="translate(1510 250) scale(.38 -.22)">ΟΛΟΓΟΣ</text>
+          <text transform="translate(1510 270) scale(.5 -.28)">ΘΕΟΣΗΝ</text>
+        </g>
+        <g filter="url(#b270-water-middle)">
+          <text transform="translate(1510 293) scale(.66 -.36)">ΘΕΟΝΚΑΙ</text>
+          <text transform="translate(1510 319) scale(.8 -.44)">ΗΝΠΡΟΣΤΟΝ</text>
+          <text transform="translate(1510 348) scale(.95 -.54)">ΚΑΙΟΛΟΓΟΣ</text>
+        </g>
+        <g filter="url(#b270-water-near)">
+          <text transform="translate(1510 380) scale(1.1 -.68)">ΗΝΟΛΟΓΟΣ</text>
+          <text transform="translate(1510 411) scale(1.4 -.85)">ΕΝΑΡΧΗ</text>
+        </g>
+      </g>
+    </mask>
+    <clipPath id="b270-lake-clip">
+      <rect y="240" width="1600" height="200" />
+    </clipPath>
+  </defs>
+  <circle cx="1510" cy="162" r="105" fill="url(#b270-moon-halo)" />
+  <circle id="b270-midnight-moon" cx="1510" cy="162" r="31" fill="#c7d5e5" opacity=".55" />
+  <g fill="#71869d" opacity=".1">
+    <ellipse cx="1501" cy="155" rx="9" ry="12" />
+    <ellipse cx="1518" cy="173" rx="11" ry="7" />
+  </g>
+  <path id="b270-lake-shore" fill="#0c1829" opacity=".42"
+        d="M0 224Q110 201 230 216T465 220 710 226 950 215 1190 222 1420 224 1600 218V240H0Z" />
+  <rect y="240" width="1600" height="200" fill="url(#b270-lake-water)" />
+  <path d="M0 240H1600" stroke="#8fa7c3" stroke-width=".7" opacity=".12" />
+  <g clip-path="url(#b270-lake-clip)">
+    <ellipse cx="1510" cy="305" rx="145" ry="125" fill="url(#b270-moon-halo)" opacity=".6" />
+    <rect id="b270-lake-reflection" fill="url(#b270-moon-reflection)"
+          x="0" y="240" width="1600" height="200" mask="url(#b270-greek-reflection)" />
+    <%# The rippled letters supply the water texture without straight lines crossing the reflections. %>
+  </g>
+</svg>
+
+<svg class="b270-theme-scenery" data-scenery="hebrew_water"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <%# A viewport-based layer keeps the faint reflection beneath the Hebrew column on narrow screens. %>
+  <g class="b270-hebrew-water" lang="he" direction="rtl" unicode-bidi="isolate"
+     fill="#c6d6e9" text-anchor="middle" opacity=".4" font-family="Noto Serif Hebrew, Times New Roman, serif">
+    <g filter="url(#b270-water-far)" opacity=".3">
+      <text transform="translate(0 10) scale(.38 -.22)">הארץ</text>
+      <text transform="translate(0 30) scale(.5 -.28)">ואת</text>
+    </g>
+    <g filter="url(#b270-water-middle)" opacity=".2">
+      <text transform="translate(0 53) scale(.66 -.36)">השּׁמים</text>
+      <text transform="translate(0 79) scale(.8 -.44)">את</text>
+      <text transform="translate(0 108) scale(.95 -.54)">אלהים</text>
+    </g>
+    <g filter="url(#b270-water-near)" opacity=".09">
+      <text transform="translate(0 140) scale(1.1 -.68)">בּרא</text>
+      <text transform="translate(0 171) scale(1.4 -.85)">בּראשׁית</text>
+    </g>
+  </g>
+</svg>
+
+<svg class="b270-theme-scenery b270-theme-scripture" data-scenery="scripture"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <%# Shared across themes; explicit lines preserve word breaks and Hebrew vowel marks. %>
+  <g class="b270-scripture-letters" fill="currentColor" text-anchor="middle" opacity=".22">
+    <g lang="he" direction="rtl" unicode-bidi="isolate" font-family="Noto Serif Hebrew, Times New Roman, serif">
+      <text x="10%" y="30%" dy="-3.2em">בּראשׁית</text>
+      <text x="10%" y="30%" dy="-2em">בּרא</text>
+      <text x="10%" y="30%" dy="-.8em">אלהים</text>
+      <text x="10%" y="30%" dy=".4em">את</text>
+      <text x="10%" y="30%" dy="1.6em">השּׁמים</text>
+      <text x="10%" y="30%" dy="2.8em">ואת</text>
+      <text x="10%" y="30%" dy="4em">הארץ</text>
+    </g>
+    <g lang="el" direction="ltr" text-anchor="middle" font-family="Georgia, Times New Roman, serif">
+      <text y="30%" dy="-3.2em"><tspan>ΕΝΑΡΧΗ</tspan></text>
+      <text y="30%" dy="-2em"><tspan>ΗΝΟΛΟΓΟΣ</tspan></text>
+      <text y="30%" dy="-.8em"><tspan>ΚΑΙΟΛΟΓΟΣ</tspan></text>
+      <text y="30%" dy=".4em"><tspan>ΗΝΠΡΟΣΤΟΝ</tspan></text>
+      <text y="30%" dy="1.6em"><tspan>ΘΕΟΝΚΑΙ</tspan></text>
+      <text y="30%" dy="2.8em"><tspan>ΘΕΟΣΗΝ</tspan></text>
+      <text y="30%" dy="4em"><tspan>ΟΛΟΓΟΣ</tspan></text>
+    </g>
+  </g>
+</svg>

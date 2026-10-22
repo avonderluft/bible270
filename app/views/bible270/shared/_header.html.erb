@@ -4,6 +4,19 @@
       <%= b270_mark %>
       <span class="b270-title"><%= Bible270.config.app_name %></span>
     <% end %>
+    <% if current_reader && Bible270::Reader.display_mode_column? %>
+      <%= form_with url: profile_theme_path, method: :patch, class: "b270-header-theme" do %>
+        <%= select_tag :display_mode,
+              options_for_select(Bible270::Reader::DISPLAY_OPTIONS.map { |label, value| [label.sub(/ \((?:Light|Dark)\)\z/, ""), value] }, current_reader.effective_display_mode),
+              id: "b270-header-theme", class: "b270-header-theme-select",
+              aria: { label: "Theme", describedby: "b270-header-theme-status" },
+              data: { b270_theme_url: profile_theme_path, b270_theme_apply: true,
+                      b270_saved_theme: current_reader.effective_display_mode,
+                      b270_theme_status: "b270-header-theme-status" } %>
+        <%= submit_tag "Save", class: "b270-btn", data: { b270_theme_fallback: true } %>
+        <span id="b270-header-theme-status" class="b270-header-theme-status" role="status" aria-live="polite"></span>
+      <% end %>
+    <% end %>
   </div>
   <nav class="b270-nav" aria-label="Primary navigation">
     <div class="b270-desktopnav">

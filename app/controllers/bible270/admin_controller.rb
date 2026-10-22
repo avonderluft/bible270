@@ -250,18 +250,21 @@ module Bible270
 
     def update_theme
       unless Reader.display_mode_column?
-        return redirect_to admin_reader_path(@reader),
-                           alert: 'Run the pending Bible270 database migration before changing the theme.'
+        return render_theme_error('Run the pending Bible270 database migration before changing the theme.')
       end
 
       mode = params[:display_mode].to_s
-      unless Reader::DISPLAY_MODES.include?(mode)
-        return redirect_to admin_reader_path(@reader), alert: 'Choose a theme from the list.'
-      end
+      return render_theme_error('Choose a theme from the list.') unless Reader::DISPLAY_MODES.include?(mode)
 
       @reader.reload unless @reader.has_attribute?(:display_mode)
       @reader.update!(display_mode: mode)
-      redirect_to admin_reader_path(@reader), notice: 'Theme updated.'
+      respond_to do |format|
+        format.json { render json: { display_mode: @reader.display_mode } }
+        format.html { redirect_to admin_reader_path(@reader), notice: 'Theme updated.' }
+      end
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
+      message = e.record ? e.record.errors.full_messages.to_sentence : nil
+      render_theme_error("The theme could not be saved. #{message.presence || 'Please try again.'}")
     end
 
     def update_notifications
@@ -355,6 +358,13 @@ module Bible270
 
   private
 
+    def render_theme_error(message)
+      respond_to do |format|
+        format.json { render json: { error: message }, status: :unprocessable_entity }
+        format.html { redirect_to admin_reader_path(@reader), alert: message }
+      end
+    end
+
     def comment_notifications_available_for?(reader)
       return false unless Bible270.config.mention_notifications && Reader.comment_notification_columns?
 
@@ -388,6 +398,9 @@ module Bible270
     def load_reader
       @reader = Reader.find_by(id: params[:id])
       return if @reader
+      if action_name == 'update_theme' && request.format.json?
+        return render_theme_error('Reader not found.')
+      end
 
       redirect_to admin_path, alert: 'Reader not found.'
     end

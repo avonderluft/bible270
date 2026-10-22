@@ -272,7 +272,8 @@ Admins get an extra "Admin" link in the header. The broadcast form can send an i
 message either to every reader with an email address or only to readers recognized as administrators.
 From a reader's page you can:
 
-- **set their theme** — Parchment, Earth, Forest, Midnight, or System, independently of your own theme;
+- **set their theme** — Papyrus (Light), Meadow (Light), Ocean (Light), Cedar (Dark),
+  Forest (Dark), Moonlight (Dark), or System, independently of your own theme;
 
 - **move them to a day** — "put them on day 42 as of today" back-dates the start date; check-offs are
   keyed to day numbers, so nothing in their history moves;
@@ -373,15 +374,21 @@ Psalm 78: [20, 39, 55]
 
 ## Theme
 
-Readers can choose **Parchment** (light), **Earth** (dark brown), **Forest** (dark green),
-**Midnight** (dark blue), or **System** under **Profile → Theme**, then save. The preference is stored
+Readers can choose **Papyrus (Light)**, **Meadow (Light)**, **Ocean (Light)**, **Cedar (Dark)**,
+**Forest (Dark)**, **Moonlight (Dark)**, or **System** under **Profile → Theme**. Signed-in readers can also use
+the compact selector beside the app title on every page; it shows the short theme names without Light/Dark suffixes.
+Selecting a theme saves and applies it immediately without submitting other profile edits. The header and Profile
+selectors stay synchronized, and a failed save restores the previous selection and displays an error.
+Admin theme selections also save automatically;
+changing another reader's theme does not change the admin's own theme. With JavaScript disabled, use Save.
+The preference is stored
 with their account and applies throughout Bible270 on every device. System is the default for existing
-and new readers, follows the device's current appearance using Parchment for light or Earth for dark,
+and new readers, follows the device's current appearance using Papyrus for light or Cedar for dark,
 and responds to changes without reloading. Signed-out visitors also use System.
 The completion dove retains its bright colors in every theme.
 
-Existing preferences are preserved under the new names. Forest and Midnight require no additional
-migration once display preferences are installed.
+Existing preferences and persisted values are unchanged under the new names. Meadow, Ocean, Cedar, Forest, and Moonlight
+require no additional migration once display preferences are installed.
 
 Upgrading hosts must install and run migration `20260101000023`:
 
