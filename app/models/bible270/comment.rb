@@ -53,10 +53,10 @@ module Bible270
     # listing them again at the top level would show each twice.
     scope :for_day,  ->(d) { approved.where(day: d, parent_id: nil).order(created_at: :asc) }
     scope :with_reader_avatars, -> {
-      Reader.avatar_uploads? ? includes(reader: { avatar_attachment: :blob }) : includes(:reader)
+      Reader.avatar_uploads? ? includes(reader: Reader::AVATAR_ASSOCIATIONS) : includes(:reader)
     }
     scope :with_thread_details, -> {
-      reply_reader = Reader.avatar_uploads? ? { reader: { avatar_attachment: :blob } } : :reader
+      reply_reader = Reader.avatar_uploads? ? { reader: Reader::AVATAR_ASSOCIATIONS } : :reader
       with_reader_avatars.includes({ likes: :reader }, { replies: [reply_reader, { likes: :reader }] })
     }
     scope :threads_for_day, ->(d) { for_day(d).with_thread_details }

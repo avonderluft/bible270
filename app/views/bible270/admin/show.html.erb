@@ -23,7 +23,8 @@
             <span>Picture</span>
             <%= file_field_tag :avatar, accept: Bible270::Avatars.content_types.join(',') %>
             <span class="b270-hint" style="margin:0">
-              PNG, JPEG, GIF or WebP, up to <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %>.
+              PNG, JPEG, GIF or WebP, up to <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %> and <%= Bible270::AvatarOptimizer::MAX_PIXELS / 1_000_000 %> megapixels.
+              Automatically center-cropped to a square. Animated pictures use the first frame.
             </span>
           </label>
           <% if @reader.avatar_uploaded? %>

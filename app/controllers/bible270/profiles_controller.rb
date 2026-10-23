@@ -35,6 +35,10 @@ module Bible270
 
       save_profile(names.merge(passage_source: source))
       redirect_to profile_path, notice: 'Your profile has been updated.'
+    rescue AvatarOptimizer::Error, AvatarImages::Error => e
+      current_reader.attachment_changes.clear if Reader.avatar_uploads?
+      current_reader.reload
+      render_profile_error(e.message)
     rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved => e
       message = e.record ? e.record.errors.full_messages.to_sentence : nil
       # Reload does not discard Active Storage's deferred attachment changes.
@@ -103,13 +107,7 @@ module Bible270
         attributes[:daily_reminder_time] = @daily_reminder_time
       end
 
-      Reader.transaction do
-        current_reader.assign_attributes(attributes)
-        # Unlike attach, assignment never saves early. Active Storage persists the
-        # attachment with the reader and uploads only after a successful commit.
-        current_reader.avatar = params[:avatar] if params[:avatar].present?
-        current_reader.save!
-      end
+      AvatarImages.update!(current_reader, attributes, upload: params[:avatar].presence)
     end
 
     def render_profile_error(message)

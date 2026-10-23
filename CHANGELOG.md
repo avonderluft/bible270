@@ -4,6 +4,21 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Fixed
+
+- load avatars eagerly without forced asynchronous decoding, while retaining attachment preloading and bounded database queries
+- recover failed avatar requests with up to two automatic retries, refreshing same-origin uploaded-image redirects without modifying signed provider URLs
+- show accessible initials instead of broken images when avatars fail, including cached failures and images inserted during navigation or conversations
+
+### Added
+
+- automatically create 256×256, center-cropped static WebP avatars on Profile and Admin uploads, with orientation correction, color conversion, transparency preservation, and metadata stripping; animated images use their first frame
+- preserve the current original upload separately and display the optimized thumbnail only after successful processing and storage, without request-time image processing
+- validate actual image data and enforce a 40-megapixel limit in addition to the existing configurable upload byte limit (2 MiB by default)
+- add `bible270:avatars:optimize` to backfill existing uploaded avatars, with `DRY_RUN=1`, `FORCE=1`, bounded batches, rerun-safe version tracking, and protection against concurrent picture changes
+
+Avatar processing requires libvips with PNG, JPEG, GIF and WebP support on upload/backfill hosts; the gem now depends on `image_processing` and `ruby-vips`. No additional database migration is required for hosts already using Active Storage. Existing avatars continue displaying their originals until optimized; remote provider images are unchanged.
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.11.1...main)**
 
 ## [1.11.1] - 2026-10-22

@@ -229,23 +229,20 @@ module Bible270
     # Name and picture together, mirroring what a reader can change about
     # themselves on their own profile.
     def update_profile
-      problems = []
-      @reader.transaction do
-        if (params[:first_name].present? || params[:last_name].present?) && !@reader.update_names(params[:first_name],
-                                                                                                  params[:last_name])
-          problems << 'both a first and last name'
+      attributes = {}
+      if params[:first_name].present? || params[:last_name].present?
+        attributes = Names.normalize(params[:first_name], params[:last_name])
+        unless attributes
+          return redirect_to admin_reader_path(@reader), alert: 'Needs both a first and last name.'
         end
-        if problems.empty? && params[:avatar].present? && !@reader.attach_avatar(params[:avatar])
-          problems << (@reader.errors[:avatar].first || 'a valid image')
-        end
-        raise ActiveRecord::Rollback if problems.any?
       end
 
-      if problems.empty?
-        redirect_to admin_reader_path(@reader), notice: 'Updated.'
-      else
-        redirect_to admin_reader_path(@reader), alert: "Needs #{problems.to_sentence}."
-      end
+      AvatarImages.update!(@reader, attributes, upload: params[:avatar].presence)
+      redirect_to admin_reader_path(@reader), notice: 'Updated.'
+    rescue AvatarOptimizer::Error, AvatarImages::Error => e
+      redirect_to admin_reader_path(@reader), alert: e.message
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotSaved
+      redirect_to admin_reader_path(@reader), alert: 'The profile could not be saved. Please try again.'
     end
 
     def update_theme

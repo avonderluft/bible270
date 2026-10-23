@@ -7,8 +7,8 @@ module Bible270
   module Avatars
     CONTENT_TYPES = %w[image/png image/jpeg image/gif image/webp].freeze
 
-    # Two megabytes. Large enough for a photo off a phone, small enough that
-    # nobody's profile page crawls.
+    # Original-upload byte limit. AvatarOptimizer separately limits decoded
+    # dimensions and produces the smaller display image; originals are retained.
     DEFAULT_MAX_BYTES = 2 * 1024 * 1024
 
   module_function

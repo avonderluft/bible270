@@ -2,9 +2,13 @@
 
 require 'test_helper'
 require 'tempfile'
+require 'image_processing/vips'
 
 if RAILS_LOADED
   class AdminControllerTest < ActionDispatch::IntegrationTest
+    # Uploads must own their commit boundary; files cannot join a DB rollback.
+    self.use_transactional_tests = false
+
     def setup
       needs_rails!
       clear_engine_tables!
@@ -60,7 +64,11 @@ if RAILS_LOADED
       end
     end
 
-    def with_uploaded_avatar(content_type: 'image/png', contents: 'avatar')
+    def avatar_png
+      @avatar_png ||= Vips::Image.black(480, 320).new_from_image([35, 120, 210]).write_to_buffer('.png')
+    end
+
+    def with_uploaded_avatar(content_type: 'image/png', contents: avatar_png)
       file = Tempfile.new(['avatar', '.png'])
       file.binmode
       file.write(contents)
@@ -797,12 +805,150 @@ if RAILS_LOADED
       end
 
       assert_response :redirect
+      assert_equal 'Updated.', flash[:notice]
       assert @reader.reload.avatar_uploaded?
+      assert_equal avatar_png, @reader.avatar.download
+      assert_equal 'avatar.png', @reader.avatar.filename.to_s
+      assert_equal 'image/png', @reader.avatar.content_type
+      assert @reader.avatar_optimized?
+      thumbnail = Vips::Image.new_from_buffer(@reader.avatar_thumbnail.download, '')
+      assert_equal [256, 256], [thumbnail.width, thumbnail.height]
+      assert_equal 'webpload_buffer', thumbnail.get('vips-loader')
+      assert_equal 0, thumbnail.get_typeof('n-pages')
+      assert_equal 'image/webp', @reader.avatar_thumbnail.content_type
+      follow_redirect!
+      thumbnail_path = Rails.application.routes.url_helpers.rails_blob_path(@reader.avatar_thumbnail, only_path: true)
+      assert_select 'img' do |images|
+        assert_includes images.map { |image| image['src'] }, thumbnail_path
+      end
 
       delete "#{mount}/admin/readers/#{@reader.id}/avatar"
 
       assert_response :redirect
       refute @reader.reload.avatar_uploaded?
+      refute @reader.avatar_thumbnail.attached?
+    end
+
+    def test_admin_replaces_both_images_and_saves_the_name
+      prepare_admin_avatar
+      previous_ids = [@reader.avatar.blob.id, @reader.avatar_thumbnail.blob.id]
+      replacement = Vips::Image.black(320, 480).new_from_image([210, 120, 35]).write_to_buffer('.png')
+      with_uploaded_avatar(contents: replacement) do |upload|
+        patch "#{mount}/admin/readers/#{@reader.id}/profile",
+              params: { first_name: 'Changed', last_name: 'Name', avatar: upload }
+      end
+
+      assert_response :redirect
+      assert_equal 'Updated.', flash[:notice]
+      assert_equal 'Changed Name', @reader.reload.display_name
+      assert_equal replacement, @reader.avatar.download
+      assert @reader.avatar_optimized?
+      refute_equal previous_ids.first, @reader.avatar.blob.id
+      refute_equal previous_ids.last, @reader.avatar_thumbnail.blob.id
+    end
+
+    def test_admin_malformed_upload_preserves_all_attributes_and_both_images
+      prepare_admin_avatar
+      with_uploaded_avatar(contents: 'not a PNG') do |upload|
+        assert_admin_avatar_unchanged do
+          patch "#{mount}/admin/readers/#{@reader.id}/profile",
+                params: { first_name: 'Changed', last_name: 'Name', avatar: upload }
+        end
+      end
+
+      assert_response :redirect
+      assert_match(%r{Avatar.*decode}, flash[:alert])
+    end
+
+    def test_admin_processor_failure_preserves_all_attributes_and_both_images
+      prepare_admin_avatar
+      failure = ->(*) { raise Bible270::AvatarOptimizer::Error, 'Avatar processing is unavailable.' }
+      Bible270::AvatarOptimizer.stub(:open, failure) do
+        with_uploaded_avatar do |upload|
+          assert_admin_avatar_unchanged do
+            patch "#{mount}/admin/readers/#{@reader.id}/profile",
+                  params: { first_name: 'Changed', last_name: 'Name', avatar: upload }
+          end
+        end
+      end
+
+      assert_response :redirect
+      assert_equal 'Avatar processing is unavailable.', flash[:alert]
+    end
+
+    def test_admin_storage_failure_preserves_all_attributes_and_both_images
+      prepare_admin_avatar
+      failure = ->(*) { raise IOError, 'storage unavailable' }
+      ActiveStorage::Blob.service.stub(:upload, failure) do
+        with_uploaded_avatar do |upload|
+          assert_admin_avatar_unchanged(allow_storage_writes: true) do
+            patch "#{mount}/admin/readers/#{@reader.id}/profile",
+                  params: { first_name: 'Changed', last_name: 'Name', avatar: upload }
+          end
+        end
+      end
+
+      assert_response :redirect
+      assert_match(%r{picture could not be stored}, flash[:alert])
+    end
+
+    def test_admin_model_validation_failure_does_not_write_to_storage
+      prepare_admin_avatar
+      # The controller loads a fresh reader; invalidate it after form normalization
+      # while still exercising the service's real AR validation path.
+      invalid_names = { first_name: 'Changed', last_name: 'Name', display_name: '' }
+      Bible270::Names.stub(:normalize, invalid_names) do
+        with_uploaded_avatar do |upload|
+          assert_admin_avatar_unchanged do
+            patch "#{mount}/admin/readers/#{@reader.id}/profile",
+                  params: { first_name: 'Changed', last_name: 'Name', avatar: upload }
+          end
+        end
+      end
+
+      assert_response :redirect
+      assert_match(%r{profile could not be saved}, flash[:alert])
+    end
+
+    def test_admin_upload_without_active_storage_does_not_change_attributes
+      sign_in_as_admin
+      attributes = @reader.reload.attributes
+      Bible270::Reader.stub(:avatar_uploads?, false) do
+        with_uploaded_avatar do |upload|
+          patch "#{mount}/admin/readers/#{@reader.id}/profile",
+                params: { first_name: 'Changed', last_name: 'Name', avatar: upload }
+        end
+      end
+
+      assert_response :redirect
+      assert_match(%r{Picture uploads require Active Storage}, flash[:alert])
+      assert_equal attributes, @reader.reload.attributes
+    end
+
+    def prepare_admin_avatar
+      skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
+
+      with_uploaded_avatar { |upload| Bible270::AvatarImages.update!(@reader, {}, upload: upload) }
+      sign_in_as_admin
+    end
+
+    def assert_admin_avatar_unchanged(allow_storage_writes: false, &block)
+      attributes = @reader.reload.attributes
+      images = [@reader.avatar, @reader.avatar_thumbnail]
+      attachments = images.map { |image| image.attachment.attributes }
+      blobs = images.map { |image| image.blob.attributes }
+      bytes = images.map(&:download)
+      writes = []
+      subscriber = ->(*event) { writes << event.first }
+      ActiveSupport::Notifications.subscribed(subscriber, %r{service_(upload|delete|delete_prefixed)\.active_storage}) do
+        assert_no_difference ['ActiveStorage::Blob.count', 'ActiveStorage::Attachment.count'], &block
+      end
+      assert_empty writes unless allow_storage_writes
+      assert_equal attributes, @reader.reload.attributes
+      images = [@reader.avatar, @reader.avatar_thumbnail]
+      assert_equal(attachments, images.map { |image| image.attachment.attributes })
+      assert_equal(blobs, images.map { |image| image.blob.attributes })
+      assert_equal bytes, images.map(&:download)
     end
 
     def test_an_admin_can_set_progress_exactly

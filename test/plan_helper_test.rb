@@ -285,17 +285,38 @@ if RAILS_LOADED
       assert_includes b270_avatar(@reader), 'face.png'
     end
 
-    def test_list_avatars_load_lazily_without_losing_dimensions_or_alt_text
+    def test_list_avatars_load_eagerly_without_losing_dimensions_or_alt_text
       @reader.update!(avatar_url: 'https://example.org/face.png')
       image = Nokogiri::HTML.fragment(b270_avatar(@reader, size: 56)).at_css('img')
 
-      assert_equal 'lazy', image['loading']
-      assert_equal 'async', image['decoding']
+      assert_equal 'eager', image['loading']
+      assert_nil image['decoding']
       assert_equal '56', image['width']
       assert_equal '56', image['height']
       assert_equal @reader.display_name, image['alt']
-      image = Nokogiri::HTML.fragment(b270_avatar(@reader, loading: 'eager')).at_css('img')
-      assert_equal 'eager', image['loading']
+      assert_equal 'true', image['data-b270-avatar']
+      assert_equal 'false', image['data-b270-avatar-uploaded']
+    end
+
+    def test_avatar_failure_fallback_preserves_accessible_name_and_size
+      @reader.update!(avatar_url: 'https://example.org/face.png')
+      frame = Nokogiri::HTML.fragment(b270_avatar(@reader, size: 36)).at_css('.b270-avatar-frame')
+
+      assert_equal 'img', frame['role']
+      assert_equal @reader.display_name, frame['aria-label']
+      assert_equal 'width:36px;height:36px;line-height:36px', frame['style']
+      fallback = frame.at_css('img + .b270-avatar-fallback')
+      assert_equal @reader.initials, fallback.text
+      assert_equal 'true', fallback['aria-hidden']
+    end
+
+    def test_avatar_without_a_photo_has_an_accessible_name
+      @reader.update!(avatar_url: nil)
+      fallback = Nokogiri::HTML.fragment(b270_avatar(@reader)).at_css('.b270-avatar-fallback')
+
+      assert_equal 'img', fallback['role']
+      assert_equal @reader.display_name, fallback['aria-label']
+      assert_equal @reader.initials, fallback.text
     end
 
     def test_day_status_reflects_progress

@@ -154,19 +154,25 @@ module Bible270
     end
 
     def b270_avatar_src(reader)
-      return main_app.rails_blob_path(reader.avatar, only_path: true) if reader.avatar_uploaded?
+      return main_app.rails_blob_path(reader.display_avatar, only_path: true) if reader.avatar_uploaded?
 
       reader.avatar_url.presence
     end
 
-    def b270_avatar(reader, size: 72, loading: 'lazy')
+    def b270_avatar(reader, size: 72, loading: 'eager')
       src = b270_avatar_src(reader)
-      if src
-        image_tag src, class: 'b270-avatar', width: size, height: size, alt: reader.display_name,
-                       loading: loading, decoding: 'async'
-      else
-        content_tag :span, reader.initials, class: 'b270-avatar b270-avatar-fallback',
-                                            style: "width:#{size}px;height:#{size}px;line-height:#{size}px"
+      dimensions = "width:#{size}px;height:#{size}px;line-height:#{size}px"
+      unless src
+        return content_tag :span, reader.initials, class: 'b270-avatar b270-avatar-fallback',
+                                                   style: dimensions, role: 'img', 'aria-label': reader.display_name
+      end
+
+      content_tag :span, class: 'b270-avatar-frame', style: dimensions,
+                         role: 'img', 'aria-label': reader.display_name do
+        image = image_tag src, class: 'b270-avatar', width: size, height: size, alt: reader.display_name,
+                               loading: loading, data: { b270_avatar: true, b270_avatar_uploaded: reader.avatar_uploaded? }
+        fallback = content_tag :span, reader.initials, class: 'b270-avatar b270-avatar-fallback', 'aria-hidden': true
+        safe_join([image, fallback])
       end
     end
 

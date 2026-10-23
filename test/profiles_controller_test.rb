@@ -2,9 +2,13 @@
 
 require 'test_helper'
 require 'tempfile'
+require 'image_processing/vips'
 
 if RAILS_LOADED
   class ProfilesControllerTest < ActionDispatch::IntegrationTest
+    # Uploads must own their commit boundary; files cannot join a DB rollback.
+    self.use_transactional_tests = false
+
     def setup
       needs_rails!
       clear_engine_tables!
@@ -732,8 +736,9 @@ if RAILS_LOADED
     end
 
     def test_a_valid_profile_saves_every_setting_and_replaces_the_avatar
-      prepare_profile_with_avatar
+      prepare_profile_with_avatar(optimized: true)
       previous_blob_id = @reader.avatar.blob.id
+      previous_thumbnail_id = @reader.avatar_thumbnail.blob.id
       with_uploaded_avatar do |upload|
         patch "#{mount}/profile", params: complete_profile_params.merge(avatar: upload)
       end
@@ -753,7 +758,20 @@ if RAILS_LOADED
       assert @reader.daily_reminders
       assert_equal '06:45', @reader.daily_reminder_time
       refute_equal previous_blob_id, @reader.avatar.blob.id
-      assert_equal 'replacement avatar', @reader.avatar.download
+      assert_equal avatar_png, @reader.avatar.download
+      assert_equal 'replacement.png', @reader.avatar.filename.to_s
+      assert_equal 'image/png', @reader.avatar.content_type
+      assert @reader.avatar_optimized?
+      refute_equal previous_thumbnail_id, @reader.avatar_thumbnail.blob.id
+      thumbnail = Vips::Image.new_from_buffer(@reader.avatar_thumbnail.download, '')
+      assert_equal [256, 256], [thumbnail.width, thumbnail.height]
+      assert_equal 'webpload_buffer', thumbnail.get('vips-loader')
+      assert_equal 0, thumbnail.get_typeof('n-pages')
+      assert_equal 'image/webp', @reader.avatar_thumbnail.content_type
+      follow_redirect!
+      assert_select '.b270-avatarrow img' do |images|
+        assert_equal Rails.application.routes.url_helpers.rails_blob_path(@reader.avatar_thumbnail, only_path: true), images.first['src']
+      end
     end
 
     def test_model_validation_failure_rerenders_without_saving_or_uploading
@@ -778,6 +796,62 @@ if RAILS_LOADED
       assert_select 'select[name="display_mode"] option[value="dark_green"][selected]'
       assert_select 'select[name="daily_reminder_hour"] option[value="06"][selected]'
       assert_select '.b270-avatarrow img[src*="original.png"]'
+    end
+
+    def test_malformed_avatar_bytes_preserve_every_setting_and_both_images
+      prepare_profile_with_avatar(optimized: true)
+      with_uploaded_avatar(contents: 'not a PNG') do |upload|
+        assert_profile_unchanged do
+          patch "#{mount}/profile", params: complete_profile_params.merge(avatar: upload)
+        end
+      end
+
+      assert_response :unprocessable_entity
+      assert_select '.b270-flash.alert', text: %r{Avatar.*decode}
+    end
+
+    def test_processor_failure_preserves_every_setting_and_both_images
+      prepare_profile_with_avatar(optimized: true)
+      failure = ->(*) { raise Bible270::AvatarOptimizer::Error, 'Avatar processing is unavailable.' }
+      Bible270::AvatarOptimizer.stub(:open, failure) do
+        with_uploaded_avatar do |upload|
+          assert_profile_unchanged do
+            patch "#{mount}/profile", params: complete_profile_params.merge(avatar: upload)
+          end
+        end
+      end
+
+      assert_response :unprocessable_entity
+      assert_select '.b270-flash.alert', text: 'Avatar processing is unavailable.'
+    end
+
+    def test_storage_failure_preserves_every_setting_and_both_images
+      prepare_profile_with_avatar(optimized: true)
+      failure = ->(*) { raise IOError, 'storage unavailable' }
+      ActiveStorage::Blob.service.stub(:upload, failure) do
+        with_uploaded_avatar do |upload|
+          assert_profile_unchanged(allow_storage_writes: true) do
+            patch "#{mount}/profile", params: complete_profile_params.merge(avatar: upload)
+          end
+        end
+      end
+
+      assert_response :unprocessable_entity
+      assert_select '.b270-flash.alert', text: %r{picture could not be stored}
+    end
+
+    def test_upload_without_active_storage_is_rejected_without_saving_settings
+      sign_in_as(@reader)
+      attributes = @reader.reload.attributes
+      Bible270::Reader.stub(:avatar_uploads?, false) do
+        with_uploaded_avatar do |upload|
+          patch "#{mount}/profile", params: complete_profile_params.merge(avatar: upload)
+        end
+      end
+
+      assert_response :unprocessable_entity
+      assert_select '.b270-flash.alert', text: %r{valid image}
+      assert_equal attributes, @reader.reload.attributes
     end
 
     def test_omitting_translation_and_avatar_preserves_them
@@ -883,13 +957,15 @@ if RAILS_LOADED
     def test_a_picture_can_be_removed
       skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
 
-      @reader.avatar.attach(io: StringIO.new('x'), filename: 'a.png', content_type: 'image/png')
+      prepare_profile_with_avatar(optimized: true)
       assert @reader.reload.avatar_uploaded?
+      assert @reader.avatar_thumbnail.attached?
 
-      sign_in_as(@reader)
       delete "#{mount}/profile/avatar"
 
+      assert_response :redirect
       refute @reader.reload.avatar_uploaded?
+      refute @reader.avatar_thumbnail.attached?
     end
 
     def test_a_visitor_cannot_remove_a_picture
@@ -909,7 +985,7 @@ if RAILS_LOADED
       }
     end
 
-    def prepare_profile_with_avatar
+    def prepare_profile_with_avatar(optimized: false)
       skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
 
       Bible270.config.daily_reminders = true
@@ -917,10 +993,19 @@ if RAILS_LOADED
                       notify_on_mention: false, notify_on_all_comments: false,
                       daily_reminders: false, daily_reminder_time: '09:30')
       @reader.avatar.attach(io: StringIO.new('original avatar'), filename: 'original.png', content_type: 'image/png')
+      if optimized
+        with_uploaded_avatar do |upload|
+          Bible270::AvatarImages.update!(@reader, {}, upload: upload)
+        end
+      end
       sign_in_as(@reader)
     end
 
-    def with_uploaded_avatar(content_type: 'image/png', contents: 'replacement avatar')
+    def avatar_png
+      @avatar_png ||= Vips::Image.black(480, 320).new_from_image([35, 120, 210]).write_to_buffer('.png')
+    end
+
+    def with_uploaded_avatar(content_type: 'image/png', contents: avatar_png)
       file = Tempfile.new(['avatar', '.png'])
       file.binmode
       file.write(contents)
@@ -930,20 +1015,31 @@ if RAILS_LOADED
       file&.close!
     end
 
-    def assert_profile_unchanged(&block)
+    def assert_profile_unchanged(allow_storage_writes: false, &block)
       attributes = @reader.reload.attributes
       attachment = @reader.avatar.attachment.attributes
       blob = @reader.avatar.blob.attributes
+      original_bytes = @reader.avatar.download
+      thumbnail = @reader.avatar_thumbnail.attachment&.attributes
+      thumbnail_blob = @reader.avatar_thumbnail.blob&.attributes
+      thumbnail_bytes = @reader.avatar_thumbnail.download if thumbnail
       storage_writes = []
       subscriber = ->(*event) { storage_writes << event.first }
       ActiveSupport::Notifications.subscribed(subscriber, %r{service_(upload|delete|delete_prefixed)\.active_storage}) do
         assert_no_difference ['ActiveStorage::Blob.count', 'ActiveStorage::Attachment.count'], &block
       end
-      assert_empty storage_writes
+      assert_empty storage_writes unless allow_storage_writes
       assert_equal attributes, @reader.reload.attributes
       assert_equal attachment, @reader.avatar.attachment.attributes
       assert_equal blob, @reader.avatar.blob.attributes
-      assert_equal 'original avatar', @reader.avatar.download
+      assert_equal original_bytes, @reader.avatar.download
+      if thumbnail
+        assert_equal thumbnail, @reader.avatar_thumbnail.attachment.attributes
+        assert_equal thumbnail_blob, @reader.avatar_thumbnail.blob.attributes
+        assert_equal thumbnail_bytes, @reader.avatar_thumbnail.download
+      else
+        refute @reader.avatar_thumbnail.attached?
+      end
     end
   end
 end

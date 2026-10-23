@@ -16,6 +16,9 @@ if RAILS_LOADED
                                           email: "avatar#{number}@example.org")
         if Bible270::Reader.avatar_uploads? && number.positive?
           reader.avatar.attach(io: StringIO.new('picture'), filename: 'picture.png', content_type: 'image/png')
+          reader.avatar_thumbnail.attach(io: StringIO.new('thumbnail'), filename: 'avatar.webp', content_type: 'image/webp',
+                                         metadata: { bible270_avatar_source_id: reader.avatar.blob.id,
+                                                     bible270_avatar_version: Bible270::AvatarOptimizer::VERSION })
         end
         reader.mark_day_complete!(1)
         reader
@@ -45,10 +48,14 @@ if RAILS_LOADED
       queries = avatar_queries do
         (readers + completers + comments.map(&:reader)).each do |reader|
           assert reader.association(:avatar_attachment).loaded?
+          assert reader.association(:avatar_thumbnail_attachment).loaded?
           next unless reader.avatar_uploaded?
 
           assert reader.avatar_attachment.association(:blob).loaded?
           assert_equal 'picture.png', reader.avatar.blob.filename.to_s
+          assert reader.avatar_thumbnail_attachment.association(:blob).loaded?
+          assert reader.avatar_optimized?
+          assert_equal 'avatar.webp', reader.display_avatar.blob.filename.to_s
         end
       end
       assert_empty queries
@@ -57,8 +64,8 @@ if RAILS_LOADED
     def test_reader_heavy_pages_use_bounded_avatar_queries
       skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
 
-      { '/community' => 2, '/day/1' => 6, '/reflections' => 4,
-        "/readers/#{@readers.first.id}" => 5 }.each do |path, limit|
+      { '/community' => 4, '/day/1' => 12, '/reflections' => 8,
+        "/readers/#{@readers.first.id}" => 9 }.each do |path, limit|
         assert_page_avatar_queries(path, limit)
       end
 
@@ -66,7 +73,7 @@ if RAILS_LOADED
       Bible270.config.admin_emails = [admin.email]
       _record, token = Bible270::SignInToken.issue!(admin.email)
       get "#{mount}/sign_in/email/#{token}"
-      { '/admin' => 2, '/admin/comments' => 2, '/progress' => 4 }.each do |path, limit|
+      { '/admin' => 4, '/admin/comments' => 4, '/progress' => 8 }.each do |path, limit|
         assert_page_avatar_queries(path, limit)
       end
     end
@@ -91,7 +98,15 @@ if RAILS_LOADED
       queries = avatar_queries { get "#{mount}#{path}" }
       assert_response :success
       assert_operator queries.size, :<=, limit, "#{path} made too many avatar queries:\n#{queries.join("\n")}"
-      assert_select 'img.b270-avatar[loading="lazy"][decoding="async"]'
+      assert_select 'img.b270-avatar[loading="eager"][data-b270-avatar-uploaded="true"][src$="avatar.webp"]'
+      assert_select 'img.b270-avatar[loading="lazy"], img.b270-avatar[decoding="async"]', count: 0
+      assert_select '.b270-avatar-frame[role="img"]' do |frames|
+        frames.each do |frame|
+          assert_equal frame.at_css('img')['alt'], frame['aria-label']
+          assert frame.at_css('img + .b270-avatar-fallback[aria-hidden="true"]')
+        end
+      end
+      assert_includes response.body, 'window.Bible270AvatarUI'
     end
 
     def avatar_queries(&block)

@@ -1,0 +1,85 @@
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270AvatarUI) {
+      window.Bible270AvatarUI.initialize();
+      return;
+    }
+
+    const selector = "img[data-b270-avatar]";
+    const states = new WeakMap();
+    const delays = [500, 1500];
+
+    function stateFor(image) {
+      const source = image.getAttribute("src");
+      let state = states.get(image);
+      if (!state || state.current !== source) {
+        if (state) clearTimeout(state.timer);
+        state = { original: source, current: source, attempts: 0, timer: null };
+        states.set(image, state);
+      }
+      return state;
+    }
+
+    function loaded(image) {
+      const state = stateFor(image);
+      clearTimeout(state.timer);
+      state.timer = null;
+      image.removeAttribute("data-b270-avatar-failed");
+    }
+
+    function failed(image) {
+      image.setAttribute("data-b270-avatar-failed", "");
+      const state = stateFor(image);
+      if (!state.original || state.timer !== null || state.attempts >= delays.length) return;
+
+      state.timer = setTimeout(() => {
+        state.timer = null;
+        if (!image.isConnected || image.getAttribute("src") !== state.current) return;
+        if (image.complete && image.naturalWidth > 0) {
+          loaded(image);
+          return;
+        }
+        state.attempts += 1;
+        let source = state.original;
+        // Refresh our blob redirect, which may have cached an expired storage URL.
+        // Never alter provider URLs: their query parameters may be signed.
+        const url = new URL(source, document.baseURI);
+        if (image.dataset.b270AvatarUploaded === "true" && url.origin === window.location.origin) {
+          url.searchParams.set("_b270_avatar_retry", `${Date.now()}-${state.attempts}`);
+          source = url.href;
+        }
+        state.current = source;
+        image.setAttribute("src", source);
+      }, delays[state.attempts]);
+    }
+
+    function inspect(image) {
+      if (!image.complete) return;
+      if (image.naturalWidth > 0) loaded(image);
+      else failed(image);
+    }
+
+    function initialize(root = document) {
+      if (root.matches?.(selector)) inspect(root);
+      root.querySelectorAll?.(selector).forEach(inspect);
+    }
+
+    // Image events do not bubble. Capture also handles images inserted by replies
+    // and Turbo; the scan catches cached failures before this script was installed.
+    document.addEventListener("load", (event) => {
+      if (event.target.matches?.(selector)) loaded(event.target);
+    }, true);
+    document.addEventListener("error", (event) => {
+      if (event.target.matches?.(selector)) failed(event.target);
+    }, true);
+    document.addEventListener("turbo:load", () => initialize());
+    document.addEventListener("turbo:render", () => initialize());
+    window.addEventListener("pageshow", () => initialize());
+    new MutationObserver((records) => {
+      records.forEach((record) => record.addedNodes.forEach((node) => initialize(node)));
+    }).observe(document.documentElement, { childList: true, subtree: true });
+
+    window.Bible270AvatarUI = { initialize };
+    initialize();
+  })();
+</script>

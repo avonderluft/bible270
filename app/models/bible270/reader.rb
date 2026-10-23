@@ -15,11 +15,16 @@ module Bible270
     # to keep working there — readers simply can't upload, and any avatar from
     # their sign-in provider is used instead.
     AVATAR_UPLOADS = respond_to?(:has_one_attached)
-    has_one_attached :avatar if AVATAR_UPLOADS
+    if AVATAR_UPLOADS
+      has_one_attached :avatar
+      has_one_attached :avatar_thumbnail
+    end
+
+    AVATAR_ASSOCIATIONS = { avatar_attachment: :blob, avatar_thumbnail_attachment: :blob }.freeze
 
     def self.avatar_uploads? = AVATAR_UPLOADS
 
-    scope :with_avatar, -> { avatar_uploads? ? includes(avatar_attachment: :blob) : all }
+    scope :with_avatar, -> { avatar_uploads? ? includes(AVATAR_ASSOCIATIONS) : all }
 
     # Fires for every way a reader comes into existence — email sign-in, OmniAuth,
     # or a bridged host user — rather than in each controller, so no path can
@@ -426,22 +431,29 @@ module Bible270
       self.class.avatar_uploads? && avatar.attached?
     end
 
+    def avatar_optimized?
+      avatar_uploaded? && avatar_thumbnail.attached? &&
+        avatar_thumbnail.blob.metadata['bible270_avatar_source_id'] == avatar.blob.id &&
+        avatar_thumbnail.blob.metadata['bible270_avatar_version'] == AvatarOptimizer::VERSION
+    end
+
+    def display_avatar
+      avatar_optimized? ? avatar_thumbnail : avatar
+    end
+
     # Returns false and sets an error when the upload isn't acceptable.
     def attach_avatar(upload)
       return false unless self.class.avatar_uploads?
 
-      problem = Avatars.problem_with(content_type: upload.content_type, byte_size: upload.size)
-      if problem
-        errors.add(:avatar, problem)
-        return false
-      end
-
-      avatar.attach(upload)
+      AvatarImages.update!(self, {}, upload: upload)
       true
+    rescue AvatarOptimizer::Error, AvatarImages::Error => e
+      errors.add(:avatar, e.message)
+      false
     end
 
     def remove_avatar!
-      avatar.purge if avatar_uploaded?
+      AvatarImages.remove!(self)
       true
     end
 

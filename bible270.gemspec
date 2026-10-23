@@ -25,11 +25,13 @@ Gem::Specification.new do |spec|
   ]
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'image_processing', '~> 1.14'
   # Rails 8.1.3 still passes JSON.parse a positional options hash, which json 3.0
   # rejects before a request can decode its signed session metadata.
   spec.add_dependency 'json', '< 3'
   spec.add_dependency 'kramdown', '>= 2.5', '< 3'
   spec.add_dependency 'rails', '>= 7.0'
+  spec.add_dependency 'ruby-vips', '~> 2.3'
 
   # Built-in sign-in. OmniAuth 2.0+ is required: it disallows GET on the request
   # phase (CVE-2015-9284), which is what the engine's POST sign-in forms assume.

@@ -21,13 +21,39 @@ The schedule is pure deterministic Ruby (`Bible270::Plan`) — none of it is sto
 
 ## Requirements
 
-- **Ruby** >= 3.2. Plain Ruby, no C extensions. Runs on 4.0.6 — it avoids everything 4.0 dropped or unbundled (notably `cgi`; URL escaping uses `URI.encode_www_form_component`).
+- **Ruby** >= 3.2. Engine code is plain Ruby; avatar processing uses native libvips through `ruby-vips`. Runs on 4.0.6 — it avoids everything 4.0 dropped or unbundled (notably `cgi`; URL escaping uses `URI.encode_www_form_component`).
 - **Rails** >= 7.2. On Ruby 4.0 your host app is the real constraint, not this engine — check your lockfile with RailsBump first.
 - A host app, and Turbo if you want check-offs without a page reload.
+- For picture uploads and avatar backfills: **libvips** with PNG, JPEG, GIF and WebP support. The gem supplies the `image_processing` and `ruby-vips` Ruby dependencies. Install libvips on every upload/backfill host (for example, `sudo apt-get install libvips-tools` on Ubuntu or `sudo pacman -S libvips` on Arch). Native processing is loaded only when optimizing an image; existing pages and provider avatars do not require it.
 
 Mutation controls expose pending, success, and retry feedback when JavaScript runs, while ordinary HTML
 forms remain the fallback. Repeated checkoff and like requests converge on the intended state rather
 than accidentally reversing it.
+
+## Avatar optimization
+
+Profile and Admin picture uploads produce a **256×256 static WebP thumbnail at quality 85** before switching the displayed avatar. Images are auto-oriented, center-cropped, converted to sRGB, and stripped of metadata; transparency is preserved. Animated GIF/WebP uploads use the first frame. Small images are upscaled to the same dimensions. Invalid or corrupt image data is rejected, even if its filename or declared type looks valid.
+
+Uploads are limited to **2 MiB by default** (`config.avatar_max_bytes`) and **40 million pixels** in the selected frame/container canvas. The pixel limit bounds dimensions, not total processor memory. A processing or storage failure leaves the previous picture and profile details unchanged.
+
+The current original remains in the `avatar` attachment, including its original metadata; the display image is stored separately as `avatar_thumbnail`. This preserves the source for future reprocessing, not a history of past pictures. Removing/replacing a picture detaches the old pair; Active Storage's purge jobs clean up their files. Keep the host's Active Job worker running for that cleanup. Original retention increases storage use even though avatar downloads become smaller. No new database migration is needed if Active Storage is already installed.
+
+Existing uploaded avatars continue displaying their originals until optimized. Run the following **from the host Rails application**, with its normal database/storage credentials and production environment when appropriate:
+
+```sh
+# Metadata-only preview: no image downloads or attachment changes
+RAILS_ENV=production bundle exec rake bible270:avatars:optimize DRY_RUN=1
+
+# Process existing uploaded reader avatars, sequentially in bounded batches
+RAILS_ENV=production bundle exec rake bible270:avatars:optimize BATCH_SIZE=100
+
+# Rebuild even current thumbnails from the retained originals
+RAILS_ENV=production bundle exec rake bible270:avatars:optimize FORCE=1
+```
+
+The task skips current thumbnails, protects concurrent avatar changes, continues after per-image failures, and exits nonzero if any fail. It prints reader IDs, counts, and original/optimized display-byte totals (not total storage savings). Correct failed files, limits, storage access, or processor dependencies and rerun. `BATCH_SIZE` defaults to 100 and must be between 1 and 1000. Dry-run checks eligibility only; it does not verify file availability or decodability. Take a normal database/storage backup before a production backfill. The task reads originals and writes thumbnails to the configured storage service; remote storage can incur request and transfer costs. It does **not** download remote sign-in-provider avatars or modify unrelated host attachments.
+
+For host code that uploads reader pictures, use `reader.attach_avatar(upload)` or `Bible270::AvatarImages.update!(reader, attributes, upload: upload)` rather than attaching directly with Active Storage, which bypasses this processing pipeline. Uploads and backfills must run **outside a caller-owned database transaction**: the service owns the commit boundary so a later outer rollback cannot orphan already-uploaded files. Failed cleanup retains unattached blob records with their storage keys for retry; check logged blob IDs and include these in the host's unattached-blob maintenance.
 
 ## Install
 

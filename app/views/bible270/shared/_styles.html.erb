@@ -424,6 +424,11 @@
   .b270-completers{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px;font-size:13px;color:var(--muted)}
   .b270-avatar{border-radius:50%;object-fit:cover;display:inline-block;text-align:center;background:var(--teal-fill);color:var(--on-accent);font-size:12px;font-weight:600}
   .b270-avatar-fallback{border-radius:50%}
+  .b270-avatar-frame{position:relative;display:inline-block;vertical-align:middle;flex-shrink:0}
+  .b270-avatar-frame>img{display:block}
+  .b270-avatar-frame>.b270-avatar-fallback{position:absolute;inset:0;visibility:hidden}
+  .b270-avatar-frame>img[data-b270-avatar-failed]{visibility:hidden}
+  .b270-avatar-frame>img[data-b270-avatar-failed]+.b270-avatar-fallback{visibility:visible}
 
   /* comments */
   .b270-section-h{font-family:"Spectral",serif;font-size:20px;font-weight:600;margin:34px 0 14px}
