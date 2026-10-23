@@ -176,7 +176,7 @@ if RAILS_LOADED
       assert_equal original_bytes, reader.avatar.download
       assert_equal 'image/webp', reader.avatar_thumbnail.blob.content_type
       assert_includes output, "original=#{original.byte_size} optimized=#{reader.avatar_thumbnail.blob.byte_size}"
-      assert_includes output, 'Originals retained; not total storage savings.'
+      assert_includes output, 'Originals retained.'
       derivative_id = reader.avatar_thumbnail.blob.id
       assert_equal unrelated_ids, [unrelated.reload.id, thumbnail_only.reload.avatar_thumbnail.blob.id]
       assert ActiveStorage::Attachment.exists?(other_attachment.id)
