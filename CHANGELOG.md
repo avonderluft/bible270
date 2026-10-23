@@ -4,7 +4,26 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.11.0...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.11.1...main)**
+
+## [1.11.1] - 2026-10-22
+
+### Changed
+
+- simplify artwork on phone-sized screens: hide decorative scripture and word reflections, lower landscape scenes, and reduce fine detail while preserving desktop artwork
+- further mute Ocean's mobile colors and wave lines while keeping the shoreline and gulls
+- use a soft moonlight reflection on phones and retain opaque foreground trees in the simplified Forest scene
+- draw Forest trees as direct SVG paths with explicit green fills instead of reused SVG instances
+- increase the space between the app title and compact theme selector
+
+### Fixed
+
+- declare the selected color scheme early in the page and synchronize root settings and metadata on theme changes and Turbo navigation
+- request `color-scheme: only light` for Papyrus, Meadow, and Ocean while preserving System's device-following behavior
+
+Browser website-darkening features can still override theme colors. In iOS Brave, disabling Night Mode resolved the reported darkened light themes and white Forest trees.
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.11.0...v1.11.1)**
 
 ## [1.11.0] - 2026-10-22
 
@@ -897,7 +916,8 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.11.1...HEAD
+[1.11.1]: https://github.com/avonderluft/bible270/releases/tag/v1.11.1
 [1.11.0]: https://github.com/avonderluft/bible270/releases/tag/v1.11.0
 [1.10.2]: https://github.com/avonderluft/bible270/releases/tag/v1.10.2
 [1.10.1]: https://github.com/avonderluft/bible270/releases/tag/v1.10.1
