@@ -4,22 +4,36 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.12.0...main)**
+
+## [1.12.0] - 2026-10-22
+
 ### Fixed
 
 - load avatars eagerly without forced asynchronous decoding, while retaining attachment preloading and bounded database queries
 - recover failed avatar requests with up to two automatic retries, refreshing same-origin uploaded-image redirects without modifying signed provider URLs
 - show accessible initials instead of broken images when avatars fail, including cached failures and images inserted during navigation or conversations
+- preserve the previous picture and profile settings when upload processing or storage fails, and remove both original and thumbnail attachments when a picture is removed
+- prevent duplicate or stale avatar attachments during concurrent uploads and backfills; retain unattached blob records for cleanup retries when storage deletion fails
 
 ### Added
 
-- automatically create 256×256, center-cropped static WebP avatars on Profile and Admin uploads, with orientation correction, color conversion, transparency preservation, and metadata stripping; animated images use their first frame
+- automatically create 256×256, center-cropped static WebP avatars at quality 85 on Profile and Admin uploads, with orientation correction, sRGB color conversion, transparency preservation, and thumbnail metadata stripping; animated images use their first frame
 - preserve the current original upload separately and display the optimized thumbnail only after successful processing and storage, without request-time image processing
 - validate actual image data and enforce a 40-megapixel limit in addition to the existing configurable upload byte limit (2 MiB by default)
-- add `bible270:avatars:optimize` to backfill existing uploaded avatars, with `DRY_RUN=1`, `FORCE=1`, bounded batches, rerun-safe version tracking, and protection against concurrent picture changes
+- add `bible270:avatars:optimize` to backfill existing uploaded avatars, with metadata-only `DRY_RUN=1`, `FORCE=1`, configurable `BATCH_SIZE`, rerun-safe version tracking, and protection against concurrent picture changes
+- report backfill counts and original/optimized display-byte totals, continue after individual image failures, and exit nonzero when any images fail
+
+### Security
+
+- validate PNG chunk structure and checksums, discard text metadata before native decoding, and limit expanded PNG color profiles to 4 MiB
+- prevent redundant Active Storage analysis of retained originals from bypassing the sanitized image-processing pipeline
 
 Avatar processing requires libvips with PNG, JPEG, GIF and WebP support on upload/backfill hosts; the gem now depends on `image_processing` and `ruby-vips`. No additional database migration is required for hosts already using Active Storage. Existing avatars continue displaying their originals until optimized; remote provider images are unchanged.
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.11.1...main)**
+Run the backfill from the host Rails application after deploying. Originals are retained, so smaller display images reduce download sizes rather than total storage use. Upload and backfill service calls must run outside caller-owned database transactions to avoid orphaning stored files on a later rollback.
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.11.1...v1.12.0)**
 
 ## [1.11.1] - 2026-10-22
 
@@ -931,62 +945,67 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.11.1...HEAD
-[1.11.1]: https://github.com/avonderluft/bible270/releases/tag/v1.11.1
-[1.11.0]: https://github.com/avonderluft/bible270/releases/tag/v1.11.0
-[1.10.2]: https://github.com/avonderluft/bible270/releases/tag/v1.10.2
-[1.10.1]: https://github.com/avonderluft/bible270/releases/tag/v1.10.1
-[1.10.0]: https://github.com/avonderluft/bible270/releases/tag/v1.10.0
-[1.9.1]: https://github.com/avonderluft/bible270/releases/tag/v1.9.1
-[1.9.0]: https://github.com/avonderluft/bible270/releases/tag/v1.9.0
-[1.8.5]: https://github.com/avonderluft/bible270/releases/tag/v1.8.5
-[1.8.4]: https://github.com/avonderluft/bible270/releases/tag/v1.8.4
-[1.8.3]: https://github.com/avonderluft/bible270/releases/tag/v1.8.3
-[1.8.1]: https://github.com/avonderluft/bible270/releases/tag/v1.8.1
-[1.8.0]: https://github.com/avonderluft/bible270/releases/tag/v1.8.0
-[1.7.3]: https://github.com/avonderluft/bible270/releases/tag/v1.7.3
-[1.7.2]: https://github.com/avonderluft/bible270/releases/tag/v1.7.2
-[1.7.1]: https://github.com/avonderluft/bible270/releases/tag/v1.7.1
-[1.7.0]: https://github.com/avonderluft/bible270/releases/tag/v1.7.0
-[1.6.2]: https://github.com/avonderluft/bible270/releases/tag/v1.6.2
-[1.6.1]: https://github.com/avonderluft/bible270/releases/tag/v1.6.1
-[1.6.0]: https://github.com/avonderluft/bible270/releases/tag/v1.6.0
-[1.5.1]: https://github.com/avonderluft/bible270/releases/tag/v1.5.1
-[1.5.0]: https://github.com/avonderluft/bible270/releases/tag/v1.5.0
-[1.4.2]: https://github.com/avonderluft/bible270/releases/tag/v1.4.2
-[1.4.1]: https://github.com/avonderluft/bible270/releases/tag/v1.4.1
-[1.4.0]: https://github.com/avonderluft/bible270/releases/tag/v1.4.0
-[1.3.2]: https://github.com/avonderluft/bible270/releases/tag/v1.3.2
-[1.3.1]: https://github.com/avonderluft/bible270/releases/tag/v1.3.1
-[1.3.0]: https://github.com/avonderluft/bible270/releases/tag/v1.3.0
-[1.2.0]: https://github.com/avonderluft/bible270/releases/tag/v1.2.0
-[1.1.7]: https://github.com/avonderluft/bible270/releases/tag/v1.1.7
-[1.1.6]: https://github.com/avonderluft/bible270/releases/tag/v1.1.6
-[1.1.5]: https://github.com/avonderluft/bible270/releases/tag/v1.1.5
-[1.1.4]: https://github.com/avonderluft/bible270/releases/tag/v1.1.4
-[1.1.3]: https://github.com/avonderluft/bible270/releases/tag/v1.1.3
-[1.1.2]: https://github.com/avonderluft/bible270/releases/tag/v1.1.2
-[1.1.1]: https://github.com/avonderluft/bible270/releases/tag/v1.1.1
-[1.1.0]: https://github.com/avonderluft/bible270/releases/tag/v1.1.0
-[1.0.0]: https://github.com/avonderluft/bible270/releases/tag/v1.0.0
-[0.19.0]: https://github.com/avonderluft/bible270/releases/tag/v0.19.0
-[0.18.2]: https://github.com/avonderluft/bible270/releases/tag/v0.18.2
-[0.18.1]: https://github.com/avonderluft/bible270/releases/tag/v0.18.1
-[0.18.0]: https://github.com/avonderluft/bible270/releases/tag/v0.18.0
-[0.17.2]: https://github.com/avonderluft/bible270/releases/tag/v0.17.2
-[0.17.1]: https://github.com/avonderluft/bible270/releases/tag/v0.17.1
-[0.17.0]: https://github.com/avonderluft/bible270/releases/tag/v0.17.0
-[0.16.1]: https://github.com/avonderluft/bible270/releases/tag/v0.16.1
-[0.16.0]: https://github.com/avonderluft/bible270/releases/tag/v0.16.0
-[0.15.3]: https://github.com/avonderluft/bible270/releases/tag/v0.15.3
-[0.15.2]: https://github.com/avonderluft/bible270/releases/tag/v0.15.2
-[0.15.1]: https://github.com/avonderluft/bible270/releases/tag/v0.15.1
-[0.15.0]: https://github.com/avonderluft/bible270/releases/tag/v0.15.0
-[0.14.1]: https://github.com/avonderluft/bible270/releases/tag/v0.14.1
-[0.14.0]: https://github.com/avonderluft/bible270/releases/tag/v0.14.0
-[0.13.0]: https://github.com/avonderluft/bible270/releases/tag/v0.13.0
-[0.12.0]: https://github.com/avonderluft/bible270/releases/tag/v0.12.0
-[0.11.0]: https://github.com/avonderluft/bible270/releases/tag/v0.11.0
-[0.10.0]: https://github.com/avonderluft/bible270/releases/tag/v0.10.0
-[0.9.0]: https://github.com/avonderluft/bible270/releases/tag/v0.9.0
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.12.0...main
+[1.12.0]: https://github.com/avonderluft/bible270/compare/v1.11.1...v1.12.0
+[1.11.1]: https://github.com/avonderluft/bible270/compare/v1.11.0...v1.11.1
+[1.11.0]: https://github.com/avonderluft/bible270/compare/v1.10.2...v1.11.0
+[1.10.2]: https://github.com/avonderluft/bible270/compare/v1.10.1...v1.10.2
+[1.10.1]: https://github.com/avonderluft/bible270/compare/v1.10.0...v1.10.1
+[1.10.0]: https://github.com/avonderluft/bible270/compare/v1.9.1...v1.10.0
+[1.9.1]: https://github.com/avonderluft/bible270/compare/v1.9.0...v1.9.1
+[1.9.0]: https://github.com/avonderluft/bible270/compare/v1.8.5...v1.9.0
+[1.8.5]: https://github.com/avonderluft/bible270/compare/v1.8.4...v1.8.5
+[1.8.4]: https://github.com/avonderluft/bible270/compare/v1.8.3...v1.8.4
+[1.8.3]: https://github.com/avonderluft/bible270/compare/v1.8.1...v1.8.3
+[1.8.1]: https://github.com/avonderluft/bible270/compare/v1.8.0...v1.8.1
+[1.8.0]: https://github.com/avonderluft/bible270/compare/v1.7.3...v1.8.0
+[1.7.3]: https://github.com/avonderluft/bible270/compare/v1.7.2...v1.7.3
+[1.7.2]: https://github.com/avonderluft/bible270/compare/v1.7.1...v1.7.2
+[1.7.1]: https://github.com/avonderluft/bible270/compare/v1.7.0...v1.7.1
+[1.7.0]: https://github.com/avonderluft/bible270/compare/v1.6.2...v1.7.0
+[1.6.2]: https://github.com/avonderluft/bible270/compare/v1.6.1...v1.6.2
+[1.6.1]: https://github.com/avonderluft/bible270/compare/v1.6.0...v1.6.1
+[1.6.0]: https://github.com/avonderluft/bible270/compare/v1.5.1...v1.6.0
+[1.5.1]: https://github.com/avonderluft/bible270/compare/v1.5.0...v1.5.1
+[1.5.0]: https://github.com/avonderluft/bible270/compare/v1.4.2...v1.5.0
+[1.4.2]: https://github.com/avonderluft/bible270/compare/v1.4.1...v1.4.2
+[1.4.1]: https://github.com/avonderluft/bible270/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/avonderluft/bible270/compare/v1.3.2...v1.4.0
+[1.3.2]: https://github.com/avonderluft/bible270/compare/v1.3.1...v1.3.2
+[1.3.1]: https://github.com/avonderluft/bible270/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/avonderluft/bible270/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/avonderluft/bible270/compare/v1.1.7...v1.2.0
+[1.1.7]: https://github.com/avonderluft/bible270/compare/v1.1.6...v1.1.7
+[1.1.6]: https://github.com/avonderluft/bible270/compare/v1.1.5...v1.1.6
+[1.1.5]: https://github.com/avonderluft/bible270/compare/v1.1.4...v1.1.5
+[1.1.4]: https://github.com/avonderluft/bible270/compare/v1.1.3...v1.1.4
+[1.1.3]: https://github.com/avonderluft/bible270/compare/v1.1.2...v1.1.3
+[1.1.2]: https://github.com/avonderluft/bible270/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/avonderluft/bible270/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/avonderluft/bible270/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/avonderluft/bible270/compare/v0.19.0...v1.0.0
+[0.19.0]: https://github.com/avonderluft/bible270/compare/v0.18.3...v0.19.0
+[0.18.3]: https://github.com/avonderluft/bible270/compare/v0.18.2...v0.18.3
+[0.18.2]: https://github.com/avonderluft/bible270/compare/v0.18.1...v0.18.2
+[0.18.1]: https://github.com/avonderluft/bible270/compare/v0.18.0...v0.18.1
+[0.18.0]: https://github.com/avonderluft/bible270/compare/v0.17.2...v0.18.0
+[0.17.2]: https://github.com/avonderluft/bible270/compare/v0.17.1...v0.17.2
+[0.17.1]: https://github.com/avonderluft/bible270/compare/v0.17.0...v0.17.1
+[0.17.0]: https://github.com/avonderluft/bible270/compare/v0.16.1...v0.17.0
+[0.16.1]: https://github.com/avonderluft/bible270/compare/v0.16.0...v0.16.1
+[0.16.0]: https://github.com/avonderluft/bible270/compare/v0.15.3...v0.16.0
+[0.15.3]: https://github.com/avonderluft/bible270/compare/v0.15.2...v0.15.3
+[0.15.2]: https://github.com/avonderluft/bible270/compare/v0.15.1...v0.15.2
+[0.15.1]: https://github.com/avonderluft/bible270/compare/v0.15.0...v0.15.1
+[0.15.0]: https://github.com/avonderluft/bible270/compare/v0.14.1...v0.15.0
+[0.14.1]: https://github.com/avonderluft/bible270/compare/v0.14.0...v0.14.1
+[0.14.0]: https://github.com/avonderluft/bible270/compare/v0.13.1...v0.14.0
+[0.13.1]: https://github.com/avonderluft/bible270/compare/v0.13.0...v0.13.1
+[0.13.0]: https://github.com/avonderluft/bible270/compare/v0.12.0...v0.13.0
+[0.12.0]: https://github.com/avonderluft/bible270/compare/v0.11.2...v0.12.0
+[0.11.2]: https://github.com/avonderluft/bible270/compare/v0.11.1...v0.11.2
+[0.11.1]: https://github.com/avonderluft/bible270/compare/v0.11.0...v0.11.1
+[0.11.0]: https://github.com/avonderluft/bible270/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/avonderluft/bible270/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/avonderluft/bible270/compare/v0.6.2...v0.9.0
 [0.6.2]: https://github.com/avonderluft/bible270/releases/tag/v0.6.2
