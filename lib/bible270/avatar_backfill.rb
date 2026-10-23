@@ -38,7 +38,7 @@ module Bible270
         @output.puts "processed=#{summary[:processed]} skipped=#{summary[:skipped]} " \
                      "changed=#{summary[:changed]} failed=#{summary[:failed]}"
         @output.puts "Display bytes (optimized/skipped readers): original=#{summary[:original_bytes]} " \
-                     "optimized=#{summary[:optimized_bytes]}. Originals retained; not total storage savings."
+                     "optimized=#{summary[:optimized_bytes]}. Originals retained."
       end
       summary
     end
