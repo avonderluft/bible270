@@ -17,7 +17,8 @@ module Bible270
       'most_completed' => 'Most days completed',
       'least_completed' => 'Least days completed',
       'most_recent_activity' => 'Most recent activity',
-      'least_recent_activity' => 'Least recent activity'
+      'least_recent_activity' => 'Least recent activity',
+      'consistency' => 'Consistency ranking'
     }.freeze
 
     before_action :require_admin!

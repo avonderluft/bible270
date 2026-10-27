@@ -5,7 +5,7 @@ module Bible270
   class ReaderProgressReport
     HEADERS = ['Name', 'Days Read', 'Status', 'Last Activity'].freeze
     SORTS = %w[
-      first_name last_name most_completed least_completed most_recent_activity least_recent_activity
+      first_name last_name most_completed least_completed most_recent_activity least_recent_activity consistency
     ].freeze
     DEFAULT_SORT = 'most_completed'
     Row = Struct.new(:name, :days_read, :status, :last_activity, keyword_init: true)
@@ -38,15 +38,29 @@ module Bible270
       reader.progress_status(completed_days: completed_days.fetch(reader.id, 0))
     end
 
+    def consistency_for(reader)
+      @consistency ||= ReaderConsistency.new(readers: readers)
+      @consistency.for(reader)
+    end
+
     def empty? = rows.empty?
 
     def to_table
       values = rows.map { |row| [row.name, row.days_read.to_s, row.status, row.last_activity] }
-      widths = HEADERS.each_index.map do |index|
-        ([HEADERS[index].length] + values.map { |value| value[index].length }).max
+      headers = HEADERS
+      if sort == 'consistency'
+        headers = ['Rank', *HEADERS]
+        ranks = consistency_ranks
+        values.each_with_index { |value, index| value.unshift(ranks[index]) }
       end
-      format = "%-#{widths[0]}s  %#{widths[1]}s  %-#{widths[2]}s  %-#{widths[3]}s"
-      lines = [format % HEADERS, format % widths.map { |width| '-' * width }].map(&:rstrip)
+      widths = headers.each_index.map do |index|
+        ([headers[index].length] + values.map { |value| value[index].length }).max
+      end
+      format = headers.each_with_index.map do |header, index|
+        alignment = ['Rank', 'Days Read'].include?(header) ? '' : '-'
+        "%#{alignment}#{widths[index]}s"
+      end.join('  ')
+      lines = [format % headers, format % widths.map { |width| '-' * width }].map(&:rstrip)
       lines.concat(values.map { |value| (format % value).rstrip })
       lines.join("\n")
     end
@@ -54,6 +68,20 @@ module Bible270
   private
 
     attr_reader :readers, :completed_days, :recent_activities, :sort
+
+    def consistency_ranks
+      previous_key = nil
+      rank = 0
+      sorted_readers.each_with_index.map do |reader, index|
+        result = consistency_for(reader)
+        next '—' unless result.ranked?
+
+        key = result.rank_key
+        rank = index + 1 if key != previous_key
+        previous_key = key
+        rank.to_s
+      end
+    end
 
     def reader_sort_key(reader)
       case sort
@@ -64,6 +92,8 @@ module Bible270
         [last_name.to_s.downcase, reader.sort_name, reader.id]
       when 'least_completed'
         [completed_days[reader.id].to_i, reader.sort_name, reader.id]
+      when 'consistency'
+        consistency_for(reader).sort_key(reader)
       when 'most_recent_activity'
         activity_sort_key(reader, descending: true)
       when 'least_recent_activity'

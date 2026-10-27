@@ -283,7 +283,7 @@ end
 
 ## Admin panel
 
-At `<mount>/admin`: sort readers by first name, last name, or completed days; open **Reader Stats** for
+At `<mount>/admin`: sort readers by first name, last name, completed days, recent activity, or **Consistency ranking**; open **Reader Stats** for
 the same progress report as `bible270:readers:list`, ordered by the current admin sort selection; remove
 readers; adjust their completions; and move them to a given day. The panel is unreachable — every route
 404s rather than 403s — unless you say who may use it:
@@ -293,6 +293,14 @@ config.admin_emails = %w[andrew@example.org]
 # or
 config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@example.org') }
 ```
+
+**Consistency ranking** measures recorded schedule performance over completed evenings, not just today's progress. Each evening scores `100 + 5 × min(days ahead, 7) − 10 × days behind`; the ranking uses the average. A score of 100 means an average on-track baseline, not 100%. Being behind can produce negative scores.
+
+The evaluation starts on the later of the reader's effective plan start and account-creation date, and stops at the earlier of yesterday and the scheduled plan end, using the plan's time zone. Late enrollment shortens the evaluation window without resetting the scheduled day. A plan day counts only after all required readings are checked off; its completion time is the latest of those check-offs. Ahead-of-schedule completions carry forward, while today's catch-up does not rewrite prior evenings.
+
+Readers with at least seven evaluated evenings rank first, followed by **Provisional** readers with one to six, then **Not ranked** readers without an eligible evening on a dated schedule. Within each ranked group, ties use the percentage of evenings on track/ahead, then the number of evaluated days, name, and ID. Sorting uses unrounded values. The selected sort displays each reader's score, on-track/ahead percentage, and evaluation length, and adds a leftmost **Rank** column to Reader Stats (a dash means unranked). Readers with the same ranking group, exact score, on-track/ahead percentage, and evaluation length share a competition rank, such as `1, 1, 1, 4`; names and IDs only order those ties. Other sorts do not calculate this history.
+
+This is reconstructed history, not an immutable audit: unchecked/rechecked readings, admin bulk progress changes, and start-date changes can alter scores. Existing check-off timestamps record when completion was entered, not necessarily when reading actually occurred. No additional migration or daily snapshot job is required.
 
 Admins get an extra "Admin" link in the header. The broadcast form can send an individually addressed
 message either to every reader with an email address or only to readers recognized as administrators.

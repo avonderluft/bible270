@@ -222,13 +222,14 @@ if RAILS_LOADED
 
       assert_select "form.b270-admin-reader-sort[action='#{mount}/admin'][method='get']" do
         assert_select 'select[name="sort"]' do
-          assert_select 'option', count: 6
+          assert_select 'option', count: 7
           assert_select 'option[value="first_name"]', text: 'First Name'
           assert_select 'option[value="last_name"][selected="selected"]', text: 'Last Name'
           assert_select 'option[value="most_completed"]', text: 'Most days completed'
           assert_select 'option[value="least_completed"]', text: 'Least days completed'
           assert_select 'option[value="most_recent_activity"]', text: 'Most recent activity'
           assert_select 'option[value="least_recent_activity"]', text: 'Least recent activity'
+          assert_select 'option[value="consistency"]', text: 'Consistency ranking'
         end
         assert_select 'input[type="submit"][value="Sort"]'
       end

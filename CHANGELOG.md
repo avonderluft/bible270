@@ -4,6 +4,13 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Added
+
+- add a Consistency ranking sort to Admin readers, based on average end-of-day schedule performance: 100 on track, +5 per day ahead capped at seven days, and −10 per day behind
+- show consistency scores, the percentage of evaluated evenings on track or ahead, and evaluated-day counts when sorting by consistency; place provisional readers with fewer than seven days after established rankings, and unranked readers last
+- include a leftmost Rank column in Reader Stats when sorting by consistency, sharing competition ranks for tied metrics (for example, `1, 1, 1, 4`) and showing a dash for unranked readers
+- reconstruct consistency from recorded completion timestamps and current personal/shared schedules, excluding today and dates before enrollment or after the plan's end; changing check-offs or start dates can change reconstructed history
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.12.0...main)**
 
 ## [1.12.0] - 2026-10-22
