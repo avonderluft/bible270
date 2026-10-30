@@ -4,6 +4,10 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Fixed
+
+- center the Hebrew and Greek background text in the available left and right margins on wide displays, while preserving narrow-screen positioning and phone visibility rules
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.13.1...main)**
 
 ## [1.13.1] - 2026-10-29

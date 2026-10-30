@@ -754,6 +754,17 @@ class ViewsTest < Minitest::Test
     assert_match(%r{@media \(prefers-color-scheme:dark\)\{\s*\.b270\[data-display-mode="system"\] > \.b270-theme-scenery\[data-scenery="light"\]\{display:none\}}, styles)
   end
 
+  def test_wide_scripture_columns_share_the_content_width_and_center_in_opposite_margins
+    styles = File.read(STYLES)
+    wide = styles.match(%r{@media \(min-width:1200px\)\{(.*?)\n  \}}m)[1]
+
+    assert_includes styles, '--b270-content-width:820px;'
+    assert_includes styles, '.b270-wrap{max-width:var(--b270-content-width);margin:0 auto;'
+    assert_includes wide, '--b270-scripture-inset:calc((100% - var(--b270-content-width)) / 4)'
+    assert_includes wide, '.b270-scripture-letters [lang="he"]{transform-box:view-box;transform:translateX(calc(var(--b270-scripture-inset) - 10%))}'
+    assert_includes wide, '.b270-scripture-letters [lang="el"]{transform:translateX(calc(100% - var(--b270-scripture-inset)))}'
+  end
+
   def test_papyrus_has_a_full_page_grid_ragged_edges_and_responsive_curled_corners
     styles = File.read(STYLES)
     scenery = File.read(File.join(VIEW_ROOT, 'bible270/shared/_theme_scenery.html.erb'))

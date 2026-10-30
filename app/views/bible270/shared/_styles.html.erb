@@ -15,6 +15,7 @@
     color-scheme:light;
   }
   .b270{
+    --b270-content-width:820px;
     margin:0; background:radial-gradient(120% 80% at 100% 0%,rgba(165,129,44,.06),transparent 55%),var(--paper);
     color:var(--ink); font-family:"Inter",system-ui,sans-serif; line-height:1.2; -webkit-font-smoothing:antialiased;
   }
@@ -155,6 +156,13 @@
   /* Match the moon's 90-unit right inset in its 1600 × 440, right-aligned slice viewport. */
   .b270-scripture-letters [lang="el"]{transform-box:view-box;transform:translateX(calc(100% - max(5.625%, var(--b270-scene-height) * 90 / 440)))}
   .b270-scripture-letters [lang="el"] tspan{font-size:.9em}
+  /* Once the side margins can fit the words, center each column between the
+     content wrapper and viewport edge. Hebrew already has an SVG x of 10%. */
+  @media (min-width:1200px){
+    .b270-theme-scripture{--b270-scripture-inset:calc((100% - var(--b270-content-width)) / 4)}
+    .b270-scripture-letters [lang="he"]{transform-box:view-box;transform:translateX(calc(var(--b270-scripture-inset) - 10%))}
+    .b270-scripture-letters [lang="el"]{transform:translateX(calc(100% - var(--b270-scripture-inset)))}
+  }
   /* Scale reflected Hebrew with the lake artwork, allowing for its smaller letterforms. */
     .b270-hebrew-water{font-size:max(2vw, var(--b270-scene-height) * 32 / 440);transform-box:view-box;transform:translate(10%,calc(100% - max(12.5vw, var(--b270-scene-height) * 200 / 440)))}
   @media (prefers-color-scheme:dark){
@@ -203,7 +211,7 @@
      qualified with .b270 to outrank it, or the link inherits body colour. */
   .b270 a{color:inherit}
   .b270 :where(a,button,input,select,textarea,summary):focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-  .b270-wrap{max-width:820px;margin:0 auto;padding:clamp(14px,3.5vw,36px) clamp(14px,4vw,40px) 64px}
+  .b270-wrap{max-width:var(--b270-content-width);margin:0 auto;padding:clamp(14px,3.5vw,36px) clamp(14px,4vw,40px) 64px}
 
   .b270-topbar{display:flex;align-items:center;gap:12px;flex-wrap:nowrap;padding-bottom:20px;border-bottom:1px solid var(--line-soft);margin-bottom:26px}
   .b270-brand{display:flex;align-items:baseline;gap:14px;margin-right:auto;min-width:0}
