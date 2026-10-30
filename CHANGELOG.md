@@ -4,12 +4,28 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.13.3...main)**
+
+## [1.13.3] - 2026-10-30
+
 ### Fixed
 
-- center the Hebrew and Greek background text in the available left and right margins on wide displays, while preserving narrow-screen positioning and phone visibility rules
 - keep Moonlight's Hebrew and Greek word reflections aligned with their responsive text columns without moving the moon or shoreline
+- share horizontal positioning between words and reflections while preserving ripple effects, narrow-screen alignment, and hidden reflections on phones
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.13.1...main)**
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.13.2...v1.13.3)**
+
+## [1.13.2] - 2026-10-30
+
+### Fixed
+
+- center the Hebrew and Greek background text in the available left and right margins on displays 1200px and wider, using the content wrapper's width while preserving narrow-screen positioning and phone visibility rules
+
+### Changed
+
+- update test dependencies to RuboCop 1.91.x and SimpleCov 1.2.x
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.13.1...v1.13.2)**
 
 ## [1.13.1] - 2026-10-29
 
@@ -979,7 +995,9 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.13.1...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.13.3...main
+[1.13.3]: https://github.com/avonderluft/bible270/compare/v1.13.2...v1.13.3
+[1.13.2]: https://github.com/avonderluft/bible270/compare/v1.13.1...v1.13.2
 [1.13.1]: https://github.com/avonderluft/bible270/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/avonderluft/bible270/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/avonderluft/bible270/compare/v1.11.1...v1.12.0
