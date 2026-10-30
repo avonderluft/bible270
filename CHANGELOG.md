@@ -4,15 +4,36 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.13.1...main)**
+
+## [1.13.1] - 2026-10-29
+
+### Changed
+
+- show consistency scores, on-track/ahead percentages, evaluated-day counts, and provisional/unranked labels for every Admin reader sort, with the scoring explanation always visible
+
+### Fixed
+
+- display negative consistency scores as `0` without changing the underlying ranking calculations or order
+- filter expected libvips warnings from deliberately malformed image tests while preserving unexpected native output and leaving production logging unchanged
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.13.0...v1.13.1)**
+
+## [1.13.0] - 2026-10-28
+
 ### Added
 
 - add a Consistency ranking sort to Admin readers, based on average end-of-day schedule performance: 100 on track, +5 per day ahead capped at seven days, and −10 per day behind
-- show consistency scores, the percentage of evaluated evenings on track or ahead, and evaluated-day counts for every Admin reader sort; display negative scores as `0` without changing ranking calculations
-- when sorting by consistency, place provisional readers with fewer than seven days after established rankings, and unranked readers last
+- show consistency scores, the percentage of evaluated evenings on track or ahead, and evaluated-day counts when sorting by consistency; place provisional readers with fewer than seven days after established rankings, and unranked readers last
 - include a leftmost Rank column in Reader Stats when sorting by consistency, sharing competition ranks for tied metrics (for example, `1, 1, 1, 4`) and showing a dash for unranked readers
 - reconstruct consistency from recorded completion timestamps and current personal/shared schedules, excluding today and dates before enrollment or after the plan's end; changing check-offs or start dates can change reconstructed history
 
-**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.12.0...main)**
+### Changed
+
+- replace Rails 7.1 with Rails 7.2 in the Ruby 3.2 CI matrix entry
+- shorten the avatar backfill summary to “Originals retained.” and align its test expectation
+
+**[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.12.0...v1.13.0)**
 
 ## [1.12.0] - 2026-10-22
 
@@ -953,7 +974,9 @@ This is the initial public release.
 
 * Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.12.0...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.13.1...main
+[1.13.1]: https://github.com/avonderluft/bible270/compare/v1.13.0...v1.13.1
+[1.13.0]: https://github.com/avonderluft/bible270/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/avonderluft/bible270/compare/v1.11.1...v1.12.0
 [1.11.1]: https://github.com/avonderluft/bible270/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/avonderluft/bible270/compare/v1.10.2...v1.11.0
