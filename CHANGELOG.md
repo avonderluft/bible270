@@ -7,6 +7,7 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 ### Fixed
 
 - center the Hebrew and Greek background text in the available left and right margins on wide displays, while preserving narrow-screen positioning and phone visibility rules
+- keep Moonlight's Hebrew and Greek word reflections aligned with their responsive text columns without moving the moon or shoreline
 
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.13.1...main)**
 

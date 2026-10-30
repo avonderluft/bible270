@@ -126,7 +126,7 @@
     }
   }
   /* A fixed SVG avoids mobile background-attachment quirks and stays behind all content. */
-  .b270-theme-scenery{display:none;--b270-scene-height:clamp(280px,52vh,560px);position:fixed;inset:auto 0 0;width:100%;height:var(--b270-scene-height);z-index:-1;pointer-events:none}
+  .b270-theme-scenery{display:none;--b270-scene-height:clamp(280px,52vh,560px);--b270-scripture-inset:10%;--b270-greek-scene-inset:max(5.625%, var(--b270-scene-height) * 90 / 440);--b270-greek-inset:var(--b270-greek-scene-inset);position:fixed;inset:auto 0 0;width:100%;height:var(--b270-scene-height);z-index:-1;pointer-events:none}
   .b270{isolation:isolate}
   .b270 > .b270-theme-scripture{display:block;color:var(--gold)}
   .b270[data-display-mode="dark_blue"] > .b270-theme-scripture{color:#c6d6e9}
@@ -139,6 +139,7 @@
   .b270[data-display-mode="dark_green"] > .b270-theme-scenery[data-scenery="dark_green"],
   .b270[data-display-mode="dark_blue"] > .b270-theme-scenery[data-scenery="dark_blue"],
   .b270[data-display-mode="dark_blue"] > .b270-theme-scenery[data-scenery="hebrew_water"],
+  .b270[data-display-mode="dark_blue"] > .b270-theme-scenery[data-scenery="greek_water"],
   .b270[data-display-mode="light"] > .b270-theme-scenery[data-scenery="light"],
   .b270[data-display-mode="system"] > .b270-theme-scenery[data-scenery="light"]{display:block}
   .b270-theme-scenery[data-scenery="light"],.b270-theme-scripture{font-size:clamp(12px,2.2vw,30px)}
@@ -153,18 +154,20 @@
   .b270-theme-scenery[data-scenery="sage_sky"]{height:100%}
   .b270-theme-scenery[data-scenery="mist_sky"]{height:100%}
   .b270-ocean-gulls{transform-box:view-box;transform:translate(calc(100% - 115px),calc(100% - 35px))}
-  /* Match the moon's 90-unit right inset in its 1600 × 440, right-aligned slice viewport. */
-  .b270-scripture-letters [lang="el"]{transform-box:view-box;transform:translateX(calc(100% - max(5.625%, var(--b270-scene-height) * 90 / 440)))}
+  /* Words and reflections share their viewport-relative column positions. */
+  .b270-scripture-letters [lang="he"]{transform-box:view-box;transform:translateX(calc(var(--b270-scripture-inset) - 10%))}
+  .b270-scripture-letters [lang="el"]{transform-box:view-box;transform:translateX(calc(100% - var(--b270-greek-inset)))}
   .b270-scripture-letters [lang="el"] tspan{font-size:.9em}
   /* Once the side margins can fit the words, center each column between the
      content wrapper and viewport edge. Hebrew already has an SVG x of 10%. */
   @media (min-width:1200px){
-    .b270-theme-scripture{--b270-scripture-inset:calc((100% - var(--b270-content-width)) / 4)}
-    .b270-scripture-letters [lang="he"]{transform-box:view-box;transform:translateX(calc(var(--b270-scripture-inset) - 10%))}
-    .b270-scripture-letters [lang="el"]{transform:translateX(calc(100% - var(--b270-scripture-inset)))}
+    .b270-theme-scenery{--b270-scripture-inset:calc((100% - var(--b270-content-width)) / 4);--b270-greek-inset:var(--b270-scripture-inset)}
   }
   /* Scale reflected Hebrew with the lake artwork, allowing for its smaller letterforms. */
-    .b270-hebrew-water{font-size:max(2vw, var(--b270-scene-height) * 32 / 440);transform-box:view-box;transform:translate(10%,calc(100% - max(12.5vw, var(--b270-scene-height) * 200 / 440)))}
+  .b270-hebrew-water{font-size:max(2vw, var(--b270-scene-height) * 32 / 440);transform-box:view-box;transform:translate(var(--b270-scripture-inset),calc(100% - max(12.5vw, var(--b270-scene-height) * 200 / 440)))}
+  /* Move only the Greek reflection layer, compensating for its original lake
+     coordinates after SVG scaling; the moon and shoreline remain stationary. */
+  .b270-theme-scenery[data-scenery="greek_water"]{transform-box:border-box;transform:translateX(calc(var(--b270-greek-scene-inset) - var(--b270-greek-inset)))}
   @media (prefers-color-scheme:dark){
     .b270[data-display-mode="system"] > .b270-theme-scenery[data-scenery="light"]{display:none}
     .b270[data-display-mode="system"] > .b270-theme-scenery[data-scenery="dark"]{display:block}
@@ -174,7 +177,8 @@
   @media (max-width:600px){
     .b270-theme-scenery{--b270-scene-height:clamp(180px,30vh,260px)}
     .b270[data-display-mode] > .b270-theme-scripture,
-    .b270[data-display-mode] > .b270-theme-scenery[data-scenery="hebrew_water"]{display:none}
+    .b270[data-display-mode] > .b270-theme-scenery[data-scenery="hebrew_water"],
+    .b270[data-display-mode] > .b270-theme-scenery[data-scenery="greek_water"]{display:none}
     .b270-mobile-scenery{display:block}
     .b270-papyrus-grid{opacity:.2}
     .b270-papyrus-edges{opacity:.55}

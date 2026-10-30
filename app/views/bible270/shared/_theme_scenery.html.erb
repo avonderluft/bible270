@@ -419,11 +419,19 @@
   <path d="M0 240H1600" stroke="#8fa7c3" stroke-width=".7" opacity=".12" />
   <g clip-path="url(#b270-lake-clip)">
     <ellipse cx="1510" cy="305" rx="145" ry="125" fill="url(#b270-moon-halo)" opacity=".6" />
-    <rect id="b270-lake-reflection" fill="url(#b270-moon-reflection)"
-          x="0" y="240" width="1600" height="200" mask="url(#b270-greek-reflection)" />
+
     <%# Phones use a quiet pool of moonlight instead of the reflected scripture. %>
     <ellipse class="b270-mobile-scenery" cx="1510" cy="332" rx="65" ry="92" fill="url(#b270-moon-mobile-glow)" />
     <%# The rippled letters supply the desktop water texture without straight lines crossing the reflections. %>
+  </g>
+</svg>
+
+<%# A separate layer lets the reflected Greek follow its column without moving the lake. %>
+<svg class="b270-theme-scenery" data-scenery="greek_water" viewBox="0 0 1600 440" preserveAspectRatio="xMaxYMax slice"
+     xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <g clip-path="url(#b270-lake-clip)">
+    <rect id="b270-lake-reflection" fill="url(#b270-moon-reflection)"
+          x="0" y="240" width="1600" height="200" mask="url(#b270-greek-reflection)" />
   </g>
 </svg>
 

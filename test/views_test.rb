@@ -438,8 +438,8 @@ class ViewsTest < Minitest::Test
     illustrations = scenery.scan(%r{<svg[^>]*data-scenery="([^"]+)"[^>]*>(.*?)</svg>}m).to_h
 
     assert_includes layout, 'render "bible270/shared/theme_scenery"'
-    assert_equal %w[mist_sky mist ocean_gulls sage_sky sage light dark dark_green dark_blue hebrew_water scripture], illustrations.keys
-    assert_equal 11, scenery.scan('aria-hidden="true" focusable="false"').size
+    assert_equal %w[mist_sky mist ocean_gulls sage_sky sage light dark dark_green dark_blue greek_water hebrew_water scripture], illustrations.keys
+    assert_equal 12, scenery.scan('aria-hidden="true" focusable="false"').size
     assert_includes illustrations.fetch('mist'), 'id="b270-ocean-beach"'
     assert_includes illustrations.fetch('sage'), 'fill="url(#b270-meadow-rays)"'
     assert_includes illustrations.fetch('sage'), '<circle cx="1560"'
@@ -466,10 +466,12 @@ class ViewsTest < Minitest::Test
     assert_equal '--b270-scene-height:clamp(180px,30vh,260px)', rules.fetch('.b270-theme-scenery')
     assert_equal 'display:none', rules.fetch('.b270[data-display-mode] > .b270-theme-scripture')
     assert_equal 'display:none', rules.fetch('.b270[data-display-mode] > .b270-theme-scenery[data-scenery="hebrew_water"]')
+    assert_equal 'display:none', rules.fetch('.b270[data-display-mode] > .b270-theme-scenery[data-scenery="greek_water"]')
     assert_match(%r{\.b270-theme-scenery\{display:none;--b270-scene-height:clamp\(280px,52vh,560px\);[^\}]*height:var\(--b270-scene-height\)}, desktop)
     assert_includes desktop, '.b270 > .b270-theme-scripture{display:block;color:var(--gold)}'
     assert_includes desktop, '.b270-theme-scripture{height:clamp(380px,76vh,820px)}'
     assert_includes scenery_css_rules(desktop), ['.b270[data-display-mode="dark_blue"] > .b270-theme-scenery[data-scenery="hebrew_water"]', 'display:block']
+    assert_includes scenery_css_rules(desktop), ['.b270[data-display-mode="dark_blue"] > .b270-theme-scenery[data-scenery="greek_water"]', 'display:block']
     refute_includes desktop, '#b270-lake-reflection'
     refute_match(%r{\.b270-theme-scripture[^{}]*\{[^\}]*display:none}, desktop)
     refute_match(%r{\[data-scenery="hebrew_water"\][^{}]*\{[^\}]*display:none}, desktop)
@@ -543,7 +545,8 @@ class ViewsTest < Minitest::Test
     assert_equal 'url(#b270-moon-mobile-glow)', glow['fill']
     assert_equal 'url(#b270-lake-clip)', glow.parent['clip-path']
     assert_equal(%w[.18 .07 0], lake.css('#b270-moon-mobile-glow stop').map { |stop| stop['stop-opacity'] })
-    assert_equal 'url(#b270-greek-reflection)', glow.parent.at_css('#b270-lake-reflection')['mask']
+    assert_nil lake.at_css('#b270-lake-reflection')
+    assert_equal 'url(#b270-greek-reflection)', artwork.at_css('svg[data-scenery="greek_water"] #b270-lake-reflection')['mask']
     assert_includes styles.sub(phone, ''), '.b270-mobile-scenery{display:none}'
     assert_equal 'display:block', scenery_css_rules(phone).to_h.fetch('.b270-mobile-scenery')
     assert_equal 'display:none', scenery_css_rules(phone).to_h.fetch('#b270-lake-reflection')
@@ -631,14 +634,17 @@ class ViewsTest < Minitest::Test
     assert_match(%r{data-scenery="dark_blue"[^>]*preserveAspectRatio="xMaxYMax slice"}, scenery)
     assert_includes lake, 'id="b270-midnight-moon"'
     assert_includes lake, 'id="b270-lake-shore"'
-    assert_includes lake, 'id="b270-lake-reflection" fill="url(#b270-moon-reflection)"'
+    reflection = scenery.match(%r{<svg[^>]*data-scenery="greek_water"[^>]*>(.*?)</svg>}m)[1]
+    assert_includes reflection, 'id="b270-lake-reflection" fill="url(#b270-moon-reflection)"'
+    assert_includes reflection, 'clip-path="url(#b270-lake-clip)"'
+    assert_match(%r{data-scenery="greek_water" viewBox="0 0 1600 440" preserveAspectRatio="xMaxYMax slice"}, scenery)
     assert_includes lake, 'clip-path="url(#b270-lake-clip)"'
     reflection_colour = lake.match(%r{id="b270-moon-reflection"[^>]*>\s*<stop[^>]*stop-color="([^"]+)"})[1]
     assert_includes File.read(STYLES), ".b270[data-display-mode=\"dark_blue\"] > .b270-theme-scripture{color:#{reflection_colour}}"
     refute_match(%r{<(?:image|script|animate)\b}, lake)
     reflected_lines = lake.scan(%r{<text transform="translate\(1510 \d+\) scale\([\d.]+ -[\d.]+\)">(.*?)</text>}).flatten
     assert_equal %w[ΟΛΟΓΟΣ ΘΕΟΣΗΝ ΘΕΟΝΚΑΙ ΗΝΠΡΟΣΤΟΝ ΚΑΙΟΛΟΓΟΣ ΗΝΟΛΟΓΟΣ ΕΝΑΡΧΗ], reflected_lines
-    assert_includes lake, 'mask="url(#b270-greek-reflection)"'
+    assert_includes reflection, 'mask="url(#b270-greek-reflection)"'
     water = lake.match(%r{<g clip-path="url\(#b270-lake-clip\)">(.*?)</g>}m)[1]
     refute_match(%r{<path\b}, water)
   end
@@ -748,7 +754,7 @@ class ViewsTest < Minitest::Test
     assert_includes styles, '.b270-theme-scenery[data-scenery="light"],.b270-theme-scripture{font-size:clamp(12px,2.2vw,30px)}'
     assert_includes styles, '.b270-theme-scripture{height:clamp(380px,76vh,820px)}'
     hebrew.scan(%r{<text x="(\d+)%"}).flatten.each { |x| assert_operator x.to_i, :<=, 12 }
-    assert_includes styles, '.b270-scripture-letters [lang="el"]{transform-box:view-box;transform:translateX(calc(100% - max(5.625%, var(--b270-scene-height) * 90 / 440)))}'
+    assert_includes styles, '.b270-scripture-letters [lang="el"]{transform-box:view-box;transform:translateX(calc(100% - var(--b270-greek-inset)))}'
     assert_includes papyrus, 'fill="url(#b270-papyrus-fibres)"'
     assert_includes styles, '.b270[data-display-mode="system"] > .b270-theme-scenery[data-scenery="light"]{display:block}'
     assert_match(%r{@media \(prefers-color-scheme:dark\)\{\s*\.b270\[data-display-mode="system"\] > \.b270-theme-scenery\[data-scenery="light"\]\{display:none\}}, styles)
@@ -761,8 +767,21 @@ class ViewsTest < Minitest::Test
     assert_includes styles, '--b270-content-width:820px;'
     assert_includes styles, '.b270-wrap{max-width:var(--b270-content-width);margin:0 auto;'
     assert_includes wide, '--b270-scripture-inset:calc((100% - var(--b270-content-width)) / 4)'
-    assert_includes wide, '.b270-scripture-letters [lang="he"]{transform-box:view-box;transform:translateX(calc(var(--b270-scripture-inset) - 10%))}'
-    assert_includes wide, '.b270-scripture-letters [lang="el"]{transform:translateX(calc(100% - var(--b270-scripture-inset)))}'
+    assert_includes wide, '.b270-theme-scenery{'
+    assert_includes wide, '--b270-greek-inset:var(--b270-scripture-inset)'
+    assert_includes styles, '.b270-scripture-letters [lang="he"]{transform-box:view-box;transform:translateX(calc(var(--b270-scripture-inset) - 10%))}'
+    assert_includes styles, '.b270-scripture-letters [lang="el"]{transform-box:view-box;transform:translateX(calc(100% - var(--b270-greek-inset)))}'
+  end
+
+  def test_moonlight_reflections_follow_the_same_column_positions_without_moving_the_lake
+    styles = File.read(STYLES)
+
+    assert_includes styles, '--b270-scripture-inset:10%;'
+    assert_includes styles, '--b270-greek-scene-inset:max(5.625%, var(--b270-scene-height) * 90 / 440);'
+    assert_includes styles, '--b270-greek-inset:var(--b270-greek-scene-inset);'
+    assert_match(%r{\.b270-hebrew-water\{[^\}]*transform:translate\(var\(--b270-scripture-inset\),}, styles)
+    assert_includes styles, '.b270-theme-scenery[data-scenery="greek_water"]{transform-box:border-box;transform:translateX(calc(var(--b270-greek-scene-inset) - var(--b270-greek-inset)))}'
+    refute_match(%r{\[data-scenery="dark_blue"\]\{[^\}]*transform:}, styles)
   end
 
   def test_papyrus_has_a_full_page_grid_ragged_edges_and_responsive_curled_corners
