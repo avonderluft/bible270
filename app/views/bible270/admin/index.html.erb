@@ -75,12 +75,10 @@
             aria-controls="b270-reader-stats-dialog" data-b270-reader-stats-open hidden>Reader Stats</button>
   </div>
 
-  <% if @reader_sort == 'consistency' %>
-    <p class="b270-hint">
-      Average daily score through yesterday: 100 on track, +5 per day ahead (max +35), −10 per day behind.
-      Under 7 days is provisional; no history is unranked. Check-off or schedule changes can alter scores.
-    </p>
-  <% end %>
+  <p class="b270-hint">
+    Average daily score through yesterday: 100 on track, +5 per day ahead (max +35), −10 per day behind.
+    Under 7 days is provisional; no history is unranked. Check-off or schedule changes can alter scores.
+  </p>
 
   <div class="b270-list">
     <% @readers.each do |reader| %>
@@ -101,19 +99,17 @@
             · <%= @days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days
             · <%= @reader_report.status_for(reader) %>
           </div>
-          <% if @reader_sort == 'consistency' %>
-            <% consistency = @reader_report.consistency_for(reader) %>
-            <div class="sub b270-reader-consistency">
-              <% if consistency.ranked? %>
-                <% if consistency.provisional? %><strong>Provisional</strong> · <% end %>
-                Consistency: <%= number_with_precision(consistency.score.to_f, precision: 1) %>
-                · On track/ahead: <%= consistency.on_track_percentage.round %>%
-                · <%= pluralize(consistency.days_evaluated, 'day') %> evaluated
-              <% else %>
-                Consistency: Not ranked
-              <% end %>
-            </div>
-          <% end %>
+          <% consistency = @reader_report.consistency_for(reader) %>
+          <div class="sub b270-reader-consistency">
+            <% if consistency.ranked? %>
+              <% if consistency.provisional? %><strong>Provisional</strong> · <% end %>
+              Consistency: <%= consistency.score.negative? ? '0' : number_with_precision(consistency.score.to_f, precision: 1) %>
+              · On track/ahead: <%= consistency.on_track_percentage.round %>%
+              · <%= pluralize(consistency.days_evaluated, 'day') %> evaluated
+            <% else %>
+              Consistency: Not ranked
+            <% end %>
+          </div>
           <div class="sub b270-reader-activity">
             <% if (activity = @recent_reader_activities[reader.id]) %>
               <%= b270_activity_datetime(activity.occurred_at) %>: <%= b270_reader_activity_description(activity) %>

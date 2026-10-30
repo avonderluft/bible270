@@ -153,23 +153,49 @@ if RAILS_LOADED
       assert_consistency reader, 'Provisional · Consistency: 100.0 · On track/ahead: 100% · 6 days evaluated'
     end
 
-    def test_normal_and_unknown_sorts_do_not_calculate_history_or_display_consistency_labels
+    def test_every_sort_displays_consistency_including_provisional_and_unranked_readers
       reader = create_reader('Ordinary Reader')
       complete_daily(reader, 7)
+      provisional = create_reader('Provisional Reader', start_date: @today - 2)
+      unranked = create_reader('New Reader', start_date: @today)
       sign_in_as(@admin)
 
-      without_consistency_calculation do
-        [nil, 'first_name', 'last_name', 'most_completed', 'least_completed',
-         'most_recent_activity', 'least_recent_activity', 'unknown'].each do |sort|
-          get_admin(sort: sort)
+      [nil, *Bible270::AdminController::READER_SORT_OPTIONS.keys, 'unknown'].each do |sort|
+        get_admin(sort: sort)
 
-          assert_response :success
-          assert_select '.b270-reader-consistency', count: 0
-          assert_select 'option[value="consistency"]:not([selected])', text: 'Consistency ranking'
-          refute_includes response.body, 'Average daily score'
-          assert_equal ['Name', 'Days Read', 'Status', 'Last Activity'], stats_table.lines.first.strip.split(%r{ {2,}})
-          assert_select '#b270-reader-stats-dialog pre', count: 1
-        end
+        assert_response :success
+        assert_select '.b270-reader-consistency', count: 4
+        assert_consistency reader, 'Consistency: 100.0 · On track/ahead: 100% · 7 days evaluated'
+        assert_consistency @admin, 'Consistency: 60.0 · On track/ahead: 0% · 7 days evaluated'
+        assert_consistency provisional, 'Provisional · Consistency: 85.0 · On track/ahead: 0% · 2 days evaluated'
+        assert_consistency unranked, 'Consistency: Not ranked'
+        assert_includes response.body, 'Average daily score'
+        headers = ['Name', 'Days Read', 'Status', 'Last Activity']
+        headers.unshift('Rank') if sort == 'consistency'
+        assert_equal headers, stats_table.lines.first.strip.split(%r{ {2,}})
+        selected = Bible270::AdminController::READER_SORT_OPTIONS.key?(sort) ? sort : 'first_name'
+        assert_select "option[value='#{selected}'][selected]", count: 1
+      end
+    end
+
+    def test_negative_scores_display_as_zero_for_every_sort_without_changing_rank_order
+      @today = @start + 21
+      behind = create_reader('Aaron Behind', start_date: @start - 5)
+      sign_in_as(@admin)
+      results = Bible270::ReaderConsistency.new(readers: [@admin, behind], today: @today)
+      assert_operator results.for(@admin).score, :<, 0
+      assert_operator results.for(behind).score, :<, results.for(@admin).score
+
+      [nil, *Bible270::AdminController::READER_SORT_OPTIONS.keys, 'unknown'].each do |sort|
+        get_admin(sort: sort)
+
+        assert_response :success
+        assert_consistency @admin, 'Consistency: 0 · On track/ahead: 0% · 21 days evaluated'
+        assert_consistency behind, 'Consistency: 0 · On track/ahead: 0% · 22 days evaluated'
+        next unless sort == 'consistency'
+
+        assert_reader_and_stats_order(@admin, behind)
+        assert_equal %w[1 2], stats_table.lines.drop(2).map(&:split).map(&:first)
       end
     end
 
@@ -215,11 +241,11 @@ if RAILS_LOADED
               5.times { |number| complete(create_reader("Extra Reader #{number}"), 1, on: @start) }
             end
             normal_queries = capture_selects { get_admin(sort: 'first_name') }
-            assert_equal index, calculations.length
+            assert_equal (index * 2) + 1, calculations.length
             queries = capture_selects { get_admin(sort: 'consistency') }
 
             assert_response :success
-            assert_equal index + 1, calculations.length
+            assert_equal (index + 1) * 2, calculations.length
             calculation = calculations.last
             assert_equal Bible270::Reader.order(:id).pluck(:id), calculation[:reader_ids]
             history_queries = checkoff_queries(calculation[:queries])
@@ -231,7 +257,9 @@ if RAILS_LOADED
               ids = query[:binds].select { |bind| bind.name == 'reader_id' }.map(&:value_for_database)
               assert_equal calculation[:reader_ids], ids.sort
             end
-            assert_equal checkoff_queries(normal_queries).length + 2, checkoff_queries(queries).length
+            assert_equal 2, checkoff_queries(calculations[-2][:queries]).length
+            assert_equal calculation[:reader_ids], calculations[-2][:reader_ids]
+            assert_equal checkoff_queries(normal_queries).length, checkoff_queries(queries).length
 
             report = reports.last
             reuse_queries = capture_selects do
@@ -245,7 +273,7 @@ if RAILS_LOADED
               end
             end
             assert_empty reuse_queries
-            assert_equal index + 1, calculations.length
+            assert_equal (index + 1) * 2, calculations.length
           end
         end
       end

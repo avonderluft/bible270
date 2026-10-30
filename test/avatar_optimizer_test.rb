@@ -81,12 +81,14 @@ class AvatarOptimizerTest < Minitest::Test
     assert_operator input.get_typeof('icc-profile-data'), :>, 0
     # libvips treats a corrupt ICC profile as untagged rather than failing the
     # valid pixel data. Verify that this fallback still produces safe sRGB output.
-    optimize(path, 'image/jpeg') do |file|
-      output = Vips::Image.new_from_file(file.path)
-      assert_equal :srgb, output.interpretation
-      assert_pixel GREEN, output, 128, 128
-      assert_stripped output, file
-      refute_includes File.binread(file.path), 'private invalid profile'
+    without_expected_vips_warning(%r{corrupt profile}) do
+      optimize(path, 'image/jpeg') do |file|
+        output = Vips::Image.new_from_file(file.path)
+        assert_equal :srgb, output.interpretation
+        assert_pixel GREEN, output, 128, 128
+        assert_stripped output, file
+        refute_includes File.binread(file.path), 'private invalid profile'
+      end
     end
   end
 
@@ -472,10 +474,12 @@ class AvatarOptimizerTest < Minitest::Test
 
   def test_corrupt_pixel_data_is_rejected_not_just_valid_headers
     image = Vips::Image.xyz(256, 256).bandjoin(100).cast(:uchar).copy(interpretation: :srgb)
-    %w[png jpeg gif webp].each do |format|
-      bytes = image.write_to_buffer(".#{format}")
-      path = write_bytes(bytes.byteslice(0, bytes.bytesize * 2 / 3), "corrupt.#{format}")
-      assert_raises(O::Error, format) { optimize(path, "image/#{format}") { flunk 'must not yield' } }
+    without_expected_vips_warning(%r{error in tile \d+ x \d+}) do
+      %w[png jpeg gif webp].each do |format|
+        bytes = image.write_to_buffer(".#{format}")
+        path = write_bytes(bytes.byteslice(0, bytes.bytesize * 2 / 3), "corrupt.#{format}")
+        assert_raises(O::Error, format) { optimize(path, "image/#{format}") { flunk 'must not yield' } }
+      end
     end
   end
 
@@ -602,7 +606,29 @@ class AvatarOptimizerTest < Minitest::Test
     assert_equal "1\n", stdout
   end
 
+  def test_expected_warning_filter_preserves_other_native_output
+    unexpected = "\n(process:123): VIPS-WARNING **: 12:34:56.789: unexpected warning\n"
+    stdout, stderr = capture_subprocess_io do
+      without_expected_vips_warning(%r{corrupt profile}) do
+        $stdout.write("diagnostic output\n")
+        $stderr.write("\n(process:123): VIPS-WARNING **: 12:34:56.789: corrupt profile\n")
+        $stderr.write(unexpected)
+      end
+    end
+
+    assert_equal "diagnostic output\n", stdout
+    assert_equal unexpected, stderr
+  end
+
 private
+
+  def without_expected_vips_warning(message, &)
+    # Native GLib output bypasses Ruby's $stderr, so capture file descriptors.
+    # Filter only the warning deliberately triggered by this malformed fixture.
+    stdout, stderr = capture_subprocess_io(&)
+    $stdout.write(stdout)
+    $stderr.write(stderr.gsub(%r{\n?\(process:\d+\): VIPS-WARNING \*\*: [\d:.]+: #{message}\n}, ''))
+  end
 
   def png_chunk(type, payload)
     data = type.b + payload.b
