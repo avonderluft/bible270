@@ -406,25 +406,20 @@ Psalm 35: []
 Psalm 78: [20, 39, 55]
 ```
 
-## Theme
+## Themes
 
-Readers can choose **Papyrus (Light)**, **Meadow (Light)**, **Ocean (Light)**, **Cedar (Dark)**,
-**Forest (Dark)**, **Moonlight (Dark)**, or **System** under **Profile → Theme**. Signed-in readers can also use
-the compact selector beside the app title on every page; it shows the short theme names without Light/Dark suffixes.
-Selecting a theme saves and applies it immediately without submitting other profile edits. The header and Profile
-selectors stay synchronized, and a failed save restores the previous selection and displays an error.
-Admin theme selections also save automatically;
-changing another reader's theme does not change the admin's own theme. With JavaScript disabled, use Save.
-The preference is stored
-with their account and applies throughout Bible270 on every device. System is the default for existing
-and new readers, follows the device's current appearance using Papyrus for light or Cedar for dark,
-and responds to changes without reloading. Signed-out visitors also use System.
-The completion dove retains its bright colors in every theme.
-
-Existing preferences and persisted values are unchanged under the new names. Meadow, Ocean, Cedar, Forest, and Moonlight
-require no additional migration once display preferences are installed.
+Readers can choose Light themes **Papyrus**, **Meadow**, **Ocean**, **Cedar**,
+**Forest**, **Moonlight**, or **System** under **Profile → Theme**. Signed-in readers can also use the compact selector beside the app title on every page, which immediately applies and saves the new theme.
+Admin theme selections also save automatically; with JavaScript disabled, use Save. System is the default for unauthenticated and new readers, fand ollows the device's current appearance using Papyrus for light or Cedar for dark.
 
 Upgrading hosts must install and run migration `20260101000023`:
+
+![Papyrus](images/papyrus.png "Papyrus")
+![Meadow](images/meadow.png "Meadow")
+![Ocean](images/ocean.png "Ocean")
+![Cedar](images/cedar.png "Cedar")
+![Forest](images/forest.png "Forest")
+![Moonlight](images/moonlight.png "Moonlight")
 
 ```bash
 bin/rails bible270:install:migrations
