@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   ]
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'image_processing', '~> 1.14'
+  spec.add_dependency 'image_processing', '>= 1.14', '< 3.0'
   # Rails 8.1.3 still passes JSON.parse a positional options hash, which json 3.0
   # rejects before a request can decode its signed session metadata.
   spec.add_dependency 'json', '< 3'
