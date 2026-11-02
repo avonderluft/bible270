@@ -4,6 +4,12 @@ All notable changes to bible270. Format follows [Keep a Changelog](https://keepa
 
 ## [Unreleased]
 
+### Changed
+
+- keep Psalm 73 whole on one day and divide Psalm 69 after verse 19 (1–19, then 20–36)
+- close the plan with a second whole reading of Psalm 1 on day 270, retaining its day-one reading and keeping Proverbs 11 in three readings; Proverbs 31 now finishes on day 269
+- update the default Psalms/Proverbs assignments on days 112–113 and 117–270 compared with 1.13.3; existing day-based check-offs are not remapped
+
 **[Full Changelog](https://github.com/avonderluft/bible270/compare/v1.13.3...main)**
 
 ## [1.13.3] - 2026-10-30

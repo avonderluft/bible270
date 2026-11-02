@@ -34,7 +34,7 @@ if RAILS_LOADED
     def test_the_last_day_too
       get "#{mount}/day/1"
 
-      assert_match(%r{title="Zechariah 14, Malachi 1–4 · Revelation 22 · Proverbs 31:10–31"},
+      assert_match(%r{title="Zechariah 14, Malachi 1–4 · Revelation 22 · Psalm 1"},
                    response.body)
     end
 

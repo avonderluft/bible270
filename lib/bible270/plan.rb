@@ -15,8 +15,8 @@ module Bible270
   #                     grouped so each day is ~equal in verses (~73/day)
   # * New Testament   – read once, one reading every day; the 10 longest chapters
   #                     (Luke 1 and friends) are divided in two so 260 chapters fill 270 days
-  # * Psalms/Proverbs – Psalms and Proverbs once, interleaved in one track.
-  #                     Longer psalms are divided so the two fill exactly 270 days;
+  # * Psalms/Proverbs – Psalms and Proverbs once, interleaved over 269 days,
+  #                     then Psalm 1 again on the final day.
   #                     Psalm 119 is pinned to 11 sections of 16 verses.
   #
   # Genesis → Malachi, Revelation 22, Psalm 150 and the second Proverbs 31 all land
@@ -368,9 +368,9 @@ module Bible270
 
     # ---- Psalms & Proverbs -------------------------------------------------
     #
-    # Psalms once and Proverbs once, interleaved in one daily track.
+    # Psalms once and Proverbs once, interleaved, then Psalm 1 again on day 270.
     #
-    # 150 + 31 = 181 chapters have to cover 270 days, so 89 of them are divided.
+    # 150 + 31 = 181 chapters cover the first 269 days using 88 extra divisions.
     # Two rules shape which:
     #
     #   * A psalm of PSALM_WHOLE_MAX_VERSES verses or fewer is never divided.
@@ -406,7 +406,7 @@ module Bible270
       ['Psalm', 44] => [], ['Psalm', 49] => [], ['Psalm', 50] => [], ['Psalm', 51] => [], # Stay whole
       ['Psalm', 55] => [], ['Psalm', 59] => [], ['Psalm', 65] => [], ['Psalm', 66] => [], # Stay whole
       ['Psalm', 68] => [18], # => Psalm 68:1–18, 68:19–35
-      ['Psalm', 69] => [18], # => Psalm 69:1–18, 69:19–36
+      ['Psalm', 69] => [19], # => Psalm 69:1–19, 69:20–36
       ['Psalm', 78] => [20, 39, 55], # => 78:1–20, 21–39, 40–55, 56–72
       ['Psalm', 37] => [20], # => Psalm 37:1–20, 37:21–40
       ['Matthew', 26] => [35], # => Matthew 26:1–35, 26:36–75
@@ -421,7 +421,7 @@ module Bible270
 
       # -- Psalms over 25 verses, divided at their turns of thought ----------
       ['Psalm', 35] => [],             # kept whole
-      ['Psalm', 73] => [14],           # the envious lament | the sanctuary
+      ['Psalm', 73] => [],             # kept whole
       ['Psalm', 89] => [18, 37],       # hymn | covenant oracle | lament
       ['Psalm', 102] => [17],          # affliction | Zion restored
       ['Psalm', 104] => [18],          # creation ordered | creation sustained
@@ -472,14 +472,13 @@ module Bible270
 
     def pp_chapters = memo(:pp_chapters) { psalm_chapters + proverbs_chapters }
 
-    # Psalms and Proverbs are divided together against a single budget of DAYS
-    # readings, so the two books balance against each other by verse load rather
-    # than each being squeezed into a fixed number of days.
+    # Reserve the final day for rereading Psalm 1. The first pass through Psalms
+    # and Proverbs shares the remaining budget, balanced by verse load.
     def pp_parts
       memo(:pp_parts) do
         chapters = pp_chapters
         weights  = chapters.map { |b, c| verses_for(b, c) }
-        divide_to_fill(weights, DAYS, pp_pinned_parts(chapters, weights))
+        divide_to_fill(weights, DAYS - 1, pp_pinned_parts(chapters, weights))
       end
     end
 
@@ -498,6 +497,7 @@ module Bible270
     def psalm_parts    = memo(:psalm_parts) { pp_parts.first(psalm_chapters.size) }
     def proverbs_parts = memo(:proverbs_parts) { pp_parts.last(proverbs_chapters.size) }
 
+    # First-pass readings; the closing rereading is appended in pp_readings.
     def psalm_readings    = memo(:psalm_readings) { expand_readings(psalm_chapters, psalm_parts) }
     def proverbs_readings = memo(:proverbs_readings) { expand_readings(proverbs_chapters, proverbs_parts) }
 
@@ -528,7 +528,7 @@ module Bible270
           end
         end
         days.concat(proverbs[placed..].to_a.flatten(1)) if placed < proverbs.size
-        days
+        days << ['Psalm', 1]
       end
     end
 
@@ -673,13 +673,13 @@ module Bible270
         nt_readings: nt_readings.size,          # 270 - one every day
         nt_divided: divided_nt_chapters.size,   # 10 long chapters halved
         psalms: Versification.chapter_count('Psalm'),        # 150
-        psalm_readings: psalm_readings.size,                 # 208
+        psalm_readings: pp_readings.count { |seg| seg[0] == 'Psalm' },
         proverbs: Versification.chapter_count('Proverbs'),   # 31
         proverbs_readings: proverbs_readings.size,
         proverbs_divided: divided_proverbs.size,
         psalms_whole_max_verses: PSALM_WHOLE_MAX_VERSES,
         pp: flatten(PP).size, # 181 chapters
-        pp_verses: flatten(PP).sum { |b, c| verses_for(b, c) },
+        pp_verses: pp_verse_loads.sum,
         ot_verses: flatten(OT).sum { |b, c| verses_for(b, c) },
         nt_verses: flatten(NT).sum { |b, c| verses_for(b, c) },
         days: DAYS
