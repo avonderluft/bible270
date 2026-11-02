@@ -1,61 +1,38 @@
 # Bible 270
-[![Rails CI](https://github.com/avonderluft/bible270/actions/workflows/railsci.yml/badge.svg)](https://github.com/avonderluft/comfortable-media-surfer/actions/workflows/rubyonrails.yml) [![Test Coverage](https://img.shields.io/coverallsCoverage/github/avonderluft/bible270?branch=main&cacheSeconds=300)](https://coveralls.io/github/avonderluft/bible270?branch=main) [![Gem Version](https://img.shields.io/gem/v/bible270)](https://rubygems.org/gems/bible270) [![Downloads](https://img.shields.io/gem/dt/bible270)](https://rubygems.org/gems/bible270) [![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/avonderluft/bible270?label=last%20release&color=seagreen)](https://github.com/avonderluft/bible270/releases)
 
-A mountable **Rails engine** that drops a 270-day (9 month) interactive Bible reading plan into any Rails app, built with [ComfyMiddleSeat](https://github.com/avonderluft/comfy-middle-seat) CMS in mind. Readers tick off each day's readings, post reflections, and see how everyone else is getting on, much like the social plans on Bible.com.
+[![Rails CI](https://github.com/avonderluft/bible270/actions/workflows/railsci.yml/badge.svg)](https://github.com/avonderluft/bible270/actions/workflows/railsci.yml) [![Test Coverage](https://img.shields.io/coverallsCoverage/github/avonderluft/bible270?branch=main&cacheSeconds=300)](https://coveralls.io/github/avonderluft/bible270?branch=main) [![Gem Version](https://img.shields.io/gem/v/bible270)](https://rubygems.org/gems/bible270) [![Downloads](https://img.shields.io/gem/dt/bible270)](https://rubygems.org/gems/bible270) [![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/avonderluft/bible270?label=last%20release&color=seagreen)](https://github.com/avonderluft/bible270/releases)
 
-Initially created for use by students and faculty of [Kingdom Movement School of Ministry](https://www.kmsm.life/), to read through all of Scripture together during the school year. Thus it is potentially useful for any Bible School, Seminary, or Discipleship school working on a 9 month schedule.
+A mountable **Rails engine** for a 270-day (9-month) Bible reading plan. Readers check off readings, share reflections, and follow one another's progress.
 
-For a guided tour of the implementation, see the [architecture walkthrough](docs/architecture.md).
+Created for [Kingdom Movement School of Ministry](https://www.kmsm.life/) and designed to work with [ComfyMiddleSeat](https://github.com/avonderluft/comfy-middle-seat) CMS, it also works in other Rails apps.
+
+See the [architecture walkthrough](docs/architecture.md) for implementation details and the [changelog](CHANGELOG.md) for release history.
 
 ## The plan
 
-Three readings a day, sized by **verse count** so each day takes roughly the same time.
+Three tracks every day, balanced by **verse count**:
 
-- **Old Testament** — once through, with Psalms and Proverbs in their own track. 
-- **New Testament** — once through, a reading every day. 260 chapters over 270 days, long chapters are divided to even out the daily reading
-- **Psalms & Proverbs** — once each, interleaved over the first 269 days, then **Psalm 1 is read again on day 270**, returning to the opening day's reading. The 181 chapters are divided as needed, shared between the two books by verse load. **A psalm of 25 verses or fewer is never divided**, keeping 131 of the 150 whole; longer psalms and Proverbs chapters break at their turns of thought (see `CHAPTER_BREAKS`). **Psalm 119 is 11 sections of 16 verses** — two of its eight-verse acrostic stanzas each. Proverbs lands on 91 days, near its proportional share. **A divided chapter is always read on consecutive days**, so nothing is inserted between the parts of a split psalm.
+- **Old Testament** — once through Genesis–Malachi, excluding Psalms and Proverbs.
+- **New Testament** — once through, with longer chapters divided to fill 270 days.
+- **Psalms & Proverbs** — once each, interleaved over days 1–269, then **Psalm 1 again on day 270**. Proverbs 31 finishes on day 269; Proverbs occupies 91 days.
 
-Genesis → Malachi and Revelation 22 both land on day 270, alongside the second reading of Psalm 1. Proverbs 31 finishes on day 269. Every day carries all three tracks. A typical day is ~115 verses (range 76–166).
+By default, psalms of 25 verses or fewer stay whole. Longer chapters use selected breaks or balanced divisions; **Psalm 73 stays whole**, **Psalm 69 splits into verses 1–19 and 20–36**, and **Psalm 119 has eleven 16-verse readings** (two acrostic stanzas each). Parts of a divided chapter always fall on consecutive days. See [Tuning the plan](#tuning-the-plan) for overrides.
 
-The schedule is pure deterministic Ruby (`Bible270::Plan`) — none of it is stored. Portions come from per-chapter verse counts in `Bible270::Versification`. The DB only holds readers, check-offs, comments, and sign-in tokens.
+The Old Testament and Revelation 22 finish on day 270 alongside Psalm 1. Daily readings average about 115 verses (range 76–166).
+
+`Bible270::Plan` generates the schedule deterministically from `Bible270::Versification`; the schedule is not stored in the database. **Progress and reflections are public.**
 
 ## Requirements
 
-- **Ruby** >= 3.2. Engine code is plain Ruby; avatar processing uses native libvips through `ruby-vips`. Runs on 4.0.6 — it avoids everything 4.0 dropped or unbundled (notably `cgi`; URL escaping uses `URI.encode_www_form_component`).
-- **Rails** >= 7.2. On Ruby 4.0 your host app is the real constraint, not this engine — check your lockfile with RailsBump first.
-- A host app, and Turbo if you want check-offs without a page reload.
-- For picture uploads and avatar backfills: **libvips** with PNG, JPEG, GIF and WebP support. The gem supplies the `image_processing` and `ruby-vips` Ruby dependencies. Install libvips on every upload/backfill host (for example, `sudo apt-get install libvips-tools` on Ubuntu or `sudo pacman -S libvips` on Arch). Native processing is loaded only when optimizing an image; existing pages and provider avatars do not require it.
+- **Ruby >= 3.2** and a **Rails >= 7.2** host app. CI covers selected combinations through Ruby 4.0 / Rails 8.1; check your host's dependencies before upgrading Ruby.
+- Turbo JavaScript for check-offs without a page reload. The gem includes `turbo-rails`; ordinary HTML forms remain available without JavaScript.
+- For picture uploads and backfills: **Active Storage** and **libvips** with PNG, JPEG, GIF, and WebP support on every upload/backfill host. Install libvips with, for example, `sudo apt-get install libvips-tools` on Ubuntu or `sudo pacman -S libvips` on Arch. The gem supplies `image_processing` and `ruby-vips`; native processing loads only when optimizing an image, not when displaying existing or provider avatars.
 
-Mutation controls expose pending, success, and retry feedback when JavaScript runs, while ordinary HTML
-forms remain the fallback. Repeated checkoff and like requests converge on the intended state rather
-than accidentally reversing it.
-
-## Avatar optimization
-
-Profile and Admin picture uploads produce a **256×256 static WebP thumbnail at quality 85** before switching the displayed avatar. Images are auto-oriented, center-cropped, converted to sRGB, and stripped of metadata; transparency is preserved. Animated GIF/WebP uploads use the first frame. Small images are upscaled to the same dimensions. Invalid or corrupt image data is rejected, even if its filename or declared type looks valid.
-
-Uploads are limited to **2 MiB by default** (`config.avatar_max_bytes`) and **40 million pixels** in the selected frame/container canvas. The pixel limit bounds dimensions, not total processor memory. A processing or storage failure leaves the previous picture and profile details unchanged.
-
-The current original remains in the `avatar` attachment, including its original metadata; the display image is stored separately as `avatar_thumbnail`. This preserves the source for future reprocessing, not a history of past pictures. Removing/replacing a picture detaches the old pair; Active Storage's purge jobs clean up their files. Keep the host's Active Job worker running for that cleanup. Original retention increases storage use even though avatar downloads become smaller. No new database migration is needed if Active Storage is already installed.
-
-Existing uploaded avatars continue displaying their originals until optimized. Run the following **from the host Rails application**, with its normal database/storage credentials and production environment when appropriate:
-
-```sh
-# Metadata-only preview: no image downloads or attachment changes
-RAILS_ENV=production bundle exec rake bible270:avatars:optimize DRY_RUN=1
-
-# Process existing uploaded reader avatars, sequentially in bounded batches
-RAILS_ENV=production bundle exec rake bible270:avatars:optimize BATCH_SIZE=100
-
-# Rebuild even current thumbnails from the retained originals
-RAILS_ENV=production bundle exec rake bible270:avatars:optimize FORCE=1
-```
-
-The task skips current thumbnails, protects concurrent avatar changes, continues after per-image failures, and exits nonzero if any fail. It prints reader IDs, counts, and original/optimized display-byte totals (not total storage savings). Correct failed files, limits, storage access, or processor dependencies and rerun. `BATCH_SIZE` defaults to 100 and must be between 1 and 1000. Dry-run checks eligibility only; it does not verify file availability or decodability. Take a normal database/storage backup before a production backfill. The task reads originals and writes thumbnails to the configured storage service; remote storage can incur request and transfer costs. It does **not** download remote sign-in-provider avatars or modify unrelated host attachments.
-
-For host code that uploads reader pictures, use `reader.attach_avatar(upload)` or `Bible270::AvatarImages.update!(reader, attributes, upload: upload)` rather than attaching directly with Active Storage, which bypasses this processing pipeline. Uploads and backfills must run **outside a caller-owned database transaction**: the service owns the commit boundary so a later outer rollback cannot orphan already-uploaded files. Failed cleanup retains unattached blob records with their storage keys for retry; check logged blob IDs and include these in the host's unattached-blob maintenance.
+JavaScript controls show pending, success, and retry feedback. Repeated check-off and like requests converge on the requested state rather than reversing it.
 
 ## Install
+
+Run installation commands from the **host Rails application**.
 
 ```ruby
 # Gemfile
@@ -65,9 +42,11 @@ gem "bible270"
 <details>
 <summary>Other sources</summary>
 
+Use one of these instead:
+
 ```ruby
 gem "bible270", git: "https://github.com/avonderluft/bible270.git", branch: "main"
-gem "bible270", path: "<path_to_your_local_copy>/bible270"   # local checkout
+gem "bible270", path: "<path_to_your_local_copy>/bible270"
 ```
 </details>
 
@@ -76,22 +55,19 @@ bundle install
 bin/rails generate bible270:install
 ```
 
-That's the whole install. The generator is interactive and walks you through it:
+The interactive generator:
 
-1. asks where to mount the plan;
-2. asks which sign-in methods you want — email link, OmniAuth, or both — and adds any OmniAuth strategy gems to your `Gemfile`;
-3. Prompts to install ActiveStorage for user avatars
-4. copies migrations into your `db/migrate` and offers to run them;
-5. writes `config/initializers/bible270.rb` (and `omniauth.rb` if you chose social sign-in); and
-6. adds `mount Bible270::Engine, at: Bible270.config.mount_at` to `config/routes.rb`.
+1. Chooses the mount path and email/OmniAuth sign-in methods.
+2. Adds known OmniAuth strategy gems and offers to bundle them.
+3. Offers to install Active Storage for avatars, copies migrations, and offers to run them.
+4. Writes `config/initializers/bible270.rb` and, for social sign-in, `omniauth.rb`.
+5. Adds `mount Bible270::Engine, at: Bible270.config.mount_at` to your routes.
 
-(Migrations run before the config is written, so a problem in a generated initializer can't block the database work.)
+Defaults use `/daily-bread` with email and GitHub sign-in. **You must still configure mail delivery, provider credentials, and OAuth callback URLs** as listed by the generator. Migrations run before the initializers are written.
 
-Every prompt has a default, so holding Enter gives a working install at `/daily-bread` with email and GitHub sign-in. It finishes by listing what's left for you — provider credentials, callback URLs, mailer setup.
+Copied migrations belong to your app. The engine does not also add its migration directory to your app's migration paths.
 
-The copied migrations are yours from then on, in your `schema.rb`. The engine doesn't add its own migration directory to your app's paths, so the copies are the only definitions in play.
-
-Non-interactive (CI, re-runs, scripted setup):
+For non-interactive setup:
 
 ```bash
 bin/rails generate bible270:install --defaults \
@@ -101,32 +77,32 @@ bin/rails generate bible270:install --defaults \
 
 | Flag | Effect |
 |------|--------|
-| `--defaults` | Ask nothing, accept every default |
-| `--mount-at=PATH` | Where to mount (default `/daily-bread`) |
+| `--defaults` | Skip prompts; use supplied options and defaults |
+| `--mount-at=PATH` | Mount path (default `/daily-bread`) |
 | `--providers=a,b` | OmniAuth providers; `--providers=` for none |
-| `--email` / `--no-email` | Email sign-in on or off |
-| `--mailer-from=ADDR` | From: address for sign-in emails |
-| `--bundle` / `--no-bundle` | Run `bundle install` after adding strategy gems |
-| `--migrate` / `--no-migrate` | Run `db:migrate` at the end |
-| `--active-storage` / `--no-active-storage` | Install Active Storage if missing (for picture uploads) |
+| `--email` / `--no-email` | Enable or disable email sign-in |
+| `--mailer-from=ADDR` | From address for sign-in emails |
+| `--bundle` / `--no-bundle` | Run or skip bundling added strategy gems |
+| `--migrate` / `--no-migrate` | Run or skip migrations |
+| `--active-storage` / `--no-active-storage` | Install or skip missing Active Storage tables |
 
-The installer is safe to re-run: it leaves an existing `mount` line alone, skips strategy gems already in your Gemfile, and Rails prompts before overwriting an initializer.
+Re-running skips existing strategy gems and reuses the engine mount, moving it above catch-all routes if needed. Rails prompts before overwriting an initializer. If you skip bundling or migrations, complete them before using the affected features.
 
 <details>
-<summary>Doing it by hand instead</summary>
+<summary>Manual installation</summary>
 
 ```ruby
 # config/initializers/bible270.rb
 Bible270.configure do |config|
-  config.mount_at   = "/daily-bread"
+  config.mount_at = "/daily-bread"
   config.email_sign_in = true
-  config.mailer_from   = "no-reply@example.com"
-  config.omniauth_providers = []            # or [:github], plus an OmniAuth initializer
+  config.mailer_from = "no-reply@example.com"
+  config.omniauth_providers = [] # email only; see Authentication for OmniAuth
 end
 ```
 
 ```ruby
-# config/routes.rb
+# config/routes.rb — before catch-all routes
 mount Bible270::Engine, at: Bible270.config.mount_at
 ```
 
@@ -135,114 +111,102 @@ bin/rails bible270:install:migrations
 bin/rails db:migrate
 ```
 
-See [Authentication](#authentication) for the OmniAuth initializer.
+For picture uploads, also enable and install Active Storage if missing:
+
+```bash
+bin/rails active_storage:install
+bin/rails db:migrate
+```
+
+Configure Action Mailer delivery and, if needed, [OmniAuth](#social-sign-in).
 </details>
 
 ### Upgrading
 
-No need to re-run the generator — just pick up any new migrations:
+No generator re-run is needed:
 
 ```bash
 bundle update bible270
-bin/rails bible270:install:migrations   # skips ones you already have
+bin/rails bible270:install:migrations # skips existing copies
 bin/rails db:migrate
 ```
 
+Review the [changelog](CHANGELOG.md) before deploying. Copy and run **all current migrations**, not just those for a feature you use; feature-specific migration notes appear below.
+
+**Schedule changes do not remap existing day-based check-offs.** Compared with 1.13.3, the current default Psalms/Proverbs assignments differ on days 112–113 and 117–270, including the closing Psalm 1 reading. Review the effect on an active group before upgrading.
+
 ### Reconciling a copied database
 
-A copied database can contain the Bible270 tables while its `schema_migrations` versions do not match
-the timestamped migration copies in the local app. In that case, preview the reconciliation:
+A copied database may already contain the tables but have migration versions that differ from your app's timestamped copies. Preview reconciliation first:
 
 ```bash
 bin/rails bible270:migrations:reconcile
 ```
 
-The task recognizes Bible270 migrations—and the related generated Active Storage migration used for
-reader avatars—by name, then verifies their tables, columns, current indexes, and foreign keys. It
-does not treat an existing table alone as sufficient. After reviewing the list and backing up the
-database, record only the migrations already reflected in the schema:
+The task recognizes Bible270 migrations and the related generated Active Storage migration by name, then checks tables, columns, indexes, and foreign keys. An existing table alone is not sufficient. **Review the preview and back up the database** before applying:
 
 ```bash
 APPLY=1 bin/rails bible270:migrations:reconcile
 bin/rails db:migrate
 ```
 
-Preview mode never writes to the database. Apply mode only inserts verified local versions into
-`schema_migrations`; it does not create, remove, or alter application tables. Migrations whose changes
-are missing remain pending for the final `db:migrate` command.
+Preview writes nothing. Apply only records verified local versions in `schema_migrations`; it does not alter application tables. Missing changes remain pending for `db:migrate`.
 
-## Bible270 Mount point in your Rails app
+## Mount point
 
-The path lives in exactly **one** place, `config.mount_at`:
+Set the path in one place:
 
 ```ruby
 # config/initializers/bible270.rb
 Bible270.configure do |config|
-  config.mount_at = "/daily-bread"    # or "/read270", "/manna", whatever you wish
+  config.mount_at = "/daily-bread"
 end
 ```
 
-Routes read it directly; OmniAuth reads `Bible270.config.auth_path_prefix` (just `"<mount_at>/auth"`). The engine builds its own sign-in links from `request.script_name` at runtime, so there's no third spot to update.
+Routes use `mount_at`; OmniAuth uses `Bible270.config.auth_path_prefix` (`"<mount_at>/auth"`). Engine sign-in links use `request.script_name` at runtime. `"read270"`, `"/read270"`, and `"/read270/"` normalize to `/read270`; nested paths and `/` also work.
 
-Values are normalised — `"read270"`, `"/read270"`, `"/read270/"` all become `/read270`. Nested paths and mounting at `/` work too.
+When moving the mount, update **provider-dashboard OAuth callback URLs** and **CMS links** manually. Set `config.omniauth_path_prefix` only if OmniAuth needs a separate path.
 
-Two things sit outside your app and still need doing by hand when you move it: the **OAuth callback URLs** in each provider's dashboard, and any **CMS links**.
-
-> **Load order matters.** `bible270.rb` has to be read before `omniauth.rb`, since the latter asks for `auth_path_prefix`. Rails loads initializers alphabetically so the default names work fine. If you rename either, keep that order — or set `mount_at` in `config/application.rb`, which loads before all initializers.
-
-Need OmniAuth somewhere unrelated? Set `config.omniauth_path_prefix` and it wins.
+> **Load order matters:** `bible270.rb` must load before `omniauth.rb`. Rails' alphabetical initializer order handles these names. If you rename them, preserve that order or set `mount_at` in `config/application.rb`.
 
 ## Authentication
 
-Two ways in, so **nobody's shut out**:
-
-1. **Email link** — type an address, get a one-time link, click it. No password, no third-party account. The default, and what makes this usable by people with no GitHub or Google login.
-2. **Social sign-in** via OmniAuth — for people who'd rather.
-
-Either works alone: `omniauth_providers = []` for email-only, `email_sign_in = false` for social-only. Reading is always public; only ticking off and commenting need an account.
+Use passwordless **email links**, **OmniAuth social sign-in**, or both. Set `omniauth_providers = []` for email-only or `email_sign_in = false` for social-only. Reading is public; participation requires a reader account by default.
 
 ### Email links
+
+Configure working Action Mailer delivery and a permitted sender address:
 
 ```ruby
 Bible270.configure do |config|
   config.email_sign_in = true
-  config.mailer_from   = "no-reply@example.com"
+  config.mailer_from = "no-reply@example.com"
   config.email_sign_in_ask_name = true
-  config.email_sign_in_require_name = true   # first AND last name       # let readers pick their display name
-  # config.email_sign_in_ttl = 20 * 60       # link lifetime, seconds
-  # config.email_sign_in_max_per_window = 5  # per address
+  config.email_sign_in_require_name = true   # first and last name
+  # config.email_sign_in_ttl = 20 * 60       # link lifetime in seconds
+  # config.email_sign_in_max_per_window = 5  # requests per address
   # config.email_sign_in_window = 15 * 60
-  # config.email_sign_in_deliver_later = true  # needs Active Job
+  # config.email_sign_in_deliver_later = true # requires an Active Job worker
 end
 ```
 
-All it needs is working Action Mailer delivery.
-
-- Tokens: 256-bit, URL-safe, single-use, 20-minute expiry.
-- **Only a SHA-256 digest is stored** — no password column anywhere, so the table is useless to anyone reading your DB.
-- Claiming is a conditional update, so a double-clicked link still signs you in once.
-- "Check your inbox" reads the same whether the address was known, unknown, or rate-limited — no account enumeration.
-- Display name comes from the reader, else the address (`mary.anne.smith@…` → "Mary Anne Smith").
-- `Bible270::SignInToken.sweep!` clears spent tokens. Good cron fodder.
-
-Email readers get `provider: "email"` in the same columns OmniAuth uses, so everything downstream treats them identically.
+- Tokens are 256-bit, URL-safe, single-use, and expire after 20 minutes by default. Conditional updates prevent double claims.
+- Only a **SHA-256 token digest** is stored, not the raw token or a password. Token records still contain personal data such as email addresses.
+- Valid-address requests receive the same “Check your inbox” response whether known, unknown, or rate-limited, avoiding disclosure through that message.
+- Names come from the reader, falling back to the email address (`mary.anne.smith@…` → “Mary Anne Smith”). Email readers use `provider: "email"` in the same identity model as OmniAuth readers.
+- Schedule `Bible270::SignInToken.sweep!` to remove expired or consumed records older than seven days by default.
 
 ### Social sign-in
 
-`bin/rails generate bible270:install` sets this up: it adds the strategy gem to your `Gemfile`
-(`omniauth` and `omniauth-rails_csrf_protection` already ride along with bible270), writes the
-OmniAuth initializer, and prints the callback URL to register with each provider — for example
-`https://example.com/daily-bread/auth/github/callback`.
+The installer adds known strategy gems, writes the initializer, and prints callback URLs to register, such as `https://example.com/daily-bread/auth/github/callback`. The gem already includes `omniauth` and `omniauth-rails_csrf_protection`.
 
-Adding a provider later, or wiring it up yourself? Add its strategy gem, list it in `config.omniauth_providers`, and register it with OmniAuth. The one thing to get right is lining up `path_prefix` with the mount point:
+To add a provider manually, install its strategy gem, list it in `config.omniauth_providers`, and register it with OmniAuth:
 
 ```ruby
 # config/initializers/omniauth.rb
 Rails.application.config.middleware.use OmniAuth::Builder do
-  # `options` is merged into every provider declared after it, so it comes first.
-  # OmniAuth::Builder has no path_prefix method — this is the scoped equivalent.
+  # Applies to providers declared below; Builder has no path_prefix method.
   options path_prefix: Bible270.config.auth_path_prefix
-
   provider :github, ENV["GITHUB_CLIENT_ID"], ENV["GITHUB_CLIENT_SECRET"]
 end
 
@@ -252,23 +216,19 @@ OmniAuth.config.on_failure = proc { |env| Bible270::SessionsController.action(:f
 ```ruby
 # config/initializers/bible270.rb
 Bible270.configure do |config|
-  config.mount_at           = "/daily-bread"
-  config.omniauth_providers = [:github]      # or [:github, [:google_oauth2, "Google"]]
-  config.parent_controller  = "::ApplicationController"
+  config.mount_at = "/daily-bread"
+  config.omniauth_providers = [:github] # or [:github, [:google_oauth2, "Google"]]
+  config.parent_controller = "::ApplicationController"
 end
 ```
 
-Worth knowing:
+**Sign-in must POST with a CSRF token** to `<mount>/auth/:provider`. The engine uses `button_to`; do the same for custom controls. OmniAuth 2 rejects GET sign-in to address [CVE-2015-9284](https://nvd.nist.gov/vuln/detail/CVE-2015-9284).
 
-- **Sign-in is a POST.** OmniAuth 2.0+ refuses GET ([CVE-2015-9284](https://nvd.nist.gov/vuln/detail/CVE-2015-9284)), so the engine's controls are `button_to` forms with CSRF tokens. Build your own and it must POST to `<mount>/auth/:provider`.
-- One provider → a button in the header. Several → a sign-in page at `<mount>/sign_in`.
-- Sign-in carries the current path as `origin`, so clicking a check-off while signed out brings you back to that day. Origins must be local paths.
-- `reset_session` on sign-in and sign-out, against session fixation.
-- Stored: provider, uid, display name, email, avatar URL. No tokens, no passwords.
+The engine accepts only local return paths and resets the session on sign-in and sign-out to prevent session fixation. It stores provider, uid, name, email, and avatar URL, not OAuth access tokens or passwords.
 
-### Or use your own users
+### Use your own users
 
-Already have auth? Hand the engine a resolver and it'll never touch sessions:
+Set a resolver to use host authentication instead of the engine's reader-session lookup:
 
 ```ruby
 config.current_reader_resolver = lambda do |controller|
@@ -279,14 +239,11 @@ config.current_reader_resolver = lambda do |controller|
 end
 ```
 
-`Reader.for_owner` links to any host model polymorphically. Heads up: CMS admin auth is separate from public visitors, so for a public plan the email/OmniAuth route above is usually what you want.
+`Reader.for_owner` links any host model polymorphically. CMS administrator authentication is separate from public-reader authentication; email or OmniAuth is usually simpler for public visitors.
 
 ## Admin panel
 
-At `<mount>/admin`: sort readers by first name, last name, completed days, recent activity, or **Consistency ranking**; open **Reader Stats** for
-the same progress report as `bible270:readers:list`, ordered by the current admin sort selection; remove
-readers; adjust their completions; and move them to a given day. The panel is unreachable — every route
-404s rather than 403s — unless you say who may use it:
+The panel at `<mount>/admin` returns **404** unless you explicitly authorize administrators:
 
 ```ruby
 config.admin_emails = %w[andrew@example.org]
@@ -294,85 +251,52 @@ config.admin_emails = %w[andrew@example.org]
 config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@example.org') }
 ```
 
-**Consistency ranking** measures recorded schedule performance over completed evenings, not just today's progress. Each evening scores `100 + 5 × min(days ahead, 7) − 10 × days behind`; the ranking uses the average. A score of 100 means an average on-track baseline, not 100%. Being behind can produce negative scores.
+Authorized readers get an Admin link. The panel supports:
 
-The evaluation starts on the later of the reader's effective plan start and account-creation date, and stops at the earlier of yesterday and the scheduled plan end, using the plan's time zone. Late enrollment shortens the evaluation window without resetting the scheduled day. A plan day counts only after all required readings are checked off; its completion time is the latest of those check-offs. Ahead-of-schedule completions carry forward, while today's catch-up does not rewrite prior evenings.
+- Sorting readers by name, completed days, activity, or consistency, with **Reader Stats** following the selected sort.
+- Changing reader profiles, themes, and notification preferences. Another reader's theme does not change your own.
+- Moving a reader to a day by adjusting their start date; check-offs remain tied to day numbers.
+- Setting progress exactly through day N, **clearing completions after N**, or toggling individual days.
+- Removing a reader **and all their check-offs and reflections**.
+- Moderating reflections at `<mount>/admin/comments`: hide reversibly or delete. Reflections are public immediately, without prior approval.
+- Sending individually addressed broadcasts to all readers with email addresses or only administrators.
 
-Readers with at least seven evaluated evenings rank first, followed by **Provisional** readers with one to six, then **Not ranked** readers without an eligible evening on a dated schedule. Within each ranked group, ties use the percentage of evenings on track/ahead, then the number of evaluated days, name, and ID. Sorting uses unrounded values. The selected sort displays each reader's score, on-track/ahead percentage, and evaluation length, and adds a leftmost **Rank** column to Reader Stats (a dash means unranked). Readers with the same ranking group, exact score, on-track/ahead percentage, and evaluation length share a competition rank, such as `1, 1, 1, 4`; names and IDs only order those ties. Other sorts do not calculate this history.
-
-This is reconstructed history, not an immutable audit: unchecked/rechecked readings, admin bulk progress changes, and start-date changes can alter scores. Existing check-off timestamps record when completion was entered, not necessarily when reading actually occurred. No additional migration or daily snapshot job is required.
-
-Admins get an extra "Admin" link in the header. The broadcast form can send an individually addressed
-message either to every reader with an email address or only to readers recognized as administrators.
-From a reader's page you can:
-
-- **set their theme** — Papyrus (Light), Meadow (Light), Ocean (Light), Cedar (Dark),
-  Forest (Dark), Moonlight (Dark), or System, independently of your own theme;
-
-- **move them to a day** — "put them on day 42 as of today" back-dates the start date; check-offs are
-  keyed to day numbers, so nothing in their history moves;
-- **set their progress** — mark complete through day N (this also clears anything after, so it sets
-  progress exactly), or click days in the grid to toggle them;
-- **remove them**, with every check-off and reflection they've written;
-- **moderate reflections** at `<mount>/admin/comments`. Reflections are visible the moment they're
-  written; hiding one takes it off the day and community pages without deleting it, and is
-  reversible. Delete is there too, for anything that shouldn't be kept.
-
-The Reflections page lists conversations by their latest approved reply, supports day and author
-filters, and paginates older threads. Signed-in readers see which conversations became active since
-their previous visit. Reflection and reply drafts are retained for up to 30 days in that browser and
-cleared after a successful post. If browser storage is blocked or full, the composer warns that the draft
-could not be saved; posting still works. On a shared device, clearing browser storage also removes saved drafts.
-Typing `@` in the composer offers up to five unambiguous reader handles; manual mentions continue to
-work without JavaScript. A quiet **Formatting** disclosure opens a toolbar for bold, italic,
-quotations, bulleted and numbered lists, links, and YouTube videos without requiring readers to know Markdown syntax.
-A separate **Preview** control checks the current draft through the same server-side sanitizer used
-after posting; formatting tools stay out of sight until requested. The source remains
-editable in the ordinary textarea, drafts preserve its format, and all rendered HTML is restricted to that small safe
-set. Existing reflections remain literal plain text until a reader intentionally formats or converts
-them. Upgrading hosts must copy and run migration `20260101000021`, which records whether each body is
-plain text or Markdown; until then, the composer safely falls back to plain text.
-
-The **Video** button accepts YouTube watch, share (`youtu.be`), Shorts, live, and embed URLs,
-then asks for an optional video name. Leave it blank for **View video**, or name it to show
-**View video ‘Name’**. The name is stored as the link text and is also used in notification emails.
-It inserts an explicit Markdown link on its own paragraph, for example:
-
-```markdown
-[YouTube video](https://www.youtube.com/watch?v=aB3_dE-fG12 "bible270-video")
-```
-
-Preview and posted reflections/replies show a small **View video** card. No YouTube player or remote
-thumbnail is requested until the reader loads the video; the player uses `www.youtube-nocookie.com`
-and does not autoplay. Loading it shares the reader's IP address and request metadata with YouTube;
-privacy-enhanced mode does not make playback anonymous. The button tooltip reads “Loads player and
-shares data with YouTube”; the link tooltip reads “Opens YouTube in a new tab.” An **Open on YouTube** link opens in a new
-tab/window with `rel="nofollow ugc noopener"`, and remains available when JavaScript is disabled or
-the provider disallows embedding. Notification emails retain ordinary
-links, and unmarked links never become players automatically. Only validated YouTube URLs become
-cards; unsupported marked links remain links. No uploads, API keys, extra gems, or database migrations
-are needed for this feature. Shared links' start times and playlist parameters are not retained.
-
-Hosts using Content Security Policy must add `https://www.youtube-nocookie.com` to their existing
-`frame-src` directive. Do not replace the rest of the host's policy or broadly allow arbitrary frames.
-Hosts with a custom engine layout should also render `bible270/shared/video_embeds` once, alongside the
-other shared scripts, to enable click-to-load playback.
-
-When `config.mention_notifications` is enabled, each reader can request email for every new reflection
-and reply, only replies to their reflections and mentions of them, or none. Broad notifications are sent
-once with eligible subscribers in BCC; direct reply and mention notices remain individually addressed.
-Administrators can change the same preference from the reader's Admin page. Migration
-`20260101000018` adds the broad opt-in without changing any existing reader's choice, while migration
-`20260101000022` makes that broad option the default for readers created afterward. Migration
-`20260101000017` stores each reader's last visit to the Reflections page. After upgrading, install and
-run the current migrations:
+To print a progress report ordered by completed days:
 
 ```bash
-bin/rails bible270:install:migrations
-bin/rails db:migrate
+docker compose exec -e RAILS_ENV=production rails bin/rails bible270:readers:list
 ```
 
-To change every existing reader to **Every new reflection and reply**, run:
+The report shows completed days, last activity, and calendar status: on track, ahead, behind, or undated.
+
+### Consistency ranking
+
+Consistency is the average end-of-day score on a dated schedule:
+
+`100 + 5 × min(days ahead, 7) − 10 × days behind`
+
+A score of 100 is an average on-track baseline, not a percentage. Negative scores display as `0` but retain their true value for ranking. Scores, on-track/ahead percentages, and evaluated-day counts appear for every Admin sort; sorting by consistency also adds a **Rank** column to Reader Stats.
+
+- Evaluation runs from the later of plan start or account creation through the earlier of yesterday or plan end, in the plan's time zone. Late enrollment does not reset the scheduled day.
+- A day counts when all required readings are checked off, using the latest check-off timestamp. Early completions carry forward; today's catch-up does not improve previous evenings.
+- Readers with seven or more evaluated evenings rank first, then **Provisional** readers with one to six, then **Not ranked** readers with none.
+- Within each ranked group, ordering uses unrounded score, on-track/ahead percentage, and evaluated days. Equal metrics share competition ranks (`1, 1, 1, 4`); name and ID order ties. Unranked readers show a dash.
+
+This is **reconstructed history, not an audit log**. Rechecking readings, bulk progress edits, or start-date changes can alter scores. Timestamps record when completion was entered, not necessarily when reading occurred. No snapshot job or additional migration is required.
+
+## Reflections and notifications
+
+The Reflections page groups conversations by their latest approved reply, with day/author filters, pagination, and activity indicators since the reader's previous visit.
+
+Drafts stay in the current browser for up to **30 days** and clear after a successful post. If storage is blocked or full, a warning appears but posting still works. On shared devices, clear browser storage to remove saved drafts.
+
+Typing `@` offers up to five unambiguous reader handles; manual mentions work without JavaScript. **Formatting** opens tools for bold, italic, quotations, lists, links, and YouTube videos. **Preview** uses the same server-side sanitizer as posted content. Existing reflections remain literal plain text until deliberately converted; without the `body_format` migration (`20260101000021`), the composer falls back to plain text.
+
+When `config.mention_notifications` is enabled, readers can choose email for every new reflection/reply, only direct replies and mentions, or none. Admins can change the same preference. Broad notices use BCC; direct notices are individually addressed.
+
+Migration `20260101000018` adds broad notifications without changing existing choices; `20260101000022` makes them the default for new readers only. Follow [Upgrading](#upgrading) to install these and the visit-tracking migration (`20260101000017`).
+
+To **override every existing reader's preference** with “Every new reflection and reply”:
 
 ```bash
 bin/rails bible270:notifications:enable_all
@@ -384,35 +308,25 @@ With Docker Compose:
 docker compose exec -e RAILS_ENV=production rails bin/rails bible270:notifications:enable_all
 ```
 
-To print an aligned progress report ordered by completed days, run:
+### YouTube videos
 
-```bash
-docker compose exec -e RAILS_ENV=production rails bin/rails bible270:readers:list
+The **Video** button accepts YouTube watch, share (`youtu.be`), Shorts, live, and embed URLs, plus an optional name. It inserts a marked Markdown link in its own paragraph:
+
+```markdown
+[YouTube video](https://www.youtube.com/watch?v=aB3_dE-fG12 "bible270-video")
 ```
 
-The report compares completed days with the calendar day implied by each reader's effective start date
-and shows `on track`, days ahead or behind, or `undated` when no calendar applies.
+Preview and posted content show **View video**, or **View video ‘Name’**. No remote thumbnail or player loads until the reader requests playback. The player uses `www.youtube-nocookie.com` without autoplay; **loading it shares the reader's IP address and request metadata with YouTube**. Privacy-enhanced mode is not anonymous playback.
 
-Break points can also live in your app rather than the gem, and be changed without a restart:
+An **Open on YouTube** link remains available without JavaScript or when embedding is blocked. It opens a new tab with `rel="nofollow ugc noopener"`. Notification emails use ordinary links and preserve the optional name. Unmarked or unsupported links stay links; start times and playlist parameters are not retained. No API key, upload support, extra gem, or additional migration is needed.
 
-```ruby
-config.chapter_breaks = { 'Psalm 78' => [20, 39, 55] }
-config.chapter_breaks_path = Rails.root.join('config/bible270_breaks.yml')
-```
-
-```yaml
-# config/bible270_breaks.yml — re-read whenever it changes
-Psalm 35: []
-Psalm 78: [20, 39, 55]
-```
+For a host Content Security Policy, add `https://www.youtube-nocookie.com` to the existing **`frame-src`** directive. Do not replace the policy or allow arbitrary frames. Custom engine layouts must also render `bible270/shared/video_embeds` once alongside the other shared scripts.
 
 ## Themes
 
-Readers can choose Light themes **Papyrus**, **Meadow**, **Ocean**, **Cedar**,
-**Forest**, **Moonlight**, or **System** under **Profile → Theme**. Signed-in readers can also use the compact selector beside the app title on every page, which immediately applies and saves the new theme.
-Admin theme selections also save automatically; with JavaScript disabled, use Save. System is the default for unauthenticated and new readers, fand ollows the device's current appearance using Papyrus for light or Cedar for dark.
+Choose **Papyrus**, **Meadow**, or **Ocean** for light themes; **Cedar**, **Forest**, or **Moonlight** for dark themes; or **System** to follow the device (Papyrus/Cedar). System is the default for visitors and new readers.
 
-Upgrading hosts must install and run migration `20260101000023`:
+Signed-in readers can choose a theme beside the app title or under **Profile → Theme**. Header, Profile, and Admin selections save immediately with JavaScript; without it, use Save. Older installations need migration `20260101000023`; see [Upgrading](#upgrading).
 
 ![Papyrus](images/papyrus.png "Papyrus")
 ![Meadow](images/meadow.png "Meadow")
@@ -421,298 +335,298 @@ Upgrading hosts must install and run migration `20260101000023`:
 ![Forest](images/forest.png "Forest")
 ![Moonlight](images/moonlight.png "Moonlight")
 
-```bash
-bin/rails bible270:install:migrations
-bin/rails db:migrate
-```
-
-Custom engine layouts must render the shared styles and set `data-display-mode` on the
-`.b270` element to `current_reader&.effective_display_mode || 'system'` to honor the preference.
+Custom layouts must render the shared styles and set the `.b270` element's `data-display-mode` to `current_reader&.effective_display_mode || 'system'`.
 
 ## Start dates
 
-The plan runs **undated** (day numbers only) or **dated** (days mapped onto a calendar):
+The plan can be **undated** (day numbers only) or **dated**:
 
 ```ruby
-config.start_date = Date.new(2026, 9, 6)   # Date, Time, or "YYYY-MM-DD". nil = undated
-config.allow_reader_start_date = true      # allow personal per-reader calendars
+config.start_date = Date.new(2026, 9, 6) # Date, Time, or "YYYY-MM-DD"; nil = no shared date
+config.allow_reader_start_date = true
 ```
 
-| `start_date` | `allow_reader_start_date` | What happens |
+| `start_date` | `allow_reader_start_date` | Behavior |
 |---|---|---|
-| nil | true *(default)* | Each reader gets stamped on their first check-off; an admin may adjust the date |
-| a date | true | The community date is the default; an admin may assign an individual date |
-| a date | false | Everyone is pinned to the community date; stored individual dates are ignored |
-| nil | false | Fully undated — no calendar anywhere |
+| nil | true *(default)* | Personal start date set on first check-off; admins can adjust it |
+| a date | true | Shared date unless an admin assigns a personal date |
+| a date | false | Shared date for everyone; stored personal dates ignored |
+| nil | false | Fully undated |
 
-Dated plans show each day's date with a **Today** badge and a "Go to today" link. `config.start_date` is the deploy-time default; an administrator may override the current run's shared date from the Admin panel without a deploy, or reset it to the configured value. The shared-date change immediately re-maps calendar dates, **Today**, and reminders for readers following the shared calendar. Administrators may also re-map an individual reader's calendar. Check-offs and reflections remain keyed to day numbers, so nothing in their history moves.
+Dated plans show dates, a **Today** badge, and a “Go to today” link. Admins can override the shared `config.start_date` without deploying, or reset it to the configured value. Shared-date changes immediately remap dates, Today, and reminders for readers on that calendar. Personal calendars can also be adjusted. **Check-offs and reflections stay tied to day numbers.**
 
-Date helpers are pure functions, usable anywhere:
+Date helpers work without Rails:
 
 ```ruby
 Bible270::Plan.date_for(1, "2026-09-06")          # => Sun, 06 Sep 2026
 Bible270::Plan.end_date_for("2026-09-06")         # => Wed, 02 Jun 2027 (day 270)
-Bible270::Plan.day_for(Date.current, start)       # => 42 (clamped 1..270)
-Bible270::Plan.day_for(date, start, clamp: false) # => -3 or 271, to spot out-of-range
+Bible270::Plan.day_for(Date.current, start)       # clamped to 1..270
+Bible270::Plan.day_for(date, start, clamp: false) # may return -3 or 271
 Bible270::Plan.before_start?(date, start)
 ```
 
 ## Daily reading reminders
 
-Daily reminders are optional at both levels: the host enables the feature, then each reader chooses
-whether to receive it and at what local time from their profile. The feature and reader opt-in both
-default to off; each reader's time defaults to `08:00`. Profile times use quarter-hour choices so they
-match the recommended 15-minute scheduler interval. An existing off-quarter preference remains
-available until that reader chooses a new time. The profile shows the plan's effective time zone beside
-the reminder settings; this is not automatically the reader's device time zone.
+Reminders require both host enablement and reader opt-in; both default to off. Readers choose a time in Profile (default `08:00`, quarter-hour choices). Existing off-quarter times remain available until changed. Times use the **plan's time zone**, shown in Profile, not the device's zone.
 
 ```ruby
 # config/initializers/bible270.rb
 Bible270.configure do |config|
   config.daily_reminders = true
   config.mailer_from = "no-reply@yourdomain.com"
-  config.mailer_host = "yourdomain.com" # builds links back to the day and profile
+  config.mailer_host = "yourdomain.com" # day/profile links
+  # config.time_zone = "America/Los_Angeles" # nil follows the server's clock
 end
 ```
 
-After upgrading, copy and run migration `20260101000016`, which adds the reader opt-in, preferred
-time, and last-sent date. Bible270 does not install a scheduler. The host application should run this
-task periodically—every 15 minutes is recommended—using its existing cron, platform scheduler, or
-recurring-job system:
+Install the reminder migration (`20260101000016`) via [Upgrading](#upgrading). Bible270 does **not** install a scheduler. Run this task every 15 minutes using your host's cron, platform scheduler, or recurring-job system:
 
 ```bash
 bin/rails bible270:reminders:send
 ```
 
-For a host cron job, open the crontab with `crontab -e` under the same account that runs the application
-and add a line like this, using the absolute application path:
+For cron, run `crontab -e` as the application account and use absolute paths:
 
 ```cron
 */15 * * * * cd /absolute/path/to/application && RAILS_ENV=production bin/rails bible270:reminders:send >> /absolute/path/to/application/log/bible270-reminders.log 2>&1
 ```
 
-For Docker Compose, run `pwd` in the directory containing the Compose file and `command -v docker` to
-find the two absolute paths, then use the same host account that can run Docker:
+For Docker Compose, use `pwd` in the Compose directory and `command -v docker` to find the paths. Run cron as an account with Docker access:
 
 ```cron
 */15 * * * * cd /absolute/path/to/application && /usr/bin/docker compose exec -T rails bin/rails bible270:reminders:send >> /absolute/path/to/application/log/bible270-reminders.log 2>&1
 ```
 
-The `-T` is required because cron has no interactive terminal. Confirm the saved entry with `crontab -l`
-and check `log/bible270-reminders.log` after the next interval. Run one scheduler per database; several
-web containers sharing a database must not each run the task.
+`-T` disables the interactive terminal that cron cannot provide. Verify with `crontab -l` and check the log after the next interval. **Run one scheduler per database**, not one per web container.
 
-Each run converts `Time.now` through `Bible270.local_time`, waits until the first scheduler run at or
-after each reader's chosen time, sends inline with `deliver_now`, and prints the number delivered. Set
-`config.time_zone` when the plan should not follow the server's local clock. Running periodically is
-idempotent once per local date: readers already marked for that date are skipped. Undated readers,
-calendar dates before or after their plan, completed days, blank email addresses, and readers who have
-not opted in are also skipped. A failure for one reader is logged and does not stop the rest. The sent
-date is recorded only after delivery succeeds.
+The task sends inline with `deliver_now` on the first run at or after the chosen local time and records the sent date only after successful delivery. It skips readers already sent that date, undated or out-of-range calendars, completed days, blank email addresses, and readers not opted in. Individual failures are logged without stopping other deliveries; each run prints the delivered count.
+
+## Avatar optimization
+
+Profile and Admin uploads produce a **256×256 static WebP at quality 85**: auto-oriented, center-cropped, converted to sRGB, and stripped of thumbnail metadata. Transparency is preserved; animations use the first frame and small images are upscaled. Actual image data is validated, regardless of filename or declared type.
+
+Limits are **2 MiB** by default (`config.avatar_max_bytes`) and **40 million pixels** in the selected frame/container canvas. The pixel limit bounds dimensions, not total processor memory. Processing or storage failure leaves the previous picture and profile details unchanged.
+
+The current original, **including its metadata**, remains in `avatar`; the display image is stored as `avatar_thumbnail`. This retains a source for reprocessing, not a picture history, and increases storage even though downloads shrink. Removing or replacing a picture detaches the old pair; **keep Active Job workers running** for Active Storage purge jobs. No new migration is needed if Active Storage is already installed.
+
+### Backfill existing uploads
+
+Existing uploads display their originals until optimized. Run from the **host Rails app** with its normal database/storage credentials and the appropriate environment. Back up the database and storage before a production backfill.
+
+```sh
+# Metadata-only preview: no downloads or attachment changes
+RAILS_ENV=production bundle exec rake bible270:avatars:optimize DRY_RUN=1
+
+# Process sequentially in bounded batches
+RAILS_ENV=production bundle exec rake bible270:avatars:optimize BATCH_SIZE=100
+
+# Rebuild current thumbnails from retained originals
+RAILS_ENV=production bundle exec rake bible270:avatars:optimize FORCE=1
+```
+
+- Skips current thumbnails, protects concurrent avatar changes, continues after individual failures, and exits nonzero if any fail. Correct failed files, limits, storage access, or processor dependencies, then rerun.
+- Reports reader IDs, counts, and original/optimized **display-byte totals**, not total storage savings.
+- `BATCH_SIZE` defaults to 100 (allowed: 1–1000). Dry-run checks eligibility only, not file availability or decodability.
+- Reads originals and writes thumbnails to configured storage; remote storage may incur request/transfer costs. It does not fetch provider avatars or change unrelated host attachments.
+
+Host upload code should use `reader.attach_avatar(upload)` or `Bible270::AvatarImages.update!(reader, attributes, upload: upload)`. Direct Active Storage attachment bypasses optimization. **Uploads and backfills must run outside caller-owned database transactions**: the service owns the commit boundary to prevent outer rollbacks from orphaning uploaded files. Failed cleanup retains unattached blob records and storage keys for retry; use logged blob IDs in your host's unattached-blob maintenance.
 
 ## Configuration reference
 
+Common settings (example sender and host values must be replaced):
+
 ```ruby
 Bible270.configure do |config|
-  config.mount_at = "/daily-bread"         # single source of truth for the path
+  config.mount_at = "/daily-bread"
   config.app_name = "Daily Bread"
-  config.tagline  = "A 270-day journey through Scripture"
+  config.tagline = "Journeying through Scripture in 9 months"
   config.admin_emails = %w[andrew@example.org]
 
-  config.start_date = nil       # community start date, or nil for undated
-  # config.start_date = Date.new(2026, 9, 6)  
+  config.start_date = nil                  # no shared calendar by default
   config.allow_reader_start_date = true
+  config.time_zone = nil                   # server clock, or a named zone
+  config.daily_reminders = false           # schedule reminders:send separately
+  config.mention_notifications = true      # readers choose notification scope
+  config.mailer_host = "example.com"       # reminder/notice links
 
-  config.daily_reminders = false             # schedule reminders:send every 15 minutes
-  config.mention_notifications = true         # reflection/reply emails; readers choose the scope
-  config.mailer_host = "example.com"          # links in reminder/notice email
-
-  config.parent_controller = "ActionController::Base"   # or "::ApplicationController"
-  config.layout            = "bible270/application"
+  config.parent_controller = "ActionController::Base" # or "::ApplicationController"
+  config.layout = "bible270/application"
 
   config.email_sign_in = true
   config.mailer_from = "no-reply@example.com"
   config.email_sign_in_ttl = 20 * 60
   config.email_sign_in_ask_name = true
+  config.email_sign_in_require_name = true
   config.omniauth_providers = [:github]
-  config.omniauth_path_prefix = nil        # nil = derive "<mount_at>/auth"
-  config.current_reader_resolver = nil     # set to bridge your own users
+  config.omniauth_path_prefix = nil         # derive "<mount_at>/auth"
+  config.current_reader_resolver = nil      # bridge host authentication
   config.require_sign_in_to_participate = true
+  config.remember_for = 365 * 24 * 60 * 60   # seconds; nil/0 = session only
 
-  config.after_sign_in_path  = nil         # defaults to the plan root
+  config.after_sign_in_path = nil           # plan root
   config.after_sign_out_path = nil
-
+  config.avatar_max_bytes = 2 * 1024 * 1024
   config.bible_version = "NKJV"
 end
 ```
+
+See [Authentication](#authentication), [Tuning the plan](#tuning-the-plan), and [`Configuration`](lib/bible270/configuration.rb) for additional options.
+
 ### Footer
- 
-The engine's pages end with a short note about how the plan works. Replace it with your own:
- 
+
+Replace the engine's plan note with a host partial or HTML, or disable it:
+
 ```ruby
-config.footer_partial = 'shared/footer'      # a partial in your app
-config.footer_html    = '<p>&copy; 2026 …</p>'
-config.footer         = false                # no footer at all
+config.footer_partial = 'shared/footer' # app/views/shared/_footer.html.erb
+# Alternatives:
+config.footer_html = '<p>&copy; 2026 …</p>'
+config.footer = false
 ```
- 
-By default yours replaces the engine's. To keep both:
- 
+
+To include both the engine note and your footer:
+
 ```ruby
-config.footer_placement = :after    # engine's note, then yours
-config.footer_placement = :before   # yours, then the engine's note
-config.footer_placement = :replace  # default
+config.footer_placement = :after   # engine, then yours
+config.footer_placement = :before  # yours, then engine
+config.footer_placement = :replace # default
 ```
- 
-A partial is looked up in your app's view paths as well as the engine's, so `'shared/footer'` finds
-`app/views/shared/_footer.html.erb`. Keep it reasonably self-contained: engine controllers include
-the engine's helpers, not your app's, so a partial calling your own helpers needs
-`helper ::ApplicationHelper` adding to the engine's controller — or just inline the markup.
- 
+
+Host partials can use host view paths, but engine controllers do not automatically include host helpers. If needed, add `helper ::ApplicationHelper` to the engine controller or keep the partial self-contained.
+
 ### Favicon
- 
-Pages under the mount point carry their own favicon — a rustic loaf, inlined as an SVG data URI, so
-there's nothing to add to your asset pipeline.
- 
+
+The engine layout uses an inline SVG loaf favicon, with no asset-pipeline setup:
+
 ```ruby
-config.favicon = nil                        # built-in loaf (default)
-config.favicon = '/icons/my-icon.svg'       # your own
-config.favicon = false                      # none; the host's favicon applies
+config.favicon = nil                  # built-in loaf (default)
+config.favicon = '/icons/my-icon.svg'  # custom
+config.favicon = false                # omit the engine's favicon
 ```
- 
-It's emitted by the engine's layout, so if you point `config.layout` at your own layout, add
-`<%= b270_favicon_tag %>` to its `<head>`.
 
-References link to Bible.com by default. Readers choose Bible.com, Bible Gateway, or Blue Letter Bible
-from their profile, and an admin can set the same source for any reader. With `HEB/GRK`,
-Bible Gateway is unavailable: Blue Letter Bible uses WLC for Old Testament, Psalms, and Proverbs and
-mGNT for New Testament, while Bible.com uses WLC and THGNT respectively. The `ALLGRK — LXX OT and
-Greek NT` option also excludes Bible Gateway: Blue Letter Bible uses its mGNT/LXX route for every
-track, while Bible.com uses GRCBRENT for the Old Testament and THGNT for the New Testament. Bible.com
-links open the whole chapter rather than its individual-verse introduction page. Scripture links share one
-dedicated browser tab so moving among the day's passages does not
-leave a trail of open tabs; Ctrl-click, Cmd-click, middle-click, and the browser's context menu still
-open additional tabs when a reader wants to compare passages.
+For a custom layout, add `<%= b270_favicon_tag %>` to `<head>`.
 
-Rendered reflections and replies also use [Blue Letter Bible ScriptTagger](https://www.blueletterbible.org/webtools/BLB_ScriptTagger.cfm)
-to show Scripture text when a reader hovers over a reference. The popup follows that reader's selected
-translation (or the site default for a visitor); `HEB/GRK` and `ALLGRK` choose the appropriate original
-language separately for Old and New Testament references. The engine layout loads this automatically.
-If `config.layout` points to a host layout, render the integration once near the end of its `<body>`:
+### Scripture links and popups
+
+References link to **Bible.com** by default. Readers and admins can select **Bible Gateway** or **Blue Letter Bible** in reader preferences. Bible.com opens whole chapters. Scripture links reuse one browser tab; Ctrl/Cmd-click, middle-click, or the context menu can open additional tabs.
+
+Original-language options exclude Bible Gateway:
+
+| Option | Bible.com | Blue Letter Bible |
+|---|---|---|
+| `HEB/GRK` | WLC Old Testament; THGNT New Testament | WLC Old Testament; mGNT New Testament |
+| `ALLGRK` | GRCBRENT Old Testament; THGNT New Testament | mGNT/LXX route for all tracks |
+
+[Blue Letter Bible ScriptTagger](https://www.blueletterbible.org/webtools/BLB_ScriptTagger.cfm) adds Scripture-reference hover popups to reflections and replies, using the reader's translation or the site default. `HEB/GRK` and `ALLGRK` select languages by testament. The engine layout loads it automatically; custom layouts should render this once near the end of `<body>`:
 
 ```erb
 <%= render "bible270/shared/scripture_popups" %>
 ```
 
-ScriptTagger loads JavaScript and CSS from Blue Letter Bible at runtime. A host with Content Security
-Policy enabled must allow `https://www.blueletterbible.org` in its existing `script-src` and `style-src`
-directives. This sends the visitor's IP address and normal request metadata to Blue Letter Bible when an
-engine page loads; hovering a reference also sends that reference and selected translation to BLB.
+ScriptTagger loads remote JavaScript and CSS. Add `https://www.blueletterbible.org` to existing CSP **`script-src`** and **`style-src`** directives. Page loads share the visitor's IP address and request metadata with BLB; hovering also sends the reference and selected translation.
 
 ## With ComfortableMediaSurfer
 
-The CMS serves your content; this is a separate mounted app. Either **just link to it** (mount, add a nav link, done — the engine renders its own themed pages), or **match your chrome** by setting `config.parent_controller = "::ApplicationController"` and `config.layout = "layouts/application"` so it sits inside your header and footer. All engine CSS is prefixed `b270-`, so nothing collides.
+Mount the engine and add a CMS navigation link to use its own themed pages. To use your host's header and footer, set `config.parent_controller = "::ApplicationController"` and `config.layout = "layouts/application"`. Include the shared styles, theme attribute, and script partials described above when supplying a custom layout.
 
 ## Data model
 
 | Table | Holds |
 |-------|-------|
-| `bible270_readers` | identity, avatar, provider/uid or polymorphic `owner`, start date, translation, passage-reader, and reminder preferences |
-| `bible270_checkoffs` | one row per reader per day per track (`ot`/`nt`/`pp`), unique-indexed |
-| `bible270_comments` | a plain-text or safely rendered Markdown reflection on a day, optionally scoped to a track, public to all |
-| `bible270_sign_in_tokens` | magic-link tokens: email, **digest only**, expiry, consumed-at |
+| `bible270_readers` | Identity, provider/uid or polymorphic owner, start date, and reader preferences |
+| `bible270_checkoffs` | One row per reader/day/track/part, protected by a unique index |
+| `bible270_comments` | Day/track reflections and replies, stored as plain text or safely rendered Markdown |
+| `bible270_likes` | Reader likes on comments |
+| `bible270_settings` | Shared run and administrative settings |
+| `bible270_sign_in_tokens` | Email, token digest, expiry, and consumption time |
 
-A day is "complete" once all three tracks are ticked. Progress and comments are **public** by
-design, same as Bible.com's shared plans.
+A day is complete when all parts of all three tracks are checked off. Progress and visible reflections are public; they are not private journals.
 
 ## Routes (inside the mount point)
 
-```
-GET    /                         days#index      overview + community + calendar
-GET    /day/:day                 days#show       readings, who's finished, reflections
-POST   /day/:day/toggle/:track   checkoffs#toggle
-POST   /day/:day/comments        comments#create
-POST   /comments/preview         comments#preview
-DELETE /comments/:id             comments#destroy
-GET    /community                readers#index   reader directory
-GET    /mention-suggestions      readers#mention_suggestions (signed-in JSON)
-GET    /readers/:id              readers#show
-GET    /sign_in                  sessions#new    email form + provider list
-POST   /sign_in/email            sessions#email_link
-GET    /sign_in/email/:token     sessions#email_callback
-GET    /auth/:provider/callback  sessions#create
-POST   /auth/:provider/callback  sessions#create
-GET    /auth/failure             sessions#failure
-DELETE /sign_out                 sessions#destroy
+Selected reader routes; see [`config/routes.rb`](config/routes.rb) for the full list, including Admin and Profile actions.
 
-POST   <mount>/auth/:provider    OmniAuth middleware, not the engine
+```text
+GET    /                              days#index
+GET    /day/:day                      days#show
+POST   /day/:day/toggle/:track/:part   checkoffs#toggle
+POST   /day/:day/toggle/:track         checkoffs#toggle (first part)
+POST   /day/:day/comments              comments#create
+GET    /reflections                   comments#index
+POST   /comments/preview              comments#preview
+PATCH  /comments/:id                  comments#update
+DELETE /comments/:id                  comments#destroy
+POST   /comments/:id/like             likes#toggle
+GET    /community                     readers#index
+GET    /mention-suggestions           readers#mention_suggestions (signed-in JSON)
+GET    /readers/:id                    readers#show
+GET    /progress                      readers#progress
+GET    /sign_in                       sessions#new
+POST   /sign_in/email                 sessions#email_link
+GET    /sign_in/email/:token          sessions#email_callback
+GET    /auth/:provider/callback       sessions#create
+POST   /auth/:provider/callback       sessions#create
+GET    /auth/failure                   sessions#failure
+DELETE /sign_out                      sessions#destroy
+
+POST   <mount>/auth/:provider         OmniAuth middleware, not the engine
 ```
 
 ## Tuning the plan
 
-The whole schedule falls out of a few constants in `Bible270::Plan`:
-
-| Constant | Default | Effect |
-|----------|---------|--------|
-| `DAYS` | `270` | plan length |
-| `PROVERBS_PASSES` | `2` | Proverbs laps. Each pass is 31 readings, so this decides how many days are left for the Psalms |
-| `PSALM_119_SECTION_SIZE` | `16` | verses per Psalm 119 section. 176 divides evenly by 8, 11, 16, 22 and 44 |
-| `CHAPTER_BREAKS` | `{}` | where specific chapters break — see below |
-
-### Choosing where a chapter breaks
-
-By default a divided chapter is cut into equal parts. To break it somewhere meaningful instead, add
-an entry to `CHAPTER_BREAKS` in `lib/bible270/plan.rb`. Keys are `[book, chapter]`; the value lists
-the **last verse of every reading except the final one**:
+Prefer host configuration to editing the gem. Break points list the **last verse of each reading except the final one**; `[]` keeps a chapter whole:
 
 ```ruby
-CHAPTER_BREAKS = {
-  ['Luke', 1]   => [25, 56],   # => Luke 1:1–25, 1:26–56, 1:57–80
-  ['Psalm', 78] => [39]        # => Psalm 78:1–39, 78:40–72
-}.freeze
+config.chapter_breaks = {
+  'Luke 1' => [25, 56],        # 1–25, 26–56, 57–80
+  'Psalm 78' => [20, 39, 55]   # 1–20, 21–39, 40–55, 56–72
+}
+config.chapter_breaks_path = Rails.root.join('config/bible270_breaks.yml')
 ```
 
-The number of breaks fixes how many readings that chapter becomes, and the rest of the plan
-re-divides around it so both tracks still fill exactly 270 days — give Luke 1 a third reading and
-some other long chapter quietly gives one up. Verse coverage stays exact either way.
+```yaml
+# config/bible270_breaks.yml — re-read when changed
+Psalm 35: []
+Psalm 78: [20, 39, 55]
+```
 
-Break points are validated on use: they must be ascending, distinct, and within the chapter, or you
-get an `ArgumentError` naming the entry rather than silently overlapping readings. Pinning more
-readings in total than there are days also raises, instead of producing a plan that doesn't fit.
+Precedence is built-in `CHAPTER_BREAKS`, then `config.chapter_breaks`, then YAML. Ruby keys may also be arrays such as `['Luke', 1]`. Explicit breaks override default division rules, including Psalm 119's sections.
 
-Psalm 119 is pinned to `PSALM_119_SECTION_SIZE` sections by default; an entry in `CHAPTER_BREAKS`
-overrides that.
+| `Bible270::Plan` constant | Default | Purpose |
+|---|---|---|
+| `DAYS` | `270` | Plan length |
+| `PSALM_WHOLE_MAX_VERSES` | `25` | Keep shorter psalms whole unless explicitly overridden |
+| `PSALM_119_SECTION_SIZE` | `16` | Default verses per Psalm 119 section |
+| `CHAPTER_BREAKS` | Built-in chapter map | Selected breaks and whole-chapter overrides |
 
-Change `PROVERBS_PASSES` or `DAYS` and both the New Testament and the Psalms re-divide automatically
-to fill whatever's left. Divisions always go to whichever chapter currently carries the heaviest
-reading, so the longest get split first and nothing is divided that doesn't need to be.
+For New Testament and Psalms/Proverbs readings, explicit breaks fix a chapter's reading count; unpinned chapters divide by verse load to fill the remaining days. The Psalms/Proverbs track reserves the final day for Psalm 1. Without explicit breaks, divided chapters use equal parts.
 
-All computed at load and memoized — no generated schedule, so nothing to migrate if you change them.
+Breaks must be ascending, distinct, and inside the chapter; invalid entries or too many pinned readings raise `ArgumentError`. Results are memoized and refreshed when configured breaks change. There is no stored schedule to migrate, but **changing assignments does not remap existing check-offs or reflections**. Test custom schedules before using them with an active group.
 
 ## Scaling
 
-Community pages count completed days in Ruby from grouped check-offs — fine for hundreds of readers. Past a few thousand, cache a `days_completed` counter on `Reader` via a `Checkoff` `after_commit` and read it directly in SQL.
+Community pages calculate completed days from grouped check-offs in Ruby. For large groups, profile this first; a cached `days_completed` counter on `Reader`, updated after check-off commits, is one possible optimization.
 
 ## Troubleshooting
 
 **404 on the provider callback**
 
-`path_prefix` doesn't match the mount point. Use `Bible270.config.auth_path_prefix` rather than a literal, and check the URL registered with the provider matches. Setting `mount_at` in an initializer Rails loads *after* `omniauth.rb` gives you the default prefix — see [Mount point](#bible270-mount-point-in-your-rails-app).
+Match OmniAuth's `path_prefix` and the registered callback URL to the mount. Use `Bible270.config.auth_path_prefix` and check [initializer load order](#mount-point).
 
 **Sign-in button does nothing, or `OmniAuth::AuthenticityError`**
 
-Has to be a POST with a CSRF token. The engine's controls already are — if you built your own, make it a `button_to`. Also check `omniauth-rails_csrf_protection` is in the bundle.
+Custom controls must POST with a CSRF token; use `button_to`. Confirm `omniauth-rails_csrf_protection` is bundled.
 
 **No email arrives**
 
-Needs working Action Mailer delivery — the engine just calls `deliver_now`. Check `mailer_from` is an address your relay accepts, and watch the logs. Failures never surface to the reader, on purpose, since that message can't reveal which addresses exist.
+Check Action Mailer delivery settings, an accepted `mailer_from`, and logs. Sign-in uses `deliver_now` unless `email_sign_in_deliver_later` is enabled; for queued mail, check the Active Job worker too. Delivery failures are not shown to readers to avoid disclosing account information.
 
-**"That link has expired or was already used"**
+**“That link has expired or was already used”**
 
-Links are single-use, 20-minute life. Some mail scanners and link-preview bots fetch URLs before the recipient clicks, burning the token. If it keeps happening, lengthen `email_sign_in_ttl` or find what's prefetching.
+Request a fresh link. Links are single-use and expire after 20 minutes by default. Mail scanners or preview bots can consume them before the reader clicks; investigate prefetching if it recurs. Increase `email_sign_in_ttl` only if expiry is the problem—it cannot restore a consumed link.
 
-**Everything's unstyled in my layout**
+**Custom layout is unstyled**
 
-The engine's CSS rides in a partial its own layout renders. Using your layout? Add `<%= render "bible270/shared/styles" %>` to the `<head>`, or style the `b270-*` classes yourself.
+Add `<%= render "bible270/shared/styles" %>` to `<head>`, or style the `b270-*` classes yourself. Also include the theme attribute and shared scripts required by the features you use.
 
 ## Development
 
@@ -723,46 +637,31 @@ node --test test/javascript/*.cjs
 bundle exec rubocop --cache false
 ```
 
-`rake test` runs two isolated processes, streams colorized progress in real time, then prints one
-consolidated result and duration. It merges their SimpleCov results, writes a browsable report to
-`coverage/index.html`, and
-records per-file runtimes in `tmp/parallel_runtime_test.log` to improve
-subsequent balancing. Set `PARALLEL_WORKERS` to tune the worker count. Use
-`bundle exec rake test:serial` when a serial coverage run is specifically needed; it writes to the same
-project-local `coverage/` directory.
+`rake test` defaults to six isolated processes, prints combined results, writes coverage to `coverage/index.html`, and records runtimes in `tmp/parallel_runtime_test.log` for balancing. Set `PARALLEL_WORKERS` to change the count, or use `bundle exec rake test:serial` for serial coverage.
 
-The video UI tests use Node.js 22+ and its built-in test runner, with no npm dependencies. They run the
-actual toolbar/player scripts against a small mocked DOM and also run as a separate CI job. They do
-not contact YouTube; live playback should be checked in a browser on the deployed host, especially
-when a host supplies a Content Security Policy.
+Video UI tests require **Node.js 22+**, use the built-in runner with no npm dependencies, and do not contact YouTube. Check live playback and host CSP separately in a browser. Plan logic is unit-tested without a Rails dependency.
 
 ### Get an email link for local testing
 
-in the rails console: `rails c`
-```
+From the host app's console (`bin/rails console`):
+
+```ruby
 _record, raw = Bible270::SignInToken.issue!("John.Smith@example.com")
 Bible270::Engine.routes.url_helpers.email_sign_in_url(token: raw, host: "localhost:3333")
 ```
 
-Plan logic is fully unit-tested with no Rails dependency.
+Use your local host/port. If `raw` is nil, the address is invalid or rate-limited; no link was issued.
 
 ## Contributing
 
-Bug reports and pull requests are welcome at <https://github.com/avonderluft/bible270>.
+Report bugs or open pull requests at <https://github.com/avonderluft/bible270>.
 
-1. Fork it and clone your fork.
-2. Branch off `main`: `git checkout -b my-feature`.
-3. Make your change, and add tests — `bundle exec rake test` and `bundle exec rubocop --cache false` should stay green.
-4. Commit with a clear message: `git commit -am "Add my feature"`.
-5. Push: `git push origin my-feature`.
-6. Open a pull request against `main`, saying what changed and why.
+Fork and clone the repository, branch from `main` (`git checkout -b my-feature`), and add tests with your change. Run the [development checks](#development), commit with a clear message, and open a pull request against `main` explaining what changed and why.
 
-A few things that'll make review quick:
-
-- Keep plan logic free of Rails so it stays unit-testable.
-- Anything touching the reading schedule needs a test pinning the expected references — the plan is deterministic, so assert exact values.
+- Keep plan logic independent of Rails.
+- Pin exact expected references in tests for schedule changes.
 - Prefix new CSS classes and helpers with `b270`.
-- Note anything user-visible in `CHANGELOG.md`.
+- Record user-visible changes in `CHANGELOG.md`.
 
 ## License
 
