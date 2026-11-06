@@ -22,6 +22,8 @@ The Old Testament and Revelation 22 finish on day 270 alongside Psalm 1. Daily r
 
 `Bible270::Plan` generates the schedule deterministically from `Bible270::Versification`; the schedule is not stored in the database. **Progress and reflections are public.**
 
+Signed-in readers see a small progress bar and completed-day count on Community, including in non-admin preview. The list stays alphabetical; only fully completed days count. A thin line marks today on each reader's active schedule; undated, future, and ended schedules have no marker. Visitors see names and join dates; management links and written ahead/behind status remain admin-only.
+
 ## Requirements
 
 - **Ruby >= 3.2** and a **Rails >= 7.2** host app. CI covers selected combinations through Ruby 4.0 / Rails 8.1; check your host's dependencies before upgrading Ruby.

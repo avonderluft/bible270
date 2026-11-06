@@ -128,17 +128,21 @@ if RAILS_LOADED
       end
     end
 
-    def test_community_progress_is_hidden_and_its_bulk_query_is_skipped_until_restore
+    def test_preview_keeps_community_progress_but_hides_admin_links_and_status_until_restore
+      @reader.mark_through!(135)
       sign_in_as(@admin)
       get "#{mount}/community"
       assert_community_progress
       switch_view('reader')
 
-      without_community_progress do
-        get "#{mount}/community"
-      end
+      get "#{mount}/community"
+
       assert_response :success
-      assert_select '.b270-reader-progress, .b270-admin-progress', count: 0
+      assert_select '.b270-community-reader-details .b270-reader-progress', count: 2
+      assert_select '.b270-reader-progress span.b270-reader-progress-count', text: '135 / 270 days', count: 1
+      assert_select '.b270-reader-progress .b270-bar[aria-valuenow="135"] > i[style="width:50.0%"]', count: 1
+      assert_select '.b270-admin-progress, .b270-community-status', count: 0
+      assert_select "a[href^='#{mount}/admin/readers/']", count: 0
       assert_admin_tab
 
       switch_view('admin')
@@ -352,7 +356,9 @@ if RAILS_LOADED
       get "#{mount}/community"
       assert_response :success
       assert_select "a[href='#{mount}/admin']", count: 0
-      assert_select '.b270-reader-progress', count: 0
+      assert_select '.b270-reader-progress span.b270-reader-progress-count', text: '0 / 270 days', count: 2
+      assert_select '.b270-admin-progress, .b270-community-status', count: 0
+      assert_select "a[href^='#{mount}/admin/readers/']", count: 0
       assert_equal before, database_snapshot
     end
 
@@ -429,7 +435,9 @@ if RAILS_LOADED
 
     def assert_community_progress
       assert_response :success
-      assert_select "a.b270-admin-progress[href='#{mount}/admin/readers/#{@reader.id}']", count: 1
+      assert_select '.b270-community-reader-details .b270-reader-progress', minimum: 2
+      assert_select "a.b270-reader-progress-count.b270-admin-progress[href='#{mount}/admin/readers/#{@reader.id}']", count: 1
+      assert_select '.b270-reader-progress + .sub.b270-community-status', minimum: 2
     end
 
     def assert_comment_controls(comment, count:)
@@ -438,7 +446,7 @@ if RAILS_LOADED
     end
 
     def without_community_progress(&)
-      Bible270::Reader.stub(:completed_days_by_id, -> { flunk 'Reader preview must not calculate community progress' }, &)
+      Bible270::Reader.stub(:completed_days_by_id, -> { flunk 'The minimal admin preview panel must not calculate progress' }, &)
     end
 
     def database_snapshot

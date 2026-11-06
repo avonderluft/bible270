@@ -8,7 +8,10 @@ module Bible270
       @readers = Reader.with_avatar.to_a.sort_by(&:sort_name)
       @today_day = current_reader&.today_day
       @show_admin_progress = b270_admin_view?
-      @days_completed = Reader.completed_days_by_id if @show_admin_progress
+      return unless signed_in?
+
+      @days_completed = Reader.completed_days_by_id
+      @reader_today_days = community_today_days
     end
 
     # The reader's own progress. Deliberately open to visitors: the panel shows an
@@ -45,6 +48,17 @@ module Bible270
     end
 
   private
+
+    def community_today_days
+      # Resolve the shared schedule once, not with a settings query for every reader.
+      shared_start = Setting.run_start_date
+      today = Bible270.today
+      @readers.to_h do |reader|
+        start = (Bible270.config.allow_reader_start_date && reader.started_on) || shared_start
+        day = Plan.day_for(today, start, clamp: false)
+        [reader.id, day && Plan.valid_day?(day) ? day : nil]
+      end
+    end
 
     def recent_reflections(reader, limit:)
       comments = reader.comments.recent.with_thread_details.limit(limit).to_a

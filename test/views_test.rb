@@ -315,6 +315,9 @@ class ViewsTest < Minitest::Test
         hex.length == 3 ? hex.chars.map { |char| char * 2 }.join : hex
       end
 
+      assert_operator contrast_ratio(colours.fetch('community-progress-fill'), colours.fetch('line-soft')), :>=, 3,
+                      "#{selector}: Community progress must remain distinct from its track"
+
       %w[ink muted faint gold teal oxblood].product(%w[paper card control]).each do |foreground, background|
         assert_operator contrast_ratio(colours.fetch(foreground), colours.fetch(background)), :>=, 4.5,
                         "#{selector}: --#{foreground} must meet AA contrast against --#{background}"
@@ -328,6 +331,24 @@ class ViewsTest < Minitest::Test
                         "#{selector}: button text must contrast with --#{background}"
       end
     end
+  end
+
+  def test_community_progress_uses_muted_theme_colours_including_system_dark
+    styles = File.read(STYLES)
+    palettes = {
+      '.b270' => '897755',
+      '.b270[data-display-mode="sage"]' => '71826b',
+      '.b270[data-display-mode="mist"]' => '718398',
+      '.b270[data-display-mode="dark"]' => 'a38d68',
+      '.b270[data-display-mode="dark_green"]' => '7e9a7a',
+      '.b270[data-display-mode="dark_blue"]' => '8195ad',
+      '.b270[data-display-mode="system"]' => 'a38d68'
+    }
+    palettes.each do |selector, colour|
+      palette = styles.match(%r{#{Regexp.escape(selector)}\{([^\}]+)})[1]
+      assert_includes palette, "--community-progress-fill:##{colour};"
+    end
+    assert_includes styles, '.b270-reader-progress .b270-bar>i{background:var(--community-progress-fill)}'
   end
 
   def test_dark_theme_uses_dark_fills_and_separate_readable_text_colours

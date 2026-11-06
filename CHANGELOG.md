@@ -4,6 +4,12 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Added
+
+- show a compact progress bar and completed-day count beside each Community reader for signed-in users, including non-admin preview; retain alphabetical order and restrict management links and schedule status to admins
+- use muted, theme-matched Community progress colors, including warm tan for Cedar, with distinct fills and tracks
+- mark today with a thin line in Community progress bars using each reader's active schedule, with a tooltip and accessible day description
+
 ## [1.14.0] - 2026-11-06
 
 ### Added

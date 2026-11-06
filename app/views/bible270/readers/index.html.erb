@@ -8,15 +8,34 @@
     <% @readers.each do |r| %>
       <div class="b270-li">
         <%= link_to b270_avatar(r, size: 72), reader_path(r), "aria-label": r.display_name %>
-        <div>
+        <div class="b270-community-reader-details">
           <div class="name"><%= link_to r.display_name, reader_path(r), style: "text-decoration:none" %></div>
-          <div class="sub">
-            joined <%= Bible270.local_time(r.created_at).strftime("%b %-d %Y") %><% if @show_admin_progress %>
-              · <%= link_to "#{@days_completed[r.id]} of #{Bible270::Plan::DAYS} days complete",
-                    admin_reader_path(r), class: "b270-admin-progress" %>
-              · <%= r.progress_status(completed_days: @days_completed[r.id].to_i) %>
+          <div class="sub">joined <%= Bible270.local_time(r.created_at).strftime("%b %-d %Y") %></div>
+          <% if @days_completed %>
+            <% completed = @days_completed[r.id].to_i %>
+            <% today_day = @reader_today_days[r.id] %>
+            <div class="b270-reader-progress">
+              <div class="b270-bar" role="progressbar" aria-label="<%= r.display_name %>: reading progress"
+                   aria-valuemin="0" aria-valuemax="<%= Bible270::Plan::DAYS %>" aria-valuenow="<%= completed %>"
+                   aria-valuetext="<%= completed %> of <%= Bible270::Plan::DAYS %> days complete<%= "; today is day #{today_day}" if today_day %>"
+                   title="<%= "Today: day #{today_day} of #{Bible270::Plan::DAYS}" if today_day %>">
+                <i style="width:<%= completed.fdiv(Bible270::Plan::DAYS) * 100 %>%"></i>
+                <% if today_day %>
+                  <span class="b270-progress-today" aria-hidden="true"
+                        style="left:clamp(0px, <%= today_day.fdiv(Bible270::Plan::DAYS) * 100 %>%, calc(100% - 1px))"></span>
+                <% end %>
+              </div>
+              <% if @show_admin_progress %>
+                <%= link_to "#{completed} / #{Bible270::Plan::DAYS} days", admin_reader_path(r),
+                      class: "b270-reader-progress-count b270-admin-progress" %>
+              <% else %>
+                <span class="b270-reader-progress-count"><%= completed %> / <%= Bible270::Plan::DAYS %> days</span>
+              <% end %>
+            </div>
+            <% if @show_admin_progress %>
+              <div class="sub b270-community-status"><%= r.progress_status(completed_days: completed) %></div>
             <% end %>
-          </div>
+          <% end %>
         </div>
       </div>
     <% end %>

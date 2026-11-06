@@ -82,22 +82,19 @@ if RAILS_LOADED
       assert_select 'p.lede', text: 'Walking through the Word, sharing reflections and encouraging one another.' do
         assert_select 'a', text: %r{Go to today}, count: 0
       end
-      assert_select '.b270-admin-progress', count: 0
+      assert_select '.b270-reader-progress, .b270-admin-progress, .b270-community-status', count: 0
+      assert_select "a[href^='#{mount}/admin/readers/']", count: 0
     end
 
-    def test_community_does_not_calculate_progress_and_links_an_ordinary_reader_to_today
+    def test_community_shows_progress_and_links_an_ordinary_reader_to_today
       Bible270::Setting.set_run_start_date!(Bible270.today - 4)
       sign_in_as(@reader)
-      calculated = false
-      calculation = -> do
-        calculated = true
-        {}
-      end
-      Bible270::Reader.stub(:completed_days_by_id, calculation) do
-        get "#{mount}/community"
-      end
 
-      refute calculated
+      get "#{mount}/community"
+
+      assert_response :success
+      assert_select '.b270-community-reader-details .b270-reader-progress span.b270-reader-progress-count',
+                    text: '0 / 270 days', count: 2
       assert_select 'p.lede', text: 'Walking through the Word, sharing reflections and encouraging one another. Go to today (Day 5)' do
         assert_select "a.b270-todaylink[href='#{mount}/day/5']", text: 'Go to today (Day 5)'
       end
@@ -112,7 +109,7 @@ if RAILS_LOADED
       get "#{mount}/community"
 
       assert_select "a.b270-admin-progress[href='#{mount}/admin/readers/#{@reader.id}']",
-                    text: '2 of 270 days complete'
+                    text: '2 / 270 days'
     end
 
     def test_admin_community_counts_only_fully_completed_days
@@ -123,7 +120,7 @@ if RAILS_LOADED
       get "#{mount}/community"
 
       assert_select "a.b270-admin-progress[href='#{mount}/admin/readers/#{@reader.id}']",
-                    text: '0 of 270 days complete'
+                    text: '0 / 270 days'
     end
 
     def test_the_overview_links_to_fellow_readers_without_previewing_them

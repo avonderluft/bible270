@@ -25,7 +25,7 @@ if RAILS_LOADED
       Bible270.config.allow_reader_start_date = @previous_personal_dates
     end
 
-    def test_admin_sees_two_days_behind_after_the_completed_day_link
+    def test_admin_sees_two_days_behind_after_the_progress_marker
       assert_admin_status(days: 3, status: '2 days behind')
     end
 
@@ -73,7 +73,7 @@ if RAILS_LOADED
       end
       checkoff_queries = []
       subscriber = ->(_name, _start, _finish, _id, payload) do
-        checkoff_queries << payload if payload[:sql].match?(%r{SELECT COUNT.*bible270_checkoffs}i)
+        checkoff_queries << payload if payload[:sql].match?(%r{SELECT.*bible270_checkoffs}i)
       end
 
       ActiveSupport::Notifications.subscribed(subscriber, 'sql.active_record') do
@@ -87,17 +87,25 @@ if RAILS_LOADED
       assert_equal 1, checkoff_queries.size
       assert_equal [@admin.id], checkoff_queries.first[:binds].map(&:value_for_database)
       assert_completed_status(days: 3, status: '2 days behind')
-      assert_select "a.b270-admin-progress[href='#{mount}/admin/readers/#{@admin.id}']", text: '0 of 270 days complete'
+      assert_select "a.b270-admin-progress[href='#{mount}/admin/readers/#{@admin.id}']", text: '0 / 270 days'
     end
 
     def test_ordinary_reader_sees_no_status_or_completed_day_link
       sign_in_as(@reader)
 
+      get "#{mount}/community"
+
       assert_no_community_status
+      assert_select '.b270-reader-progress span.b270-reader-progress-count', text: '0 / 270 days', count: 2
     end
 
     def test_visitor_sees_no_status_or_completed_day_link
+      Bible270::Reader.stub(:completed_days_by_id, -> { flunk 'Visitors must not calculate progress' }) do
+        get "#{mount}/community"
+      end
+
       assert_no_community_status
+      assert_select '.b270-reader-progress', count: 0
     end
 
   private
@@ -120,19 +128,22 @@ if RAILS_LOADED
 
     def assert_completed_status(days:, status:)
       assert_response :success
-      assert_select "a.b270-admin-progress[href='#{mount}/admin/readers/#{@reader.id}']",
-                    text: "#{days} of 270 days complete", count: 1 do |links|
-        assert_match(%r{#{days} of 270 days complete\s+· #{Regexp.escape(status)}\s*\z}, links.first.parent.text)
+      assert_select "a.b270-reader-progress-count.b270-admin-progress[href='#{mount}/admin/readers/#{@reader.id}']",
+                    text: "#{days} / 270 days", count: 1 do |links|
+        marker = links.first.parent
+        assert_includes marker['class'].split, 'b270-reader-progress'
+        assert_select marker, '.b270-community-status', count: 0
+        assert_equal status, marker.next_element.text.strip
+        assert_select marker.parent, '.b270-reader-progress + .sub.b270-community-status', text: status, count: 1
+        assert_select marker.parent, '.sub:not(.b270-community-status)',
+                      text: %r{\Ajoined [A-Z][a-z]{2} \d{1,2} \d{4}\z}, count: 1
       end
     end
 
     def assert_no_community_status
-      Bible270::Reader.stub(:completed_days_by_id, -> { flunk 'Non-admin requests must not calculate progress' }) do
-        get "#{mount}/community"
-      end
-
       assert_response :success
-      assert_select '.b270-admin-progress', count: 0
+      assert_select '.b270-admin-progress, .b270-community-status', count: 0
+      assert_select "a[href^='#{mount}/admin/readers/']", count: 0
       assert_select '.b270-li .sub', text: %r{\Ajoined [A-Z][a-z]{2} \d{1,2} \d{4}\z}, count: 2
       assert_select '.b270-li .sub', text: %r{ahead|behind|on track|undated}, count: 0
     end
