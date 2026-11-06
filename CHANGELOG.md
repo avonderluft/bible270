@@ -4,11 +4,15 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-06
+
 ### Added
 
-- show a compact progress bar and completed-day count beside each Community reader for signed-in users, including non-admin preview; retain alphabetical order and restrict management links and schedule status to admins
-- use muted, theme-matched Community progress colors, including warm tan for Cedar, with distinct fills and tracks
-- mark today with a thin line in Community progress bars using each reader's active schedule, with a tooltip and accessible day description
+- show Community progress bars and completed-day counts to signed-in readers, including non-admin preview; retain alphabetical order and admin-only management links and written schedule status
+- use muted, theme-matched bar colors, including warm tan for Cedar, with at least 3:1 fill-to-track contrast
+- mark today on each reader's active schedule with a thin line, tooltip, and accessible day description; omit markers for undated, future, and ended schedules
+
+Counts include only fully completed days and use one bulk progress query. Visitor listings are unchanged; no migration is required.
 
 ## [1.14.0] - 2026-11-06
 
@@ -805,7 +809,8 @@ This is the initial public release.
 
 - Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.14.0...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.15.0...main
+[1.15.0]: https://github.com/avonderluft/bible270/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/avonderluft/bible270/compare/v1.13.5...v1.14.0
 [1.13.5]: https://github.com/avonderluft/bible270/compare/v1.13.3...v1.13.5
 [1.13.3]: https://github.com/avonderluft/bible270/compare/v1.13.2...v1.13.3
