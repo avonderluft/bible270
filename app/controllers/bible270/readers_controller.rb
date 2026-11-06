@@ -7,7 +7,7 @@ module Bible270
       # order predictable without implying that progress determines standing.
       @readers = Reader.with_avatar.to_a.sort_by(&:sort_name)
       @today_day = current_reader&.today_day
-      @show_admin_progress = Bible270.config.admin?(current_reader)
+      @show_admin_progress = b270_admin_view?
       @days_completed = Reader.completed_days_by_id if @show_admin_progress
     end
 

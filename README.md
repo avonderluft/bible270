@@ -251,7 +251,9 @@ config.admin_emails = %w[andrew@example.org]
 config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@example.org') }
 ```
 
-Authorized readers get an Admin link. The panel supports:
+Authorized readers get an Admin link. **View as non-admin** hides admin-only details and disables admin actions for the current session. You stay signed in as yourself; your check-offs and reflections still work. The Admin tab remains available with **Return to admin view**. This does not change roles or affect other sessions, and signing in again restores admin view.
+
+The panel supports:
 
 - Sorting readers by name, completed days, activity, or consistency, with **Reader Stats** following the selected sort.
 - Changing reader profiles, themes, and notification preferences. Another reader's theme does not change your own.
@@ -275,7 +277,7 @@ Consistency is the average end-of-day score on a dated schedule:
 
 `100 + 5 × min(days ahead, 7) − 10 × days behind`
 
-A score of 100 is an average on-track baseline, not a percentage. Negative scores display as `0` but retain their true value for ranking. Scores, on-track/ahead percentages, and evaluated-day counts appear for every Admin sort; sorting by consistency also adds a **Rank** column to Reader Stats.
+A score of 100 is an average on-track baseline, not a percentage. Negative scores display as `0` but retain their true value for ranking. Scores, on-track/ahead percentages, and evaluated-day counts appear for every Admin sort; sorting by consistency also shows the scoring explanation and adds a **Rank** column to Reader Stats.
 
 - Evaluation runs from the later of plan start or account creation through the earlier of yesterday or plan end, in the plan's time zone. Late enrollment does not reset the scheduled day.
 - A day counts when all required readings are checked off, using the latest check-off timestamp. Early completions carry forward; today's catch-up does not improve previous evenings.

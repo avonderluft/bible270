@@ -4,7 +4,7 @@
 <% if signed_in? %>
   <%= link_to "My Progress", progress_path %>
   <%= link_to "Profile", profile_path %>
-  <% if Bible270.config.admin?(current_reader) %><%= link_to "Admin", admin_path %><% end %>
+  <% if b270_admin? %><%= link_to "Admin", admin_path %><% end %>
   <%= button_to "Sign out", sign_out_path, method: :delete, class: "b270-linkbtn",
         form: { style: "display:inline" } %>
 <% elsif Bible270.config.any_sign_in_method? %>

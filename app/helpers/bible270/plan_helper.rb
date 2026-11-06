@@ -209,13 +209,13 @@ module Bible270
     def b270_can_edit?(comment)
       return false unless signed_in?
 
-      comment.reader_id == current_reader.id || Bible270.config.admin?(current_reader)
+      comment.reader_id == current_reader.id || b270_admin_view?
     end
 
     def b270_can_delete?(comment)
       return false unless signed_in?
 
-      comment.reader_id == current_reader.id || Bible270.config.admin?(current_reader)
+      comment.reader_id == current_reader.id || b270_admin_view?
     end
 
     # One cell of the 270-day grid. Four views drew this by hand in four slightly

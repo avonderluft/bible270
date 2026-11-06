@@ -33,7 +33,7 @@ module Bible270
     def editing_comment_id
       return nil if params[:edit].blank? || current_reader.nil?
 
-      comments = Bible270.config.admin?(current_reader) ? Comment.all : current_reader.comments
+      comments = b270_admin_view? ? Comment.all : current_reader.comments
       comments.where(day: @day, id: params[:edit]).pick(:id)
     end
 

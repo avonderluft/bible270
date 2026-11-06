@@ -28,7 +28,8 @@ module Bible270
 
     rescue_from ActionController::InvalidAuthenticityToken, with: :recover_from_stale_page
 
-    helper_method :current_reader, :signed_in?, :b270_config, :enrollment_closed?
+    helper_method :current_reader, :signed_in?, :b270_config, :enrollment_closed?,
+                  :b270_admin?, :b270_reader_view?, :b270_admin_view?
 
   private
 
@@ -101,6 +102,19 @@ module Bible270
 
     def signed_in?
       current_reader.present?
+    end
+
+    def b270_admin?
+      Bible270.config.admin_configured? && Bible270.config.admin?(current_reader)
+    end
+
+    def b270_reader_view?
+      b270_admin? && session[:bible270_reader_view_id] == current_reader.id
+    end
+
+    # Keep real admin identity separate so preview mode always has a way back.
+    def b270_admin_view?
+      b270_admin? && !b270_reader_view?
     end
 
     # A suspended mobile tab can outlive its Rails session cookie. The page still

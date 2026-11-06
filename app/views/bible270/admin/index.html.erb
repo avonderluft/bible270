@@ -1,5 +1,9 @@
 <% content_for :title, "Admin — #{Bible270.config.app_name}" %>
-<p class="b270-eyebrow">Admin</p>
+<div class="b270-admin-view-header">
+  <p class="b270-eyebrow">Admin</p>
+  <%= button_to 'View as non-admin', admin_view_path, method: :patch,
+        params: { view: 'reader' }, class: 'b270-btn', form: { data: { turbo: false } } %>
+</div>
 <h1>Readers</h1>
 <p class="lede"><%= @readers.size %> reader<%= 's' unless @readers.size == 1 %> taking part.
    <%= link_to 'Moderate reflections →', admin_comments_path %></p>
@@ -75,10 +79,12 @@
             aria-controls="b270-reader-stats-dialog" data-b270-reader-stats-open hidden>Reader Stats</button>
   </div>
 
-  <p class="b270-hint">
-    Average daily score through yesterday: 100 on track, +5 per day ahead (max +35), −10 per day behind.
-    Under 7 days is provisional; no history is unranked. Check-off or schedule changes can alter scores.
-  </p>
+  <% if @reader_sort == 'consistency' %>
+    <p class="b270-hint b270-consistency-explanation">
+      Average through yesterday: 100 on track; +5/day ahead (up to +35), −10/day behind.
+      Provisional until 7 days; unranked without history. Scores reflect check-off and schedule changes.
+    </p>
+  <% end %>
 
   <div class="b270-list">
     <% @readers.each do |reader| %>

@@ -20,6 +20,7 @@ Bible270::Engine.routes.draw do
 
   # Admin panel — 404s unless config.admin_emails / admin_resolver allows you.
   get    'admin',                        to: 'admin#index',            as: :admin
+  patch  'admin/view',                   to: 'admin#update_view',      as: :admin_view
   get    'admin/readers/:id',            to: 'admin#show',             as: :admin_reader
   delete 'admin/readers/:id',            to: 'admin#destroy'
   patch  'admin/readers/:id/profile',    to: 'admin#update_profile', as: :admin_reader_profile

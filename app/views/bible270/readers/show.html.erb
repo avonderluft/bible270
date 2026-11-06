@@ -19,7 +19,7 @@
   <%= render "bible270/shared/interaction_status" %>
   <%= render "bible270/shared/reflections", comments: @recent_comments,
         title: "Their reflections", empty_text: "No reflections yet.",
-        conversations: true, editable: Bible270.config.admin?(current_reader) %>
+        conversations: true, editable: b270_admin_view? %>
 </div>
 
 <%= render "bible270/shared/day_index", reader: @reader, expanded: true %>

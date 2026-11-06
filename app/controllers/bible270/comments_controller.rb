@@ -150,7 +150,7 @@ module Bible270
     # Scoped to the reader unless they are an administrator, so an ordinary reader
     # cannot use editing or deletion to discover someone else's reflection.
     def editable_comment
-      return current_reader.comments.find_by(id: params[:id]) unless Bible270.config.admin?(current_reader)
+      return current_reader.comments.find_by(id: params[:id]) unless b270_admin_view?
 
       Comment.find_by(id: params[:id])
     end

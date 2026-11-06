@@ -133,15 +133,12 @@ if RAILS_LOADED
 
       get_admin(sort: 'consistency')
 
-      explanation = css_select('p.b270-hint').map { |node| node.text.squish }.find do |text|
-        text.include?('Average daily score')
-      end
-      refute_nil explanation
-      assert_includes explanation, 'Average daily score through yesterday'
-      assert_includes explanation, '100 on track, +5 per day ahead (max +35), −10 per day behind'
-      assert_includes explanation, 'Under 7 days is provisional; no history is unranked'
-      assert_includes explanation, 'Check-off or schedule changes can alter scores'
-      assert_operator explanation.split.length, :<=, 45
+      assert_select '.b270-consistency-explanation', count: 1
+      explanation = css_select('.b270-consistency-explanation').first.text.squish
+      assert_includes explanation, 'Average through yesterday: 100 on track; +5/day ahead (up to +35), −10/day behind'
+      assert_includes explanation, 'Provisional until 7 days; unranked without history'
+      assert_includes explanation, 'Scores reflect check-off and schedule changes'
+      assert_operator explanation.split.length, :<=, 30
       assert_consistency reader, 'Consistency: 100.0 · On track/ahead: 100% · 7 days evaluated'
 
       reader.checkoffs.where(day: 1).first.destroy!
@@ -169,7 +166,7 @@ if RAILS_LOADED
         assert_consistency @admin, 'Consistency: 60.0 · On track/ahead: 0% · 7 days evaluated'
         assert_consistency provisional, 'Provisional · Consistency: 85.0 · On track/ahead: 0% · 2 days evaluated'
         assert_consistency unranked, 'Consistency: Not ranked'
-        assert_includes response.body, 'Average daily score'
+        assert_select '.b270-consistency-explanation', count: sort == 'consistency' ? 1 : 0
         headers = ['Name', 'Days Read', 'Status', 'Last Activity']
         headers.unshift('Rank') if sort == 'consistency'
         assert_equal headers, stats_table.lines.first.strip.split(%r{ {2,}})

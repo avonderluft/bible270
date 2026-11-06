@@ -4,8 +4,13 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Added
+
+- add a session-only **View as non-admin** toggle to Admin; hide admin-only details and disable admin actions while retaining the Admin tab to switch back
+
 ### Changed
 
+- shorten the consistency explanation and show it only when sorting by Consistency ranking; keep reader consistency details on every sort
 - shorten the README and changelog while retaining setup instructions, upgrade warnings, and release links
 
 ## [1.13.5] - 2026-11-02

@@ -1,0 +1,8 @@
+<% content_for :title, "Admin — #{Bible270.config.app_name}" %>
+<div class="b270-admin-view-header">
+  <p class="b270-eyebrow">Admin</p>
+  <%= button_to 'Return to admin view', admin_view_path, method: :patch,
+        params: { view: 'admin' }, class: 'b270-btn', form: { data: { turbo: false } } %>
+</div>
+<h1>Non-admin view</h1>
+<p class="lede">You're browsing as yourself without admin tools. Your own check-offs and reflections still work normally.</p>

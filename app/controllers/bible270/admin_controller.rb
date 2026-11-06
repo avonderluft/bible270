@@ -22,6 +22,7 @@ module Bible270
     }.freeze
 
     before_action :require_admin!
+    before_action :require_admin_view!, except: %i[index update_view]
     before_action :load_reader,
                   only: %i[show destroy update_start update_profile update_theme update_notifications update_completion_animation
                            remove_avatar complete_through toggle_day]
@@ -62,7 +63,23 @@ module Bible270
       redirect_to admin_path, notice: notice
     end
 
+    def update_view
+      case params[:view]
+      when 'reader'
+        session[:bible270_reader_view_id] = current_reader.id
+        redirect_to root_path, status: :see_other,
+                               notice: 'Non-admin view is on. Use Admin to return to admin view.'
+      when 'admin'
+        session.delete(:bible270_reader_view_id)
+        redirect_to admin_path, status: :see_other, notice: 'Admin view restored.'
+      else
+        redirect_to admin_path, status: :see_other, alert: 'Choose admin or non-admin view. Nothing was changed.'
+      end
+    end
+
     def index
+      return render :reader_view if b270_reader_view?
+
       @enrollment_closed = Setting.enrollment_closed?
       @enrollment_closed_at = Setting.enrollment_closed_at
       @days_completed = Reader.completed_days_by_id
@@ -377,7 +394,13 @@ module Bible270
     end
 
     def require_admin!
-      return if Bible270.config.admin_configured? && Bible270.config.admin?(current_reader)
+      return if b270_admin?
+
+      raise ActionController::RoutingError, 'Not Found'
+    end
+
+    def require_admin_view!
+      return if b270_admin_view?
 
       raise ActionController::RoutingError, 'Not Found'
     end
