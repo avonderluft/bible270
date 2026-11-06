@@ -4,13 +4,16 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-11-06
+
 ### Added
 
-- add a session-only **View as non-admin** toggle to Admin; hide admin-only details and disable admin actions while retaining the Admin tab to switch back
+- add a session-only **View as non-admin** toggle; hide admin-only details and disable admin actions while retaining the Admin tab to switch back. Own check-offs and reflections still work; roles and other sessions are unchanged.
 
 ### Changed
 
 - shorten the consistency explanation and show it only when sorting by Consistency ranking; keep reader consistency details on every sort
+- align both view-toggle buttons to the right of the Admin label on the same row
 - shorten the README and changelog while retaining setup instructions, upgrade warnings, and release links
 
 ## [1.13.5] - 2026-11-02
@@ -796,7 +799,8 @@ This is the initial public release.
 
 - Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.13.5...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.14.0...main
+[1.14.0]: https://github.com/avonderluft/bible270/compare/v1.13.5...v1.14.0
 [1.13.5]: https://github.com/avonderluft/bible270/compare/v1.13.3...v1.13.5
 [1.13.3]: https://github.com/avonderluft/bible270/compare/v1.13.2...v1.13.3
 [1.13.2]: https://github.com/avonderluft/bible270/compare/v1.13.1...v1.13.2
