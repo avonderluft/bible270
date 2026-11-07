@@ -111,7 +111,7 @@ class ViewsTest < Minitest::Test
     assert_includes header, 'current_reader && Bible270::Reader.display_mode_column?'
     assert_includes header, 'aria: { label: "Theme", describedby: "b270-header-theme-status" }'
     assert_includes styles, '.b270-header-theme-select{font:inherit;'
-    assert_includes styles, '.b270-header-theme-select{font:inherit;font-size:12px;width:6.5em;height:28px;padding:2px;margin:0;'
+    assert_includes styles, '.b270-header-theme-select{font:inherit;font-size:12px;width:8em;height:28px;padding:2px 6px;margin:0;'
     assert_includes styles, '.b270-header-theme-select{field-sizing:content;width:auto}'
     assert_equal 1, styles.scan(%r{\.b270-header-theme-select\{[^\}]*font-size:}).size
     assert_includes styles, '.b270-brand{display:flex;align-items:baseline;gap:14px;'
@@ -304,6 +304,56 @@ class ViewsTest < Minitest::Test
     assert_includes styles, '.b270-menuicon{display:block;flex:none;color:var(--ink)}'
     assert_includes styles, '.b270-navtoggle[aria-expanded="true"] .b270-menuicon{color:var(--gold)}'
     refute_includes styles, '.b270-menuicon span'
+  end
+
+  def test_shared_dropdown_arrow_is_inset_without_intercepting_clicks
+    styles = File.read(STYLES)
+    selector = styles[%r{\.b270 \.b270-select-wrap>select\{([^\}]+)}, 1]
+    arrow = styles[%r{\.b270-select-wrap::after\{([^\}]+)}, 1]
+
+    refute_nil selector, 'all wrapped native selects need the shared appearance rule'
+    refute_nil arrow, 'the generic wrapper must own the chevron'
+    assert_includes selector, 'display:block'
+    assert_includes selector, '-webkit-appearance:none'
+    assert_includes selector, 'appearance:none'
+    assert_includes selector, 'padding-right:var(--b270-select-space,36px)'
+    assert_includes arrow, 'right:var(--b270-select-inset,14px)'
+    assert_includes arrow, 'width:var(--b270-select-chevron,7px)'
+    assert_includes arrow, 'height:var(--b270-select-chevron,7px)'
+    assert_includes arrow, 'border-right:2px solid currentColor'
+    assert_includes arrow, 'border-bottom:2px solid currentColor'
+    assert_includes arrow, 'pointer-events:none'
+    refute_includes styles, '.b270-track-select-wrap::after'
+  end
+
+  def test_shared_select_variants_preserve_compact_full_and_mobile_sizing
+    styles = File.read(STYLES)
+    compact = styles[%r{\.b270-select-wrap--compact\{([^\}]+)}, 1]
+    time = styles[%r{\.b270-select-wrap--time\{([^\}]+)}, 1]
+
+    refute_nil compact
+    refute_nil time
+    assert_includes compact, '--b270-select-inset:8px'
+    assert_includes compact, '--b270-select-chevron:5px'
+    assert_includes compact, '--b270-select-space:24px'
+    assert_includes time, '--b270-select-inset:7px'
+    assert_includes time, '--b270-select-space:20px'
+    assert_match(%r{\.b270-field \.b270-time-select\{[^\}]*width:48px;[^\}]*height:30px;}, styles)
+    assert_match(%r{\.b270-select-wrap--full\{[^\}]*width:100%}, styles)
+    assert_match(%r{@media \(max-width:480px\)\{.*?\.b270-track-select-wrap\{width:100%\}}m, styles)
+  end
+
+  def test_shared_select_focus_and_disabled_states_are_visible
+    styles = File.read(STYLES)
+    focus = styles[%r{\.b270 \.b270-select-wrap>select:focus-visible\{([^\}]+)}, 1]
+    disabled = styles[%r{\.b270 \.b270-select-wrap>select:disabled\{([^\}]+)}, 1]
+
+    refute_nil focus
+    refute_nil disabled
+    assert_includes focus, 'outline:2px solid var(--gold)'
+    assert_includes focus, 'outline-offset:2px'
+    assert_includes disabled, 'cursor:not-allowed'
+    assert_match(%r{opacity:(?:0?\.\d+)}, disabled)
   end
 
   def test_readable_palette_colours_meet_aa_contrast

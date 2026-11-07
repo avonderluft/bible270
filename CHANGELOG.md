@@ -4,6 +4,10 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Fixed
+
+- standardize dropdown arrows, spacing, keyboard focus, and disabled styling across reflections, filters, Profile, and Admin; keep header theme and reminder-time selectors compact
+
 ## [1.15.0] - 2026-11-06
 
 ### Added

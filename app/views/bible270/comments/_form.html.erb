@@ -23,10 +23,11 @@
         placeholder: (posting_reply ? "Write your reply…" : "Share a reflection on today's reading…") %>
   <p class="b270-draft-status" data-b270-draft-status aria-live="polite"></p>
   <div class="row">
-    <%= f.select :track,
-          options_for_select([["The whole day", ""]] + Bible270::Plan::TRACKS.map { |k, v| [v[:label], k] }),
-          {}, aria: { label: "Reading this reflection relates to" },
-          style: "font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff" %>
+    <span class="b270-select-wrap b270-track-select-wrap">
+      <%= f.select :track,
+            options_for_select([["The whole day", ""]] + Bible270::Plan::TRACKS.map { |k, v| [v[:label], k] }),
+            {}, class: "b270-select", aria: { label: "Reading this reflection relates to" } %>
+    </span>
     <%= f.submit "Post reflection", class: "b270-btn" %>
   </div>
 <% end %>

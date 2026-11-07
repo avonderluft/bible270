@@ -38,9 +38,11 @@
     </label>
     <label class="b270-field">
       <span>Bible translation</span>
-      <%= select_tag :bible_version,
-            options_for_select(Bible270::Translations.options, current_reader.effective_bible_version),
-            class: "b270-select" %>
+      <span class="b270-select-wrap b270-select-wrap--full">
+        <%= select_tag :bible_version,
+              options_for_select(Bible270::Translations.options, current_reader.effective_bible_version),
+              class: "b270-select" %>
+      </span>
       <span class="b270-hint" style="margin:0">Reading links open in this translation.</span>
     </label>
     <%= render "bible270/shared/passage_source", reader: current_reader %>
@@ -48,11 +50,13 @@
     <% if Bible270::Reader.display_mode_column? %>
       <label class="b270-field">
         <span>Theme</span>
-        <%= select_tag :display_mode,
-              options_for_select(Bible270::Reader::DISPLAY_OPTIONS, @display_mode),
-              class: "b270-select", aria: { describedby: "b270-display-hint b270-theme-status" },
-              data: { b270_theme_url: profile_theme_path, b270_theme_apply: true,
-                      b270_saved_theme: current_reader.effective_display_mode } %>
+        <span class="b270-select-wrap b270-select-wrap--full">
+          <%= select_tag :display_mode,
+                options_for_select(Bible270::Reader::DISPLAY_OPTIONS, @display_mode),
+                class: "b270-select", aria: { describedby: "b270-display-hint b270-theme-status" },
+                data: { b270_theme_url: profile_theme_path, b270_theme_apply: true,
+                        b270_saved_theme: current_reader.effective_display_mode } %>
+        </span>
         <span id="b270-display-hint" class="b270-hint" style="margin:0">System follows your device's setting: Papyrus for light, Cedar for dark.</span>
       </label>
       <p id="b270-theme-status" class="b270-hint" role="status" aria-live="polite" style="margin:0"></p>
@@ -97,13 +101,17 @@
             <span>at</span>
             <span class="b270-time-control" role="group" aria-label="Reminder time"
                   aria-describedby="daily-reminder-time-hint">
-              <%= select_tag :daily_reminder_hour,
-                    options_for_select((0..23).map { |hour| format("%02d", hour) }, reminder_hour),
-                    class: "b270-time-select", required: true, aria: { label: "Hour" } %>
+              <span class="b270-select-wrap b270-select-wrap--compact b270-select-wrap--time">
+                <%= select_tag :daily_reminder_hour,
+                      options_for_select((0..23).map { |hour| format("%02d", hour) }, reminder_hour),
+                      class: "b270-time-select", required: true, aria: { label: "Hour" } %>
+              </span>
               <span class="b270-time-separator" aria-hidden="true">:</span>
-              <%= select_tag :daily_reminder_minute,
-                    options_for_select(reminder_minutes, reminder_minute),
-                    class: "b270-time-select", required: true, aria: { label: "Minute" } %>
+              <span class="b270-select-wrap b270-select-wrap--compact b270-select-wrap--time">
+                <%= select_tag :daily_reminder_minute,
+                      options_for_select(reminder_minutes, reminder_minute),
+                      class: "b270-time-select", required: true, aria: { label: "Minute" } %>
+              </span>
               <span class="b270-reminder-tooltip" id="daily-reminder-time-hint" role="tooltip">
                 <%= reminder_tooltip %>
               </span>

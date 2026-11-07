@@ -67,11 +67,13 @@
 
   <%= form_with url: admin_reader_version_path(@reader), method: :patch, class: "b270-form" do %>
     <div class="row">
-      <%= select_tag :bible_version,
-            options_for_select([["Site default (#{Bible270.config.bible_version})", ""]] +
-                               Bible270::Translations.options,
-                               @reader.bible_version.to_s),
-            class: "b270-select", style: "width:auto" %>
+      <span class="b270-select-wrap b270-select-wrap--full">
+        <%= select_tag :bible_version,
+              options_for_select([["Site default (#{Bible270.config.bible_version})", ""]] +
+                                 Bible270::Translations.options,
+                                 @reader.bible_version.to_s),
+              class: "b270-select", aria: { label: "Bible translation" } %>
+      </span>
     </div>
     <%= render "bible270/shared/passage_source", reader: @reader %>
     <%= submit_tag "Save", class: "b270-btn" %>
@@ -82,11 +84,13 @@
   <h2 class="b270-subhead" id="b270-theme-heading">Theme</h2>
   <% if Bible270::Reader.display_mode_column? %>
     <%= form_with url: admin_reader_theme_path(@reader), method: :patch, class: "b270-emailform" do %>
-      <%= select_tag :display_mode,
-            options_for_select(Bible270::Reader::DISPLAY_OPTIONS, @reader.effective_display_mode),
-            class: "b270-select", aria: { labelledby: "b270-theme-heading", describedby: "b270-theme-hint b270-theme-status" },
-            data: { b270_theme_url: admin_reader_theme_path(@reader), b270_theme_apply: @reader == current_reader,
-                    b270_saved_theme: @reader.effective_display_mode } %>
+      <span class="b270-select-wrap b270-select-wrap--full">
+        <%= select_tag :display_mode,
+              options_for_select(Bible270::Reader::DISPLAY_OPTIONS, @reader.effective_display_mode),
+              class: "b270-select", aria: { labelledby: "b270-theme-heading", describedby: "b270-theme-hint b270-theme-status" },
+              data: { b270_theme_url: admin_reader_theme_path(@reader), b270_theme_apply: @reader == current_reader,
+                      b270_saved_theme: @reader.effective_display_mode } %>
+      </span>
       <p id="b270-theme-hint" class="b270-hint" style="margin:0">
         System follows the reader's device setting: Papyrus for light, Cedar for dark.
       </p>

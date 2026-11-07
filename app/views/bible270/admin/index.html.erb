@@ -71,7 +71,9 @@
     <%= form_with url: admin_path, method: :get, class: "b270-admin-reader-sort" do %>
       <label>
         <span>Sort readers by</span>
-        <%= select_tag :sort, options_for_select(@reader_sort_options.map { |value, label| [label, value] }, @reader_sort) %>
+        <span class="b270-select-wrap">
+          <%= select_tag :sort, options_for_select(@reader_sort_options.map { |value, label| [label, value] }, @reader_sort) %>
+        </span>
       </label>
       <%= submit_tag "Sort", class: "b270-btn" %>
     <% end %>
@@ -195,7 +197,9 @@
           data: { turbo_confirm: "Send this message to the selected recipients?" } do %>
       <div class="b270-broadcast-audience">
         <label for="b270-broadcast-audience" class="b270-sr-only">Recipients</label>
-        <%= select_tag :audience, options_for_select([['Write to everyone', 'everyone'], ['Write to all admins', 'admins']], 'everyone'), id: 'b270-broadcast-audience', class: 'b270-select' %>
+        <span class="b270-select-wrap b270-select-wrap--full">
+          <%= select_tag :audience, options_for_select([['Write to everyone', 'everyone'], ['Write to all admins', 'admins']], 'everyone'), id: 'b270-broadcast-audience', class: 'b270-select' %>
+        </span>
       </div>
       <%= text_field_tag :subject, params[:subject], placeholder: "Subject", class: "b270-input" %>
       <%= text_area_tag :body, params[:body], placeholder: "What would you like to say?", rows: 6 %>

@@ -15,15 +15,19 @@
       <%= hidden_field_tag :since, @reflections_since_param %>
       <label>
         <span>Day</span>
-        <%= select_tag :day,
-              options_for_select([["All days", ""]] + @days_with_reflections.map { |day| ["Day #{day}", day] },
-                                 @reflection_day) %>
+        <span class="b270-select-wrap">
+          <%= select_tag :day,
+                options_for_select([["All days", ""]] + @days_with_reflections.map { |day| ["Day #{day}", day] },
+                                   @reflection_day) %>
+        </span>
       </label>
       <label>
         <span>Reflection by</span>
-        <%= select_tag :reader_id,
-              options_for_select([["All readers", ""]] + @reflection_readers.map { |reader| [reader.display_name, reader.id] },
-                                 @reflection_reader_id) %>
+        <span class="b270-select-wrap">
+          <%= select_tag :reader_id,
+                options_for_select([["All readers", ""]] + @reflection_readers.map { |reader| [reader.display_name, reader.id] },
+                                   @reflection_reader_id) %>
+        </span>
       </label>
       <%= submit_tag "Apply", class: "b270-btn" %>
       <% if @reflection_day || @reflection_reader_id %>
