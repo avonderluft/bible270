@@ -4,6 +4,8 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+## [1.15.1] - 2026-11-06
+
 ### Fixed
 
 - standardize dropdown arrows, spacing, keyboard focus, and disabled styling across reflections, filters, Profile, and Admin; keep header theme and reminder-time selectors compact
@@ -813,7 +815,8 @@ This is the initial public release.
 
 - Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.15.0...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.15.1...main
+[1.15.1]: https://github.com/avonderluft/bible270/compare/v1.15.0...v1.15.1
 [1.15.0]: https://github.com/avonderluft/bible270/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/avonderluft/bible270/compare/v1.13.5...v1.14.0
 [1.13.5]: https://github.com/avonderluft/bible270/compare/v1.13.3...v1.13.5
