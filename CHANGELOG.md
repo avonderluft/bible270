@@ -4,6 +4,14 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Added
+
+- preview full photos after hovering over an avatar for 3 seconds; fit originals within the screen and fade out when the pointer leaves, without changing touch behavior
+
+### Fixed
+
+- always confirm reader removal before deleting their check-offs and reflections, even when Turbo is unavailable
+
 ## [1.15.1] - 2026-11-06
 
 ### Fixed

@@ -1,0 +1,129 @@
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270AvatarPreview) {
+      window.Bible270AvatarPreview.reset();
+      return;
+    }
+
+    const selector = "img[data-b270-avatar-preview-src]";
+    const finePointer = window.matchMedia?.("(hover: hover) and (pointer: fine)");
+    let active = null;
+    let fadingPopup = null;
+    let removalTimer = null;
+
+    function removeFadingPopup() {
+      clearTimeout(removalTimer);
+      removalTimer = null;
+      fadingPopup?.remove();
+      fadingPopup = null;
+    }
+
+    function reset(immediate = true) {
+      if (immediate) removeFadingPopup();
+      if (!active) return;
+
+      const state = active;
+      active = null;
+      clearTimeout(state.timer);
+      if (!state.popup) return;
+      state.image.onload = null;
+      state.image.onerror = null;
+      state.popup.classList.remove("is-visible");
+      if (immediate) {
+        state.popup.remove();
+      } else {
+        removeFadingPopup();
+        fadingPopup = state.popup;
+        removalTimer = setTimeout(() => {
+          state.popup.remove();
+          fadingPopup = null;
+          removalTimer = null;
+        }, 200);
+      }
+    }
+
+    function current(state) {
+      return active === state && state.avatar.isConnected && finePointer?.matches;
+    }
+
+    function show(state) {
+      if (!current(state)) {
+        if (active === state) reset();
+        return;
+      }
+      if (!state.image.naturalWidth) {
+        reset(false);
+        return;
+      }
+
+      const avatar = state.avatar.getBoundingClientRect();
+      const popup = state.popup.getBoundingClientRect();
+      const margin = 16;
+      const gap = 12;
+      const right = avatar.right + gap;
+      const left = right + popup.width <= window.innerWidth - margin
+        ? right : avatar.left - gap - popup.width;
+      state.popup.style.left = `${Math.max(margin, Math.min(left, window.innerWidth - margin - popup.width))}px`;
+      state.popup.style.top = `${Math.max(margin, Math.min(avatar.top, window.innerHeight - margin - popup.height))}px`;
+      state.popup.classList.add("is-visible");
+    }
+
+    document.addEventListener("pointerover", (event) => {
+      if (!finePointer?.matches || !["mouse", "pen"].includes(event.pointerType)) return;
+      const avatar = event.target;
+      if (!avatar.matches?.(selector) || active?.avatar === avatar) return;
+      reset(false);
+      if (!avatar.isConnected) return;
+
+      const state = { avatar, timer: null, popup: null, image: null };
+      active = state;
+      state.timer = setTimeout(() => {
+        state.timer = null;
+        if (!current(state)) {
+          if (active === state) reset();
+          return;
+        }
+        const source = avatar.getAttribute("data-b270-avatar-preview-src");
+        if (!source) {
+          reset();
+          return;
+        }
+
+        const popup = document.createElement("div");
+        const image = document.createElement("img");
+        state.popup = popup;
+        state.image = image;
+        popup.className = "b270-avatar-preview";
+        popup.setAttribute("aria-hidden", "true");
+        popup.style.position = "fixed";
+        image.alt = "";
+        popup.append(image);
+        document.body.append(popup);
+        image.onload = () => show(state);
+        image.onerror = () => {
+          if (active === state) reset(false);
+        };
+        // Keep original blob/provider URLs intact, including signed query parameters.
+        image.src = source;
+        if (image.complete && active === state) show(state);
+      }, 3000);
+    });
+
+    document.addEventListener("pointerout", (event) => {
+      if (event.target === active?.avatar && event.relatedTarget !== active.avatar) reset(false);
+    });
+    document.addEventListener("error", (event) => {
+      if (event.target === active?.avatar) reset(false);
+    }, true);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") reset(false);
+    });
+    document.addEventListener("scroll", () => reset(false), true);
+    window.addEventListener("resize", () => reset(false));
+    window.addEventListener("pagehide", () => reset());
+    document.addEventListener("turbo:before-cache", () => reset());
+    document.addEventListener("turbo:before-render", () => reset());
+
+    window.Bible270AvatarPreview = { reset };
+  })();
+</script>

@@ -285,6 +285,30 @@ if RAILS_LOADED
       assert_includes b270_avatar(@reader), 'face.png'
     end
 
+    def test_provider_avatar_preview_preserves_the_provider_url
+      source = 'https://example.org/face.png?size=original&signature=abc123'
+      @reader.update!(avatar_url: source)
+      image = Nokogiri::HTML.fragment(b270_avatar(@reader)).at_css('img')
+
+      assert_equal source, image['src']
+      assert_equal source, image['data-b270-avatar-preview-src']
+    end
+
+    def test_provider_avatar_preview_works_without_active_storage
+      @reader.update!(avatar_url: 'https://example.org/face.png')
+      Bible270::Reader.stub(:avatar_uploads?, false) do
+        image = Nokogiri::HTML.fragment(b270_avatar(@reader)).at_css('img')
+
+        assert_equal @reader.avatar_url, image['data-b270-avatar-preview-src']
+      end
+    end
+
+    def test_initials_have_no_photo_preview
+      avatar = Nokogiri::HTML.fragment(b270_avatar(@reader))
+
+      assert_empty avatar.css('[data-b270-avatar-preview-src]')
+    end
+
     def test_list_avatars_load_eagerly_without_losing_dimensions_or_alt_text
       @reader.update!(avatar_url: 'https://example.org/face.png')
       image = Nokogiri::HTML.fragment(b270_avatar(@reader, size: 56)).at_css('img')

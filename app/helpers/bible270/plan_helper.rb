@@ -167,10 +167,12 @@ module Bible270
                                                    style: dimensions, role: 'img', 'aria-label': reader.display_name
       end
 
+      preview_src = reader.avatar_uploaded? ? main_app.rails_blob_path(reader.avatar, only_path: true) : src
       content_tag :span, class: 'b270-avatar-frame', style: dimensions,
                          role: 'img', 'aria-label': reader.display_name do
         image = image_tag src, class: 'b270-avatar', width: size, height: size, alt: reader.display_name,
-                               loading: loading, data: { b270_avatar: true, b270_avatar_uploaded: reader.avatar_uploaded? }
+                               loading: loading, data: { b270_avatar: true, b270_avatar_uploaded: reader.avatar_uploaded?,
+                                                         b270_avatar_preview_src: preview_src }
         fallback = content_tag :span, reader.initials, class: 'b270-avatar b270-avatar-fallback', 'aria-hidden': true
         safe_join([image, fallback])
       end

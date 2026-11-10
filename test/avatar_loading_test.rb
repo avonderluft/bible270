@@ -78,6 +78,26 @@ if RAILS_LOADED
       end
     end
 
+    def test_profile_and_admin_reader_avatars_preview_the_original_upload
+      skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
+
+      reader = @readers[1]
+      Bible270.config.admin_emails = [reader.email]
+      _record, token = Bible270::SignInToken.issue!(reader.email)
+      get "#{mount}/sign_in/email/#{token}"
+      %W[/profile /admin/readers/#{reader.id}].each do |path|
+        get "#{mount}#{path}"
+
+        assert_response :success
+        assert_select '.b270-avatarrow img[data-b270-avatar-preview-src]' do |images|
+          assert_equal 1, images.size
+          assert_match %r{/picture\.png\z}, images.first['data-b270-avatar-preview-src']
+          assert_match %r{/avatar\.webp\z}, images.first['src']
+        end
+        assert_includes response.body, 'window.Bible270AvatarPreview'
+      end
+    end
+
     def test_preload_scopes_still_work_without_avatar_uploads
       Bible270::Reader.stub(:avatar_uploads?, false) do
         assert_empty Bible270::Reader.with_avatar.includes_values
@@ -98,7 +118,12 @@ if RAILS_LOADED
       queries = avatar_queries { get "#{mount}#{path}" }
       assert_response :success
       assert_operator queries.size, :<=, limit, "#{path} made too many avatar queries:\n#{queries.join("\n")}"
-      assert_select 'img.b270-avatar[loading="eager"][data-b270-avatar-uploaded="true"][src$="avatar.webp"]'
+      assert_select 'img.b270-avatar[loading="eager"][data-b270-avatar-uploaded="true"][src$="avatar.webp"]' do |images|
+        images.each do |image|
+          assert_match %r{/picture\.png\z}, image['data-b270-avatar-preview-src']
+          refute_equal image['src'], image['data-b270-avatar-preview-src']
+        end
+      end
       assert_select 'img.b270-avatar[loading="lazy"], img.b270-avatar[decoding="async"]', count: 0
       assert_select '.b270-avatar-frame[role="img"]' do |frames|
         frames.each do |frame|
@@ -107,6 +132,7 @@ if RAILS_LOADED
         end
       end
       assert_includes response.body, 'window.Bible270AvatarUI'
+      assert_includes response.body, 'window.Bible270AvatarPreview'
     end
 
     def avatar_queries(&block)

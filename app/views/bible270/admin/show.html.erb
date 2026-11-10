@@ -206,8 +206,24 @@
   <p class="b270-hint" style="margin-top:0">Deletes the reader together with every check-off and
      reflection they have written. This cannot be undone.</p>
   <%= button_to "Remove #{@reader.display_name}", admin_reader_path(@reader), method: :delete,
-        class: 'b270-btn', form: { data: { turbo_confirm: "Permanently remove #{@reader.display_name}?" } } %>
+        class: 'b270-btn', form: { data: { b270_remove_reader: "Are you sure you want to remove #{@reader.display_name} from the plan? All their check-offs and reflections will be permanently deleted. This cannot be undone." } } %>
 </div>
 
 <p style="margin-top:18px"><%= link_to '← All readers', admin_path %></p>
 <%= render "bible270/shared/interaction_ui" %>
+<script nonce="<%= content_security_policy_nonce %>" data-b270-reader-removal>
+  (() => {
+    if (window.Bible270ReaderRemoval) return;
+    window.Bible270ReaderRemoval = true;
+
+    // Capture submission before Turbo handles it, including keyboard submissions.
+    document.addEventListener("submit", (event) => {
+      const form = event.target;
+      if (event.defaultPrevented || !form.matches("form[data-b270-remove-reader]")) return;
+      if (window.confirm(form.dataset.b270RemoveReader)) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+  })();
+</script>

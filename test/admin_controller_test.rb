@@ -1057,6 +1057,25 @@ if RAILS_LOADED
       Bible270.config.allow_reader_start_date = previous
     end
 
+    def test_reader_removal_form_requires_explicit_confirmation
+      @reader.update!(display_name: 'R "Reader" <example>')
+      sign_in_as_admin
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      assert_response :success
+      assert_select 'form[data-b270-remove-reader]', count: 1 do |forms|
+        form = forms.first
+        assert_equal "#{mount}/admin/readers/#{@reader.id}", form['action']
+        assert_equal 'post', form['method']
+        assert_equal "Are you sure you want to remove #{@reader.display_name} from the plan? All their check-offs and reflections will be permanently deleted. This cannot be undone.", form['data-b270-remove-reader']
+        assert_nil form['data-turbo-confirm'], 'avoid a second Turbo confirmation'
+        assert_select 'input[name="_method"][value="delete"]'
+        assert_select 'button[type="submit"]', text: "Remove #{@reader.display_name}"
+      end
+      assert_select 'script[data-b270-reader-removal]', count: 1
+      assert Bible270::Reader.exists?(@reader.id)
+    end
+
     def test_an_admin_can_remove_a_reader
       sign_in_as_admin
       id = @reader.id
