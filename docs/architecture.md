@@ -263,7 +263,7 @@ Original-language selections default to Bible.com, while also allowing Blue Lett
 
 At the bottom of Admin, **Start a new run** has an inline start-date field and button, with a native confirmation prompt. The restart described above preserves identities, photos, progress, social activity, and roles. Admins and Site-admins start fresh automatically; other alumni require reactivation. **Revert to previous run** appears as a button at the top of its panel when a saved restart exists and uses a native confirmation prompt.
 
-The bottom **Show / Hide Alumni** control is a native, initially collapsed `<details>` disclosure, like the day index. Both lists render through `admin/_reader_list.html.erb`, so disclosure needs neither JavaScript nor a reload. Alumni use the selected sort and the same status/consistency statistics, frozen at archive time. Reader Stats remains active-only. Reader details include a read-only **Past runs / history** table with frozen start/end dates, archive dates, and completion counts.
+**Show / Hide Active Readers** uses native `<details open>`, leaving sort controls and Reader Stats outside. The bottom **Show / Hide Alumni** control is initially collapsed, like the day index. Both lists render through `admin/_reader_list.html.erb`, so disclosure needs neither JavaScript nor a reload. Alumni use the selected sort and the same status/consistency statistics, frozen at archive time. Reader Stats remains active-only. Reader details include a read-only **Past runs / history** table with frozen start/end dates, archive dates, and completion counts.
 
 Authorization is separate from participation:
 
@@ -285,6 +285,18 @@ The no-JavaScript anchor has a named target and `rel="noopener"`. With JavaScrip
 - Modifier clicks remain under normal browser control.
 
 This avoids creating an unlimited series of reading tabs while preserving a secure fallback.
+
+### Bread-icon Scripture frame
+
+`lib/bible270/scripture_frames.rb` combines the safe-loaded `config/scripture_frames.yml` catalog with enabled `ScriptureFrame` database records. Admin additions supplement the defaults; they never modify YAML. An optional `scripture_frames_path` replaces only the default catalog, with bundled fallback on invalid input. Translation choices and automatic credits combine built-in metadata with the catalog. Choices follow the reader-preference order, then frame-only translations. Registered credits are resolved when displayed, so YAML corrections also reach saved texts.
+
+`ScriptureFramesController#show` serves public, uncached JSON at `/scripture-frame`, avoiding the previous selection when alternatives exist. Default texts work before the custom-text migration is installed. No external API is called.
+
+`AdminScriptureFramesController` provides custom-text CRUD at `/admin/scripture-frames`; shared admin guards reject unauthorized readers and non-admin preview sessions. Defaults are read-only. The main Admin page and Manage texts share `admin/_scripture_text.html.erb`, listing Custom texts before Defaults. Manage texts puts Add text at the top and keeps custom actions inline. Passage text appears in an escaped, bounded hover/focus tooltip; native tap/Enter expands it inline. Both states use a contrasting theme surface. Texts belong to the installation, not to a reader or run, so restarts and reader deletion leave them intact.
+
+Custom texts require a reference, translation, and pasted passage (up to 4,000 characters). The form and model reject blank text; invalid submissions preserve inputs without changing saved records. API retrieval is deferred; no external lookup runs when adding or displaying frames.
+
+The header's bread button starts a three-second fine-pointer hover timer; click, touch, Enter, and Space open immediately. `_scripture_frame_ui.html.erb` fetches text on demand and renders plaintext through `_scripture_frame.html.erb`, with theme-aware styling, dismissal, and stale-request cleanup. Custom layouts using the header must render the styles and `bible270/shared/scripture_frame_ui` once.
 
 ## 11. How mail and daily reminders work
 
@@ -338,6 +350,7 @@ Bible270 keeps its presentation self-contained under `app/views`.
 - Run/membership confirmation JavaScript: `_admin_confirmations.html.erb`, rendered by Admin index/detail templates
 - Reflection draft JavaScript: `_comment_drafts.html.erb`
 - Mention suggestion JavaScript: `_mention_typeahead.html.erb`
+- Scripture frame markup and interaction: `_scripture_frame.html.erb` and `_scripture_frame_ui.html.erb`
 - Turbo Stream templates: controller-specific `.turbo_stream.erb` files
 
 The layout uses CSP nonces for inline scripts. JavaScript enhances ordinary forms rather than replacing their server-rendered behavior. Mutation controllers keep HTML redirect fallbacks, while Turbo performs focused updates when available.
@@ -370,6 +383,8 @@ Migration `20260101000024` creates runs and participations, backfills existing r
 Migration `20260101000025` adds the reader `admin` boolean, non-null and defaulting to false. Configuration-controlled Site-admin access remains available.
 
 Migration `20260101000026` adds the JSON `restart_snapshot` and `reverted_at` timestamp to runs. It does not invent snapshots for earlier restarts.
+
+Migration `20260101000027` creates `bible270_scripture_frames` for site-wide custom passages, with an enabled flag and translation credit. Bundled defaults stay in YAML.
 
 `lib/bible270/migration_reconciler.rb` and `lib/tasks/bible270_migrations.rake` provide a preview-first repair mechanism for installations where tables exist but Rails migration metadata is incomplete.
 

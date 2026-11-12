@@ -136,6 +136,7 @@ Review the [changelog](CHANGELOG.md) before deploying and run **all current migr
 - `20260101000024` saves existing readers and progress as the first run. **This migration cannot be rolled back without losing run history.** Keep a pre-migration backup for recovery.
 - `20260101000025` enables admin roles in the panel. Configured admins become Site-admins and keep their access.
 - `20260101000026` saves restart snapshots so future new runs can be reverted.
+- `20260101000027` stores admin-added Scripture frame texts.
 
 **Schedule changes do not remap existing day-based check-offs.** Compared with 1.13.3, the current default Psalms/Proverbs assignments differ on days 112–113 and 117–270, including the closing Psalm 1 reading. Review the effect on an active group before upgrading.
 
@@ -272,6 +273,7 @@ The panel supports:
 - Mark readers as alumni, reactivate them, and view past-run history.
 - Delete unprotected readers **and all their check-offs and reflections across runs**.
 - Hide (reversibly) or delete reflections at `<mount>/admin/comments`. Posts are public immediately, without approval.
+- Review full [Scripture frame](#scripture-frame) texts near the bottom of the panel; add, edit, disable, or delete custom texts through **Manage texts**.
 - Send individually addressed email: **Write to everyone** reaches active readers; **Write to all admins** includes alumni admins. Both require an email address.
 
 To print a progress report ordered by completed days:
@@ -295,7 +297,9 @@ At the bottom of Admin, enter a start date, choose **Start a new run**, and acce
 
 Alumni can sign in, view Community's **active-reader list**, and post, reply to, and like reflections. Earlier reflections remain visible under the same moderation rules. Archived check-offs are read-only and excluded from current statistics and daily completer lists.
 
-**Show / Hide Alumni** at the bottom of Admin uses the browser's built-in expandable section, starting collapsed like **View all 270 days**. It needs no JavaScript or reload and changes no membership. It uses the selected sort and frozen reader statistics; the main list and Reader Stats show active readers only.
+**Show / Hide Active Readers** lets you collapse the current-reader list; it starts expanded. Sorting and Reader Stats stay accessible when it is collapsed.
+
+**Show / Hide Alumni** at the bottom of Admin uses the browser's built-in expandable section, starting collapsed like **View all 270 days**. It needs no JavaScript or reload and changes no membership. It uses the selected sort and frozen reader statistics; the main list and Reader Stats show active readers only. Each alumni row has a confirmed **Make Active** button that returns to Admin with the same sort.
 
 Only admins reactivate alumni; signing in or posting does not re-enroll them:
 
@@ -358,6 +362,30 @@ Preview and posts show **View video** or **View video ‘Name’**. No remote th
 **Open on YouTube** works without JavaScript or when embeds are blocked, opening a new tab with `rel="nofollow ugc noopener"`. Emails use ordinary links with the optional name. Unmarked or unsupported links stay links; start times and playlists are not retained. No API key, extra gem, or migration is needed; uploads are not supported.
 
 For a host Content Security Policy (CSP), add `https://www.youtube-nocookie.com` to existing **`frame-src`**; do not replace the policy or allow arbitrary frames. Custom layouts must render `bible270/shared/video_embeds` once.
+
+## Scripture frame
+
+Hover over the header's bread icon for **3 seconds** to open a random passage in a theme-matched frame. Tap, click, or focus the icon and press Enter/Space to open immediately. Hover previews fade when you leave; Escape, selecting the bread again, or clicking outside dismisses the frame.
+
+The [bundled YAML catalog](config/scripture_frames.yml) includes Psalm 107:20 (NKJV), Psalm 119:103 (NASB95), Psalm 119:130 (NASB95), Isaiah 55:11 (ESV), Jeremiah 15:16 (NASB95), John 6:63 (NKJV), John 17:17 (NASB95), 2 Corinthians 4:6 (NKJV), and Hebrews 4:12 (NKJV), in biblical order. Near the bottom of **Admin**, **Scripture frames** lists Custom texts before Defaults, showing each passage's reference, translation, and status. Hover or focus a heading to preview the text; select it to expand the passage. **Manage texts** uses the same compact lists, with **Add text** at the top and Edit, Disable/Enable, and Delete controls for custom texts. To add a passage, enter Reference and Translation on the top row, then paste the required Text (up to 4,000 characters). Attribution is automatic; line breaks are preserved. Use texts you have permission to reproduce.
+
+**Admin additions are stored in the database and supplement the defaults. They never change the YAML file.** Defaults are read-only in Admin; custom texts can be edited, disabled, or deleted. They are shared across runs. Adding texts requires migration `20260101000027`.
+
+**TODO:** Integrate the [YouVersion API](https://developers.youversion.com/) to retrieve Scripture text by reference and translation. Keep the app key server-side, confirm permission to store and display each translation, and preserve required attribution. For now, paste the text; no API setup is needed.
+
+Hosts can optionally replace the default catalog:
+
+```ruby
+config.scripture_frames_path = Rails.root.join('config/bible270_scripture_frames.yml')
+```
+
+Use the bundled YAML structure: a list of entries with a unique slug `id`, `reference`, `translation`, `text`, and optional `attribution`. Keep one consistent attribution per translation. Catalog translations become choices in Admin, alongside NKJV, NASB95, LSB, ESV, KJV, YLT, CSB, and NIV. Shared choices follow the reader-preference order; CSB and NIV follow them. Custom database texts still supplement the chosen catalog. Invalid or unreadable host catalogs fall back to the bundled defaults.
+
+Custom layouts that include the header must also render the shared styles and this partial once near the end of `<body>`:
+
+```erb
+<%= render "bible270/shared/scripture_frame_ui" %>
+```
 
 ## Themes
 
@@ -578,6 +606,7 @@ Mount the engine and add a CMS navigation link to use its own themed pages. To u
 | `bible270_comments` | Day/track reflections and replies, stored as plain text or safely rendered Markdown |
 | `bible270_likes` | Reader likes on comments |
 | `bible270_settings` | Current shared-date override, enrollment state, and administrative settings |
+| `bible270_scripture_frames` | Admin-added passages, translation credits, and enabled status; shared across runs |
 | `bible270_sign_in_tokens` | Email, token digest, expiry, and consumption time |
 
 A complete day requires all parts of all three tracks. Progress uses the current membership, or the latest historical one if absent; runs are never added together. Reflections, replies, and likes belong to readers and remain shared across groups. **Progress and visible reflections are public, not private journals.**
@@ -599,6 +628,7 @@ DELETE /comments/:id                  comments#destroy
 POST   /comments/:id/like             likes#toggle
 GET    /community                     readers#index
 GET    /mention-suggestions           readers#mention_suggestions (signed-in JSON)
+GET    /scripture-frame               scripture_frames#show (public JSON)
 GET    /readers/:id                    readers#show
 GET    /progress                      readers#progress
 GET    /sign_in                       sessions#new

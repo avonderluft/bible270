@@ -7,21 +7,27 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 ### Added
 
 - show full-photo previews after a 3-second avatar hover; fit photos to the screen and fade out when the pointer leaves. Touch behavior is unchanged
+- show a random, theme-matched Scripture frame after a 3-second bread-icon hover, or immediately by tap, click, or keyboard; include Psalm 107:20 (NKJV), Psalm 119:103 (NASB95), Psalm 119:130 (NASB95), Isaiah 55:11 (ESV), Jeremiah 15:16 (NASB95), John 6:63 (NKJV), John 17:17 (NASB95), 2 Corinthians 4:6 (NKJV), and Hebrews 4:12 (NKJV), with YAML defaults in biblical order
+- add a compact Scripture frames panel near the bottom of Admin with reference/translation headings and passage tooltips; database additions supplement read-only YAML defaults, with automatic translation credits
 - add **Start a new run** in Admin: give Admins and Site-admins a fresh active membership with zero progress and no personal start date, move other readers to alumni, and open enrollment; preserve accounts, photos, past progress, and discussions
 - add confirmed **Revert to previous run**: restore saved statuses for everyone, including admins, plus calendars and enrollment settings; preserve both runs' progress and discussions. Available for restarts made after upgrading
-- add Active/Alumni controls, an initially collapsed **Show / Hide Alumni** disclosure with shared sorting, and read-only run history; returning to a new run starts fresh, while same-run reactivation preserves progress
+- add Active/Alumni controls, initially expanded **Show / Hide Active Readers** and collapsed **Show / Hide Alumni** disclosures with shared sorting and per-reader **Make Active** buttons, and read-only run history; returning to a new run starts fresh, while same-run reactivation preserves progress
 - let configured Site-admins grant or remove admin access; roles persist across runs, independently of Active/Alumni status. Site-admins can change their own status, but their role is controlled by configuration
 
 ### Changed
 
+- enlarge the bread icon, give it a theme-aware background, and center the app title beside it; shrink Papyrus curls sooner on narrower screens
+- simplify Scripture frames by removing the close control; retain bread-toggle, outside-click, and Escape dismissal, without a lingering pointer-focus outline
 - alumni can still sign in, visit Community, and join discussions; their reflections remain available to later groups, while past progress stays frozen
 - exclude alumni from current-group lists, reminders, broad reflection notices, and “everyone” broadcasts; retain opted-in personal notices and “all admins” broadcasts for alumni admins
 - keep separate progress and consistency history for each run
 - speed up the full test suite with CPU-aware workers, smaller feature-focused test files, and quieter logs; retain all tests and coverage
 - compact Status, Role, and Completion animation into single-row Admin controls without explanatory text
+- place Scripture Reference and Translation first, side by side with inline labels; require pasted Text below, with API retrieval deferred
+- compact Manage texts into Custom-first and Default lists, move Add text to the top, and give tooltip and expanded passages distinct theme-aware backgrounds
 - place Admin and Profile name fields side by side with shorter inputs; order Admin settings as Theme, Email, Where they are, Role, Status, and Completion animation
 
-**Upgrade:** Back up the database, then copy and run migrations `20260101000024`–`20260101000026` from the host app. Existing readers and check-offs become the initial run. The run-history migration is intentionally irreversible.
+**Upgrade:** Back up the database, then copy and run migrations `20260101000024`–`20260101000027` from the host app. Existing readers and check-offs become the initial run. The run-history migration is intentionally irreversible.
 
 ### Fixed
 
