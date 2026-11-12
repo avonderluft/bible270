@@ -336,16 +336,13 @@ if RAILS_LOADED
 
     def test_every_run_foreign_key_is_required
       create_run_schema
-      {
-        bible270_participations: %i[reader_id plan_run_id],
-        bible270_checkoffs: %i[participation_id]
-      }.each do |table, columns|
-        columns.each do |column|
-          rollback_schema_change do
-            @connection.remove_foreign_key(table, column: column)
+      [%i[bible270_participations reader_id bible270_readers],
+       %i[bible270_participations plan_run_id bible270_plan_runs],
+       %i[bible270_checkoffs participation_id bible270_participations]].each do |table, column, target|
+        rollback_schema_change do
+          @connection.remove_foreign_key(table, target, column: column)
 
-            assert_incomplete_run_schema
-          end
+          assert_incomplete_run_schema
         end
       end
     end
@@ -355,7 +352,7 @@ if RAILS_LOADED
       [%i[bible270_participations reader_id bible270_readers],
        %i[bible270_checkoffs participation_id bible270_participations]].each do |table, column, target|
         rollback_schema_change do
-          @connection.remove_foreign_key(table, column: column)
+          @connection.remove_foreign_key(table, target, column: column)
           @connection.add_foreign_key(table, target, column: column)
 
           assert_incomplete_run_schema
