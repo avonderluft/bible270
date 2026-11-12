@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'bundler/gem_tasks' # provides build / install / release
+require 'etc'
 require 'open3'
 require 'rake/testtask'
 require 'stringio'
@@ -144,7 +145,7 @@ end
 
 Rake::Task[:build].enhance([:normalize_gem_permissions])
 
-desc 'Run tests in isolated processes (default: 2 workers)'
+desc 'Run tests in isolated processes'
 namespace :test do
   task :prepare_serial do
     FileUtils.rm_rf('coverage')
@@ -160,7 +161,7 @@ namespace :test do
   Rake::Task['test:serial'].enhance(['test:prepare_serial'])
 
   task :parallel do
-    workers = ENV.fetch('PARALLEL_WORKERS', '6')
+    workers = ENV.fetch('PARALLEL_WORKERS') { Etc.nprocessors.clamp(1, 8).to_s }
     FileUtils.rm_rf('coverage')
     env = {
       'PARALLEL_COVERAGE' => 'true',

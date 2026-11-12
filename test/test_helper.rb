@@ -63,7 +63,7 @@ dummy_root = File.expand_path('dummy', __dir__)
 
 FileUtils.mkdir_p File.join(dummy_root, 'log')
 
-FileUtils.rm_f File.join(dummy_root, 'log', 'test.log')
+FileUtils.rm_f File.join(dummy_root, 'log', "test-#{Process.pid}.log")
 
 # ---- the dummy application ------------------------------------------------
 #

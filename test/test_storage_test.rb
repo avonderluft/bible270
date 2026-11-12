@@ -5,6 +5,20 @@ require 'open3'
 require 'rbconfig'
 
 class TestStorageTest < Minitest::Test
+  def test_environment_caches_templates_without_reloading_application_classes
+    needs_rails!
+
+    refute Rails.application.config.reloading_enabled?
+    assert ActionView::Resolver.caching?
+  end
+
+  def test_diagnostic_log_level_respects_the_environment_override
+    needs_rails!
+
+    expected = Logger::Severity.const_get(ENV.fetch('TEST_LOG_LEVEL', 'warn').upcase)
+    assert_equal expected, Rails.logger.level
+  end
+
   def test_active_storage_uses_this_processes_temporary_directory
     needs_rails!
 

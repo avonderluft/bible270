@@ -8,6 +8,10 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 - preview full photos after hovering over an avatar for 3 seconds; fit originals within the screen and fade out when the pointer leaves, without changing touch behavior
 
+### Changed
+
+- speed up the full test suite with CPU-aware workers, smaller feature-focused test files, and quieter logs; retain all tests and coverage
+
 ### Fixed
 
 - always confirm reader removal before deleting their check-offs and reflections, even when Turbo is unavailable
