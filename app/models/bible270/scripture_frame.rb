@@ -14,13 +14,15 @@ module Bible270
     validates :text, presence: true, length: { maximum: 4000 }
     validates :translation, presence: true, length: { maximum: 40 }
     validates :translation, inclusion: {
-      in: ->(_frame) { ScriptureFrames.translations },
+      in: ->(_frame) { ScriptureFrames.translations + [ScriptureFrames::OTHER_QUOTATION] },
       message: 'is unsupported; add translation and attribution to YAML'
     }, allow_blank: true, unless: :disabling_only?
     validates :attribution, length: { maximum: 500 }, allow_nil: true
     validates :enabled, inclusion: { in: [true, false] }
 
     def attribution
+      return nil if ScriptureFrames.quotation?(translation)
+
       # A registered nil credit is authoritative; only retired translations use stored credit.
       ScriptureFrames.translation_attributions.fetch(translation.to_s.strip.upcase) { super }
     end

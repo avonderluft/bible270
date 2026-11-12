@@ -177,6 +177,26 @@ function assertOpen(h, open = true) {
   assert.equal(h.popup.classList.contains('is-visible'), open);
 }
 
+test('other quotations omit translation and Bible credits, then restore them for Scripture', async () => {
+  const h = setup();
+  h.click();
+  await h.reply(0, { id: 'custom:1', reference: 'An author', text: '<b>A quotation.</b>', translation: 'OTHER', attribution: 'Stale credit.' });
+  assertOpen(h);
+  assert.equal(h.fields.reference.textContent, 'An author');
+  assert.equal(h.fields.text.textContent, '<b>A quotation.</b>');
+  for (const key of ['translation', 'attribution']) {
+    assert.equal(h.fields[key].hidden, true);
+    assert.equal(h.fields[key].textContent, '');
+  }
+  h.click();
+  h.click();
+  await h.reply(1, { ...frame, attribution: 'NASB 1995 © The Lockman Foundation.' });
+  assert.equal(h.fields.translation.hidden, false);
+  assert.equal(h.fields.translation.textContent, 'NASB95');
+  assert.equal(h.fields.attribution.hidden, false);
+  assert.equal(h.fields.attribution.textContent, 'NASB 1995 © The Lockman Foundation.');
+});
+
 test('nested SVG hover waits exactly 3000ms, preserves intent across descendants, and never steals focus', async () => {
   const h = setup();
   h.outside.focus();

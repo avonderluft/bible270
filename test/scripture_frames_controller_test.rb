@@ -74,6 +74,23 @@ if RAILS_LOADED
       assert_equal %w[attribution id reference text translation], response.parsed_body.keys.sort
     end
 
+    def test_other_quotations_are_public_without_bible_credit_and_can_be_disabled
+      empty_defaults
+      quote = Bible270::ScriptureFrame.create!(reference: '<b>An author</b>', translation: 'OTHER', text: 'A quotation.')
+      quote.update_column(:attribution, 'Stale Bible credit.')
+      get endpoint, as: :json
+
+      assert_response :success
+      assert_equal "custom:#{quote.id}", response.parsed_body['id']
+      assert_equal quote.reference, response.parsed_body['reference']
+      assert_equal 'OTHER', response.parsed_body['translation']
+      assert_nil response.parsed_body['attribution']
+      refute_includes response.body, '<b>'
+      quote.update!(enabled: false)
+      get endpoint, as: :json
+      assert_response :no_content
+    end
+
     def test_public_custom_credit_tracks_yaml_corrections_and_explicit_nil_without_resaving
       path = File.join(@directory, 'frames.yml')
       row = { 'id' => 'host-example', 'reference' => 'Host example', 'translation' => 'HOST',

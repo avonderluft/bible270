@@ -6,6 +6,7 @@ require 'bible270/translations'
 module Bible270
   module ScriptureFrames
     Entry = Struct.new(:id, :reference, :translation, :text, :attribution, keyword_init: true)
+    OTHER_QUOTATION = 'OTHER'
     BUNDLED_PATH = File.expand_path('../../config/scripture_frames.yml', __dir__)
     LIMITS = { 'reference' => 200, 'translation' => 40, 'text' => 4000, 'attribution' => 500 }.freeze
     DISABLED_DEFAULT_PREFIX = 'scripture-frame-disabled:'
@@ -51,7 +52,17 @@ module Bible270
       ordered + (available - ordered).sort
     end
 
+    def translation_options
+      translations.map { |code| [code, code] } + [['Other quotation', OTHER_QUOTATION]]
+    end
+
+    def quotation?(code)
+      code.to_s.strip.upcase == OTHER_QUOTATION
+    end
+
     def attribution_for(code)
+      return nil if quotation?(code)
+
       translation_attributions[code.to_s.strip.upcase]
     end
 

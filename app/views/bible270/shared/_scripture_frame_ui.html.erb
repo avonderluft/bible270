@@ -110,8 +110,9 @@
           }
           ["reference", "text", "translation", "attribution"].forEach((key) => {
             const field = state.art.querySelector(`[data-b270-scripture-${key}]`);
-            field.textContent = frame[key] || "";
-            if (key === "attribution") field.hidden = !frame[key]?.trim();
+            const omit = frame.translation === "OTHER" && (key === "translation" || key === "attribution");
+            field.textContent = omit ? "" : (frame[key] || "");
+            if (key === "translation" || key === "attribution") field.hidden = omit || !frame[key]?.trim();
           });
           previousID = frame.id == null ? null : String(frame.id);
           state.art.hidden = false;

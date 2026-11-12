@@ -259,7 +259,7 @@ if RAILS_LOADED
         assert_select '.b270-select-wrap select.b270-select[name="scripture_frame[translation]"][required]' do
           assert_select 'option[selected][value="NASB95"]'
           assert_select 'option:not([value=""])' do |options|
-            assert_equal %w[NKJV NASB95 LSB ESV KJV YLT CSB NIV], options.map { |option| option['value'] }.to_a
+            assert_equal %w[NKJV NASB95 LSB ESV KJV YLT CSB NIV OTHER], options.map { |option| option['value'] }.to_a
           end
         end
         assert_select 'label[for="scripture_frame_translation"]'
@@ -275,7 +275,7 @@ if RAILS_LOADED
         end
         assert_select '.b270-scripture-fields + .b270-field textarea[name="scripture_frame[text]"]'
       end
-      assert_select '#b270-scripture-frame-rights', text: 'Attribution is added automatically from the translation. Use text you have permission to reproduce.'
+      assert_select '#b270-scripture-frame-rights', text: 'Bible translation credits are added automatically. For other quotations, name the author or source. Use text you have permission to reproduce.'
       assert_select '#b270-scripture-frame-credit', text: "Attribution: #{Bible270::ScriptureFrames.attribution_for('NASB95')}"
     end
 
@@ -292,7 +292,7 @@ if RAILS_LOADED
           assert_select 'select[name="scripture_frame[translation]"]' do
             assert_select 'option[value=""]', count: 1
             assert_select 'option:not([value=""])' do |options|
-              assert_equal codes, options.map { |option| option['value'] }.to_a
+              assert_equal codes + ['OTHER'], options.map { |option| option['value'] }.to_a
             end
           end
           selected = path.end_with?('/new') ? 'NASB95' : 'NKJV'
@@ -317,10 +317,43 @@ if RAILS_LOADED
         assert_select 'option:first-child[value=""]', count: 1
         assert_select 'option[selected]:not([value=""])', count: 0
         assert_select 'option:not([value=""])' do |options|
-          assert_equal codes, options.map { |option| option['value'] }.to_a
+          assert_equal codes + ['OTHER'], options.map { |option| option['value'] }.to_a
         end
       end
       assert_equal 'NASB95', @frame.reload.translation
+    end
+
+    def test_other_quotation_can_be_created_edited_toggled_and_deleted_without_bible_credits
+      sign_in_as(@admin)
+      post frames_path, params: { scripture_frame: { reference: 'An author, A book', translation: 'OTHER',
+                                                     text: 'A quotation.', attribution: 'Forged Bible credit.', enabled: '1' } }
+      assert_library_redirect('first_name')
+      quote = Bible270::ScriptureFrame.order(:id).last
+      assert_equal 'OTHER', quote.translation
+      assert_nil quote.attribution
+
+      get "#{frame_path(quote)}/edit"
+      assert_select 'label[for="scripture_frame_reference"]', text: 'Author / source'
+      assert_select 'option[value="OTHER"][selected]', text: 'Other quotation'
+      assert_select '#b270-scripture-frame-credit[hidden]', text: ''
+      assert_select 'script[data-b270-scripture-form-ui]', count: 1
+
+      patch frame_path(quote), params: { scripture_frame: { text: '' } }
+      assert_response :unprocessable_entity
+      assert_select 'label[for="scripture_frame_reference"]', text: 'Author / source'
+      assert_select 'option[value="OTHER"][selected]'
+      assert_equal 'A quotation.', quote.reload.text
+
+      get admin_path
+      assert_select "article[aria-label='Custom text: An author, A book'] summary", text: 'An author, A book · Other quotation · Custom'
+      patch frame_path(quote), params: { scripture_frame: { enabled: '0' } }
+      refute quote.reload.enabled?
+      patch frame_path(quote), params: { scripture_frame: { enabled: '1' } }
+      assert quote.reload.enabled?
+      patch frame_path(quote), params: { scripture_frame: { translation: 'ESV', reference: 'John 1:1' } }
+      assert_equal 'ESV © 2001 Crossway.', quote.reload.attribution
+      delete frame_path(quote)
+      refute Bible270::ScriptureFrame.exists?(quote.id)
     end
 
     def test_invalid_create_displays_errors_and_retains_submitted_values_with_422

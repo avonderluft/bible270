@@ -57,6 +57,29 @@ if RAILS_LOADED
       assert_equal 'NKJV © 1982 Thomas Nelson.', record.attribution
     end
 
+    def test_other_quotation_requires_source_and_text_and_never_carries_bible_credit
+      record = frame(reference: 'An author, A book', translation: ' other ', attribution: 'Forged credit.')
+      record.save!
+
+      assert_equal 'OTHER', record.reload.translation
+      assert_nil record.attribution
+      assert_nil record[:attribution]
+      record.update_column(:attribution, 'Stale Bible credit.')
+      assert_nil record.reload.attribution
+      assert_nil record.as_json.fetch('attribution')
+      %i[reference text].each do |attribute|
+        record.public_send("#{attribute}=", '')
+        refute record.valid?
+        assert record.errors.of_kind?(attribute, :blank)
+        record.reload
+      end
+
+      record.update!(translation: 'NASB95')
+      assert_equal 'NASB 1995 © The Lockman Foundation.', record.reload.attribution
+      record.update!(translation: 'OTHER')
+      assert_nil record.reload[:attribution]
+    end
+
     def test_changing_translation_replaces_stale_credit
       record = frame
       record.save!
@@ -174,7 +197,7 @@ if RAILS_LOADED
       assert created.errors.of_kind?(:translation, :inclusion)
 
       before = record.attributes
-      refute record.update(enabled: false, translation: 'OTHER')
+      refute record.update(enabled: false, translation: 'UNREGISTERED')
       assert record.errors.of_kind?(:translation, :inclusion)
       assert_equal before, record.reload.attributes
 

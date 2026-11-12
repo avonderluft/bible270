@@ -133,6 +133,25 @@ if RAILS_LOADED
       end
     end
 
+    def test_other_quotation_is_an_extra_form_option_not_a_bible_translation
+      assert_equal CATALOG.translations.map { |code| [code, code] } + [['Other quotation', 'OTHER']], CATALOG.translation_options
+      refute_includes CATALOG.translations, 'OTHER'
+      assert CATALOG.quotation?(' other ')
+      refute CATALOG.quotation?('NASB95')
+      assert_nil CATALOG.attribution_for('OTHER')
+    end
+
+    def test_enabled_other_quotations_join_the_random_pool_without_bible_credits
+      use_host("[]\n")
+      quote = Bible270::ScriptureFrame.create!(reference: 'An author', text: 'A quotation.', translation: 'OTHER')
+      selected = CATALOG.random
+      assert_equal "custom:#{quote.id}", selected.id
+      assert_equal 'An author', selected.reference
+      assert_nil selected.attribution
+      quote.update!(enabled: false)
+      assert_nil CATALOG.random
+    end
+
     def test_translation_registry_combines_bundled_and_host_metadata_without_restoring_default_frames
       use_host(YAML.dump([
         host_row(translation: ' host ', attribution: 'Host sample credit.'),

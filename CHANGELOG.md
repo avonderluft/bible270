@@ -9,6 +9,7 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - show full-photo previews after a 3-second avatar hover; fit photos to the screen and fade out when the pointer leaves. Touch behavior is unchanged
 - show random, theme-matched Scripture frames on a 3-second bread-icon hover or immediately by tap, click, or keyboard
 - add a compact Scripture frames panel near the bottom of Admin with reference/translation headings and passage tooltips; database additions supplement YAML defaults, with automatic translation credits
+- support non-Scripture custom texts with an **Other quotation** option and **Author / source** field; omit Bible translation credits and include enabled quotes in bread-icon and completion frames
 - add right-aligned Enable/Disable buttons for default Scripture texts in Admin; all start enabled, with choices saved across runs and applied to bread-icon and completion frames without changing YAML
 - add **Start a new run** in Admin: give Admins and Site-admins a fresh active membership with zero progress and no personal start date, move other readers to alumni, and open enrollment; preserve accounts, photos, past progress, and discussions
 - add confirmed **Revert to previous run**: restore saved statuses for everyone, including admins, plus calendars and enrollment settings; preserve both runs' progress and discussions. Available for restarts made after upgrading
@@ -18,7 +19,6 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 ### Changed
 
 - on a day's final check-off, fade in a random Scripture frame over 1.3 seconds, hold for 5.5 seconds, play a 1.4-second dove flight unless disabled, and fade the continuously moving dove and frame together over the flight's final 0.4 seconds without a final freeze or extra delay; retain a static frame for reduced-motion users
-
 - enlarge the bread icon, give it a theme-aware background, and center the app title beside it; shrink Papyrus curls sooner on narrower screens
 - simplify Scripture frames by removing the close control; retain bread-toggle, outside-click, and Escape dismissal, without a lingering pointer-focus outline
 - alumni can still sign in, visit Community, and join discussions; their reflections remain available to later groups, while past progress stays frozen
@@ -27,7 +27,7 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - speed up the full test suite with CPU-aware workers, smaller feature-focused test files, and quieter logs; retain all tests and coverage
 - compact Status, Role, and Completion animation into single-row Admin controls; replace the completion checkbox and Save with one Enable/Disable button, and align Move and Set date forms on one row
 - place Scripture Reference and Translation first, side by side with inline labels; require pasted Text below, with API retrieval deferred
-- consolidate Scripture management on the main Admin page with custom texts before defaults; retain Custom/Default on each row without group headings, place Add text beside Scripture frames, and keep inline Edit/Enable/Disable/Delete controls; remove redundant hints and redirect the old Manage texts page to this panel
+- consolidate Scripture management on the main Admin page with custom passages first, followed by custom quotations and defaults; retain Custom/Default on each row without group headings, place Add text beside Scripture frames, and keep inline Edit/Enable/Disable/Delete controls; remove redundant hints and redirect the old Manage texts page to this panel
 - place Admin and Profile name fields side by side with shorter inputs; order Admin settings as Theme, Email, Where they are, Role, Status, and Completion animation
 
 **Upgrade:** Back up the database, then copy and run migrations `20260101000024`–`20260101000027` from the host app. Existing readers and check-offs become the initial run. The run-history migration is intentionally irreversible.

@@ -339,6 +339,31 @@ if RAILS_LOADED
       assert_includes Bible270::ScriptureFrames.disabled_default_ids, other.id
     end
 
+    def test_completion_can_show_a_quotation_without_translation_or_bible_credit
+      needs_chapter_parts!
+      quote = Bible270::ScriptureFrame.create!(reference: 'An <author>', translation: 'OTHER', text: "A quotation.\n<script>Plain text</script>")
+      quote.update_column(:attribution, 'Stale Bible credit.')
+      sign_in_as(@reader)
+      @reader.mark_day_complete!(1)
+      @reader.checkoffs.find_by!(day: 1, track: 'nt', part: 0).destroy!
+
+      Bible270::ScriptureFrames.stub(:defaults, []) do
+        post "#{mount}/day/1/toggle/nt/0", params: { checked: '1' }, headers: { 'Accept' => 'text/vnd.turbo-stream.html' }
+      end
+
+      assert_response :success
+      assert_select '[data-b270-completion-frame]' do
+        assert_select '[data-b270-scripture-reference]', text: quote.reference
+        assert_select '[data-b270-scripture-text]' do |texts|
+          assert_equal quote.text, texts.first.text
+          assert_empty texts.first.element_children
+        end
+        assert_select '[data-b270-scripture-translation][hidden]', text: ''
+        assert_select '[data-b270-scripture-attribution][hidden]', text: ''
+        assert_select 'author', count: 0
+      end
+    end
+
     def test_admin_changes_filter_public_random_frames_and_day_completion_without_hiding_previews
       needs_chapter_parts!
       sign_in_as(@admin)
