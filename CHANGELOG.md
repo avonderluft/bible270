@@ -28,6 +28,7 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - always confirm reader removal before deleting their check-offs and reflections, even when Turbo is unavailable
 - give Admin, Site-admin, and Alumni labels matching compact, theme-colored badges; center uppercase text without font-dependent offsets
 - shorten theme and upload hints on Admin and Profile; keep the System hint on one line
+- resolve the day grid’s calendar once per render instead of repeating hundreds of setting lookups
 
 ## [1.15.1] - 2026-11-06
 

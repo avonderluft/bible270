@@ -11,6 +11,8 @@ if RAILS_LOADED
       clear_engine_tables!
       @previous_from = Bible270.config.mailer_from
       @previous_time_zone = Bible270.config.time_zone
+      @previous_start_date = Bible270.config.start_date
+      @previous_allow_reader_start_date = Bible270.config.allow_reader_start_date
       @previous_footer = {
         footer: Bible270.config.footer,
         html: Bible270.config.footer_html,
@@ -25,6 +27,8 @@ if RAILS_LOADED
     def teardown
       Bible270.config.mailer_from = @previous_from
       Bible270.config.time_zone = @previous_time_zone
+      Bible270.config.start_date = @previous_start_date
+      Bible270.config.allow_reader_start_date = @previous_allow_reader_start_date
       Bible270.config.favicon = nil
       Bible270.config.footer = @previous_footer[:footer]
       Bible270.config.footer_html = @previous_footer[:html]
@@ -352,6 +356,69 @@ if RAILS_LOADED
 
       @reader.mark_day_complete!(1)
       assert_equal 'complete', b270_day_status_class(@reader.reload_progress, 1)
+    end
+
+    def test_direct_day_helpers_resolve_live_configuration_on_every_call
+      Bible270.config.allow_reader_start_date = false
+
+      [nil, Date.new(2020, 1, 1), Date.new(2021, 2, 1), nil].each do |start_date|
+        Bible270.config.start_date = start_date
+        parts = ['Day 2']
+        parts << (start_date + 1).strftime('%A, %B %-d, %Y') if start_date
+        parts << 'not read'
+        parts << b270_day_readings(2)
+        expected = parts.join('. ')
+
+        assert_equal expected, b270_day_cell_label(2, reader: @reader)
+        cell = Nokogiri::HTML.fragment(b270_day_cell(2, reader: @reader)).at_css('a')
+        assert_equal expected, cell['aria-label']
+      end
+    end
+
+    def test_day_helpers_without_a_reader_keep_the_undated_visitor_label
+      Bible270.config.start_date = Date.new(2020, 1, 1)
+      expected = "Day 2. #{b270_day_readings(2)}"
+
+      assert_equal expected, b270_day_cell_label(2)
+      cell = Nokogiri::HTML.fragment(b270_day_cell(2)).at_css('a')
+      assert_equal expected, cell['aria-label']
+    end
+
+    def test_explicit_start_dates_including_nil_do_not_resolve_the_reader_calendar
+      @reader.stub(:effective_start_date, -> { flunk 'an explicit grid date must not resolve the calendar again' }) do
+        [Date.new(2020, 1, 1), nil].each do |start_date|
+          parts = ['Day 2']
+          parts << (start_date + 1).strftime('%A, %B %-d, %Y') if start_date
+          parts << 'not read'
+          parts << b270_day_readings(2)
+          expected = parts.join('. ')
+
+          assert_equal expected, b270_day_cell_label(2, reader: @reader, start_date: start_date)
+          cell = Nokogiri::HTML.fragment(b270_day_cell(2, reader: @reader, start_date: start_date)).at_css('a')
+          assert_equal expected, cell['aria-label']
+        end
+      end
+    end
+
+    def test_day_index_resolves_one_calendar_snapshot_per_render_even_when_undated
+      view.extend(Bible270::PlanHelper)
+      view.define_singleton_method(:signed_in?) { false }
+      view.define_singleton_method(:day_path) { |day| Bible270::Engine.routes.url_helpers.day_path(day) }
+
+      [Date.new(2020, 1, 1), nil].each do |start_date|
+        resolutions = 0
+        resolver = -> do
+          resolutions += 1
+          start_date
+        end
+        @reader.stub(:effective_start_date, resolver) do
+          grid = Nokogiri::HTML.fragment(render('bible270/shared/day_index', reader: @reader))
+
+          assert_equal 1, resolutions
+          assert_equal 270, grid.css('a.b270-cell').size
+          assert_equal((1..270).map { |day| day_path(day) }, grid.css('a.b270-cell').map { |cell| cell['href'] })
+        end
+      end
     end
 
     def test_the_footer_can_be_replaced_or_removed

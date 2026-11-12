@@ -225,16 +225,16 @@ module Bible270
     #
     # The title attribute carries the readings for pointer users; aria-label also
     # includes date, progress, today, and reflection state for assistive technology.
-    def b270_day_cell(day, reader: nil, today: nil)
+    def b270_day_cell(day, reader: nil, today: nil, start_date: reader&.effective_start_date)
       link_to day, day_path(day),
               class: b270_day_cell_classes(day, reader: reader, today: today),
               title: b270_day_readings(day),
-              aria: { label: b270_day_cell_label(day, reader: reader, today: today) }
+              aria: { label: b270_day_cell_label(day, reader: reader, today: today, start_date: start_date) }
     end
 
-    def b270_day_cell_label(day, reader: nil, today: nil)
+    def b270_day_cell_label(day, reader: nil, today: nil, start_date: reader&.effective_start_date)
       parts = ["Day #{day}"]
-      parts << reader.date_for_day(day).strftime('%A, %B %-d, %Y') if reader&.dated?
+      parts << Plan.date_for(day, start_date).strftime('%A, %B %-d, %Y') if start_date
       if reader
         status = { complete: 'complete', partial: 'partially read', none: 'not read' }.fetch(reader.day_status(day))
         parts << status
