@@ -4,6 +4,40 @@ require_relative 'support/admin_controller_test_case'
 
 if RAILS_LOADED
   class AdminProfileAvatarTest < Bible270AdminControllerTestCase
+    def test_admin_name_fields_share_a_short_two_column_row
+      sign_in_as_admin
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      assert_select "form[action='#{mount}/admin/readers/#{@reader.id}/profile'][enctype='multipart/form-data']" do
+        assert_select '.b270-name-fields' do
+          assert_select 'label.b270-field', count: 2
+          assert_select 'label.b270-field > span', text: 'First name'
+          assert_select 'label.b270-field > input[name="first_name"][size="16"][value="R"]'
+          assert_select 'label.b270-field > span', text: 'Last name'
+          assert_select 'label.b270-field > input[name="last_name"][size="16"][value="Reader"]'
+        end
+        assert_select 'input[type="submit"][value="Save"]'
+      end
+    end
+
+    def test_short_avatar_hints_keep_configured_limits_on_admin_and_profile
+      previous = Bible270.config.avatar_max_bytes
+      skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
+
+      Bible270.config.avatar_max_bytes = 3 * 1024 * 1024
+      sign_in_as_admin
+      ["#{mount}/admin/readers/#{@reader.id}", "#{mount}/profile"].each do |path|
+        get path
+
+        assert_response :success
+        assert_select '.b270-avatar-hint', count: 1 do |hints|
+          assert_equal 'PNG/JPEG/GIF/WebP · max 3MB, 40MP. Center-cropped square; animations use first frame.', hints.first.text.squish
+        end
+      end
+    ensure
+      Bible270.config.avatar_max_bytes = previous
+    end
+
     def test_admin_picture_removal_is_next_to_upload_controls_with_a_separate_form
       skip 'Active Storage unavailable' unless Bible270::Reader.avatar_uploads?
 

@@ -22,9 +22,9 @@
           <label class="b270-field">
             <span>Picture</span>
             <%= file_field_tag :avatar, accept: Bible270::Avatars.content_types.join(',') %>
-            <span class="b270-hint" style="margin:0">
-              PNG, JPEG, GIF or WebP, up to <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %> and <%= Bible270::AvatarOptimizer::MAX_PIXELS / 1_000_000 %> megapixels.
-              Automatically center-cropped to a square. Animated pictures use the first frame.
+            <span class="b270-hint b270-avatar-hint" style="margin:0">
+              PNG/JPEG/GIF/WebP · max <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %>, <%= Bible270::AvatarOptimizer::MAX_PIXELS / 1_000_000 %>MP.
+              Center-cropped square; animations use first frame.
             </span>
           </label>
           <% if @reader.avatar_uploaded? %>
@@ -35,14 +35,16 @@
       <% end %>
     </div>
 
-    <label class="b270-field">
-      <span>First name</span>
-      <%= text_field_tag :first_name, @reader.suggested_names[:first_name] %>
-    </label>
-    <label class="b270-field">
-      <span>Last name</span>
-      <%= text_field_tag :last_name, @reader.suggested_names[:last_name] %>
-    </label>
+    <div class="b270-name-fields">
+      <label class="b270-field">
+        <span>First name</span>
+        <%= text_field_tag :first_name, @reader.suggested_names[:first_name], size: 16 %>
+      </label>
+      <label class="b270-field">
+        <span>Last name</span>
+        <%= text_field_tag :last_name, @reader.suggested_names[:last_name], size: 16 %>
+      </label>
+    </div>
     <%= submit_tag 'Save', class: 'b270-btn' %>
   <% end %>
 
@@ -91,8 +93,8 @@
               data: { b270_theme_url: admin_reader_theme_path(@reader), b270_theme_apply: @reader == current_reader,
                       b270_saved_theme: @reader.effective_display_mode } %>
       </span>
-      <p id="b270-theme-hint" class="b270-hint" style="margin:0">
-        System follows the reader's device setting: Papyrus for light, Cedar for dark.
+      <p id="b270-theme-hint" class="b270-hint b270-theme-hint" style="margin:0">
+        System: Papyrus (light), Cedar (dark).
       </p>
       <p id="b270-theme-status" class="b270-hint" role="status" aria-live="polite" style="margin:0"></p>
       <%= submit_tag "Save", class: "b270-btn", data: { b270_theme_fallback: true } %>

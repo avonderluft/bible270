@@ -41,6 +41,27 @@ if RAILS_LOADED
       assert_select "a[href='#{mount}/progress']", text: '← Back to your progress'
     end
 
+    def test_profile_uses_the_shared_compact_name_row_and_keeps_theme_before_email_settings
+      sign_in_as(@reader)
+      get "#{mount}/profile"
+
+      assert_response :success
+      assert_select "form[action='#{mount}/profile'][enctype='multipart/form-data']" do |forms|
+        assert_select '.b270-name-fields' do
+          assert_select 'label.b270-field', count: 2
+          assert_select 'label > span', text: 'First name'
+          assert_select 'label > input[name="first_name"][size="16"][required][autocomplete="given-name"][value="R"]'
+          assert_select 'label > span', text: 'Last name'
+          assert_select 'label > input[name="last_name"][size="16"][required][autocomplete="family-name"][value="Reader"]'
+        end
+        assert_select 'input[type="submit"][value="Save"]'
+        controls = forms.first.css('input[name="first_name"], input[name="last_name"], select[name="bible_version"], select[name="display_mode"], fieldset.b270-notification-field')
+        control_names = controls.map { |control| control.name == 'fieldset' ? 'comment_notifications' : control['name'] }
+        assert_equal %w[first_name last_name bible_version display_mode comment_notifications], control_names
+      end
+      assert_select '#b270-role, #b270-participation, #b270-completion-animation', count: 0
+    end
+
     def test_the_profile_page_expands_the_day_index
       sign_in_as(@reader)
 
@@ -101,6 +122,10 @@ if RAILS_LOADED
       assert_equal 'none', @reader.comment_notification_level,
                    'notification preference should not change on an invalid form'
       assert_select 'input[name="comment_notifications"][value="all"][checked="checked"]'
+      assert_select '.b270-name-fields' do
+        assert_select 'input[name="first_name"][value="Andrew"][required]'
+        assert_select 'input[name="last_name"][value=""][required]'
+      end
     end
 
     def test_a_translation_can_be_chosen

@@ -53,7 +53,7 @@ if RAILS_LOADED
         assert_select 'input[type="submit"][value="Save"][data-b270-theme-fallback="true"]'
         assert_select "select[data-b270-theme-url='#{mount}/admin/readers/#{@reader.id}/theme'][data-b270-theme-apply='false']"
         assert_select '#b270-theme-status[role="status"]'
-        assert_select '#b270-theme-hint', text: "System follows the reader's device setting: Papyrus for light, Cedar for dark."
+        assert_select '#b270-theme-hint.b270-theme-hint', text: 'System: Papyrus (light), Cedar (dark).'
       end
       assert_select 'body[data-display-mode="system"]'
     end

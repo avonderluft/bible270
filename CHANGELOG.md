@@ -10,10 +10,12 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Changed
 
+- place Admin and Profile name fields side by side with shorter inputs
 - speed up the full test suite with CPU-aware workers, smaller feature-focused test files, and quieter logs; retain all tests and coverage
 
 ### Fixed
 
+- shorten theme and upload hints on Admin and Profile; keep the System hint on one line
 - always confirm reader removal before deleting their check-offs and reflections, even when Turbo is unavailable
 
 ## [1.15.1] - 2026-11-06

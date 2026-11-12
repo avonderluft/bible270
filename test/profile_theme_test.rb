@@ -15,7 +15,7 @@ if RAILS_LOADED
       assert_select 'label.b270-field > span', text: 'Theme'
       assert_select "select[data-b270-theme-url='#{mount}/profile/theme'][data-b270-theme-apply='true']"
       assert_select '#b270-theme-status[role="status"]'
-      assert_select '#b270-display-hint', text: "System follows your device's setting: Papyrus for light, Cedar for dark."
+      assert_select '#b270-display-hint.b270-theme-hint', text: 'System: Papyrus (light), Cedar (dark).'
       assert_select 'select#display_mode' do
         assert_select 'option', count: 7 do |options|
           choices = options.map { |option| [option.text, option['value']] }
