@@ -67,6 +67,12 @@ Bible270.configure do |config|
   # --- Reading links ---------------------------------------------------------
   config.bible_version = "NKJV"
 
+  # --- Scripture frames ------------------------------------------------------
+  # Optional replacement for the bundled bread-icon texts. Admin additions always
+  # supplement this catalog and are stored in the database, never written to YAML.
+  # config.scripture_frames_path = Rails.root.join('config/bible270_scripture_frames.yml')
+  # Admin additions require a reference, translation, and pasted passage text.
+
   # --- Custom chapter breaks -------------------------------------------------
   # config.chapter_breaks = { 'Psalm 78' => [20, 39, 55] }
   #

@@ -36,6 +36,8 @@ module Bible270
       'CreateBible270PlanRuns' => :check_plan_runs,
       'AddAdminToBible270Readers' => :check_admin,
       'AddRevertToBible270PlanRuns' => :check_run_revert,
+      'CreateBible270ScriptureFrames' => :check_scripture_frames,
+
       'CreateActiveStorageTables' => :check_active_storage
     }.freeze
 
@@ -283,6 +285,16 @@ module Bible270
     def check_run_revert
       table_missing(:bible270_plan_runs, columns: %i[restart_snapshot reverted_at]) +
         missing_column_definitions(:bible270_plan_runs, restart_snapshot: { type: :json }, reverted_at: { type: :datetime })
+    end
+
+    def check_scripture_frames
+      table_missing(:bible270_scripture_frames,
+                    columns: %i[id reference text translation attribution enabled created_at updated_at],
+                    indexes: [{ columns: %i[enabled] }]) +
+        missing_column_definitions(:bible270_scripture_frames,
+                                   reference: { null: false }, text: { type: :text, null: false },
+                                   translation: { null: false, default: 'NASB95' },
+                                   enabled: { type: :boolean, null: false, default: true })
     end
 
     def check_admin

@@ -3,6 +3,7 @@
 # Rails routes are intentionally kept in one cohesive DSL block.
 Bible270::Engine.routes.draw do
   root to: 'days#index'
+  get 'scripture-frame', to: 'scripture_frames#show', as: :scripture_frame, defaults: { format: 'json' }
 
   get 'day/:day', to: 'days#show', as: :day, constraints: { day: %r{\d+} }
 
@@ -19,6 +20,7 @@ Bible270::Engine.routes.draw do
   delete 'comments/:id',           to: 'comments#destroy', as: :comment
 
   # Admin panel — configured site-admins and readers granted admin access.
+  resources :admin_scripture_frames, path: 'admin/scripture-frames', only: %i[index new create edit update destroy]
   get    'admin',                        to: 'admin#index',            as: :admin
   patch  'admin/view',                   to: 'admin#update_view',      as: :admin_view
   get    'admin/readers/:id',            to: 'admin#show',             as: :admin_reader

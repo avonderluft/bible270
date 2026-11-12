@@ -121,6 +121,18 @@ module Bible270
       b270_admin? && !b270_reader_view?
     end
 
+    def require_admin!
+      return if b270_admin?
+
+      raise ActionController::RoutingError, 'Not Found'
+    end
+
+    def require_admin_view!
+      return if b270_admin_view?
+
+      raise ActionController::RoutingError, 'Not Found'
+    end
+
     # A suspended mobile tab can outlive its Rails session cookie. The page still
     # contains the old session's CSRF token, so Rails would normally raise before
     # current_reader could restore the session from the remember cookie. Redirect

@@ -1,0 +1,4 @@
+<details class="b270-scripture-library-disclosure">
+  <summary aria-describedby="<%= text_id %>"><strong><%= frame.reference %></strong> · <%= frame.translation %> · <%= source %><% if source == 'Custom' && !frame.enabled? %> · Disabled<% end %></summary>
+  <blockquote class="b270-scripture-library-text" id="<%= text_id %>" role="tooltip" tabindex="0"><%= frame.text %></blockquote>
+</details>

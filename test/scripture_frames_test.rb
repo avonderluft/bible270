@@ -1,0 +1,299 @@
+# frozen_string_literal: true
+
+require 'test_helper'
+require 'bible270/scripture_frames'
+
+if RAILS_LOADED
+  class ScriptureFramesTest < Minitest::Test
+    CATALOG = Bible270::ScriptureFrames
+    SUPPLIED_PASSAGES = [
+      { id: 'default:psalm-107-20', reference: 'Psalm 107:20', translation: 'NKJV',
+        text: "He sent His word and healed them,\nAnd delivered them from their destructions.",
+        attribution: 'NKJV © 1982 Thomas Nelson.' },
+      { id: 'default:psalm-119-103', reference: 'Psalm 119:103', translation: 'NASB95',
+        text: "How sweet are Your words to my taste!\nYes, sweeter than honey to my mouth!",
+        attribution: 'NASB 1995 © The Lockman Foundation.' },
+      { id: 'default:psalm-119-130', reference: 'Psalm 119:130', translation: 'NASB95',
+        text: "The unfolding of Your words gives light;\nIt gives understanding to the simple.",
+        attribution: 'NASB 1995 © The Lockman Foundation.' },
+
+      { id: 'default:isaiah-55-11', reference: 'Isaiah 55:11', translation: 'ESV',
+        text: "so shall my word be that goes out from my mouth;\nit shall not return to me empty,\nbut it shall accomplish that which I purpose,\nand shall succeed in the thing for which I sent it.",
+        attribution: 'ESV © 2001 Crossway.' },
+      { id: 'default:jeremiah-15-16', reference: 'Jeremiah 15:16', translation: 'NASB95',
+        text: "Your words were found and I ate them,\nAnd Your words became for me a joy and the delight of my heart;\nFor I have been called by Your name,\nO LORD God of hosts.",
+        attribution: 'NASB 1995 © The Lockman Foundation.' },
+      { id: 'default:john-6-63', reference: 'John 6:63', translation: 'NKJV',
+        text: 'It is the Spirit who gives life; the flesh profits nothing. The words that I speak to you are spirit, and they are life.',
+        attribution: 'NKJV © 1982 Thomas Nelson.' },
+      { id: 'default:john-17-17', reference: 'John 17:17', translation: 'NASB95',
+        text: '“Sanctify them in the truth; Your word is truth.',
+        attribution: 'NASB 1995 © The Lockman Foundation.' },
+      { id: 'default:2-corinthians-4-6', reference: '2 Corinthians 4:6', translation: 'NKJV',
+        text: 'For it is the God who commanded light to shine out of darkness, who has shone in our hearts to give the light of the knowledge of the glory of God in the face of Jesus Christ.',
+        attribution: 'NKJV © 1982 Thomas Nelson.' },
+      { id: 'default:hebrews-4-12', reference: 'Hebrews 4:12', translation: 'NKJV',
+        text: 'For the word of God is living and powerful, and sharper than any two-edged sword, piercing even to the division of soul and spirit, and of joints and marrow, and is a discerner of the thoughts and intents of the heart.',
+        attribution: 'NKJV © 1982 Thomas Nelson.' }
+    ].freeze
+
+    def setup
+      clear_engine_tables!
+      Bible270::ScriptureFrame.delete_all
+      @previous_path = Bible270.config.scripture_frames_path
+      Bible270.config.scripture_frames_path = nil
+      @default_frames = CATALOG.defaults.map(&:dup)
+      @default_translations = CATALOG.translations
+      @directory = Dir.mktmpdir('scripture-frames')
+    end
+
+    def teardown
+      Bible270.config.scripture_frames_path = @previous_path
+      Bible270::ScriptureFrame.delete_all
+      FileUtils.rm_rf(@directory)
+    end
+
+    def default_ids
+      @default_frames.map(&:id)
+    end
+
+    attr_reader :default_translations
+
+    def host_row(**overrides)
+      { 'id' => 'host-example', 'reference' => 'Host example', 'translation' => 'TEST',
+        'text' => "First sample line.\nSecond sample line." }.merge(overrides.transform_keys(&:to_s))
+    end
+
+    def use_host(source)
+      path = File.join(@directory, 'frames.yml')
+      File.write(path, source)
+      Bible270.config.scripture_frames_path = path
+    end
+
+    def test_bundled_catalog_preserves_supplied_passages_and_credits_in_biblical_order
+      frames = CATALOG.defaults.index_by(&:id)
+      assert_equal SUPPLIED_PASSAGES.map { |entry| entry[:id] }.to_a, frames.keys
+
+      SUPPLIED_PASSAGES.each do |expected|
+        assert frames.key?(expected[:id]), "Missing supplied passage #{expected[:id]}"
+        assert_equal expected, frames.fetch(expected[:id]).to_h
+        assert_includes CATALOG.translations, expected[:translation]
+        assert_equal expected[:attribution], CATALOG.attribution_for(expected[:translation].downcase)
+      end
+    end
+
+    def test_translation_options_follow_reader_preferences_with_extra_choices_last
+      assert_equal %w[NKJV NASB95 LSB ESV KJV YLT CSB NIV], CATALOG.translations
+      shared = Bible270::Translations.codes & CATALOG.translations
+      assert_equal shared, CATALOG.translations.first(shared.length)
+      assert_equal SUPPLIED_PASSAGES.length, CATALOG.defaults.length
+
+      Bible270::Translations.stub(:codes, %w[KJV ESV NKJV]) do
+        assert_equal %w[KJV ESV NKJV NASB95 LSB YLT CSB NIV], CATALOG.translations
+      end
+    end
+
+    def test_translation_registry_combines_bundled_and_host_metadata_without_restoring_default_frames
+      use_host(YAML.dump([
+        host_row(translation: ' host ', attribution: 'Host sample credit.'),
+        host_row(id: 'public-example', translation: ' public ')
+      ]))
+
+      assert_equal %w[default:host-example default:public-example], CATALOG.defaults.map(&:id)
+      assert_equal default_translations + %w[HOST PUBLIC], CATALOG.translations
+      @default_frames.each do |frame|
+        assert_equal frame.attribution, CATALOG.attribution_for(frame.translation)
+      end
+      assert_equal 'Host sample credit.', CATALOG.attribution_for(' host ')
+      assert CATALOG.translation_attributions.key?('PUBLIC')
+      assert_nil CATALOG.attribution_for('PUBLIC')
+      assert_nil CATALOG.attribution_for('UNKNOWN')
+    end
+
+    def test_host_frames_in_known_translations_can_inherit_bundled_credit
+      use_host(YAML.dump([host_row(translation: ' nkjv ')]))
+
+      assert_equal ['default:host-example'], CATALOG.defaults.map(&:id)
+      assert_equal 'NKJV', CATALOG.defaults.first.translation
+      assert_equal 'NKJV © 1982 Thomas Nelson.', CATALOG.defaults.first.attribution
+      assert_equal 'NKJV © 1982 Thomas Nelson.', CATALOG.attribution_for('NKJV')
+    end
+
+    def test_empty_host_catalog_keeps_known_translation_metadata
+      use_host("[]\n")
+
+      assert_empty CATALOG.defaults
+      assert_equal default_translations, CATALOG.translations
+    end
+
+    def test_conflicting_translation_credits_fall_back_instead_of_mislabeling
+      [
+        [host_row(translation: 'nasb95', attribution: 'Wrong credit.')],
+        [host_row(translation: 'TEST', attribution: 'One credit.'),
+         host_row(id: 'another-example', translation: ' test ', attribution: 'Another credit.')]
+      ].each do |rows|
+        use_host(YAML.dump(rows))
+        assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+        assert_equal 'NASB 1995 © The Lockman Foundation.', CATALOG.attribution_for('NASB95')
+      end
+    end
+
+    def test_creating_custom_frames_does_not_write_yaml_or_remove_defaults
+      bundled = File.expand_path('../config/scripture_frames.yml', __dir__)
+      original = File.binread(bundled)
+      custom = Bible270::ScriptureFrame.create!(reference: 'Custom example', text: 'Sample text.', translation: 'NKJV')
+
+      assert_equal original, File.binread(bundled)
+      assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+      assert_equal 'NKJV © 1982 Thomas Nelson.', custom.reload.attribution
+      assert_includes default_ids, CATALOG.random(exclude: "custom:#{custom.id}").id
+      custom.destroy!
+      default_ids.each do |previous|
+        assert_includes default_ids - [previous], CATALOG.random(exclude: previous).id
+      end
+    end
+
+    def test_custom_creation_never_rewrites_host_yaml
+      use_host(YAML.dump([host_row(translation: 'HOST', attribution: 'Host sample credit.')]))
+      original = File.binread(Bible270.config.scripture_frames_path)
+      custom = Bible270::ScriptureFrame.create!(reference: 'Custom example', text: 'Sample text.', translation: 'HOST')
+
+      assert_equal original, File.binread(Bible270.config.scripture_frames_path)
+      assert_equal 'Host sample credit.', custom.reload.attribution
+      assert_equal ['default:host-example'], CATALOG.defaults.map(&:id)
+    end
+
+    def test_host_yaml_replaces_rather_than_appends_defaults_and_preserves_plaintext
+      row = host_row(text: "A <b>sample</b> & text.\nAnother line.")
+      use_host(YAML.dump([row]))
+
+      assert_equal 1, CATALOG.defaults.length
+      frame = CATALOG.defaults.first
+      assert_equal 'default:host-example', frame.id
+      assert_equal row['text'], frame.text
+      assert_nil frame.attribution
+    end
+
+    def test_catalog_is_read_lazily_without_a_stale_cache
+      use_host(YAML.dump([host_row]))
+      assert_equal 'Host example', CATALOG.defaults.first.reference
+      assert_nil CATALOG.attribution_for('TEST')
+
+      File.write(Bible270.config.scripture_frames_path, YAML.dump([host_row(reference: 'Updated example', attribution: 'Updated credit.')]))
+      assert_equal 'Updated example', CATALOG.defaults.first.reference
+      assert_equal 'Updated credit.', CATALOG.attribution_for('TEST')
+    end
+
+    def test_empty_host_catalog_is_intentional_and_can_produce_an_empty_pool
+      use_host("[]\n")
+
+      assert_empty CATALOG.defaults
+      assert_nil CATALOG.random
+    end
+
+    def test_unsafe_yaml_and_erb_fall_back_without_evaluation_or_disclosing_input
+      sources = [
+        '--- !ruby/object:Object {}',
+        "- &private_anchor {id: private}\n- *private_anchor\n",
+        YAML.dump([host_row(text: '<%= raise "private content must never execute" %>')]),
+        "private: [unterminated\n"
+      ]
+      sources.each do |source|
+        use_host(source)
+        log = StringIO.new
+        Rails.stub(:logger, Logger.new(log)) do
+          assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+        end
+        assert_includes log.string, 'using bundled defaults'
+        refute_includes log.string, 'private'
+        refute_includes log.string, @directory
+      end
+    end
+
+    def test_missing_file_falls_back_with_a_safe_warning
+      Bible270.config.scripture_frames_path = File.join(@directory, 'missing.yml')
+      log = StringIO.new
+      Rails.stub(:logger, Logger.new(log)) do
+        assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+      end
+      assert_includes log.string, 'using bundled defaults'
+      refute_includes log.string, @directory
+    end
+
+    def test_every_entry_is_validated_and_invalid_catalogs_are_not_partially_loaded
+      invalid_rows = [
+        host_row(id: 'not a slug'), host_row(reference: ' '), host_row(text: nil),
+        host_row(translation: 95), host_row(attribution: []), host_row(unknown: 'field'),
+        host_row(reference: 'r' * 201), host_row(text: 'x' * 4001),
+        host_row(translation: 't' * 41), host_row(attribution: 'a' * 501), 'not a mapping'
+      ]
+      invalid_rows.each do |row|
+        use_host(YAML.dump([host_row, row]))
+        assert_equal default_ids, CATALOG.defaults.map(&:id)
+      end
+      use_host(YAML.dump([host_row, host_row]))
+      assert_equal default_ids, CATALOG.defaults.map(&:id)
+      use_host(YAML.dump({ 'frames' => [] }))
+      assert_equal default_ids, CATALOG.defaults.map(&:id)
+    end
+
+    def test_random_combines_defaults_and_enabled_custom_entries_and_excludes_previous_id
+      custom = Bible270::ScriptureFrame.create!(reference: 'Custom example', text: 'Sample text.')
+      Bible270::ScriptureFrame.create!(reference: 'Disabled example', text: 'Hidden sample.', enabled: false)
+      ids = default_ids + ["custom:#{custom.id}"]
+
+      ids.each do |previous|
+        5.times { assert_includes ids - [previous], CATALOG.random(exclude: previous).id }
+      end
+      10.times { assert_includes ids, CATALOG.random.id }
+
+      # With a one-frame host catalog, each source can be selected deterministically.
+      use_host(YAML.dump([host_row]))
+      assert_equal "custom:#{custom.id}", CATALOG.random(exclude: 'default:host-example').id
+      assert_equal 'default:host-example', CATALOG.random(exclude: "custom:#{custom.id}").id
+    end
+
+    def test_custom_pool_uses_current_credit_including_nil_and_preserves_credit_after_translation_removal
+      use_host(YAML.dump([host_row(attribution: 'Original credit.')]))
+      custom = Bible270::ScriptureFrame.create!(reference: 'Custom example', text: 'Sample text.', translation: 'TEST')
+
+      use_host(YAML.dump([host_row(attribution: 'Revised credit.')]))
+      selected = CATALOG.random(exclude: 'default:host-example')
+      assert_equal "custom:#{custom.id}", selected.id
+      assert_equal 'Revised credit.', selected.attribution
+
+      use_host(YAML.dump([host_row]))
+      assert_nil CATALOG.random(exclude: 'default:host-example').attribution
+
+      use_host("[]\n")
+      assert_equal 'Original credit.', CATALOG.random.attribution
+      custom.update!(enabled: false)
+      assert_nil CATALOG.random
+    end
+
+    def test_sole_entry_is_returned_even_when_excluded
+      use_host(YAML.dump([host_row]))
+      assert_equal 'default:host-example', CATALOG.random(exclude: 'default:host-example').id
+      use_host("[]\n")
+      custom = Bible270::ScriptureFrame.create!(reference: 'Custom example', text: 'Sample text.')
+      assert_equal "custom:#{custom.id}", CATALOG.random(exclude: "custom:#{custom.id}").id
+    end
+
+    def test_non_string_exclusions_are_ignored
+      [[], {}, 12, nil].each do |exclude|
+        assert_includes default_ids, CATALOG.random(exclude: exclude).id
+      end
+    end
+
+    def test_bundled_defaults_work_before_the_custom_table_exists
+      assert CATALOG.custom_available?
+      Bible270::ScriptureFrame.stub(:table_exists?, false) do
+        Bible270::ScriptureFrame.stub(:enabled, -> { flunk 'must not query a missing table' }) do
+          refute CATALOG.custom_available?
+          assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+          assert_includes @default_frames.map(&:to_h), CATALOG.random.to_h
+        end
+      end
+    end
+  end
+end

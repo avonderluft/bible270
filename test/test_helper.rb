@@ -196,6 +196,7 @@ module RailsBacked
     Bible270::Checkoff.delete_all
     Bible270::Comment.delete_all
     Bible270::SignInToken.delete_all
+    Bible270::ScriptureFrame.delete_all
     Bible270::Participation.delete_all
     Bible270::Reader.delete_all
     Bible270::PlanRun.delete_all

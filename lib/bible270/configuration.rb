@@ -283,6 +283,10 @@ module Bible270
     # Bible270::Translations::VERSIONS; narrow it to offer fewer.
     attr_accessor :bible_versions
 
+    # Optional host YAML catalog for bread-icon Scripture frames. Admin additions
+    # are stored separately and supplement either the bundled or host catalog.
+    attr_accessor :scripture_frames_path
+
     # Who to email when someone new joins. Three forms:
     #
     #   config.registration_notice_emails = %w[andrew@example.org]  # an explicit list
@@ -368,6 +372,7 @@ module Bible270
       @reflections_page_size = 10
       @mention_notifications = true
       @header_mark = nil
+      @scripture_frames_path = nil
       @remember_for = 365 * 24 * 60 * 60
       @require_sign_in_to_participate = true
       self.mount_at = '/daily-bread'

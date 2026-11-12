@@ -1,0 +1,246 @@
+<div id="b270-scripture-frame" class="b270-scripture-popup" role="dialog" aria-modal="false"
+     aria-label="Scripture frame" tabindex="-1" hidden>
+
+  <p class="b270-scripture-popup__status" data-b270-scripture-status role="status" aria-live="polite" aria-atomic="true"></p>
+  <%= render partial: "bible270/shared/scripture_frame", locals: { frame: nil } %>
+</div>
+
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270ScriptureFrame) {
+      window.Bible270ScriptureFrame.reset();
+      return;
+    }
+
+    const selector = "button[data-b270-scripture-trigger]";
+    const finePointer = window.matchMedia?.("(hover: hover) and (pointer: fine)");
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    let active = null;
+    let previousID = null;
+    let fadingPopup = null;
+    let fadeTimer = null;
+    let lastPointerType = null;
+
+    function finishFade() {
+      clearTimeout(fadeTimer);
+      fadeTimer = null;
+      if (fadingPopup) fadingPopup.hidden = true;
+      fadingPopup = null;
+    }
+
+    function within(state, target) {
+      return !!target && (state.trigger.contains(target) || state.popup.contains(target));
+    }
+
+    function current(state) {
+      return active === state && state.trigger.isConnected && state.popup.isConnected;
+    }
+
+    function reset(immediate = true, restoreFocus = false) {
+      finishFade();
+      const state = active;
+      active = null;
+      if (!state) return;
+
+      clearTimeout(state.timer);
+      clearTimeout(state.leaveTimer);
+      clearTimeout(state.focusTimer);
+      state.controller?.abort();
+      state.trigger.setAttribute("aria-expanded", "false");
+      if (restoreFocus && state.trigger.isConnected && (state.focusMode || state.popup.contains(document.activeElement))) {
+        state.trigger.focus();
+      }
+      state.popup.classList.remove("is-visible");
+      state.popup.setAttribute("aria-hidden", "true");
+      state.popup.removeAttribute("aria-busy");
+      state.popup.inert = true;
+      if (immediate || reducedMotion?.matches || state.popup.hidden) {
+        state.popup.hidden = true;
+      } else {
+        fadingPopup = state.popup;
+        fadeTimer = setTimeout(finishFade, 180);
+      }
+    }
+
+    function position(state) {
+      const trigger = state.trigger.getBoundingClientRect();
+      const popup = state.popup.getBoundingClientRect();
+      const margin = 12;
+      state.popup.style.left = `${Math.max(margin, Math.min(trigger.left, window.innerWidth - popup.width - margin))}px`;
+      state.popup.style.top = `${Math.max(margin, Math.min(trigger.bottom + 12, window.innerHeight - popup.height - margin))}px`;
+    }
+
+    function status(state, message, kind) {
+      state.status.textContent = message;
+      state.status.hidden = !message;
+      state.status.setAttribute("data-state", kind);
+      state.popup.setAttribute("aria-busy", String(kind === "loading"));
+    }
+
+    async function open(state) {
+      if (!current(state)) return;
+      state.timer = null;
+      state.popup.hidden = false;
+      state.popup.inert = false;
+      state.popup.removeAttribute("aria-hidden");
+      state.art.hidden = true;
+      state.trigger.setAttribute("aria-expanded", "true");
+      status(state, "Loading Scripture frame…", "loading");
+      position(state);
+      state.popup.classList.add("is-visible");
+      if (state.focusMode) state.popup.focus();
+      state.controller = new AbortController();
+
+      try {
+        const url = new URL(state.trigger.getAttribute("data-b270-scripture-url"), window.location.href);
+        if (previousID !== null) url.searchParams.set("exclude", previousID);
+        const response = await fetch(url.href, {
+          headers: { Accept: "application/json" }, credentials: "same-origin", signal: state.controller.signal
+        });
+        if (!current(state)) return;
+        if (response.status === 204) {
+          status(state, "No Scripture frames are available yet.", "empty");
+        } else {
+          if (!response.ok) throw new Error("Scripture frame request failed");
+          const frame = await response.json();
+          if (!current(state)) return;
+          if (!frame || !["reference", "text", "translation"].every((key) => typeof frame[key] === "string" && frame[key].trim()) ||
+              (frame.attribution != null && typeof frame.attribution !== "string")) {
+            throw new Error("Invalid Scripture frame");
+          }
+          ["reference", "text", "translation", "attribution"].forEach((key) => {
+            const field = state.art.querySelector(`[data-b270-scripture-${key}]`);
+            field.textContent = frame[key] || "";
+            if (key === "attribution") field.hidden = !frame[key]?.trim();
+          });
+          previousID = frame.id == null ? null : String(frame.id);
+          state.art.hidden = false;
+          status(state, "", "ready");
+        }
+        position(state);
+      } catch (error) {
+        if (!current(state)) return;
+        status(state, "This Scripture frame could not be loaded. Please try again.", "error");
+        position(state);
+      }
+    }
+
+    function begin(trigger, manual = false, focusMode = false) {
+      reset();
+      const popup = document.getElementById(trigger.getAttribute("aria-controls"));
+      if (!trigger.isConnected || !popup) return;
+      const state = {
+        trigger, popup, art: popup.querySelector("[data-b270-scripture-art]"),
+        status: popup.querySelector("[data-b270-scripture-status]"),
+        pinned: manual, focusMode, timer: null, leaveTimer: null, focusTimer: null, controller: null
+      };
+      active = state;
+      if (manual) {
+        open(state);
+      } else {
+        state.timer = setTimeout(() => {
+          if (!current(state) || !finePointer?.matches) {
+            if (active === state) reset();
+            return;
+          }
+          open(state);
+        }, 3000);
+      }
+    }
+
+    document.addEventListener("pointerover", (event) => {
+      if (!finePointer?.matches || !["mouse", "pen"].includes(event.pointerType)) return;
+      if (active && within(active, event.target)) {
+        clearTimeout(active.leaveTimer);
+        return;
+      }
+      const trigger = event.target.closest?.(selector);
+      // Descendant transitions are not fresh intent, including after Escape dismisses the frame.
+      if (trigger && !trigger.contains(event.relatedTarget)) begin(trigger);
+    });
+
+    document.addEventListener("pointerout", (event) => {
+      const state = active;
+      if (!state || state.pinned || !within(state, event.target) || within(state, event.relatedTarget)) return;
+      if (state.timer !== null) {
+        reset();
+      } else {
+        clearTimeout(state.leaveTimer);
+        state.leaveTimer = setTimeout(() => {
+          if (active === state) reset(false);
+        }, 220);
+      }
+    });
+
+    document.addEventListener("pointerdown", (event) => {
+      lastPointerType = event.pointerType;
+      event.target.closest?.(selector)?.setAttribute("data-b270-scripture-pointer-focus", "");
+      if (active && !within(active, event.target)) reset(false);
+    });
+
+    document.addEventListener("click", (event) => {
+      const trigger = event.target.closest?.(selector);
+      if (trigger) {
+        if (event.detail !== 0) trigger.setAttribute("data-b270-scripture-pointer-focus", "");
+        const focusMode = event.detail === 0 || event.pointerType === "touch" || lastPointerType === "touch" || !finePointer?.matches;
+        if (active?.trigger === trigger) {
+          if (active.pinned) {
+            reset(false, true);
+          } else {
+            active.pinned = true;
+            active.focusMode = focusMode;
+            clearTimeout(active.leaveTimer);
+            if (active.timer !== null) {
+              clearTimeout(active.timer);
+              open(active);
+            } else if (focusMode) {
+              active.popup.focus();
+            }
+          }
+        } else {
+          begin(trigger, true, focusMode);
+        }
+        return;
+      }
+      if (active && !within(active, event.target)) reset(false);
+    });
+
+    // Native button activation supplies Enter/Space clicks; no parallel key handler is needed.
+    document.addEventListener("keydown", (event) => {
+      lastPointerType = null;
+      // Escape dismisses pointer-opened frames without changing their focus modality.
+      if (event.key !== "Escape") {
+        document.querySelectorAll("[data-b270-scripture-pointer-focus]").forEach((trigger) => {
+          trigger.removeAttribute("data-b270-scripture-pointer-focus");
+        });
+      }
+      if (event.key !== "Escape" || !active) return;
+      reset(false, true);
+      event.preventDefault();
+    });
+
+    document.addEventListener("focusout", (event) => {
+      const state = active;
+      if (!state || !within(state, event.target) || within(state, event.relatedTarget)) return;
+      if (event.relatedTarget) {
+        reset(false);
+      } else {
+        clearTimeout(state.focusTimer);
+        state.focusTimer = setTimeout(() => {
+          if (active === state && !within(state, document.activeElement)) reset(false);
+        }, 0);
+      }
+    });
+
+    document.addEventListener("scroll", (event) => {
+      if (active?.popup.contains(event.target)) return;
+      reset(false);
+    }, true);
+    window.addEventListener("resize", () => reset(false));
+    window.addEventListener("pagehide", () => reset());
+    document.addEventListener("turbo:before-cache", () => reset());
+    document.addEventListener("turbo:before-render", () => reset());
+
+    window.Bible270ScriptureFrame = { reset };
+  })();
+</script>

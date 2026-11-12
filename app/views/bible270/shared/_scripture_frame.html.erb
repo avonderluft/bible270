@@ -1,0 +1,13 @@
+<%# Shared by the header popup and stored-frame admin previews. %>
+<% frame = local_assigns[:frame] %>
+<% value = ->(name) { frame.respond_to?(name) ? frame.public_send(name) : (frame[name] || frame[name.to_s] if frame.respond_to?(:[])) } %>
+<figure class="b270-scripture-art" data-b270-scripture-art <%= "hidden" unless frame %>>
+  <div class="b270-scripture-art__mat">
+    <blockquote class="b270-scripture-art__verse"><p data-b270-scripture-text><%= h(value.call(:text)) %></p></blockquote>
+    <figcaption class="b270-scripture-art__caption">
+      <span class="b270-scripture-art__reference" data-b270-scripture-reference><%= h(value.call(:reference)) %></span>
+      <span class="b270-scripture-art__translation" data-b270-scripture-translation><%= h(value.call(:translation)) %></span>
+    </figcaption>
+    <p class="b270-scripture-art__attribution" data-b270-scripture-attribution <%= "hidden" if value.call(:attribution).blank? %>><%= h(value.call(:attribution)) %></p>
+  </div>
+</figure>

@@ -179,6 +179,9 @@ module Bible270
       @reachable_admins = broadcast_recipients('admins').count
       @last_broadcast_at = parsed_time(Setting.read(LAST_BROADCAST_AT))
       @last_broadcast_subject = Setting.read(LAST_BROADCAST_SUBJECT)
+      @scripture_frame_defaults = ScriptureFrames.defaults
+      @scripture_frame_storage = ScriptureFrames.custom_available?
+      @custom_scripture_frames = @scripture_frame_storage ? ScriptureFrame.order(:id).to_a : []
     end
 
     def show
@@ -516,18 +519,6 @@ module Bible270
       available = Reader.completion_dove_column?
       reader.reload if available && !reader.has_attribute?('completion_dove_disabled')
       available
-    end
-
-    def require_admin!
-      return if b270_admin?
-
-      raise ActionController::RoutingError, 'Not Found'
-    end
-
-    def require_admin_view!
-      return if b270_admin_view?
-
-      raise ActionController::RoutingError, 'Not Found'
     end
 
     def load_comment

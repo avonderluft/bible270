@@ -1,0 +1,46 @@
+<% if @scripture_frame.errors.any? %>
+  <div class="b270-panel" role="alert" id="b270-scripture-frame-errors">
+    <h2 class="b270-subhead">Please check this text</h2>
+    <ul>
+      <% @scripture_frame.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<p class="b270-hint" id="b270-scripture-frame-rights">Attribution is added automatically from the translation. Use text you have permission to reproduce.</p>
+<p class="b270-hint" id="b270-scripture-frame-format">Custom texts supplement the bundled YAML defaults without changing them. Plain text only, not HTML or Markdown. Line breaks are preserved in the frame.</p>
+
+<%= form_with model: @scripture_frame, scope: :scripture_frame,
+      url: @scripture_frame.persisted? ? admin_scripture_frame_path(@scripture_frame) : admin_scripture_frames_path,
+      method: @scripture_frame.persisted? ? :patch : :post, local: true, class: 'b270-form',
+      html: { aria: { describedby: 'b270-scripture-frame-rights b270-scripture-frame-format' } } do |f| %>
+  <div class="b270-scripture-fields">
+    <div class="b270-field">
+      <%= f.label :reference, 'Reference' %>
+      <%= f.text_field :reference, required: true, maxlength: 200 %>
+    </div>
+    <div class="b270-field">
+      <%= f.label :translation, 'Translation' %>
+      <span class="b270-select-wrap b270-select-wrap--full">
+        <%= f.select :translation, Bible270::ScriptureFrames.translations, { include_blank: true },
+              required: true, class: 'b270-select', aria: { describedby: 'b270-scripture-frame-credit' } %>
+      </span>
+    </div>
+  </div>
+  <div class="b270-field">
+    <%= f.label :text, 'Text' %>
+    <%= f.text_area :text, required: true, maxlength: 4000, rows: 8 %>
+  </div>
+  <% credit = Bible270::ScriptureFrames.attribution_for(@scripture_frame.translation) %>
+  <p class="b270-hint" id="b270-scripture-frame-credit">Attribution: <%= credit.presence || 'No attribution is configured for this translation.' %></p>
+  <div class="b270-field">
+    <%= f.label :enabled do %>
+      <%= f.check_box :enabled %> Enabled
+    <% end %>
+  </div>
+  <p class="b270-hint">Disabled texts stay saved but are not available to readers.</p>
+  <%= f.submit @scripture_frame.persisted? ? 'Save text' : 'Add text', class: 'b270-btn' %>
+  <%= link_to 'Cancel', admin_scripture_frames_path %>
+<% end %>

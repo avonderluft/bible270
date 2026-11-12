@@ -114,22 +114,37 @@ class ViewsTest < Minitest::Test
     assert_includes styles, '.b270-header-theme-select{font:inherit;font-size:12px;width:8em;height:28px;padding:2px 6px;margin:0;'
     assert_includes styles, '.b270-header-theme-select{field-sizing:content;width:auto}'
     assert_equal 1, styles.scan(%r{\.b270-header-theme-select\{[^\}]*font-size:}).size
-    assert_includes styles, '.b270-brand{display:flex;align-items:baseline;gap:14px;'
+    assert_includes styles, '.b270-brand{display:flex;align-items:center;flex:1;flex-wrap:wrap;gap:8px 14px;'
     assert_includes styles, '.b270-header-theme{position:relative;display:flex;align-items:baseline;'
-    assert_includes styles, '.b270-brandlink{display:flex;align-items:baseline;'
+    assert_includes styles, '.b270-brandlink{display:flex;align-items:center;'
     assert_match(%r{\.b270-topbar\{[^\}]*flex-wrap:nowrap}, styles)
     assert_match(%r{@media \(max-width:820px\)\{.*?\.b270-desktopnav\{display:none\}.*?\.b270-navmenu\{display:block\}}m, styles)
     assert_includes styles, '.b270-header-theme-status[data-error="true"]'
   end
 
-  def test_header_brand_uses_the_same_small_size_and_spacing_at_every_breakpoint
+  def test_header_brand_uses_a_larger_themed_mark_with_centered_title_alignment
     styles = File.read(STYLES)
 
-    assert_includes styles, '.b270-brandlink{display:flex;align-items:baseline;gap:6px;'
-    assert_includes styles, '.b270-mark svg,.b270-mark img,.b270-brandlink > img.b270-mark{display:block;width:28px;height:28px;border-radius:8px}'
+    assert_includes styles, '.b270-brand-home{display:flex;align-items:center;gap:6px;'
+    assert_includes styles, '.b270-brandlink{display:flex;align-items:center;gap:6px;'
+    assert_includes styles, '.b270-mark svg,.b270-mark img,.b270-brandlink > img.b270-mark,.b270-scripture-trigger > img.b270-mark{display:block;width:34px;height:34px;border-radius:8px;'
+    assert_includes styles, '.b270-scripture-trigger .b270-mark svg > rect{fill:var(--card);stroke:none}'
     assert_match(%r{\.b270-title\{[^\}]*font-size:18px;}, styles)
     assert_equal 1, styles.scan(%r{\.b270-title\{}).size
     assert_equal 1, styles.scan(%r{\.b270-brandlink\{}).size
+    assert_match(%r{@media \(max-width:820px\)\{.*?\.b270-brand-home\{padding-left:12px\}}m, styles)
+  end
+
+  def test_closed_scripture_trigger_has_no_decorative_border_but_retains_keyboard_focus
+    styles = File.read(STYLES)
+
+    assert_match(%r{\.b270-scripture-trigger\{[^\}]*border:1px solid transparent;[^\}]*background:transparent;}m, styles)
+    assert_includes styles, '.b270-scripture-trigger .b270-mark svg > rect{fill:var(--card);stroke:none}'
+    refute_match(%r{\.b270-scripture-trigger:hover}, styles)
+    assert_includes styles, '.b270-scripture-trigger[aria-expanded="true"]{border-color:var(--line);background:var(--card)}'
+    assert_includes styles, '.b270-scripture-trigger[data-b270-scripture-pointer-focus]:focus{outline:none}'
+    assert_includes styles, '.b270 :where(a,button,input,select,textarea,summary):focus-visible{outline:2px solid var(--gold);outline-offset:2px}'
+    refute_match(%r{\.b270-scripture-trigger[^\{\}]*path\s*\{}, styles)
   end
 
   def test_admin_progress_link_is_quiet_until_hover_or_focus
@@ -399,6 +414,32 @@ class ViewsTest < Minitest::Test
       %w[button-surface button-hover].each do |background|
         assert_operator contrast_ratio(colours.fetch('button-ink'), colours.fetch(background)), :>=, 4.5,
                         "#{selector}: button text must contrast with --#{background}"
+      end
+    end
+  end
+
+  def test_scripture_frame_surfaces_are_distinct_and_readable_in_every_palette
+    styles = File.read(STYLES)
+    %w[b270-scripture-art__mat b270-scripture-popup].each do |name|
+      rule = styles.match(%r{\.#{name}\{([^\}]+)})[1]
+      assert_includes rule, 'background:var(--card);background:color-mix(in srgb,var(--card) 90%,var(--gold))'
+    end
+    assert_match(%r{\.b270-scripture-art__attribution\{[^\}]*color:var\(--muted\)}, styles)
+    assert_match(%r{\.b270\[data-display-mode="sage"\] \.b270-scripture-library-text,\s*\.b270\[data-display-mode="sage"\] \.b270-scripture-art__mat,\s*\.b270\[data-display-mode="sage"\] \.b270-scripture-popup\{background:#d1e2ea\}}, styles)
+    assert_match(%r{\.b270-scripture-library-disclosure>\.b270-scripture-library-text\{[^\}]*background:var\(--paper\);background:color-mix\(in srgb,var\(--card\) 90%,var\(--gold\)\)}, styles)
+
+    selectors = ['.b270'] + %w[sage mist dark dark_green dark_blue system].map { |mode| ".b270[data-display-mode=\"#{mode}\"]" }
+    selectors.each do |selector|
+      palette = styles.match(%r{#{Regexp.escape(selector)}\{([^\}]+)})[1]
+      colours = palette.scan(%r{--([a-z-]+):#([0-9a-f]{6})}).to_h
+      base, accent = %w[card gold].map { |name| colours.fetch(name).scan(%r{..}).map { |pair| pair.to_i(16) } }
+      surface = base.zip(accent).map { |channel, tint| format('%02x', ((channel * 0.9) + (tint * 0.1)).round) }.join
+      surface = 'd1e2ea' if selector == '.b270[data-display-mode="sage"]'
+
+      %w[paper card].each { |background| refute_equal colours.fetch(background), surface, "#{selector}: distinct frame surface" }
+      %w[ink muted].each do |foreground|
+        assert_operator contrast_ratio(colours.fetch(foreground), surface), :>=, 4.5,
+                        "#{selector}: frame #{foreground} text must meet AA contrast"
       end
     end
   end
@@ -890,7 +931,8 @@ class ViewsTest < Minitest::Test
     assert_includes papyrus, 'fill="url(#b270-papyrus-curl)"'
     assert_includes papyrus, 'fill="url(#b270-papyrus-curl-shadow)"'
     assert_includes styles, 'transform:translate(100%,100%) rotate(180deg)'
-    assert_match(%r{@media \(max-width:600px\)\{\s*\.b270-papyrus-corner\{transform:scale\(\.55\)\}}, styles)
+    assert_match(%r{@media \(max-width:1100px\)\{\s*\.b270-papyrus-corner\{transform:scale\(\.4\)\}}, styles)
+    assert_match(%r{@media \(max-width:820px\)\{\s*\.b270-papyrus-corner\{transform:scale\(\.35\)\}}, styles)
   end
 
   def test_system_theme_uses_a_media_query_and_matches_explicit_dark
