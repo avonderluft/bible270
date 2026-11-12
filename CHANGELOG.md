@@ -16,6 +16,8 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Changed
 
+- on a day's final check-off, fade in a random Scripture frame over 1.3 seconds, hold for 5.5 seconds, play a 1.4-second dove flight unless disabled, and fade the continuously moving dove and frame together over the flight's final 0.4 seconds without a final freeze or extra delay; retain a static frame for reduced-motion users
+
 - enlarge the bread icon, give it a theme-aware background, and center the app title beside it; shrink Papyrus curls sooner on narrower screens
 - simplify Scripture frames by removing the close control; retain bread-toggle, outside-click, and Escape dismissal, without a lingering pointer-focus outline
 - alumni can still sign in, visit Community, and join discussions; their reflections remain available to later groups, while past progress stays frozen

@@ -161,6 +161,8 @@ Progress mutations also enforce `Participation#ensure_writable!` in the model la
 
 `app/views/bible270/checkoffs/toggle.turbo_stream.erb` updates the reading control, day progress, and completion information without a full reload.
 
+On the final check-off, `shared/_day_completion.html.erb` selects a random Scripture frame server-side. `_day_completion_ui.html.erb`, included by the interaction partial, fades it in over 1.3 seconds, holds it for 5.5 seconds, then plays the optional 1.4-second dove flight. The dove moves and grows throughout the flight, without a stationary segment; a shared parent animation fades both over the flight's final 0.4 seconds. The dove's end event removes the overlay immediately. Without a dove, the frame fades out over 0.2 seconds. The reader's dove opt-out keeps the frame; reduced motion keeps a static 5.5-second frame without flight. Completion IDs prevent replay, and navigation cancels timers and removes the temporary overlay. No extra lookup request is needed.
+
 ## 6. How dates and “today” work
 
 Plan history is keyed to plan day numbers, not calendar dates. Changing a start date remaps the calendar without moving checkoffs or reflections.
@@ -347,6 +349,7 @@ Bible270 keeps its presentation self-contained under `app/views`.
 - Header/navigation: `_header.html.erb` and `_nav_links.html.erb`
 - Shared progress/grid UI: `_progress.html.erb` and `_day_index.html.erb`
 - Shared interaction JavaScript: `_interaction_ui.html.erb`
+- Day-completion sequence: `_day_completion.html.erb` and `_day_completion_ui.html.erb`
 - Run/membership confirmation JavaScript: `_admin_confirmations.html.erb`, rendered by Admin index/detail templates
 - Reflection draft JavaScript: `_comment_drafts.html.erb`
 - Mention suggestion JavaScript: `_mention_typeahead.html.erb`

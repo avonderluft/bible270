@@ -391,12 +391,23 @@
   .b270-day-complete strong{font-family:"Spectral",serif;font-size:16px}
   .b270-day-complete span{font-size:12px;color:var(--muted)}
   .b270 .b270-day-complete .b270-btn{flex:none;margin:0 0 0 auto}
+  .b270-completion{position:fixed;inset:0;z-index:1050;display:grid;place-items:center;padding:12px;pointer-events:none}
+  .b270-completion[hidden]{display:none}
+  .b270-completion-frame{width:min(32rem,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);
+                          overflow:auto;overscroll-behavior:contain;opacity:0;transition:opacity .2s ease-in-out}
+  .b270-completion.is-visible .b270-completion-frame{opacity:1;pointer-events:auto;transition-duration:1.3s}
+  /* Fade both together while the dove is still moving, with no stationary hold. */
+  .b270-completion.is-visible.is-flying{animation:b270-completion-exit .4s ease-in-out calc(var(--b270-dove-duration,1.4s) - .4s) both}
+  @keyframes b270-completion-exit{
+    from{opacity:1}
+    to{opacity:0;visibility:hidden}
+  }
   .b270-completion-dove{position:fixed;z-index:1000;top:72vh;left:50vw;
                         width:min(80vw,104vh);height:auto;overflow:visible;pointer-events:none;opacity:0;
                         color-scheme:only light;forced-color-adjust:none;
                         filter:drop-shadow(0 0 8px rgba(255,255,255,1)) drop-shadow(0 0 24px rgba(255,252,220,1)) drop-shadow(0 0 52px rgba(225,191,92,.82));
                         will-change:top,left,transform,opacity}
-  .b270-completion-dove-active{animation:b270-dove-flight 1.7s cubic-bezier(.18,.72,.28,1) both}
+  .b270-completion-dove-active{animation:b270-dove-flight var(--b270-dove-duration,1.4s) linear both}
   .b270-dove-silhouette{fill:url(#b270-dove-light)!important;stroke:none}
   .b270-dove-light-center{stop-color:#fff!important}
   .b270-dove-light-middle{stop-color:#fffef8!important}
@@ -404,8 +415,8 @@
   @keyframes b270-dove-flight{
     0%{top:72vh;left:50vw;opacity:.22;visibility:visible;transform:translate(-50%,-50%) scale(.02) rotate(-8deg)}
     8%{top:calc(72vh - 10px);left:50vw;opacity:.78;transform:translate(-50%,-50%) scale(.08) rotate(-5deg)}
-    33%{top:50vh;left:50vw;opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1) rotate(4deg)}
-    100%{top:50vh;left:50vw;opacity:0;visibility:hidden;transform:translate(-50%,-50%) scale(1) rotate(4deg)}
+
+    100%{top:50vh;left:50vw;opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1) rotate(4deg)}
   }
 
   /* readings */
