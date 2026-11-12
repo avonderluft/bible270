@@ -46,7 +46,7 @@ jobs:
         run: bundle exec rake test
 
   javascript:
-    name: Video UI tests
+    name: JavaScript UI tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

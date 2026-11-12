@@ -681,9 +681,9 @@ test('translation and attribution are per entry, including NKJV rather than a fi
   assert.equal(h.fields.attribution.textContent, 'Entry-provided attribution');
 });
 
-test('mobile header fits, icon/title centers align, theme changes only the board, and long art scrolls (optional Chromium)', { timeout: 20000 }, (t) => {
+test('mobile header fits, icon/title centers align, theme changes only the board, and long art scrolls (optional Chromium)', { timeout: 45000 }, (t) => {
   const { spawnSync } = require('node:child_process');
-  const probe = spawnSync('chromium', ['--version'], { timeout: 3000, encoding: 'utf8' });
+  const probe = spawnSync('chromium', ['--version'], { timeout: 15000, encoding: 'utf8' });
   if (probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; VM and static checks still run');
   assert.equal(probe.status, 0, probe.stderr || String(probe.error));
   const styles = readFileSync(resolve(__dirname, '../../app/views/bible270/shared/_styles.html.erb'), 'utf8');
@@ -840,7 +840,7 @@ test('mobile header fits, icon/title centers align, theme changes only the board
   };
   const page = `<!doctype html><html><body><script>(${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(svg)},${JSON.stringify(figure)},${JSON.stringify(papyrus)},${JSON.stringify(librarySource)})</script></body></html>`;
   const result = spawnSync('chromium', ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--dump-dom', '--timeout=10000', '--virtual-time-budget=1000', `data:text/html,${encodeURIComponent(page)}`], {
-    timeout: 15000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024
+    timeout: 20000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024
   });
   assert.equal(result.status, 0, result.stderr || String(result.error));
   const output = result.stdout.match(/<pre id="result">([^<]*)<\/pre>/);

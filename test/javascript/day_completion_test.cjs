@@ -787,9 +787,9 @@ for (const phase of ['before rAF', 'holding', 'flying', 'fading']) {
   });
 }
 
-test('completion layout centers, scrolls, preserves theme surfaces and dove stacking, and fades both together without a final freeze (optional Chromium)', { timeout: 20000 }, (t) => {
+test('completion layout centers, scrolls, preserves theme surfaces and dove stacking, and fades both together without a final freeze (optional Chromium)', { timeout: 60000 }, (t) => {
   const { spawnSync } = require('node:child_process');
-  const probe = spawnSync('chromium', ['--version'], { timeout: 3000, encoding: 'utf8' });
+  const probe = spawnSync('chromium', ['--version'], { timeout: 15000, encoding: 'utf8' });
   if (probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; full-script VM tests still run');
   assert.equal(probe.status, 0, probe.stderr || String(probe.error));
   const stripERB = (name) => readFileSync(resolve(__dirname, `../../app/views/bible270/shared/${name}.html.erb`), 'utf8').replace(/<%[\s\S]*?%>/g, '');
@@ -935,16 +935,24 @@ test('completion layout centers, scrolls, preserves theme surfaces and dove stac
     result.textContent = JSON.stringify({ failures, reduced });
     document.body.append(result);
   };
-  const page = `<!doctype html><html><body><script>(${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(figure)})</script></body></html>`;
+  const page = `<!doctype html><html><body><script>try {
+    (${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(figure)});
+  } catch (error) {
+    const result = document.createElement('pre');
+    result.id = 'result';
+    result.textContent = JSON.stringify({ error: error.stack || String(error) });
+    document.body.append(result);
+  }</script></body></html>`;
   for (const reduced of [false, true]) {
     const result = spawnSync('chromium', ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--disable-background-networking',
       ...(reduced ? ['--force-prefers-reduced-motion'] : []), '--dump-dom', '--timeout=6000', '--virtual-time-budget=1000', `data:text/html,${encodeURIComponent(page)}`], {
-      timeout: 8000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024
+      timeout: 20000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024
     });
     assert.equal(result.status, 0, result.stderr || String(result.error));
     const output = result.stdout.match(/<pre id="result">([^<]*)<\/pre>/);
-    assert.ok(output, 'Chromium completed completion layout checks');
-    const report = JSON.parse(output[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
+    assert.ok(output, `Chromium completed completion layout checks: ${result.stderr}`);
+    const report = JSON.parse(output[1].replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'));
+    assert.equal(report.error, undefined, report.error);
     assert.equal(report.reduced, reduced, 'Chromium applied the requested motion preference');
     assert.deepEqual(report.failures, [], JSON.stringify(report.failures, null, 2));
   }

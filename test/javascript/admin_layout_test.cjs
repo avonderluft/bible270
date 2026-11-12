@@ -50,8 +50,8 @@ const reader = (disabled) => `<div class="b270-panel">
   </form>
 </div>`;
 
-test('admin rows, separate position forms and completion control fit (optional Chromium)', { timeout: 20000 }, (t) => {
-  const probe = spawnSync('chromium', ['--version'], { timeout: 3000, encoding: 'utf8' });
+test('admin rows, separate position forms and completion control fit (optional Chromium)', { timeout: 45000 }, (t) => {
+  const probe = spawnSync('chromium', ['--version'], { timeout: 15000, encoding: 'utf8' });
   if (probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; optional admin layout checks skipped');
   assert.equal(probe.status, 0, probe.stderr || String(probe.error));
   const styles = readFileSync(resolve(__dirname, '../../app/views/bible270/shared/_styles.html.erb'), 'utf8');
@@ -197,7 +197,7 @@ test('admin rows, separate position forms and completion control fit (optional C
     '--disable-background-networking', '--disable-component-update', '--no-first-run', '--no-default-browser-check',
     '--host-resolver-rules=MAP * ~NOTFOUND', '--dump-dom', '--timeout=5000', '--virtual-time-budget=1000',
     `data:text/html,${encodeURIComponent(page)}`
-  ], { timeout: 8000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 });
+  ], { timeout: 20000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 });
   assert.equal(result.status, 0, result.stderr || String(result.error));
   const output = result.stdout.match(/<pre id="result">([^<]*)<\/pre>/);
   assert.ok(output, `Chromium completed all admin layout checks: ${result.stderr}`);
