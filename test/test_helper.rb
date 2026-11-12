@@ -89,6 +89,8 @@ RAILS_LOADED =
       migrations << ActiveStorage::Engine.root.join('db/migrate').to_s
     end
     ActiveRecord::MigrationContext.new(migrations).migrate
+    # Models loaded during migration must see the final schema, not an earlier step.
+    ActiveRecord::Base.descendants.each(&:reset_column_information)
 
     # A table for the dummy's own user model. Reader.for_owner takes a polymorphic
     # owner, which needs a real record rather than a stand-in object.

@@ -469,7 +469,7 @@ class RegistrationNoticeConfigTest < Minitest::Test
 end
 
 class AdminAccessTest < Minitest::Test
-  Reader = Struct.new(:email)
+  Reader = Struct.new(:email, :admin)
 
   def setup
     @config = Bible270::Configuration.new
@@ -484,9 +484,12 @@ class AdminAccessTest < Minitest::Test
     @config.admin_emails = ['Andrew@Example.org']
 
     assert @config.admin_configured?
-    assert @config.admin?(Reader.new('andrew@example.org'))
-    assert @config.admin?(Reader.new('ANDREW@EXAMPLE.ORG'))
+    %w[andrew@example.org ANDREW@EXAMPLE.ORG].each do |email|
+      assert @config.admin?(Reader.new(email))
+      assert @config.site_admin?(Reader.new(email))
+    end
     refute @config.admin?(Reader.new('someone@example.org'))
+    refute @config.site_admin?(Reader.new('someone@example.org'))
   end
 
   def test_a_resolver_takes_precedence_over_the_list
@@ -494,14 +497,68 @@ class AdminAccessTest < Minitest::Test
     @config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@gknt.org') }
 
     assert @config.admin?(Reader.new('anyone@gknt.org'))
+    assert @config.site_admin?(Reader.new('anyone@gknt.org'))
     refute @config.admin?(Reader.new('listed@example.org')), 'the resolver decides, not the list'
+    refute @config.site_admin?(Reader.new('listed@example.org'))
+  end
+
+  def test_a_stored_admin_needs_no_configuration_and_is_not_a_site_admin
+    reader = Reader.new('granted@example.org', true)
+
+    refute @config.admin_configured?, 'configuration presence must remain a database-free check'
+    assert @config.admin?(reader)
+    refute @config.site_admin?(reader)
+
+    reader.admin = false
+    refute @config.admin?(reader)
+  end
+
+  def test_a_resolver_can_deny_site_admin_without_denying_a_stored_grant
+    @config.admin_emails = ['granted@example.org']
+    @config.admin_resolver = ->(_reader) { false }
+    reader = Reader.new('granted@example.org', true)
+
+    assert @config.admin?(reader)
+    refute @config.site_admin?(reader)
+    reader.admin = false
+    refute @config.admin?(reader)
+  end
+
+  def test_resolver_results_are_boolean_and_a_non_callable_resolver_falls_back_to_emails
+    reader = Reader.new('listed@example.org')
+    @config.admin_resolver = ->(_reader) { :allowed }
+    assert_equal true, @config.site_admin?(reader)
+    @config.admin_resolver = ->(_reader) {}
+    assert_equal false, @config.site_admin?(reader)
+
+    @config.admin_resolver = false
+    @config.admin_emails = reader.email
+    assert @config.admin_configured?
+    assert @config.site_admin?(reader)
+  end
+
+  def test_an_absent_admin_attribute_fails_closed_until_migrated
+    reader = Struct.new(:email).new('legacy@example.org')
+
+    refute @config.admin?(reader)
+    @config.admin_emails = [reader.email]
+    assert @config.admin?(reader)
+    assert @config.site_admin?(reader)
+  end
+
+  def test_only_a_boolean_true_counts_as_a_stored_grant
+    [nil, false, 'true', 'false', 1, 0].each do |value|
+      refute @config.admin?(Reader.new('reader@example.org', value))
+    end
   end
 
   def test_a_nil_reader_is_never_an_admin
     @config.admin_emails = %w[andrew@example.org]
     refute @config.admin?(nil)
+    refute @config.site_admin?(nil)
 
     @config.admin_resolver = ->(_reader) { true }
     refute @config.admin?(nil), 'a permissive resolver must still not admit nobody'
+    refute @config.site_admin?(nil)
   end
 end

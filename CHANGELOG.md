@@ -6,6 +6,7 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Added
 
+- distinguish configured Site-admins from stored Admin grants, keeping access independent of configuration presence
 - preview full photos after hovering over an avatar for 3 seconds; fit originals within the screen and fade out when the pointer leaves, without changing touch behavior
 
 ### Changed

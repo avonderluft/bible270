@@ -33,6 +33,7 @@ module Bible270
       'AddBodyFormatToBible270Comments' => :check_comment_body_format,
       'ChangeAllCommentNoticesDefaultToTrue' => :check_all_comment_notices_default,
       'AddDisplayModeToBible270Readers' => :check_display_mode,
+      'AddAdminToBible270Readers' => :check_admin,
       'CreateActiveStorageTables' => :check_active_storage
     }.freeze
 
@@ -233,6 +234,11 @@ module Bible270
       missing
     end
 
+    def check_admin
+      table_missing(:bible270_readers, columns: %i[admin]) +
+        missing_column_definitions(:bible270_readers, admin: { type: :boolean, null: false, default: false })
+    end
+
     def check_all_comment_notices_default
       missing = table_missing(:bible270_readers, columns: %i[notify_on_all_comments])
       return missing if missing.any?
@@ -282,6 +288,18 @@ module Bible270
       existing = connection.columns(table).map { |column| column.name.to_s }
       expected_columns.filter_map do |column|
         "column #{table}.#{column}" unless existing.include?(column.to_s)
+      end
+    end
+
+    def missing_column_definitions(table, definitions)
+      return [] unless connection.data_source_exists?(table)
+
+      connection.columns(table).flat_map do |column|
+        definitions.fetch(column.name.to_sym, {}).filter_map do |attribute, expected|
+          actual = column.public_send(attribute)
+          actual = ActiveModel::Type::Boolean.new.cast(actual) if attribute == :default && column.type == :boolean
+          "column #{table}.#{column.name} #{attribute} #{expected}" unless actual == expected
+        end
       end
     end
 
