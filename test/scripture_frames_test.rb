@@ -141,6 +141,18 @@ if RAILS_LOADED
       assert_nil CATALOG.attribution_for('OTHER')
     end
 
+    def test_biblical_order_uses_books_then_numeric_chapters_and_verses_with_stable_ties
+      references = ['Revelation 1:1', 'Psalm 119:103', 'John 3:16', 'Genesis 1:1', 'Psa 119.11',
+                    'Deut. 6.6-7', '2 Timothy 3:16-17', 'John 3:2', 'John 3:2', 'PsALms 2:1', 'Jhn 6:63']
+      frames = references.each_with_index.map { |reference, id| CATALOG::Entry.new(id: id, reference: reference, translation: 'ESV') }
+      quote = CATALOG::Entry.new(id: 'quote', reference: 'Genesis 1:1', translation: 'OTHER')
+      unknown = CATALOG::Entry.new(id: 'unknown', reference: 'An unrecognized reference', translation: 'ESV')
+
+      sorted = CATALOG.in_biblical_order([quote, unknown, *frames])
+      assert_equal [3, 5, 9, 4, 1, 7, 8, 2, 10, 6, 0, 'unknown', 'quote'], sorted.map(&:id)
+      assert_empty CATALOG.in_biblical_order([])
+    end
+
     def test_enabled_other_quotations_join_the_random_pool_without_bible_credits
       use_host("[]\n")
       quote = Bible270::ScriptureFrame.create!(reference: 'An author', text: 'A quotation.', translation: 'OTHER')

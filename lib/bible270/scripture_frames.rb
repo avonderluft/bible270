@@ -66,6 +66,42 @@ module Bible270
       translation_attributions[code.to_s.strip.upcase]
     end
 
+    def in_biblical_order(frames)
+      frames.each_with_index.sort_by do |frame, index|
+        position = reference_position(frame.reference) unless quotation?(frame.translation)
+        group = if quotation?(frame.translation)
+                  2
+                elsif position
+                  0
+                else
+                  1
+                end
+        [group, *(position || [0, 0, 0]), index]
+      end.map(&:first)
+    end
+
+    def reference_position(reference)
+      match = reference.to_s.match(%r{\A\s*([1-3]?\s*[[:alpha:]][[:alpha:]\s.]*?)\s+(\d+)(?:[:.](\d+))?})
+      return unless match
+
+      name = match[1].downcase.delete(' .')
+      books = Versification::VERSES.keys
+      book_index = books.each_index.find do |index|
+        aliases = [books[index].downcase.delete(' '), Translations::BLUE_LETTER_BOOK_CODES[index],
+                   Translations::BIBLE_COM_BOOK_CODES[index].downcase]
+        aliases << 'psalms' if books[index] == 'Psalm'
+        aliases.include?(name)
+      end
+      if book_index.nil? && name.length >= 3
+        candidates = books.each_index.select { |index| books[index].downcase.delete(' ').start_with?(name) }
+        book_index = candidates.first if candidates.one?
+      end
+      return unless book_index
+
+      [book_index, match[2].to_i, match[3]&.to_i || 1]
+    end
+    private_class_method :reference_position
+
     def custom_available?
       return false unless defined?(Bible270::ScriptureFrame)
 

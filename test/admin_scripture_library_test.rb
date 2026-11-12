@@ -172,6 +172,19 @@ if RAILS_LOADED
       assert_equal ids.uniq, ids
     end
 
+    def test_custom_scripture_is_sorted_biblically_before_quotations_and_defaults
+      references = ['John 3:16', 'Psalm 119:103', 'Genesis 1:1', 'Psa 119.11', 'Deut. 6.6-7']
+      references.each { |reference| Bible270::ScriptureFrame.create!(reference: reference, text: 'Passage.', translation: 'ESV') }
+      Bible270::ScriptureFrame.create!(reference: 'An author', text: 'A quotation.', translation: 'OTHER')
+
+      get admin_path
+      actual = css_select('#b270-custom-scripture-texts summary strong').map(&:text)
+      assert_equal ['Genesis 1:1', 'Deut. 6.6-7', 'Psa 119.11', 'Psalm 119:103', 'John 3:16',
+                    @frame.reference, @disabled.reference, 'An author'], actual
+      sources = css_select('#b270-scripture-frames article').map { |entry| entry['data-source'] }
+      assert_equal (['custom'] * actual.length) + (['default'] * Bible270::ScriptureFrames.defaults.length), sources
+    end
+
     def test_main_panel_has_no_redundant_description_instructional_hints_or_manage_links
       get admin_path
 

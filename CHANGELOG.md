@@ -27,7 +27,7 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - speed up the full test suite with CPU-aware workers, smaller feature-focused test files, and quieter logs; retain all tests and coverage
 - compact Status, Role, and Completion animation into single-row Admin controls; replace the completion checkbox and Save with one Enable/Disable button, and align Move and Set date forms on one row
 - place Scripture Reference and Translation first, side by side with inline labels; require pasted Text below, with API retrieval deferred
-- consolidate Scripture management on the main Admin page with custom passages first, followed by custom quotations and defaults; retain Custom/Default on each row without group headings, place Add text beside Scripture frames, and keep inline Edit/Enable/Disable/Delete controls; remove redundant hints and redirect the old Manage texts page to this panel
+- consolidate Scripture management on the main Admin page with custom passages first in biblical order, followed by custom quotations and defaults; retain Custom/Default on each row without group headings, place Add text beside Scripture frames, and keep inline Edit/Enable/Disable/Delete controls; remove redundant hints and redirect the old Manage texts page to this panel
 - place Admin and Profile name fields side by side with shorter inputs; order Admin settings as Theme, Email, Where they are, Role, Status, and Completion animation
 
 **Upgrade:** Back up the database, then copy and run migrations `20260101000024`–`20260101000027` from the host app. Existing readers and check-offs become the initial run. The run-history migration is intentionally irreversible.

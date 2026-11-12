@@ -184,7 +184,7 @@ module Bible270
       @scripture_frame_default_settings_available = ScriptureFrames.default_settings_available?
       @disabled_default_scripture_frame_ids = ScriptureFrames.disabled_default_ids
       @scripture_frame_storage = ScriptureFrames.custom_available?
-      @custom_scripture_frames = @scripture_frame_storage ? ScriptureFrame.order(:id).to_a : []
+      @custom_scripture_frames = @scripture_frame_storage ? ScriptureFrames.in_biblical_order(ScriptureFrame.order(:id).to_a) : []
     end
 
     def show
