@@ -11,7 +11,7 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - add a compact Scripture frames panel near the bottom of Admin with reference/translation headings and passage tooltips; database additions supplement read-only YAML defaults, with automatic translation credits
 - add **Start a new run** in Admin: give Admins and Site-admins a fresh active membership with zero progress and no personal start date, move other readers to alumni, and open enrollment; preserve accounts, photos, past progress, and discussions
 - add confirmed **Revert to previous run**: restore saved statuses for everyone, including admins, plus calendars and enrollment settings; preserve both runs' progress and discussions. Available for restarts made after upgrading
-- add Active/Alumni controls, initially expanded **Show / Hide Active Readers** and collapsed **Show / Hide Alumni** disclosures with shared sorting and per-reader **Make Active** buttons, and read-only run history; returning to a new run starts fresh, while same-run reactivation preserves progress
+- add Active/Alumni controls, initially expanded **Show / Hide Active Readers** (remembered for the current tab's sign-in session) and collapsed **Show / Hide Alumni** disclosures with shared sorting and per-reader **Make Active** buttons, and read-only run history; returning to a new run starts fresh, while same-run reactivation preserves progress
 - let configured Site-admins grant or remove admin access; roles persist across runs, independently of Active/Alumni status. Site-admins can change their own status, but their role is controlled by configuration
 
 ### Changed

@@ -143,6 +143,11 @@ if RAILS_LOADED
         assert_includes tables.first.text, @admin.display_name
         refute_includes tables.first.text, @reader.display_name
       end
+      key = css_select('#b270-active-readers').first['data-b270-active-readers-key']
+      assert_match(%r{\A#{Regexp.escape(admin_path)}:[a-f0-9]{32}\z}, key)
+      assert_select 'script[data-b270-admin-reader-list]', count: 1
+      get admin_path, params: { sort: 'last_name' }
+      assert_equal key, css_select('#b270-active-readers').first['data-b270-active-readers-key']
       assert_match(%r{details\.b270-active-readers>summary\{margin:0 0 12px\}}, response.body)
       assert_match(%r{details\.b270-alumni\{margin-bottom:24px\}}, response.body)
     end

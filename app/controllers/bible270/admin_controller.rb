@@ -137,6 +137,7 @@ module Bible270
     def index
       return render :reader_view if b270_reader_view?
 
+      @active_readers_session_key = session[:b270_active_readers_session_key] ||= SecureRandom.hex(16)
       @enrollment_closed = Setting.enrollment_closed?
       @enrollment_closed_at = Setting.enrollment_closed_at
       @days_completed = Reader.completed_days_by_id

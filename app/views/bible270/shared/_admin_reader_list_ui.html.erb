@@ -1,0 +1,49 @@
+<script nonce="<%= content_security_policy_nonce %>" data-b270-admin-reader-list>
+  (() => {
+    if (window.Bible270AdminReaderList) {
+      window.Bible270AdminReaderList.restore();
+      return;
+    }
+
+    const selector = "details[data-b270-active-readers-key]";
+    const initialized = new WeakSet();
+    const states = new Map();
+    const keyFor = (element) => `b270-active-readers:${element.dataset.b270ActiveReadersKey}`;
+
+    function remember(element) {
+      if (!element.isConnected || !element.dataset.b270ActiveReadersKey) return;
+      const key = keyFor(element);
+      const value = element.open ? "open" : "closed";
+      states.set(key, value);
+      try { window.sessionStorage.setItem(key, value); } catch (_error) { /* Keep Turbo visits working without storage. */ }
+    }
+
+    function restore(force = false) {
+      document.querySelectorAll(selector).forEach((element) => {
+        if (!element.dataset.b270ActiveReadersKey || (initialized.has(element) && !force)) return;
+        const key = keyFor(element);
+        let value = states.get(key);
+        if (value === undefined) {
+          try { value = window.sessionStorage.getItem(key); } catch (_error) { /* Native disclosure remains usable. */ }
+        }
+        if (value === "open" || value === "closed") element.open = value === "open";
+        initialized.add(element);
+      });
+    }
+
+    function rememberAll() {
+      document.querySelectorAll(selector).forEach(remember);
+    }
+
+    // Native details toggle events do not bubble, so listen in capture phase.
+    document.addEventListener("toggle", (event) => {
+      if (event.target.matches?.(selector)) remember(event.target);
+    }, true);
+    document.addEventListener("turbo:before-cache", rememberAll);
+    document.addEventListener("turbo:load", () => restore(true));
+    window.addEventListener("pagehide", rememberAll);
+    window.addEventListener("pageshow", () => restore(true));
+    window.Bible270AdminReaderList = { restore };
+    restore();
+  })();
+</script>

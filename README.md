@@ -297,7 +297,7 @@ At the bottom of Admin, enter a start date, choose **Start a new run**, and acce
 
 Alumni can sign in, view Community's **active-reader list**, and post, reply to, and like reflections. Earlier reflections remain visible under the same moderation rules. Archived check-offs are read-only and excluded from current statistics and daily completer lists.
 
-**Show / Hide Active Readers** lets you collapse the current-reader list; it starts expanded. Sorting and Reader Stats stay accessible when it is collapsed.
+**Show / Hide Active Readers** starts expanded and remembers your choice in the current tab's sign-in session, including after sorting or revisiting Admin. Sorting and Reader Stats stay accessible when it is collapsed.
 
 **Show / Hide Alumni** at the bottom of Admin uses the browser's built-in expandable section, starting collapsed like **View all 270 days**. It needs no JavaScript or reload and changes no membership. It uses the selected sort and frozen reader statistics; the main list and Reader Stats show active readers only. Each alumni row has a confirmed **Make Active** button that returns to Admin with the same sort.
 

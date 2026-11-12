@@ -91,7 +91,8 @@
     </p>
   <% end %>
 
-  <details class="b270-index b270-active-readers" id="b270-active-readers" open>
+  <details class="b270-index b270-active-readers" id="b270-active-readers"
+           data-b270-active-readers-key="<%= "#{admin_path}:#{@active_readers_session_key}" %>" open>
     <summary>
       <span class="b270-active-readers-show">Show Active Readers (<%= @readers.size %>)</span>
       <span class="b270-active-readers-hide">Hide Active Readers (<%= @readers.size %>)</span>
@@ -223,3 +224,4 @@
 
 <p style="margin-top:18px"><%= link_to '← Back to the plan', root_path %></p>
 <%= render 'bible270/shared/admin_confirmations' %>
+<%= render 'bible270/shared/admin_reader_list_ui' %>
