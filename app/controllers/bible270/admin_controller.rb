@@ -80,7 +80,7 @@ module Bible270
 
     def update_participation
       unless %w[active alumni].include?(params[:status])
-        return redirect_to admin_reader_path(@reader), alert: 'Choose Active or Alumni. Nothing was changed.'
+        return redirect_to participation_return_path, alert: 'Choose Active or Alumni. Nothing was changed.'
       end
 
       run = PlanRun.current
@@ -93,9 +93,9 @@ module Bible270
         params[:status] == 'active' ? @reader.activate! : @reader.archive!
       end
       notice = params[:status] == 'active' ? 'Reader is active in the current run.' : 'Reader marked as alumni. Progress and history are preserved.'
-      redirect_to admin_reader_path(@reader), notice: notice
+      redirect_to participation_return_path, notice: notice
     rescue PlanRun::StaleRun
-      redirect_to admin_reader_path(@reader), alert: 'The current run changed. Reload this page before changing membership. Nothing was changed.'
+      redirect_to participation_return_path, alert: 'The current run changed. Reload this page before changing membership. Nothing was changed.'
     end
 
     def update_run_start
@@ -463,6 +463,13 @@ module Bible270
     end
 
   private
+
+    def participation_return_path
+      return admin_reader_path(@reader) unless params[:return_to] == 'admin'
+
+      sort = READER_SORT_OPTIONS.key?(params[:sort]) ? params[:sort] : 'first_name'
+      admin_path(sort: sort)
+    end
 
     def require_active_reader!
       return archived_progress if @reader.alumni?

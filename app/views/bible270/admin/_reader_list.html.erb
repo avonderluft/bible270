@@ -43,6 +43,12 @@
       </div>
       <div class="stat">
         <span class="big"><%= (days_completed[reader.id].to_f / Bible270::Plan::DAYS * 100).round %>%</span>
+        <% if reader.alumni? %>
+          <%= button_to 'Make Active', admin_reader_participation_path(reader), method: :patch,
+                params: { status: 'active', expected_run_id: @current_run.id, return_to: 'admin', sort: @reader_sort },
+                class: 'b270-btn b270-admin-activate',
+                form: { data: { b270_admin_confirm: 'Reactivate this reader in the current run? Same-run progress is preserved; joining a different run starts fresh progress and clears their personal start date. Past history is preserved.' } } %>
+        <% end %>
       </div>
     </div>
   <% end %>

@@ -91,9 +91,15 @@
     </p>
   <% end %>
 
-  <%= render 'reader_list', readers: @readers, days_completed: @days_completed,
-        report: @reader_report, activities: @recent_reader_activities %>
-  <% if @readers.empty? %><p class="b270-hint">No active readers yet.</p><% end %>
+  <details class="b270-index b270-active-readers" id="b270-active-readers" open>
+    <summary>
+      <span class="b270-active-readers-show">Show Active Readers (<%= @readers.size %>)</span>
+      <span class="b270-active-readers-hide">Hide Active Readers (<%= @readers.size %>)</span>
+    </summary>
+    <%= render 'reader_list', readers: @readers, days_completed: @days_completed,
+          report: @reader_report, activities: @recent_reader_activities %>
+    <% if @readers.empty? %><p class="b270-hint">No active readers yet.</p><% end %>
+  </details>
 
   <dialog id="b270-reader-stats-dialog" class="b270-reader-stats-dialog"
           aria-labelledby="b270-reader-stats-title" data-b270-reader-stats-dialog>

@@ -123,6 +123,44 @@ if RAILS_LOADED
       refute_match(%r{delete reflections}i, response.body)
     end
 
+    def test_active_readers_use_an_expanded_native_disclosure_without_hiding_tools_or_stats
+      @reader.archive!
+      get admin_path, params: { sort: 'consistency' }
+
+      assert_response :success
+      assert_select 'details#b270-active-readers.b270-index[open]', count: 1 do
+        assert_select '> summary .b270-active-readers-show', text: 'Show Active Readers (2)'
+        assert_select '> summary .b270-active-readers-hide', text: 'Hide Active Readers (2)'
+        assert_select '> .b270-list .b270-li', count: 2
+        assert_select "a[aria-label='#{@admin.display_name}']", count: 1
+        assert_select "a[aria-label='#{@reader.display_name}']", count: 0
+        assert_select 'form, .b270-admin-reader-tools, dialog, script', count: 0
+      end
+      assert_select '.b270-admin-reader-tools select[name="sort"] option[value="consistency"][selected]'
+      assert_select '.b270-admin-reader-tools [data-b270-reader-stats-open][aria-controls="b270-reader-stats-dialog"]', text: 'Reader Stats'
+      assert_select '.b270-consistency-explanation + details#b270-active-readers'
+      assert_select '#b270-active-readers + dialog#b270-reader-stats-dialog pre' do |tables|
+        assert_includes tables.first.text, @admin.display_name
+        refute_includes tables.first.text, @reader.display_name
+      end
+      assert_match(%r{details\.b270-active-readers>summary\{margin:0 0 12px\}}, response.body)
+      assert_match(%r{details\.b270-alumni\{margin-bottom:24px\}}, response.body)
+    end
+
+    def test_empty_active_disclosure_remains_expanded_when_there_are_only_alumni
+      [@site_admin, @admin, @reader].each(&:archive!)
+      get admin_path
+
+      assert_response :success
+      assert_select 'details#b270-active-readers[open]' do
+        assert_select 'summary .b270-active-readers-hide', text: 'Hide Active Readers (0)'
+        assert_select '.b270-li', count: 0
+        assert_select '.b270-hint', text: 'No active readers yet.'
+      end
+      assert_select '.b270-admin-reader-tools', count: 1
+      assert_select '#b270-alumni .b270-li', count: 3
+    end
+
     def test_alumni_use_a_collapsed_native_disclosure_with_the_list_ready_to_expand
       @reader.archive!
       get admin_path
@@ -132,11 +170,165 @@ if RAILS_LOADED
         assert_select 'summary .b270-alumni-show', text: 'Show Alumni (1)'
         assert_select 'summary .b270-alumni-hide', text: 'Hide Alumni (1)'
         assert_select ".b270-li a[aria-label='#{@reader.display_name}']", count: 1
-        assert_select 'form, input, button', count: 0
+        assert_select '.stat button.b270-admin-activate', text: 'Make Active', count: 1
       end
       assert_select 'input[name="show_alumni"]', count: 0
       get admin_path, params: { show_alumni: '1' }
       assert_select 'details#b270-alumni:not([open])'
+    end
+
+    def test_only_alumni_rows_offer_quick_activation_with_the_current_run_and_detail_confirmation
+      get admin_path
+      assert_select '.b270-list .b270-admin-activate', count: 0
+
+      @reader.archive!
+      other = create_reader('Other Alumni')
+      other.archive!
+      get reader_path(@reader)
+      confirmation = css_select('#b270-participation form').first['data-b270-admin-confirm']
+      assert_equal 'Reactivate this reader in the current run? Same-run progress is preserved; joining a different run starts fresh progress and clears their personal start date. Past history is preserved.', confirmation
+      fresh = Bible270::PlanRun.restart!(start_date: Bible270.today + 1, expected_run_id: @run.id)
+
+      Bible270::AdminController::READER_SORT_OPTIONS.each_key do |sort|
+        get admin_path, params: { sort: sort }
+
+        assert_response :success
+        assert_select '.b270-list .b270-admin-activate', count: 2
+        [@reader, other].each do |reader|
+          assert_select "#b270-alumni .stat form[action='#{participation_path(reader)}'][method='post']", count: 1 do |forms|
+            assert_equal confirmation, forms.first['data-b270-admin-confirm']
+            assert_select 'input[type="hidden"][name="_method"][value="patch"]'
+            assert_select 'input[type="hidden"][name="status"][value="active"]'
+            assert_select "input[type='hidden'][name='expected_run_id'][value='#{fresh.id}']"
+            assert_select 'input[type="hidden"][name="return_to"][value="admin"]'
+            assert_select "input[type='hidden'][name='sort'][value='#{sort}']"
+            assert_select 'button.b270-btn.b270-admin-activate[type="submit"]', text: 'Make Active'
+          end
+        end
+      end
+      get admin_path, params: { sort: 'unknown' }
+      assert_select '#b270-alumni input[name="sort"][value="first_name"]', count: 2
+    end
+
+    def test_quick_activation_in_the_same_run_preserves_progress_and_returns_to_the_chosen_sort
+      @reader.update!(started_on: Bible270.today - 2)
+      @reader.mark_through!(2)
+      @reader.archive!
+      membership = @reader.participation
+      checkoffs = membership.checkoffs.order(:id).map(&:attributes)
+
+      patch participation_path(@reader), params: quick_activation_params
+
+      assert_redirected_to "#{admin_path}?sort=last_name"
+      assert_equal 'Reader is active in the current run.', flash[:notice]
+      refute @reader.reload.alumni?
+      assert_equal membership.id, @reader.participation.id
+      assert_equal Bible270.today - 2, @reader.started_on
+      assert_equal 2, @reader.days_completed
+      assert_equal checkoffs, @reader.checkoffs.order(:id).map(&:attributes)
+      follow_redirect!
+      assert_response :success
+      assert_select 'option[value="last_name"][selected]'
+      assert_select '#b270-alumni .b270-li', count: 0
+      assert_select '.b270-list .b270-admin-activate', count: 0
+      assert_select ".b270-list .name a[href='#{reader_path(@reader)}']", count: 1
+    end
+
+    def test_quick_activation_in_a_different_run_starts_fresh_and_preserves_history
+      @reader.update!(started_on: Bible270.today - 4)
+      @reader.mark_through!(3)
+      reflection = @reader.comments.create!(day: 1, body: 'Past reflection')
+      membership = @reader.participation
+      fresh = Bible270::PlanRun.restart!(start_date: Bible270.today + 1, expected_run_id: @run.id)
+      history = membership.reload.attributes
+      checkoffs = membership.checkoffs.order(:id).map(&:attributes)
+
+      patch participation_path(@reader), params: quick_activation_params.merge(expected_run_id: fresh.id)
+
+      assert_redirected_to "#{admin_path}?sort=last_name"
+      refute @reader.reload.alumni?
+      assert_equal fresh.id, @reader.participation.plan_run_id
+      refute_equal membership.id, @reader.participation.id
+      assert_equal 2, @reader.participations.count
+      assert_nil @reader.started_on
+      assert_nil @reader.participation.started_on
+      assert_equal 0, @reader.days_completed
+      assert_empty @reader.checkoffs
+      assert_equal history, membership.reload.attributes
+      assert_equal checkoffs, membership.checkoffs.order(:id).map(&:attributes)
+      assert_equal 'Past reflection', reflection.reload.body
+    end
+
+    def test_invalid_or_stale_quick_activation_is_a_noop_and_returns_to_the_list
+      @reader.mark_through!(1)
+      @reader.archive!
+      before = membership_snapshot
+      [quick_activation_params.merge(status: 'invalid'), quick_activation_params.except(:expected_run_id),
+       quick_activation_params.merge(expected_run_id: ''), quick_activation_params.merge(expected_run_id: @run.id + 1)].each do |parameters|
+        patch participation_path(@reader), params: parameters
+
+        assert_redirected_to "#{admin_path}?sort=last_name"
+        assert flash[:alert].present?
+        assert_equal before, membership_snapshot
+      end
+      Bible270::PlanRun.restart!(start_date: Bible270.today + 1, expected_run_id: @run.id)
+      before = membership_snapshot
+      patch participation_path(@reader), params: quick_activation_params
+
+      assert_redirected_to "#{admin_path}?sort=last_name"
+      assert_match(%r{run changed}, flash[:alert])
+      assert_equal before, membership_snapshot
+      Bible270::PlanRun.stub(:current, @run) do
+        patch participation_path(@reader), params: quick_activation_params
+      end
+      assert_redirected_to "#{admin_path}?sort=last_name"
+      assert_match(%r{run changed}, flash[:alert])
+      assert_equal before, membership_snapshot
+    end
+
+    def test_quick_activation_only_accepts_a_fixed_admin_destination_and_allowlisted_sort
+      ['https://evil.example/admin', '//evil.example/admin', "#{admin_path}?sort=last_name", '/other'].each do |destination|
+        @reader.archive!
+        patch participation_path(@reader), params: quick_activation_params.merge(return_to: destination)
+
+        assert_redirected_to reader_path(@reader)
+        refute @reader.reload.alumni?
+      end
+      [nil, '', 'https://evil.example', '//evil.example', 'unknown'].each do |sort|
+        @reader.archive!
+        patch participation_path(@reader), params: quick_activation_params.merge(sort: sort)
+
+        assert_redirected_to "#{admin_path}?sort=first_name"
+        refute @reader.reload.alumni?
+      end
+    end
+
+    def test_visitors_readers_and_admin_preview_cannot_quick_activate_alumni
+      @reader.archive!
+      before = membership_snapshot
+      open_session do |visitor|
+        visitor.patch participation_path(@reader), params: quick_activation_params
+        assert_equal 404, visitor.response.status
+      end
+      assert_equal before, membership_snapshot
+      sign_in_as(@reader)
+      before = membership_snapshot
+      patch participation_path(@reader), params: quick_activation_params
+      assert_response :not_found
+      assert_equal before, membership_snapshot
+
+      [@admin, @site_admin].each do |admin|
+        sign_in_as(admin)
+        patch "#{admin_path}/view", params: { view: 'reader' }
+        get admin_path
+        assert_response :success
+        assert_select '.b270-admin-activate', count: 0
+        assert_select '#b270-active-readers, #b270-alumni, .b270-admin-reader-tools, #b270-reader-stats-dialog', count: 0
+        before = membership_snapshot
+        patch participation_path(@reader), params: quick_activation_params
+        assert_response :not_found
+        assert_equal before, membership_snapshot
+      end
     end
 
     def test_role_and_alumni_badges_share_compact_styling_in_both_lists
@@ -179,6 +371,7 @@ if RAILS_LOADED
         assert_select '.b270-admin-reader-sort select[name="sort"] option[selected]' do |options|
           assert_equal sort, options.first['value']
         end
+        assert_select 'details#b270-active-readers[open] .b270-li', count: 2
         assert_select 'details#b270-alumni:not([open])'
         assert_select '#b270-alumni .b270-li', count: 2
         assert_select '#b270-alumni .b270-reader-consistency', count: 2
@@ -508,6 +701,16 @@ if RAILS_LOADED
 
     def restart_params
       { start_date: (Bible270.today + 1).iso8601, expected_run_id: @run.id, confirm_restart: '1' }
+    end
+
+    def quick_activation_params
+      { status: 'active', expected_run_id: @run.id, return_to: 'admin', sort: 'last_name' }
+    end
+
+    def membership_snapshot
+      [Bible270::PlanRun, Bible270::Reader, Bible270::Participation, Bible270::Checkoff].map do |model|
+        model.order(:id).map(&:attributes)
+      end
     end
 
     def change_status(reader, status)
