@@ -501,10 +501,17 @@
   .b270-scripture-fields .b270-field{display:flex;align-items:center;gap:8px;flex:1 1 220px;min-width:0}
   .b270-scripture-fields label{white-space:nowrap}
   .b270-scripture-fields .b270-field>input,.b270-scripture-fields .b270-select-wrap{flex:1;min-width:0}
-  .b270-scripture-actions{display:flex;align-items:center;gap:12px;margin-top:12px;white-space:nowrap}
+  .b270-scripture-panel-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+  .b270-scripture-panel-header>.b270-subhead,.b270 .b270-scripture-panel-header>.b270-btn{margin:0}
+
+  .b270 .b270-scripture-panel-header>.b270-btn{padding:6px 10px;font-size:12.5px;white-space:nowrap}
+  .b270-scripture-actions{display:flex;align-items:center;gap:10px;margin:0;white-space:nowrap}
   .b270-scripture-actions>form{margin:0}
   .b270-scripture-actions>a,.b270-scripture-actions .b270-linkbtn{margin:0;font-size:12.5px;color:var(--oxblood)}
   .b270-scripture-library-entry{padding:10px 0;border-top:1px solid var(--line-soft);font-size:13px}
+  .b270-scripture-library-entry--default,.b270-scripture-library-entry--custom{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px}
+  .b270-scripture-default-toggle{margin:0}
+  .b270 .b270-scripture-default-toggle .b270-linkbtn{margin:0;font-size:12.5px;line-height:inherit;white-space:nowrap;color:var(--oxblood)}
   .b270-scripture-library-disclosure{position:relative}
   .b270-scripture-library-disclosure>summary{cursor:pointer;overflow-wrap:anywhere}
   .b270-scripture-library-text{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font-family:"Spectral",Georgia,serif;font-size:15px;line-height:1.5}
@@ -517,8 +524,8 @@
   @supports selector(details::details-content){
     .b270-scripture-library-disclosure::details-content{display:block;content-visibility:visible}
     .b270-scripture-library-disclosure:not([open])>.b270-scripture-library-text{display:none}
-    .b270-scripture-library-disclosure:hover>.b270-scripture-library-text,
-    .b270-scripture-library-disclosure:focus-within>.b270-scripture-library-text{display:block}
+    .b270-scripture-library-disclosure:not([data-b270-scripture-preview-dismissed]):hover>.b270-scripture-library-text,
+    .b270-scripture-library-disclosure:not([data-b270-scripture-preview-dismissed]):focus-within>.b270-scripture-library-text{display:block}
   }
 
   /* A small, theme-coloured wall-art mat, shared with stored-frame previews. */

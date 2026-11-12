@@ -20,6 +20,7 @@ Bible270::Engine.routes.draw do
   delete 'comments/:id',           to: 'comments#destroy', as: :comment
 
   # Admin panel — configured site-admins and readers granted admin access.
+  patch 'admin/scripture-frame-defaults/:id', to: 'admin_scripture_frames#update_default', as: :admin_default_scripture_frame
   resources :admin_scripture_frames, path: 'admin/scripture-frames', only: %i[index new create edit update destroy]
   get    'admin',                        to: 'admin#index',            as: :admin
   patch  'admin/view',                   to: 'admin#update_view',      as: :admin_view

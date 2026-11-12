@@ -181,6 +181,8 @@ module Bible270
       @last_broadcast_at = parsed_time(Setting.read(LAST_BROADCAST_AT))
       @last_broadcast_subject = Setting.read(LAST_BROADCAST_SUBJECT)
       @scripture_frame_defaults = ScriptureFrames.defaults
+      @scripture_frame_default_settings_available = ScriptureFrames.default_settings_available?
+      @disabled_default_scripture_frame_ids = ScriptureFrames.disabled_default_ids
       @scripture_frame_storage = ScriptureFrames.custom_available?
       @custom_scripture_frames = @scripture_frame_storage ? ScriptureFrame.order(:id).to_a : []
     end

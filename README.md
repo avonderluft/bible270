@@ -273,7 +273,7 @@ The panel supports:
 - Mark readers as alumni, reactivate them, and view past-run history.
 - Delete unprotected readers **and all their check-offs and reflections across runs**.
 - Hide (reversibly) or delete reflections at `<mount>/admin/comments`. Posts are public immediately, without approval.
-- Review full [Scripture frame](#scripture-frame) texts near the bottom of the panel; add, edit, disable, or delete custom texts through **Manage texts**.
+- Manage [Scripture frame](#scripture-frame) texts near the bottom of the panel: add texts, edit or delete custom texts, and enable or disable any text.
 - Send individually addressed email: **Write to everyone** reaches active readers; **Write to all admins** includes alumni admins. Both require an email address.
 
 To print a progress report ordered by completed days:
@@ -371,7 +371,7 @@ Completing a day's final check-off fades in a random frame over **1.3 seconds**,
 
 The [bundled YAML catalog](config/scripture_frames.yml) includes Deuteronomy 6:6-7 (NASB95), Deuteronomy 11:18 (NKJV), Deuteronomy 30:14 (ESV), Psalm 19:8 (NKJV), Psalm 107:20 (NKJV), Psalm 119:11 (NASB95), Psalm 119:47 (NKJV), Psalm 119:103 (NASB95), Psalm 119:105 (NKJV), Psalm 119:130 (NASB95), Proverbs 6:23 (NASB95), Isaiah 55:11 (ESV), Jeremiah 15:16 (NASB95), Jeremiah 23:29 (NKJV), John 6:63 (NKJV), John 17:17 (NASB95), 2 Corinthians 4:6 (NKJV), Colossians 3:16 (ESV), 2 Timothy 3:16-17 (ESV), Hebrews 4:12 (NKJV), and 1 Peter 2:2-3 (NASB95), in biblical order. Near the bottom of **Admin**, **Scripture frames** lists Custom texts before Defaults, showing each passage's reference, translation, and status. Hover or focus a heading to preview the text; select it to expand the passage. **Manage texts** uses the same compact lists, with **Add text** at the top and Edit, Disable/Enable, and Delete controls for custom texts. To add a passage, enter Reference and Translation on the top row, then paste the required Text (up to 4,000 characters). Attribution is automatic; line breaks are preserved. Use texts you have permission to reproduce.
 
-**Admin additions are stored in the database and supplement the defaults. They never change the YAML file.** Defaults are read-only in Admin; custom texts can be edited, disabled, or deleted. They are shared across runs. Adding texts requires migration `20260101000027`.
+**Admin additions are stored in the database and supplement the defaults. They never change the YAML file.** Defaults start enabled. Use the **Enable/Disable** button to the right of each default in Admin; disabled texts remain previewable but are excluded from bread-icon and completion frames. These switches are saved across runs without changing YAML or requiring a new migration. Default text cannot be edited or deleted; custom texts can be edited, disabled, or deleted. Adding custom texts requires migration `20260101000027`.
 
 **TODO:** Integrate the [YouVersion API](https://developers.youversion.com/) to retrieve Scripture text by reference and translation. Keep the app key server-side, confirm permission to store and display each translation, and preserve required attribution. For now, paste the text; no API setup is needed.
 

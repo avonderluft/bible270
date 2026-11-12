@@ -673,7 +673,9 @@ test('mobile header fits, icon/title centers align, theme changes only the board
   const scenery = readFileSync(resolve(__dirname, '../../app/views/bible270/shared/_theme_scenery.html.erb'), 'utf8');
   const papyrus = scenery.match(/<svg class="b270-theme-scenery" data-scenery="light"[\s\S]*?<\/svg>/)[0].replace(/<%[\s\S]*?%>/g, '');
   // Exercise the actual stylesheet in isolated viewports, without Rails, fonts, network or dependencies.
-  const browserCheck = function(styles, svg, figure, papyrus) {
+  const librarySource = readFileSync(resolve(__dirname, '../../app/views/bible270/shared/_scripture_library_ui.html.erb'), 'utf8')
+    .replace(/<%[\s\S]*?%>/g, '').match(/<script\b[^>]*>([\s\S]*?)<\/script>/i)[1];
+  const browserCheck = function(styles, svg, figure, papyrus, librarySource) {
     const failures = [];
     const fills = new Set();
     const surfaces = new Set();
@@ -696,10 +698,17 @@ test('mobile header fits, icon/title centers align, theme changes only the board
           <nav class="b270-nav"><div class="b270-desktopnav"><a href="#">Overview</a><a href="#">Community</a><a href="#">Profile</a></div>
           <div class="b270-navmenu"><button type="button" class="b270-navtoggle">☰</button></div></nav></header>
           <details class="b270-index b270-alumni" id="b270-alumni"><summary>Show Alumni</summary><div class="b270-list">Reader</div></details>
-          <section class="b270-panel" id="b270-scripture-frames"><details class="b270-scripture-library-disclosure"><summary>Sample passage · NKJV · Custom</summary><blockquote class="b270-scripture-library-text">Sample Scripture text.</blockquote></details></section></div>
+          <section class="b270-panel" id="b270-scripture-frames"><details class="b270-scripture-library-disclosure"><summary>Sample passage · NKJV · Custom</summary><blockquote class="b270-scripture-library-text">Sample Scripture text.</blockquote></details>
+                    <article class="b270-scripture-library-entry b270-scripture-library-entry--default"><details class="b270-scripture-library-disclosure"><summary>A long default reference · NASB95 · Default · Disabled</summary><blockquote class="b270-scripture-library-text">Default passage.</blockquote></details><form class="b270-scripture-default-toggle"><button type="submit" class="b270-linkbtn">Enable</button></form></article></section></div>
           <div class="b270-scripture-popup is-visible" style="left:12px;top:12px">${figure}</div></body></html>`);
         doc.close();
+        viewport.contentWindow.Function(librarySource)();
         const name = `${width}px/${mark}`;
+        const defaultRow = doc.querySelector('.b270-scripture-library-entry--default');
+        const defaultToggle = defaultRow.querySelector('form').getBoundingClientRect();
+        const defaultHeading = defaultRow.querySelector('details').getBoundingClientRect();
+        check(Math.abs(defaultToggle.right - defaultRow.getBoundingClientRect().right) < 1, `${name}: default toggle aligns to the right`);
+        check(defaultHeading.right <= defaultToggle.left && Math.abs(defaultHeading.top - defaultToggle.top) < 1, `${name}: default toggle sits beside the heading without overlap`);
         const title = doc.querySelector('.b270-title').getBoundingClientRect();
         const trigger = doc.querySelector('.b270-scripture-trigger');
         const brand = doc.querySelector('.b270-brand-home').getBoundingClientRect();
@@ -782,6 +791,23 @@ test('mobile header fits, icon/title centers align, theme changes only the board
             swatch.remove();
           }
         }
+        // Run native click/focus checks last so they cannot change input modality for the header checks.
+        if (width === widths[widths.length - 1] && mark === 'none' && viewport.contentWindow.CSS.supports('selector(details::details-content)')) {
+          const outside = doc.createElement('button');
+          doc.body.append(outside);
+          doc.querySelectorAll('.b270-scripture-library-disclosure').forEach((disclosure) => {
+            const summary = disclosure.querySelector('summary');
+            const text = disclosure.querySelector('.b270-scripture-library-text');
+            disclosure.open = true;
+            summary.focus();
+            summary.click();
+            check(!disclosure.open && viewport.contentWindow.getComputedStyle(text).display === 'none', `${name}: collapsing hides the passage even while its heading retains focus`);
+            outside.focus();
+            summary.focus();
+            check(viewport.contentWindow.getComputedStyle(text).display === 'block', `${name}: fresh heading focus restores the tooltip (dismissed ${disclosure.hasAttribute('data-b270-scripture-preview-dismissed')}; active ${doc.activeElement === summary}; focus-within ${disclosure.matches(':focus-within')})`);
+          });
+          outside.remove();
+        }
         viewport.remove();
       }
     }
@@ -792,7 +818,7 @@ test('mobile header fits, icon/title centers align, theme changes only the board
     result.textContent = JSON.stringify({ failures, scenarios: widths.length * 3, boards });
     document.body.append(result);
   };
-  const page = `<!doctype html><html><body><script>(${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(svg)},${JSON.stringify(figure)},${JSON.stringify(papyrus)})</script></body></html>`;
+  const page = `<!doctype html><html><body><script>(${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(svg)},${JSON.stringify(figure)},${JSON.stringify(papyrus)},${JSON.stringify(librarySource)})</script></body></html>`;
   const result = spawnSync('chromium', ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--dump-dom', '--timeout=10000', '--virtual-time-budget=1000', `data:text/html,${encodeURIComponent(page)}`], {
     timeout: 15000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024
   });

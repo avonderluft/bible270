@@ -1,22 +1,34 @@
 <section class="b270-panel" id="b270-scripture-frames" aria-labelledby="b270-scripture-frames-heading">
-  <h2 class="b270-subhead" id="b270-scripture-frames-heading">Scripture frames</h2>
-  <p class="b270-hint">Hover over the bread for 3 seconds, or select it, to show a random text. Admin additions supplement the YAML defaults without changing them.</p>
-  <p>
-    <%= link_to 'Manage texts', admin_scripture_frames_path, class: 'b270-btn' %>
+  <div class="b270-scripture-panel-header">
+    <h2 class="b270-subhead" id="b270-scripture-frames-heading">Scripture frames</h2>
     <% if @scripture_frame_storage %>
-      <%= link_to 'Add text', new_admin_scripture_frame_path, class: 'b270-btn' %>
-    <% else %>
-      <span class="b270-hint">Run the pending database migration to add custom texts.</span>
+      <%= link_to 'Add text', new_admin_scripture_frame_path(sort: @reader_sort), class: 'b270-btn' %>
     <% end %>
-  </p>
-  <p class="b270-hint">Hover or focus a heading to read the passage; select it to keep the text open.</p>
+  </div>
+  <% unless @scripture_frame_storage %>
+    <p class="b270-hint">Run the pending database migration to add custom texts.</p>
+  <% end %>
   <% [[@custom_scripture_frames, 'Custom'], [@scripture_frame_defaults, 'Default']].each do |frames, source| %>
-    <% frames.each_with_index do |frame, index| %>
-      <% text_id = "b270-scripture-library-#{source.downcase}-#{index}" %>
-      <article class="b270-scripture-library-entry" data-source="<%= source.downcase %>">
-        <%= render 'bible270/admin/scripture_text', frame: frame, source: source, text_id: text_id %>
-
-      </article>
-    <% end %>
+    <div id="b270-<%= source.downcase %>-scripture-texts">
+      <% if source == 'Custom' && frames.empty? && @scripture_frame_storage %><p class="b270-hint">No custom texts yet.</p><% end %>
+      <% frames.each_with_index do |frame, index| %>
+        <% text_id = "b270-scripture-library-#{source.downcase}-#{index}" %>
+        <article class="b270-scripture-library-entry b270-scripture-library-entry--<%= source.downcase %>" data-source="<%= source.downcase %>"
+                 aria-label="<%= source == 'Default' ? 'Bundled' : 'Custom' %> text: <%= frame.reference %>">
+          <%= render 'bible270/admin/scripture_text', frame: frame, source: source, text_id: text_id, return_to: 'admin' %>
+          <% if source == 'Custom' %>
+            <div class="b270-scripture-actions">
+              <%= link_to 'Edit', edit_admin_scripture_frame_path(frame, sort: @reader_sort), aria: { label: "Edit #{frame.reference}" } %>
+              <%= button_to frame.enabled? ? 'Disable' : 'Enable', admin_scripture_frame_path(frame), method: :patch,
+                    params: { scripture_frame: { enabled: frame.enabled? ? '0' : '1' }, sort: @reader_sort }, class: 'b270-linkbtn',
+                    aria: { label: "#{frame.enabled? ? 'Disable' : 'Enable'} #{frame.reference}" } %>
+              <%= button_to 'Delete', admin_scripture_frame_path(frame), method: :delete, class: 'b270-linkbtn',
+                    params: { sort: @reader_sort }, aria: { label: "Delete #{frame.reference}" },
+                    form: { data: { b270_admin_confirm: 'Delete this custom scripture frame permanently?' } } %>
+            </div>
+          <% end %>
+        </article>
+      <% end %>
+    </div>
   <% end %>
 </section>

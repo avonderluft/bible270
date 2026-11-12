@@ -8,7 +8,8 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 - show full-photo previews after a 3-second avatar hover; fit photos to the screen and fade out when the pointer leaves. Touch behavior is unchanged
 - show random, theme-matched Scripture frames on a 3-second bread-icon hover or immediately by tap, click, or keyboard
-- add a compact Scripture frames panel near the bottom of Admin with reference/translation headings and passage tooltips; database additions supplement read-only YAML defaults, with automatic translation credits
+- add a compact Scripture frames panel near the bottom of Admin with reference/translation headings and passage tooltips; database additions supplement YAML defaults, with automatic translation credits
+- add right-aligned Enable/Disable buttons for default Scripture texts in Admin; all start enabled, with choices saved across runs and applied to bread-icon and completion frames without changing YAML
 - add **Start a new run** in Admin: give Admins and Site-admins a fresh active membership with zero progress and no personal start date, move other readers to alumni, and open enrollment; preserve accounts, photos, past progress, and discussions
 - add confirmed **Revert to previous run**: restore saved statuses for everyone, including admins, plus calendars and enrollment settings; preserve both runs' progress and discussions. Available for restarts made after upgrading
 - add Active/Alumni controls, initially expanded **Show / Hide Active Readers** (remembered for the current tab's sign-in session) and collapsed **Show / Hide Alumni** disclosures with shared sorting and per-reader **Make Active** buttons, and read-only run history; returning to a new run starts fresh, while same-run reactivation preserves progress
@@ -26,13 +27,14 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - speed up the full test suite with CPU-aware workers, smaller feature-focused test files, and quieter logs; retain all tests and coverage
 - compact Status, Role, and Completion animation into single-row Admin controls; replace the completion checkbox and Save with one Enable/Disable button, and align Move and Set date forms on one row
 - place Scripture Reference and Translation first, side by side with inline labels; require pasted Text below, with API retrieval deferred
-- compact Manage texts into Custom-first and Default lists, move Add text to the top, and give tooltip and expanded passages distinct theme-aware backgrounds
+- consolidate Scripture management on the main Admin page with custom texts before defaults; retain Custom/Default on each row without group headings, place Add text beside Scripture frames, and keep inline Edit/Enable/Disable/Delete controls; remove redundant hints and redirect the old Manage texts page to this panel
 - place Admin and Profile name fields side by side with shorter inputs; order Admin settings as Theme, Email, Where they are, Role, Status, and Completion animation
 
 **Upgrade:** Back up the database, then copy and run migrations `20260101000024`–`20260101000027` from the host app. Existing readers and check-offs become the initial run. The run-history migration is intentionally irreversible.
 
 ### Fixed
 
+- hide collapsed Scripture passages immediately in Admin, without a lingering hover or focus preview; restore previews on fresh pointer or keyboard focus
 - always confirm reader removal before deleting their check-offs and reflections, even when Turbo is unavailable
 - give Admin, Site-admin, and Alumni labels matching compact, theme-colored badges; center uppercase text without font-dependent offsets
 - shorten theme and upload hints on Admin and Profile; keep the System hint on one line

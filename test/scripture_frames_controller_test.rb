@@ -158,6 +158,41 @@ if RAILS_LOADED
       refute_includes response.body, 'The unfolding'
     end
 
+    def test_disabling_all_defaults_returns_no_content_and_reenabling_preserves_public_fields
+      default_ids.each { |id| Bible270::ScriptureFrames.set_default_enabled!(id, enabled: false) }
+      get endpoint
+      assert_response :no_content
+      assert_empty response.body
+      assert_equal 'no-store', response.headers['Cache-Control']
+      assert_equal 0, Bible270::ScriptureFrame.count
+
+      frame = @default_frames.first
+      Bible270::ScriptureFrames.set_default_enabled!(frame.id, enabled: true)
+      get endpoint, params: { exclude: frame.id }
+      assert_response :success
+      assert_equal frame.to_h.transform_keys(&:to_s), response.parsed_body
+      assert_equal %w[attribution id reference text translation], response.parsed_body.keys.sort
+    end
+
+    def test_disabled_defaults_do_not_hide_a_custom_frame_with_the_same_reference
+      frame = @default_frames.first
+      record = Bible270::ScriptureFrame.create!(reference: frame.reference, translation: frame.translation, text: 'Independent text.')
+      default_ids.each { |id| Bible270::ScriptureFrames.set_default_enabled!(id, enabled: false) }
+      get endpoint, params: { exclude: "custom:#{record.id}" }
+      assert_response :success
+      assert_equal "custom:#{record.id}", response.parsed_body['id']
+      assert_equal 'Independent text.', response.parsed_body['text']
+      assert record.reload.enabled?
+    end
+
+    def test_public_endpoint_works_before_the_settings_table_exists
+      Bible270::Setting.stub(:table_exists?, false) do
+        get endpoint
+        assert_response :success
+        assert_includes @default_frames.map { |frame| frame.to_h.transform_keys(&:to_s) }, response.parsed_body
+      end
+    end
+
     def test_public_endpoint_works_before_the_custom_table_exists
       Bible270::ScriptureFrame.stub(:table_exists?, false) do
         get endpoint

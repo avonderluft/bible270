@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 module Bible270
-  # Runtime state an admin can change without a deploy: enrollment and the
-  # current run's shared calendar date.
+  # Runtime state an admin can change without a deploy: enrollment, the
+  # current run's shared calendar date, and default Scripture text availability.
   class Setting < ApplicationRecord
     self.table_name = 'bible270_settings'
 

@@ -85,13 +85,12 @@ if RAILS_LOADED
       enabled = Bible270::ScriptureFrame.create!(valid_attributes.merge(reference: 'Psalm 1:1'))
       sign_in_as(@admin)
 
-      get frames_path
+      visit_legacy_library
 
-      assert_response :success
-      assert_select 'section[aria-label="Custom text: Psalm 119:130"]' do
+      assert_select 'article[aria-label="Custom text: Psalm 119:130"]' do
         assert_select 'summary', text: %r{ · Disabled\z}
         assert_select '.b270-scripture-actions' do
-          assert_select "> a[href='#{frame_path(@frame)}/edit']", text: 'Edit'
+          assert_select "> a[href='#{frame_path(@frame)}/edit?sort=first_name']", text: 'Edit'
           assert_select '> form', count: 2
           assert_select 'button', text: 'Enable'
           assert_select "form[action='#{frame_path(@frame)}'][data-b270-admin-confirm]" do
@@ -100,50 +99,131 @@ if RAILS_LOADED
           end
         end
       end
-      assert_select 'section[aria-label="Custom text: Psalm 1:1"]' do
+      assert_select 'article[aria-label="Custom text: Psalm 1:1"]' do
         assert_select 'summary', text: %r{ · Custom\z}
         assert_select '.b270-scripture-actions' do
-          assert_select "> a[href='#{frame_path(enabled)}/edit']", text: 'Edit'
+          assert_select "> a[href='#{frame_path(enabled)}/edit?sort=first_name']", text: 'Edit'
           assert_select '> form', count: 2
           assert_select 'button', text: 'Disable'
           assert_select 'button', text: 'Delete'
         end
       end
       assert_select 'script[data-b270-admin-confirmations]'
-      assert_select 'section[aria-label^="Custom text:"] details:not([open])', count: 2
-      assert_select 'section[aria-label^="Custom text:"] blockquote', count: 2
-      assert_select 'section[aria-label="Custom text: Psalm 119:130"] blockquote', count: 1 do |nodes|
+      assert_select 'article[aria-label^="Custom text:"] > details:not([open])', count: 2
+      assert_select 'article[aria-label^="Custom text:"] blockquote', count: 2
+      assert_select 'article[aria-label="Custom text: Psalm 119:130"] blockquote', count: 1 do |nodes|
         assert_equal @frame.text, nodes.first.text
       end
-      assert_select 'section[aria-label="Custom text: Psalm 1:1"] blockquote', count: 1 do |nodes|
+      assert_select 'article[aria-label="Custom text: Psalm 1:1"] blockquote', count: 1 do |nodes|
         assert_equal enabled.text, nodes.first.text
       end
     end
 
-    def test_bundled_texts_are_listed_read_only_and_do_not_become_database_records
+    def test_bundled_texts_have_toggle_only_controls_and_do_not_become_database_records
       sign_in_as(@admin)
       defaults = default_attributes
       assert_equal %w[ESV NASB95 NKJV], defaults.map { |frame| frame[:translation] }.uniq.sort
       before = Bible270::ScriptureFrame.count
 
-      get frames_path
+      visit_legacy_library
 
-      assert_response :success
-      assert_select 'p.lede', text: 'Custom texts supplement the bundled defaults'
+      assert_select '#b270-scripture-frames p', text: 'Custom texts supplement the bundled defaults', count: 0
       Bible270::ScriptureFrames.defaults.each do |frame|
-        assert_select 'section[aria-label=?]', "Bundled text: #{frame.reference}" do
+        assert_select 'article[aria-label=?]', "Bundled text: #{frame.reference}" do
           assert_select 'summary', text: "#{frame.reference} · #{frame.translation} · Default"
           assert_select 'details:not([open])', count: 1
           assert_select 'blockquote', count: 1 do |nodes|
             assert_equal frame.text, nodes.first.text
           end
           assert_select '[data-b270-scripture-attribution]', count: 0
-          assert_select 'form', count: 0
+          assert_select 'form.b270-scripture-default-toggle', count: 1 do
+            assert_select 'input[name="_method"][value="patch"]'
+            assert_select 'input[type="hidden"][name="enabled"][value="0"]'
+            assert_select 'button', text: 'Disable'
+          end
           assert_select 'a', text: 'Edit', count: 0
+          assert_select 'button', text: 'Delete', count: 0
         end
       end
       assert_equal defaults, default_attributes
       assert_equal before, Bible270::ScriptureFrame.count
+    end
+
+    def test_legacy_index_redirects_both_admin_roles_directly_to_the_panel_with_a_sanitized_sort
+      [@admin, @site_admin].each do |admin|
+        sign_in_as(admin)
+        return_contexts.each do |params|
+          get frames_path, params: params
+
+          assert_library_redirect(normalized_sort(params[:sort]))
+          follow_redirect!
+          assert_response :success
+          assert_select '#b270-scripture-frames', count: 1
+          assert_select '#b270-custom-scripture-texts article[data-source="custom"]', count: 1
+        end
+      end
+    end
+
+    def test_new_and_edit_forms_keep_resource_actions_and_cancel_directly_to_the_panel_with_sanitized_sort
+      sign_in_as(@admin)
+      return_contexts.each do |params|
+        sort = normalized_sort(params[:sort])
+        [["#{frames_path}/new", frames_path], ["#{frame_path(@frame)}/edit", frame_path(@frame)]].each do |path, action|
+          get path, params: params
+
+          assert_response :success
+          assert_select "form.b270-form[action='#{action}'][method='post']", count: 1 do
+            assert_select 'input[type="hidden"][name="sort"]', count: 1 do |inputs|
+              assert_equal sort, inputs.first['value']
+            end
+            assert_select "a[href='#{library_path(sort)}']", text: 'Cancel', count: 1
+            assert_select 'input[name="_method"][value="patch"]', count: action == frames_path ? 0 : 1
+          end
+          assert_select "a[href='#{frames_path}'], a[href^='#{frames_path}#']", count: 0
+        end
+      end
+    end
+
+    def test_successful_create_update_and_delete_ignore_return_targets_and_preserve_only_allowlisted_sorts
+      sign_in_as(@admin)
+      return_contexts.each do |params|
+        sort = normalized_sort(params[:sort])
+        assert_difference('Bible270::ScriptureFrame.count', 1) do
+          post frames_path, params: params.merge(scripture_frame: valid_attributes)
+        end
+        assert_library_redirect(sort)
+        created = Bible270::ScriptureFrame.order(:id).last
+        assert_equal valid_attributes[:text], created.text
+
+        patch frame_path(created), params: params.merge(scripture_frame: { reference: 'Updated custom reference', enabled: '0' })
+        assert_library_redirect(sort)
+        assert_equal 'Updated custom reference', created.reload.reference
+        refute created.enabled?
+
+        assert_difference('Bible270::ScriptureFrame.count', -1) do
+          delete frame_path(created), params: params
+        end
+        assert_library_redirect(sort)
+        assert Bible270::ScriptureFrame.exists?(@frame.id)
+      end
+    end
+
+    def test_validation_errors_keep_sanitized_sort_and_direct_cancel_links_on_new_and_edit_forms
+      sign_in_as(@admin)
+      ['consistency', 'https://evil.example/sort', ['last_name']].each do |sort|
+        params = { sort: sort, return_to: 'https://evil.example/path', scripture_frame: valid_attributes.merge(text: '') }
+        before = @frame.reload.attributes
+        assert_no_difference('Bible270::ScriptureFrame.count') do
+          post frames_path, params: params
+        end
+        assert_response :unprocessable_entity
+        assert_form_return_context(normalized_sort(sort))
+
+        patch frame_path(@frame), params: params
+        assert_response :unprocessable_entity
+        assert_form_return_context(normalized_sort(sort))
+        assert_equal before, @frame.reload.attributes
+      end
     end
 
     def test_bundled_ids_and_malformed_database_ids_cannot_be_edited_or_deleted
@@ -295,7 +375,7 @@ if RAILS_LOADED
       assert_difference('Bible270::ScriptureFrame.count', 1) do
         post frames_path, params: { scripture_frame: attributes }
       end
-      assert_response :see_other
+      assert_library_redirect
       created = Bible270::ScriptureFrame.order(:id).last
       assert_equal attributes.except(:enabled).stringify_keys, created.attributes.slice('reference', 'text', 'translation')
       assert_equal Bible270::ScriptureFrames.attribution_for('NASB95'), created.attribution
@@ -311,7 +391,7 @@ if RAILS_LOADED
       Bible270::ScriptureFrames.stub(:translations, codes) do
         Bible270::ScriptureFrames.stub(:attribution_for, credit) do
           post frames_path, params: { scripture_frame: valid_attributes.merge(translation: code) }
-          assert_response :see_other
+          assert_library_redirect
           created = Bible270::ScriptureFrame.order(:id).last
           assert_equal code, created.translation
           assert_equal credit.call(code), created.attribution
@@ -347,17 +427,17 @@ if RAILS_LOADED
       forged_credit = "<img src=x onerror=alert(1)>#{'x' * 501}"
 
       post frames_path, params: { scripture_frame: valid_attributes.merge(attribution: forged_credit) }
-      assert_response :see_other
+      assert_library_redirect
       created = Bible270::ScriptureFrame.order(:id).last
       assert_equal nasb_credit, created.attribution
 
       patch frame_path(created), params: { scripture_frame: { translation: 'NKJV', attribution: forged_credit } }
-      assert_response :see_other
+      assert_library_redirect
       assert_equal 'NKJV', created.reload.translation
       assert_equal nkjv_credit, created.attribution
 
       patch frame_path(created), params: { scripture_frame: { attribution: '' } }
-      assert_response :see_other
+      assert_library_redirect
       assert_equal nkjv_credit, created.reload.attribution
 
       get "#{frame_path(created)}/edit"
@@ -400,7 +480,7 @@ if RAILS_LOADED
       sign_in_as(@admin)
       patch frame_path(@frame), params: { scripture_frame: { reference: 'New reference' } }
 
-      assert_response :see_other
+      assert_library_redirect
       assert_equal 'New reference', @frame.reload.reference
       assert_equal valid_attributes[:text], @frame.text
     end
@@ -424,7 +504,7 @@ if RAILS_LOADED
         post frames_path, params: { scripture_frame: valid_attributes }
       end
 
-      assert_response :see_other
+      assert_library_redirect
       assert_equal 2, Bible270::ScriptureFrame.where(reference: @frame.reference, text: @frame.text).count
     end
 
@@ -435,14 +515,12 @@ if RAILS_LOADED
       %w[0 1 0].each do |value|
         patch frame_path(@frame), params: { scripture_frame: { enabled: value } }
 
-        assert_response :see_other
-        assert_redirected_to frames_path
+        assert_library_redirect
         assert_equal value == '1', @frame.reload.enabled?
         assert_equal before, @frame.attributes.except('enabled', 'updated_at')
       end
-      get frames_path
-      assert_response :success
-      assert_select 'section[aria-label="Custom text: Psalm 119:130"] summary', text: %r{ · Disabled\z}
+      visit_legacy_library
+      assert_select 'article[aria-label="Custom text: Psalm 119:130"] summary', text: %r{ · Disabled\z}
     end
 
     def test_removed_translation_can_be_disabled_with_saved_credit_but_not_reenabled
@@ -452,20 +530,17 @@ if RAILS_LOADED
       File.write(Bible270.config.scripture_frames_path, "[]\n")
       sign_in_as(@admin)
 
-      get frames_path
-      assert_response :success
-      assert_select 'section[aria-label="Custom text: Psalm 119:130"] summary', text: 'Psalm 119:130 · HOST · Custom'
+      visit_legacy_library
+      assert_select 'article[aria-label="Custom text: Psalm 119:130"] summary', text: 'Psalm 119:130 · HOST · Custom'
       assert_equal 'Original credit.', @frame.reload.attribution
 
       patch frame_path(@frame), params: { scripture_frame: { enabled: '0' } }
-      assert_response :see_other
-      assert_redirected_to frames_path
+      assert_library_redirect
       refute @frame.reload.enabled?
       assert_equal before, @frame.attributes.except('enabled', 'updated_at')
 
-      get frames_path
-      assert_response :success
-      assert_select 'section[aria-label="Custom text: Psalm 119:130"]' do
+      visit_legacy_library
+      assert_select 'article[aria-label="Custom text: Psalm 119:130"]' do
         assert_select 'summary', text: 'Psalm 119:130 · HOST · Custom · Disabled'
         assert_select '[data-b270-scripture-attribution]', count: 0
       end
@@ -501,9 +576,8 @@ if RAILS_LOADED
       use_host_translation(attribution: 'Revised credit.')
       sign_in_as(@admin)
 
-      get frames_path
-      assert_response :success
-      assert_select 'section[aria-label="Custom text: Psalm 119:130"] [data-b270-scripture-attribution]', count: 0
+      visit_legacy_library
+      assert_select 'article[aria-label="Custom text: Psalm 119:130"] [data-b270-scripture-attribution]', count: 0
       assert_equal 'Revised credit.', @frame.attribution
 
       get "#{mount}/admin"
@@ -517,14 +591,13 @@ if RAILS_LOADED
       assert_equal 'Revised credit.', @frame.attribution
 
       patch frame_path(@frame), params: { scripture_frame: { reference: 'Updated reference' } }
-      assert_response :see_other
+      assert_library_redirect
       assert_equal 'Revised credit.', @frame.reload[:attribution]
       assert_equal 'Revised credit.', @frame.attribution
 
       use_host_translation(attribution: nil)
-      get frames_path
-      assert_response :success
-      assert_select 'section[aria-label="Custom text: Updated reference"] [data-b270-scripture-attribution]', count: 0
+      visit_legacy_library
+      assert_select 'article[aria-label="Custom text: Updated reference"] [data-b270-scripture-attribution]', count: 0
       get "#{mount}/admin"
       assert_response :success
       assert_select '#b270-scripture-frames article[data-source="custom"] p.b270-hint', count: 0
@@ -543,7 +616,7 @@ if RAILS_LOADED
 
       post frames_path, params: { scripture_frame: valid_attributes.merge(forged) }
 
-      assert_response :see_other
+      assert_library_redirect
       created = Bible270::ScriptureFrame.order(:id).last
       refute_equal 999_999, created.id
       assert_operator created.created_at.year, :>, 1900
@@ -553,7 +626,7 @@ if RAILS_LOADED
 
       patch frame_path(created), params: { scripture_frame: forged.merge(reference: 'Psalm 1:1') }
 
-      assert_response :see_other
+      assert_library_redirect
       assert_equal 'Psalm 1:1', created.reload.reference
       assert_operator created.created_at.year, :>, 1900
       assert_operator created.updated_at.year, :>, 1900
@@ -569,15 +642,14 @@ if RAILS_LOADED
       }
 
       post frames_path, params: { scripture_frame: attributes }
-      assert_response :see_other
+      assert_library_redirect
       created = Bible270::ScriptureFrame.order(:id).last
       attributes.except(:enabled).each { |field, value| assert_equal value, created.public_send(field) }
 
-      get frames_path
-      assert_response :success
+      visit_legacy_library
       assert_includes response.body, '&lt;script&gt;text()&lt;/script&gt;'
       assert_includes response.body, '&lt;script&gt;reference()&lt;/script&gt;'
-      assert_select 'section[aria-label^="Custom text:"] details:not([open])', count: 2
+      assert_select 'article[aria-label^="Custom text:"] > details:not([open])', count: 2
       assert_select 'script', text: 'text()', count: 0
       assert_select 'img[onerror]', count: 0
 
@@ -594,15 +666,15 @@ if RAILS_LOADED
       sign_in_as(@admin)
       Bible270::ScriptureFrames.stub(:custom_available?, false) do
         Bible270::ScriptureFrame.stub(:order, ->(*) { flunk 'Must not query custom frames before migration' }) do
-          get frames_path
+          visit_legacy_library
         end
       end
 
-      assert_response :success
-      assert_select '[role="status"]', text: %r{database migrations}
-      assert_select 'section[aria-label^="Bundled text:"]', count: Bible270::ScriptureFrames.defaults.length
-      assert_select "a[href='#{frames_path}/new']", count: 0
+      assert_select '#b270-scripture-frames .b270-hint', text: 'Run the pending database migration to add custom texts.'
+      assert_select 'article[aria-label^="Bundled text:"]', count: Bible270::ScriptureFrames.defaults.length
+      assert_select "a[href^='#{frames_path}/new']", count: 0
       assert_select "form[action^='#{frames_path}']", count: 0
+      assert_select '#b270-default-scripture-texts form.b270-scripture-default-toggle', count: Bible270::ScriptureFrames.defaults.length
     end
 
     def test_pending_migration_blocks_forms_and_forged_mutations_gracefully
@@ -610,12 +682,13 @@ if RAILS_LOADED
       before = @frame.attributes
       Bible270::ScriptureFrames.stub(:custom_available?, false) do
         assert_no_difference('Bible270::ScriptureFrame.count') do
-          requests.drop(1).each do |method, path, params|
-            public_send(method, path, params: params)
+          [{}, { sort: 'consistency', return_to: 'texts' }, { sort: ['last_name'], return_to: '//evil.example/path' }].each do |context|
+            requests.drop(1).each do |method, path, params|
+              public_send(method, path, params: params.merge(context))
 
-            assert_response :see_other
-            assert_redirected_to frames_path
-            assert_match(%r{database migrations}, flash[:alert])
+              assert_library_redirect(normalized_sort(context[:sort]))
+              assert_match(%r{database migrations}, flash[:alert])
+            end
           end
         end
       end
@@ -627,7 +700,7 @@ if RAILS_LOADED
       Bible270::ScriptureFrames.stub(:custom_available?, false) { assert_all_requests_hidden }
     end
 
-    def test_admin_bottom_panel_shows_compact_full_passages_without_credits_and_keeps_management_links
+    def test_admin_bottom_panel_shows_compact_full_passages_without_credits_and_with_inline_actions
       @frame.update!(reference: 'Custom passage', text: "First custom line\n<script>Plain text, not HTML</script>\nLast custom line")
       attributes = valid_attributes.merge(
         reference: 'Disabled passage', text: "First disabled line\nLast disabled line", translation: 'NKJV', enabled: false
@@ -646,8 +719,9 @@ if RAILS_LOADED
         assert_select '#b270-scripture-frames + p a', text: '← Back to the plan'
         assert_select '#b270-scripture-frames' do
           assert_select 'h2', text: 'Scripture frames'
-          assert_select "a[href='#{frames_path}']", text: 'Manage texts'
-          assert_select "a[href='#{frames_path}/new']", text: 'Add text'
+          assert_select "a[href='#{frames_path}']", count: 0
+          assert_select "a[href='#{frames_path}/new?sort=first_name']", text: 'Add text'
+          assert_select 'article[data-source="custom"] > details + .b270-scripture-actions', count: 2
           assert_select 'article', count: defaults.length + 2
           assert_select 'details.b270-scripture-library-disclosure:not([open])', count: defaults.length + 2
           assert_select 'script', count: 0
@@ -668,11 +742,11 @@ if RAILS_LOADED
         assert_response :success
         assert_select '#b270-scripture-frames', count: 0
         assert_select "a[href='#{frames_path}']", count: 0
-        assert_select "a[href='#{frames_path}/new']", count: 0
+        assert_select "a[href^='#{frames_path}/new']", count: 0
       end
     end
 
-    def test_admin_bottom_panel_is_read_only_with_defaults_when_migration_is_pending
+    def test_admin_bottom_panel_keeps_default_toggles_when_custom_migration_is_pending
       sign_in_as(@admin)
       defaults = Bible270::ScriptureFrames.defaults
       Bible270::ScriptureFrames.stub(:custom_available?, false) do
@@ -684,11 +758,12 @@ if RAILS_LOADED
       assert_response :success
       assert_select '#b270-scripture-frames' do
         assert_select '.b270-hint', text: 'Run the pending database migration to add custom texts.'
-        assert_select "a[href='#{frames_path}']", text: 'Manage texts'
-        assert_select "a[href='#{frames_path}/new']", count: 0
+        assert_select "a[href='#{frames_path}']", count: 0
+        assert_select "a[href^='#{frames_path}/new']", count: 0
         assert_select 'article', count: defaults.length
         assert_select 'article[data-source="custom"]', count: 0
-        assert_select 'form', count: 0
+        assert_select 'form.b270-scripture-default-toggle', count: defaults.length
+        assert_select "form[action^='#{frames_path}']", count: 0
         assert_select 'details.b270-scripture-library-disclosure:not([open])', count: defaults.length
         assert_library_entries(defaults, source: 'default')
       end
@@ -699,7 +774,11 @@ if RAILS_LOADED
     def assert_library_entries(frames, source:)
       assert_select 'article[data-source=?]', source, count: frames.length do |entries|
         entries.zip(frames).each do |entry, frame|
-          disabled = source == 'custom' && !frame.enabled? ? ' · Disabled' : ''
+          enabled = source == 'custom' ? frame.enabled? : !Bible270::ScriptureFrames.disabled_default_ids.include?(frame.id)
+          disabled = enabled ? '' : ' · Disabled'
+          label = source == 'custom' ? 'Custom text' : 'Bundled text'
+          assert_equal "#{label}: #{frame.reference}", entry['aria-label']
+          assert_select entry, '> details.b270-scripture-library-disclosure:not([open])', count: 1
           assert_select entry, 'summary', text: "#{frame.reference} · #{frame.translation} · #{source.capitalize}#{disabled}"
           assert_select entry, 'strong', text: frame.reference
           assert_select entry, 'blockquote', count: 1 do |nodes|
@@ -711,9 +790,46 @@ if RAILS_LOADED
       end
     end
 
+    def return_contexts
+      sorts = Bible270::AdminController::READER_SORT_OPTIONS.keys +
+              [nil, '', 'https://evil.example/sort', 'first_name#bad', ['consistency'], { value: 'last_name' }]
+      targets = [nil, '', 'admin', 'texts', 'https://evil.example/path', '//evil.example/path', '/admin',
+                 'admin#bad', ['admin'], { value: 'admin' }]
+      [{}] + sorts.map { |sort| { sort: sort, return_to: 'https://evil.example/path' } } +
+        targets.flat_map { |target| ['consistency', '//evil.example/sort'].map { |sort| { return_to: target, sort: sort } } }
+    end
+
+    def normalized_sort(sort)
+      Bible270::AdminController::READER_SORT_OPTIONS.key?(sort) ? sort : 'first_name'
+    end
+
+    def assert_form_return_context(sort)
+      assert_select 'form.b270-form' do
+        assert_select 'input[type="hidden"][name="sort"]', count: 1 do |inputs|
+          assert_equal sort, inputs.first['value']
+        end
+        assert_select "a[href='#{library_path(sort)}']", text: 'Cancel', count: 1
+      end
+      assert_select "a[href='#{frames_path}']", count: 0
+    end
+
     def mount = Bible270.config.mount_at.chomp('/')
-    def frames_path = "#{mount}/admin/scripture-frames"
+    def admin_path = "#{mount}/admin"
+    def frames_path = "#{admin_path}/scripture-frames"
     def frame_path(frame) = "#{frames_path}/#{frame.id}"
+    def library_path(sort = 'first_name') = "#{admin_path}?sort=#{sort}#b270-scripture-frames"
+
+    def assert_library_redirect(sort = 'first_name')
+      assert_response :see_other
+      assert_redirected_to library_path(sort)
+    end
+
+    def visit_legacy_library
+      get frames_path
+      assert_library_redirect
+      follow_redirect!
+      assert_response :success
+    end
 
     def use_host_translation(attribution:)
       path = File.join(@directory, 'frames.yml')
@@ -766,40 +882,35 @@ if RAILS_LOADED
 
       patch "#{mount}/admin/view", params: { view: 'admin' }
       assert_response :see_other
-      get frames_path
-      assert_response :success
+      visit_legacy_library
     end
 
     def assert_crud_available(reader)
       sign_in_as(reader)
       defaults = default_attributes
-      get frames_path
-      assert_response :success
+      visit_legacy_library
       get "#{frames_path}/new"
       assert_response :success
 
       assert_difference('Bible270::ScriptureFrame.count', 1) do
         post frames_path, params: { scripture_frame: valid_attributes.merge(reference: 'Psalm 1:1') }
       end
-      assert_response :see_other
-      assert_redirected_to frames_path
+      assert_library_redirect
       created = Bible270::ScriptureFrame.order(:id).last
       assert_equal 'Psalm 1:1', created.reference
       assert_equal 'NASB95', created.translation
       assert_equal Bible270::ScriptureFrames.attribution_for('NASB95'), created.attribution
 
-      get frames_path
-      assert_response :success
-      assert_select 'section[aria-label^="Bundled text:"]', count: defaults.length
-      assert_select 'section[aria-label^="Custom text:"]', count: 2
+      visit_legacy_library
+      assert_select 'article[aria-label^="Bundled text:"]', count: defaults.length
+      assert_select 'article[aria-label^="Custom text:"]', count: 2
 
       get "#{frame_path(created)}/edit"
       assert_response :success
       patch frame_path(created), params: {
         scripture_frame: { reference: 'Psalm 1:2', text: "First line\nSecond line", translation: 'NKJV', enabled: '0' }
       }
-      assert_response :see_other
-      assert_redirected_to frames_path
+      assert_library_redirect
       assert_equal 'Psalm 1:2', created.reload.reference
       assert_equal "First line\nSecond line", created.text
       assert_equal 'NKJV', created.translation
@@ -807,8 +918,7 @@ if RAILS_LOADED
       refute created.enabled?
 
       assert_difference('Bible270::ScriptureFrame.count', -1) { delete frame_path(created) }
-      assert_response :see_other
-      assert_redirected_to frames_path
+      assert_library_redirect
       assert Bible270::ScriptureFrame.exists?(@frame.id)
       assert_equal defaults, default_attributes
     end

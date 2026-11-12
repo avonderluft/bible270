@@ -16,6 +16,7 @@
       url: @scripture_frame.persisted? ? admin_scripture_frame_path(@scripture_frame) : admin_scripture_frames_path,
       method: @scripture_frame.persisted? ? :patch : :post, local: true, class: 'b270-form',
       html: { aria: { describedby: 'b270-scripture-frame-rights b270-scripture-frame-format' } } do |f| %>
+  <%= hidden_field_tag :sort, @reader_sort %>
   <div class="b270-scripture-fields">
     <div class="b270-field">
       <%= f.label :reference, 'Reference' %>
@@ -42,5 +43,5 @@
   </div>
   <p class="b270-hint">Disabled texts stay saved but are not available to readers.</p>
   <%= f.submit @scripture_frame.persisted? ? 'Save text' : 'Add text', class: 'b270-btn' %>
-  <%= link_to 'Cancel', admin_scripture_frames_path %>
+  <%= link_to 'Cancel', scripture_frames_return_path %>
 <% end %>

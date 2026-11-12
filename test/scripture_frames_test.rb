@@ -93,6 +93,10 @@ if RAILS_LOADED
       @default_frames.map(&:id)
     end
 
+    def disable_key(id)
+      "scripture-frame-disabled:#{id}"
+    end
+
     attr_reader :default_translations
 
     def host_row(**overrides)
@@ -318,6 +322,233 @@ if RAILS_LOADED
     def test_non_string_exclusions_are_ignored
       [[], {}, 12, nil].each do |exclude|
         assert_includes default_ids, CATALOG.random(exclude: exclude).id
+      end
+    end
+
+    def test_defaults_are_enabled_without_settings_and_enabling_removes_the_disable_record
+      assert CATALOG.default_settings_available?
+      assert_empty CATALOG.disabled_default_ids
+      assert_empty Bible270::Setting.all
+
+      id = default_ids.first
+      CATALOG.set_default_enabled!(id, enabled: true)
+      assert_empty Bible270::Setting.all
+      2.times { CATALOG.set_default_enabled!(id, enabled: false) }
+      assert_equal [id], CATALOG.disabled_default_ids
+      assert_equal 'true', Bible270::Setting.read(disable_key(id))
+      assert_equal 1, Bible270::Setting.count
+
+      CATALOG.set_default_enabled!(id, enabled: true)
+      assert_empty CATALOG.disabled_default_ids
+      assert_empty Bible270::Setting.all
+      assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+      assert_empty Bible270::ScriptureFrame.all
+    end
+
+    def test_default_toggles_validate_current_ids_and_exact_boolean_values_without_writing
+      [nil, 1, [], {}, :default, 'default:unknown', default_ids.first.delete_prefix('default:'), 'custom:1'].each do |id|
+        assert_raises(ArgumentError) { CATALOG.set_default_enabled!(id, enabled: false) }
+      end
+      [nil, 0, 1, 'true', 'false', [], {}].each do |enabled|
+        error = assert_raises(ArgumentError) { CATALOG.set_default_enabled!(default_ids.first, enabled: enabled) }
+        assert_equal 'enabled must be true or false', error.message
+      end
+      assert_empty Bible270::Setting.all
+      assert_empty Bible270::ScriptureFrame.all
+    end
+
+    def test_disabled_ids_use_one_scoped_query_and_ignore_malformed_keys_and_values
+      first, second = default_ids.first(2)
+      Bible270::Setting.write(disable_key(first), 'true')
+      [nil, '', 'false', 'TRUE', '1', '["default:unknown"]'].each_with_index do |value, index|
+        Bible270::Setting.write(disable_key(default_ids[index + 1]), value)
+      end
+      ['custom:1', 'default:bad_slug', 'default:Bad', 'default:', 'default:bad--slug', 'default:valid\n'].each do |id|
+        Bible270::Setting.write(disable_key(id), 'true')
+      end
+      Bible270::Setting.write('scripture_frame_disabled:default:unrelated', 'true')
+      Bible270::Setting.write('unrelated-setting', 'true')
+      queries = []
+      subscriber = ->(*, payload) do
+        sql = payload[:sql]
+        queries << sql if sql.match?(%r{\ASELECT\b}i) && sql.include?('bible270_settings')
+      end
+      Bible270::Setting.uncached do
+        ActiveSupport::Notifications.subscribed(subscriber, 'sql.active_record') do
+          assert_equal [first], CATALOG.disabled_default_ids
+        end
+      end
+      assert_equal 1, queries.length
+      assert_match(%r{\bWHERE\b.*\bLIKE\b}i, queries.first)
+
+      CATALOG.set_default_enabled!(second, enabled: false)
+      assert_equal [first, second].sort, CATALOG.disabled_default_ids.sort
+      CATALOG.set_default_enabled!(first, enabled: true)
+      assert_equal [second], CATALOG.disabled_default_ids
+      assert_equal 'true', Bible270::Setting.read('unrelated-setting')
+    end
+
+    def test_interleaved_default_creations_do_not_overwrite_other_ids
+      first, second = default_ids.first(2)
+      create = Bible270::Setting.method(:create_or_find_by!)
+      interleave = ->(**attributes, &block) do
+        CATALOG.set_default_enabled!(second, enabled: false) if attributes[:key] == disable_key(first)
+        create.call(**attributes, &block)
+      end
+      Bible270::Setting.stub(:create_or_find_by!, interleave) do
+        CATALOG.set_default_enabled!(first, enabled: false)
+      end
+      assert_equal [first, second].sort, CATALOG.disabled_default_ids.sort
+      CATALOG.set_default_enabled!(first, enabled: true)
+      assert_equal [second], CATALOG.disabled_default_ids
+    end
+
+    def test_concurrent_creation_handles_a_winner_seen_by_the_uniqueness_validator
+      id = default_ids.first
+      create = Bible270::Setting.method(:create_or_find_by!)
+      competing_create = ->(**attributes, &block) do
+        Bible270::Setting.create!(**attributes, value: 'false')
+        create.call(**attributes, &block)
+      end
+      Bible270::Setting.stub(:create_or_find_by!, competing_create) do
+        CATALOG.set_default_enabled!(id, enabled: false)
+      end
+      assert_equal [id], CATALOG.disabled_default_ids
+      assert_equal 1, Bible270::Setting.count
+    end
+
+    def test_concurrent_creation_uses_rails_unique_constraint_recovery
+      id = default_ids.first
+      Bible270::Setting.create!(key: disable_key(id), value: 'false')
+      competing_create = ->(*) { raise ActiveRecord::RecordNotUnique, 'simulated concurrent insert' }
+      Bible270::Setting.stub(:find_by, nil) do
+        Bible270::Setting.stub(:create!, competing_create) do
+          CATALOG.set_default_enabled!(id, enabled: false)
+        end
+      end
+      assert_equal [id], CATALOG.disabled_default_ids
+      assert_equal 1, Bible270::Setting.count
+    end
+
+    def test_disabled_defaults_are_filtered_before_custom_entries_and_exclusion
+      use_host(YAML.dump([host_row, host_row(id: 'another-example')]))
+      custom = Bible270::ScriptureFrame.create!(reference: 'Host example', text: 'Independent custom text.', translation: 'TEST')
+      Bible270::ScriptureFrame.create!(reference: 'Disabled custom example', text: 'Hidden text.', enabled: false)
+      CATALOG.set_default_enabled!('default:host-example', enabled: false)
+
+      assert_equal "custom:#{custom.id}", CATALOG.random(exclude: 'default:another-example').id
+      assert_equal 'default:another-example', CATALOG.random(exclude: "custom:#{custom.id}").id
+      assert_equal ['default:host-example'], CATALOG.disabled_default_ids
+      CATALOG.set_default_enabled!('default:another-example', enabled: false)
+      assert_equal "custom:#{custom.id}", CATALOG.random(exclude: "custom:#{custom.id}").id
+      assert custom.reload.enabled?
+      custom.update!(enabled: false)
+      assert_nil CATALOG.random(exclude: 'default:host-example')
+
+      CATALOG.set_default_enabled!('default:host-example', enabled: true)
+      assert_equal 'default:host-example', CATALOG.random(exclude: 'default:host-example').id
+      refute custom.reload.enabled?
+    end
+
+    def test_toggles_leave_frozen_entries_yaml_metadata_and_custom_storage_untouched
+      bundled_path = File.expand_path('../config/scripture_frames.yml', __dir__)
+      bundled_source = File.binread(bundled_path)
+      use_host(YAML.dump([host_row(attribution: 'Host credit.')]))
+      host_source = File.binread(Bible270.config.scripture_frames_path)
+      metadata = CATALOG.translation_attributions
+      frames = CATALOG.defaults.each(&:freeze).freeze
+      CATALOG.stub(:defaults, frames) do
+        CATALOG.set_default_enabled!(frames.first.id, enabled: false)
+        assert_nil CATALOG.random
+        assert_equal frames, CATALOG.defaults
+        assert_equal metadata, CATALOG.translation_attributions
+        CATALOG.set_default_enabled!(frames.first.id, enabled: true)
+        assert_equal frames.first.to_h, CATALOG.random.to_h
+      end
+      assert_equal bundled_source, File.binread(bundled_path)
+      assert_equal host_source, File.binread(Bible270.config.scripture_frames_path)
+      assert_equal %i[id reference translation text attribution], CATALOG::Entry.members
+      assert_empty Bible270::ScriptureFrame.all
+    end
+
+    def test_host_catalog_state_follows_stable_ids_across_reloads_removal_and_reintroduction
+      bundled_id = default_ids.first
+      CATALOG.set_default_enabled!(bundled_id, enabled: false)
+      use_host(YAML.dump([host_row]))
+      assert_raises(ArgumentError) { CATALOG.set_default_enabled!(bundled_id, enabled: true) }
+      assert_equal 'default:host-example', CATALOG.random.id
+      CATALOG.set_default_enabled!('default:host-example', enabled: false)
+      assert_nil CATALOG.random
+
+      use_host(YAML.dump([host_row(reference: 'Corrected reference', text: 'Corrected text.'), host_row(id: 'new-example')]))
+      assert_equal %w[default:host-example default:new-example], CATALOG.defaults.map(&:id)
+      assert_equal 'default:new-example', CATALOG.random.id
+      use_host("[]\n")
+      assert_raises(ArgumentError) { CATALOG.set_default_enabled!('default:host-example', enabled: true) }
+      use_host(YAML.dump([host_row]))
+      Bible270::Setting.reset_column_information
+      assert_nil CATALOG.random
+
+      Bible270.config.scripture_frames_path = nil
+      CATALOG.stub(:defaults, [@default_frames.first]) { assert_nil CATALOG.random }
+      assert_includes CATALOG.disabled_default_ids, bundled_id
+      CATALOG.set_default_enabled!(bundled_id, enabled: true)
+      assert_equal ['default:host-example'], CATALOG.disabled_default_ids
+    end
+
+    def test_default_settings_persist_across_run_restarts_and_reverts_including_changes_after_restart
+      first, second = default_ids.first(2)
+      CATALOG.set_default_enabled!(first, enabled: false)
+      original = Bible270::PlanRun.current
+      fresh = Bible270::PlanRun.restart!(start_date: Bible270.today, expected_run_id: original.id)
+      assert_equal [first], CATALOG.disabled_default_ids
+      CATALOG.set_default_enabled!(first, enabled: true)
+      CATALOG.set_default_enabled!(second, enabled: false)
+      restored = Bible270::PlanRun.revert!(expected_run_id: fresh.id)
+      assert_equal original.id, restored.id
+      assert_equal [second], CATALOG.disabled_default_ids
+      assert fresh.reload.reverted_at
+      assert_equal 2, Bible270::PlanRun.count
+      assert_empty Bible270::ScriptureFrame.all
+    end
+
+    def test_defaults_remain_enabled_before_settings_table_exists_and_writes_fail_actionably
+      Bible270::Setting.stub(:table_exists?, false) do
+        Bible270::Setting.stub(:where, ->(*) { flunk 'must not query a missing settings table' }) do
+          refute CATALOG.default_settings_available?
+          assert_empty CATALOG.disabled_default_ids
+          assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+          assert_includes default_ids, CATALOG.random.id
+          [true, false].each do |enabled|
+            error = assert_raises(ArgumentError) { CATALOG.set_default_enabled!(default_ids.first, enabled: enabled) }
+            assert_match(%r{database.*migrations}i, error.message)
+          end
+        end
+      end
+    end
+
+    def test_default_settings_are_safe_without_a_database_or_connection
+      [ActiveRecord::NoDatabaseError, ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid].each do |exception|
+        unavailable = -> { raise exception, 'private database details' }
+        Bible270::Setting.stub(:table_exists?, unavailable) do
+          refute CATALOG.default_settings_available?
+          assert_empty CATALOG.disabled_default_ids
+          error = assert_raises(ArgumentError) { CATALOG.set_default_enabled!(default_ids.first, enabled: false) }
+          refute_includes error.message, 'private'
+        end
+        Bible270::Setting.stub(:where, ->(*) { unavailable.call }) { assert_empty CATALOG.disabled_default_ids }
+        { where: true, find_by: false }.each do |method, enabled|
+          Bible270::Setting.stub(method, ->(*) { unavailable.call }) do
+            error = assert_raises(ArgumentError) { CATALOG.set_default_enabled!(default_ids.first, enabled: enabled) }
+            assert_match(%r{database.*migrations}i, error.message)
+            refute_includes error.message, 'private'
+          end
+        end
+      end
+      Bible270::ScriptureFrame.stub(:table_exists?, false) do
+        Bible270::Setting.stub(:table_exists?, -> { raise ActiveRecord::NoDatabaseError }) do
+          assert_includes default_ids, CATALOG.random.id
+        end
       end
     end
 
