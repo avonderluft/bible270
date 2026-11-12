@@ -314,29 +314,42 @@ if RAILS_LOADED
       assert_match(%r{from the list}, flash[:alert].to_s)
     end
 
-    def test_an_admin_sees_a_readers_completion_animation_setting
+    def test_an_admin_sees_one_explicit_completion_animation_button_for_each_state
       sign_in_as_admin
 
-      get "#{mount}/admin/readers/#{@reader.id}"
+      [[false, 'Disable', '1'], [true, 'Enable', '0']].each do |disabled, label, value|
+        @reader.update!(completion_dove_disabled: disabled)
+        get "#{mount}/admin/readers/#{@reader.id}"
+        assert_response :success
 
-      assert_select '#b270-completion-animation.b270-admin-control' do
-        assert_select 'h2#b270-completion-animation-heading', text: 'Completion animation'
-        assert_select 'form.b270-admin-inline-form[aria-labelledby="b270-completion-animation-heading"]' do
-          assert_select 'label.b270-admin-inline-option', text: 'Off'
-          assert_select 'input[type="checkbox"][name="completion_dove_disabled"][aria-label="Turn off completion animation"]:not([checked])', count: 1
-          assert_select 'input[type="submit"][value="Save"]'
+        assert_select '#b270-completion-animation.b270-admin-control', count: 1 do
+          assert_select '> h2#b270-completion-animation-heading', text: 'Completion animation'
+          assert_select "> form.b270-admin-inline-form[aria-labelledby='b270-completion-animation-heading'][action='#{mount}/admin/readers/#{@reader.id}/completion-animation'][method='post']", count: 1 do
+            assert_select 'input[type="hidden"][name="_method"][value="patch"]', count: 1
+            assert_select 'input[name="completion_dove_disabled"]', count: 1
+            assert_select "input[type='hidden'][name='completion_dove_disabled'][value='#{value}']", count: 1
+            assert_select 'input[type="submit"], button', count: 1
+            assert_select "input[type='submit'].b270-btn[value='#{label}']", count: 1
+          end
+          assert_select 'input[type="checkbox"], input[type="submit"][value="Save"], label, p', count: 0
         end
-        assert_select 'p', count: 0
       end
     end
 
     def test_an_admin_can_turn_a_readers_completion_animation_off_and_back_on
       sign_in_as_admin
 
-      patch "#{mount}/admin/readers/#{@reader.id}/completion-animation",
-            params: { completion_dove_disabled: '1' }
-      assert_response :redirect
-      assert @reader.reload.completion_dove_disabled?
+      %w[1 1 0 0].each do |value|
+        patch "#{mount}/admin/readers/#{@reader.id}/completion-animation",
+              params: { completion_dove_disabled: value }
+        assert_redirected_to "#{mount}/admin/readers/#{@reader.id}"
+        assert_equal value == '1', @reader.reload.completion_dove_disabled?
+      end
+    end
+
+    def test_omitting_the_completion_animation_preference_still_enables_it
+      @reader.update!(completion_dove_disabled: true)
+      sign_in_as_admin
 
       patch "#{mount}/admin/readers/#{@reader.id}/completion-animation"
       assert_response :redirect
@@ -348,14 +361,59 @@ if RAILS_LOADED
 
       Bible270::Reader.stub(:completion_dove_column?, false) do
         get "#{mount}/admin/readers/#{@reader.id}"
-        assert_select 'input[name="completion_dove_disabled"]', count: 0
-        assert_select '.b270-flash.alert', text: %r{pending Bible270 database migration}i
+        assert_select '#b270-completion-animation' do
+          assert_select 'h2', text: 'Completion animation'
+          assert_select 'form, input, button', count: 0
+          assert_select '.b270-flash.alert', text: %r{pending Bible270 database migration before changing the completion animation}i
+        end
 
         patch "#{mount}/admin/readers/#{@reader.id}/completion-animation",
               params: { completion_dove_disabled: '1' }
         refute @reader.reload.completion_dove_disabled?
         assert_match(%r{pending Bible270 database migration}i, flash[:alert])
       end
+    end
+
+    def test_plan_position_controls_share_a_row_but_keep_their_forms_separate
+      @reader.update!(started_on: Bible270.today - 4)
+      sign_in_as_admin
+      get "#{mount}/admin/readers/#{@reader.id}"
+      assert_response :success
+
+      assert_select '.b270-admin-position-controls', count: 1 do
+        assert_select '> form.b270-startform', count: 2 do |forms|
+          forms.each do |form|
+            assert_equal "#{mount}/admin/readers/#{@reader.id}/start", form['action']
+            assert_equal 'post', form['method']
+            assert_select form, 'input[type="hidden"][name="_method"][value="patch"]', count: 1
+            assert_select form, "input[type='hidden'][name='participation_id'][value='#{@reader.participation.id}']", count: 1
+            assert_select form, 'input[type="submit"].b270-btn', count: 1
+            assert_select form, 'form', count: 0
+          end
+
+          assert_select forms.first, 'label.b270-field > span', text: 'Day:'
+          assert_select forms.first, "input[type='number'][name='day'][value='5'][min='1'][max='#{Bible270::Plan::DAYS}']", count: 1
+          assert_select forms.first, 'input[type="submit"][value="Move"]', count: 1
+          assert_select forms.first, 'input[name="start_date"]', count: 0
+
+          assert_select forms.last, 'label.b270-field > span', text: 'Start date:'
+          assert_select forms.last, "input[type='date'][name='start_date'][value='#{@reader.started_on.iso8601}']", count: 1
+          assert_select forms.last, 'input[type="submit"][value="Set date"]', count: 1
+          assert_select forms.last, 'input[name="day"]', count: 0
+        end
+      end
+      assert_select '.b270-admin-position-controls + .b270-hint',
+                    text: 'Moving someone re-maps the calendar only. Their check-offs are keyed to day numbers and are not touched.'
+    end
+
+    def test_alumni_have_no_plan_position_controls
+      @reader.archive!
+      sign_in_as_admin
+      get "#{mount}/admin/readers/#{@reader.id}"
+      assert_response :success
+
+      assert_select '.b270-admin-position-controls', count: 0
+      assert_select "form[action='#{mount}/admin/readers/#{@reader.id}/start']", count: 0
     end
 
     # ---- which translation a reader gets ------------------------------------

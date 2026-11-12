@@ -267,7 +267,7 @@ Authorized readers get an **Admin** link. **View as non-admin** hides admin deta
 The panel supports:
 
 - Sort active readers by name, completed days, activity, or consistency; **Reader Stats** follows the same sort.
-- Edit profiles, themes, and notification preferences. Editing another reader's theme leaves yours unchanged.
+- Edit profiles, themes, and notification preferences. Editing another reader's theme leaves yours unchanged. Enable or disable the completion dove with one button.
 - Adjust active readers' start dates; check-offs stay tied to day numbers.
 - Set progress through day N, **clearing completions after N**, or toggle individual days.
 - Mark readers as alumni, reactivate them, and view past-run history.

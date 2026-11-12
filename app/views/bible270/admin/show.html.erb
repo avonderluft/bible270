@@ -135,22 +135,24 @@
 <% unless @reader.alumni? %>
 <div class="b270-panel">
   <h2 class="b270-subhead">Where they are in the plan</h2>
-  <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
-    <%= hidden_field_tag :participation_id, @reader.participation.id %>
-    <label class="b270-field">
-      <span>Put them on day (as of today)</span>
-      <%= number_field_tag :day, @reader.calendar_day || 1, min: 1, max: Bible270::Plan::DAYS %>
-    </label>
-    <%= submit_tag 'Move', class: 'b270-btn' %>
-  <% end %>
-  <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
-    <%= hidden_field_tag :participation_id, @reader.participation.id %>
-    <label class="b270-field">
-      <span>…or set the start date directly</span>
-      <%= date_field_tag :start_date, @reader.started_on %>
-    </label>
-    <%= submit_tag 'Set date', class: 'b270-btn' %>
-  <% end %>
+  <div class="b270-admin-position-controls">
+    <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
+      <%= hidden_field_tag :participation_id, @reader.participation.id %>
+      <label class="b270-field">
+        <span>Day:</span>
+        <%= number_field_tag :day, @reader.calendar_day || 1, min: 1, max: Bible270::Plan::DAYS %>
+      </label>
+      <%= submit_tag 'Move', class: 'b270-btn' %>
+    <% end %>
+    <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
+      <%= hidden_field_tag :participation_id, @reader.participation.id %>
+      <label class="b270-field">
+        <span>Start date:</span>
+        <%= date_field_tag :start_date, @reader.started_on %>
+      </label>
+      <%= submit_tag 'Set date', class: 'b270-btn' %>
+    <% end %>
+  </div>
   <p class="b270-hint">Moving someone re-maps the calendar only. Their check-offs are keyed to day
      numbers and are not touched.</p>
 </div>
@@ -190,12 +192,8 @@
   <% else %>
     <%= form_with url: admin_reader_completion_animation_path(@reader), method: :patch,
                   class: "b270-admin-inline-form", html: { aria: { labelledby: "b270-completion-animation-heading" } } do %>
-      <label class="b270-admin-inline-option">
-        <%= check_box_tag :completion_dove_disabled, "1", @reader.completion_dove_disabled?,
-              aria: { label: "Turn off completion animation" } %>
-        <span>Off</span>
-      </label>
-      <%= submit_tag 'Save', class: 'b270-btn' %>
+      <%= hidden_field_tag :completion_dove_disabled, @reader.completion_dove_disabled? ? '0' : '1' %>
+      <%= submit_tag @reader.completion_dove_disabled? ? 'Enable' : 'Disable', class: 'b270-btn' %>
     <% end %>
   <% end %>
 </div>

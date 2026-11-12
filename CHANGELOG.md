@@ -24,7 +24,7 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 - exclude alumni from current-group lists, reminders, broad reflection notices, and “everyone” broadcasts; retain opted-in personal notices and “all admins” broadcasts for alumni admins
 - keep separate progress and consistency history for each run
 - speed up the full test suite with CPU-aware workers, smaller feature-focused test files, and quieter logs; retain all tests and coverage
-- compact Status, Role, and Completion animation into single-row Admin controls without explanatory text
+- compact Status, Role, and Completion animation into single-row Admin controls; replace the completion checkbox and Save with one Enable/Disable button, and align Move and Set date forms on one row
 - place Scripture Reference and Translation first, side by side with inline labels; require pasted Text below, with API retrieval deferred
 - compact Manage texts into Custom-first and Default lists, move Add text to the top, and give tooltip and expanded passages distinct theme-aware backgrounds
 - place Admin and Profile name fields side by side with shorter inputs; order Admin settings as Theme, Email, Where they are, Role, Status, and Completion animation
