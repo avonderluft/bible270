@@ -7,7 +7,7 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 ### Added
 
 - show full-photo previews after a 3-second avatar hover; fit photos to the screen and fade out when the pointer leaves. Touch behavior is unchanged
-- show a random, theme-matched Scripture frame after a 3-second bread-icon hover, or immediately by tap, click, or keyboard; include Psalm 107:20 (NKJV), Psalm 119:103 (NASB95), Psalm 119:130 (NASB95), Isaiah 55:11 (ESV), Jeremiah 15:16 (NASB95), John 6:63 (NKJV), John 17:17 (NASB95), 2 Corinthians 4:6 (NKJV), and Hebrews 4:12 (NKJV), with YAML defaults in biblical order
+- show random, theme-matched Scripture frames on a 3-second bread-icon hover or immediately by tap, click, or keyboard
 - add a compact Scripture frames panel near the bottom of Admin with reference/translation headings and passage tooltips; database additions supplement read-only YAML defaults, with automatic translation credits
 - add **Start a new run** in Admin: give Admins and Site-admins a fresh active membership with zero progress and no personal start date, move other readers to alumni, and open enrollment; preserve accounts, photos, past progress, and discussions
 - add confirmed **Revert to previous run**: restore saved statuses for everyone, including admins, plus calendars and enrollment settings; preserve both runs' progress and discussions. Available for restarts made after upgrading
