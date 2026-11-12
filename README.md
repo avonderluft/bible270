@@ -125,7 +125,7 @@ Configure Action Mailer delivery and, if needed, [OmniAuth](#social-sign-in).
 
 ### Upgrading
 
-No generator re-run is needed:
+**Back up the host database before migrating.** From the host Rails app (no generator re-run needed):
 
 ```bash
 bundle update bible270
@@ -133,7 +133,11 @@ bin/rails bible270:install:migrations # skips existing copies
 bin/rails db:migrate
 ```
 
-Review the [changelog](CHANGELOG.md) before deploying. Copy and run **all current migrations**, not just those for a feature you use; feature-specific migration notes appear below.
+Review the [changelog](CHANGELOG.md) before deploying and run **all current migrations**, not just those for features you use.
+
+- `20260101000024` saves existing readers and progress as the first run. **This migration cannot be rolled back without losing run history.** Keep a pre-migration backup for recovery.
+- `20260101000025` enables admin roles in the panel. Configured admins become Site-admins and keep their access.
+- `20260101000026` saves restart snapshots so future new runs can be reverted.
 
 **Schedule changes do not remap existing day-based check-offs.** Compared with 1.13.3, the current default Psalms/Proverbs assignments differ on days 112–113 and 117–270, including the closing Psalm 1 reading. Review the effect on an active group before upgrading.
 
@@ -245,7 +249,7 @@ end
 
 ## Admin panel
 
-The panel at `<mount>/admin` returns **404** unless you explicitly authorize administrators:
+The panel at `<mount>/admin` returns **404** for unauthorized readers. Configure Site-admins in the host initializer:
 
 ```ruby
 config.admin_emails = %w[andrew@example.org]
@@ -253,17 +257,24 @@ config.admin_emails = %w[andrew@example.org]
 config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@example.org') }
 ```
 
-Authorized readers get an Admin link. **View as non-admin** hides admin-only details and disables admin actions for the current session. You stay signed in as yourself; your check-offs and reflections still work. The Admin tab remains available with **Return to admin view**. This does not change roles or affect other sessions, and signing in again restores admin view.
+The generated initializer labels this section **Site-admins**; the option names remain `admin_emails` and `admin_resolver`. A callable resolver takes precedence over the email list.
+
+- **Site-admins** can grant or revoke admin access on any reader's Admin page, including alumni, and delete other admins. Configured Site-admins cannot be demoted or deleted in the UI.
+- **Admins** manage readers but cannot change roles or delete privileged readers.
+- Roles persist across runs, independently of **Active/Alumni** status. Site-admins can change their own membership status.
+
+Authorized readers get an **Admin** link. **View as non-admin** hides admin details and disables all administration for this session, including role and membership changes. You remain signed in; reflections and active check-offs still work. Use **Return to admin view** in the Admin tab or sign in again to restore access. Roles and other sessions are unchanged.
 
 The panel supports:
 
-- Sorting readers by name, completed days, activity, or consistency, with **Reader Stats** following the selected sort.
-- Changing reader profiles, themes, and notification preferences. Another reader's theme does not change your own.
-- Moving a reader to a day by adjusting their start date; check-offs remain tied to day numbers.
-- Setting progress exactly through day N, **clearing completions after N**, or toggling individual days.
-- Removing a reader **and all their check-offs and reflections**.
-- Moderating reflections at `<mount>/admin/comments`: hide reversibly or delete. Reflections are public immediately, without prior approval.
-- Sending individually addressed broadcasts to all readers with email addresses or only administrators.
+- Sort active readers by name, completed days, activity, or consistency; **Reader Stats** follows the same sort.
+- Edit profiles, themes, and notification preferences. Editing another reader's theme leaves yours unchanged.
+- Adjust active readers' start dates; check-offs stay tied to day numbers.
+- Set progress through day N, **clearing completions after N**, or toggle individual days.
+- Mark readers as alumni, reactivate them, and view past-run history.
+- Delete unprotected readers **and all their check-offs and reflections across runs**.
+- Hide (reversibly) or delete reflections at `<mount>/admin/comments`. Posts are public immediately, without approval.
+- Send individually addressed email: **Write to everyone** reaches active readers; **Write to all admins** includes alumni admins. Both require an email address.
 
 To print a progress report ordered by completed days:
 
@@ -271,7 +282,31 @@ To print a progress report ordered by completed days:
 docker compose exec -e RAILS_ENV=production rails bin/rails bible270:readers:list
 ```
 
-The report shows completed days, last activity, and calendar status: on track, ahead, behind, or undated.
+The report defaults to active readers, showing completed days, last activity, and status: on track, ahead, behind, or undated.
+
+### Runs and alumni
+
+At the bottom of Admin, enter a start date, choose **Start a new run**, and accept the confirmation prompt. This:
+
+- Archives the current memberships and freezes their calendars and statistics.
+- Makes all current Admins and Site-admins active in the new run, with zero progress and no personal start date. Previous progress stays in read-only history.
+- Leaves other readers as alumni and opens enrollment, even if the installation started with `config.enrollment_open = false`.
+- Keeps reader accounts, photos, check-offs, reflections, replies, likes, and admin roles.
+
+**Revert to previous run** restores the reader statuses, personal dates, shared-date override, and enrollment settings saved before the restart. Everyone, including Admins and Site-admins, returns to their saved status; readers who joined only the newer run become alumni. Both runs' progress and discussions are kept, and admin roles do not change. Accept the confirmation prompt to proceed. Revert is available only for restarts made after migration `20260101000026`; earlier states cannot be reconstructed safely. Restored settings without an override follow the current site configuration.
+
+Alumni can sign in, view Community's **active-reader list**, and post, reply to, and like reflections. Earlier reflections remain visible under the same moderation rules. Archived check-offs are read-only and excluded from current statistics and daily completer lists.
+
+**Show / Hide Alumni** at the bottom of Admin uses the browser's built-in expandable section, starting collapsed like **View all 270 days**. It needs no JavaScript or reload and changes no membership. It uses the selected sort and frozen reader statistics; the main list and Reader Stats show active readers only.
+
+Only admins reactivate alumni; signing in or posting does not re-enroll them:
+
+- **New run:** zero completions and no personal start date; old history stays intact.
+- **Same run:** progress and personal start date are preserved.
+
+Each reader's **Past runs / history** table shows read-only start/end dates, archive date, and completed days.
+
+Admin templates include `bible270/shared/admin_confirmations`, even with custom layouts. Keep this partial in host template overrides; no layout include is needed.
 
 ### Consistency ranking
 
@@ -279,14 +314,14 @@ Consistency is the average end-of-day score on a dated schedule:
 
 `100 + 5 × min(days ahead, 7) − 10 × days behind`
 
-A score of 100 is an average on-track baseline, not a percentage. Negative scores display as `0` but retain their true value for ranking. Scores, on-track/ahead percentages, and evaluated-day counts appear for every Admin sort; sorting by consistency also shows the scoring explanation and adds a **Rank** column to Reader Stats.
+A score of 100 means on track on average, not 100%. Negative scores display as `0` but keep their true ranking. All Admin sorts show scores, on-track/ahead percentages, and evaluated-day counts; consistency sort adds an explanation and **Rank** column.
 
-- Evaluation runs from the later of plan start or account creation through the earlier of yesterday or plan end, in the plan's time zone. Late enrollment does not reset the scheduled day.
+- Evaluation runs from the later of plan start or joining the run (`joined_at`) through the earlier of yesterday or plan end, in the plan's time zone. Archives use frozen dates and stop before the archive date. Joining late does not reset the scheduled day.
 - A day counts when all required readings are checked off, using the latest check-off timestamp. Early completions carry forward; today's catch-up does not improve previous evenings.
 - Readers with seven or more evaluated evenings rank first, then **Provisional** readers with one to six, then **Not ranked** readers with none.
-- Within each ranked group, ordering uses unrounded score, on-track/ahead percentage, and evaluated days. Equal metrics share competition ranks (`1, 1, 1, 4`); name and ID order ties. Unranked readers show a dash.
+- Rank uses unrounded score, then on-track/ahead percentage, then evaluated days. Ties share ranks (`1, 1, 1, 4`), ordered by name and ID. Unranked readers show a dash.
 
-This is **reconstructed history, not an audit log**. Rechecking readings, bulk progress edits, or start-date changes can alter scores. Timestamps record when completion was entered, not necessarily when reading occurred. No snapshot job or additional migration is required.
+This is **reconstructed history, not an audit log**. Rechecking readings, bulk progress edits, or date changes can alter active-run scores. Completion timestamps record entry time, not necessarily reading time. No snapshot job is required.
 
 ## Reflections and notifications
 

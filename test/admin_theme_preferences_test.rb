@@ -319,8 +319,15 @@ if RAILS_LOADED
 
       get "#{mount}/admin/readers/#{@reader.id}"
 
-      assert_select 'h2', text: 'Completion animation'
-      assert_select 'input[type="checkbox"][name="completion_dove_disabled"]:not([checked])', count: 1
+      assert_select '#b270-completion-animation.b270-admin-control' do
+        assert_select 'h2#b270-completion-animation-heading', text: 'Completion animation'
+        assert_select 'form.b270-admin-inline-form[aria-labelledby="b270-completion-animation-heading"]' do
+          assert_select 'label.b270-admin-inline-option', text: 'Off'
+          assert_select 'input[type="checkbox"][name="completion_dove_disabled"][aria-label="Turn off completion animation"]:not([checked])', count: 1
+          assert_select 'input[type="submit"][value="Save"]'
+        end
+        assert_select 'p', count: 0
+      end
     end
 
     def test_an_admin_can_turn_a_readers_completion_animation_off_and_back_on

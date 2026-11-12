@@ -41,6 +41,7 @@
 
   <%= form_with url: admin_run_start_path, method: :patch, class: "b270-startform",
         data: { turbo_confirm: "Change the current run start date? Calendar dates, Today, and reminders will be re-mapped. Check-offs and reflections will not change." } do %>
+    <%= hidden_field_tag :expected_run_id, @current_run.id %>
     <label class="b270-field">
       <span>Start date</span>
       <%= date_field_tag :start_date, @run_start_date, required: true %>
@@ -58,6 +59,7 @@
 
   <% if @run_start_date_overridden %>
     <%= button_to 'Use configured date', admin_run_start_path, method: :delete, class: 'b270-linkbtn',
+          params: { expected_run_id: @current_run.id },
           form: { data: { turbo_confirm: 'Remove the Admin override and use the configured start date?' } } %>
     <p class="b270-hint">
       Configured date:
@@ -66,9 +68,10 @@
   <% end %>
 </div>
 
-<% if @readers.any? %>
+<% if @readers.any? || @alumni_count.positive? %>
   <div class="b270-admin-reader-tools">
     <%= form_with url: admin_path, method: :get, class: "b270-admin-reader-sort" do %>
+
       <label>
         <span>Sort readers by</span>
         <span class="b270-select-wrap">
@@ -88,50 +91,9 @@
     </p>
   <% end %>
 
-  <div class="b270-list">
-    <% @readers.each do |reader| %>
-      <div class="b270-li b270-reader-theme" data-display-mode="<%= reader.effective_display_mode %>">
-        <%= link_to b270_avatar(reader, size: 72), admin_reader_path(reader),
-              "aria-label": reader.display_name %>
-        <div>
-          <div class="name"><%= link_to reader.display_name, admin_reader_path(reader), style: 'text-decoration:none' %>
-          <% if Bible270.config.admin?(reader) %> <span class="sub"><strong>[admin]</strong></span> <% end %>
-          </div>
-          <div class="sub">
-            <% if reader.email.present? %>
-              <%= mail_to reader.email %>
-            <% else %>
-              <%= reader.provider %>
-            <% end %>
-            <% if reader.dated? %>· started <%= reader.effective_start_date.strftime('%b %-d, %Y') %><% end %>
-            · <%= @days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days
-            · <%= @reader_report.status_for(reader) %>
-          </div>
-          <% consistency = @reader_report.consistency_for(reader) %>
-          <div class="sub b270-reader-consistency">
-            <% if consistency.ranked? %>
-              <% if consistency.provisional? %><strong>Provisional</strong> · <% end %>
-              Consistency: <%= consistency.score.negative? ? '0' : number_with_precision(consistency.score.to_f, precision: 1) %>
-              · On track/ahead: <%= consistency.on_track_percentage.round %>%
-              · <%= pluralize(consistency.days_evaluated, 'day') %> evaluated
-            <% else %>
-              Consistency: Not ranked
-            <% end %>
-          </div>
-          <div class="sub b270-reader-activity">
-            <% if (activity = @recent_reader_activities[reader.id]) %>
-              <%= b270_activity_datetime(activity.occurred_at) %>: <%= b270_reader_activity_description(activity) %>
-            <% else %>
-              No reading activity yet
-            <% end %>
-          </div>
-        </div>
-        <div class="stat">
-          <span class="big"><%= (@days_completed[reader.id].to_f / Bible270::Plan::DAYS * 100).round %>%</span>
-        </div>
-      </div>
-    <% end %>
-  </div>
+  <%= render 'reader_list', readers: @readers, days_completed: @days_completed,
+        report: @reader_report, activities: @recent_reader_activities %>
+  <% if @readers.empty? %><p class="b270-hint">No active readers yet.</p><% end %>
 
   <dialog id="b270-reader-stats-dialog" class="b270-reader-stats-dialog"
           aria-labelledby="b270-reader-stats-title" data-b270-reader-stats-dialog>
@@ -181,13 +143,13 @@
 <div class="b270-panel">
   <h2 class="b270-subhead">Write a message</h2>
 
-  <% if @reachable.zero? %>
+  <% if @reachable.zero? && @reachable_admins.zero? %>
     <p class="b270-hint" style="margin-top:0">No reader has an email address yet.</p>
   <% else %>
     <p class="b270-hint" style="margin-top:0">
-      <strong><%= pluralize(@reachable, 'reader') %></strong> can receive email,
-      including <strong><%= pluralize(@reachable_admins, 'admin') %></strong>.
-      Messages are sent individually so each recipient can be greeted by name.
+      <strong><%= pluralize(@reachable, 'active reader') %></strong> can receive email via “Write to everyone”.
+      “Write to all admins” reaches <strong><%= pluralize(@reachable_admins, 'admin') %></strong>, including alumni admins.
+      Ordinary alumni do not receive broadcasts. Messages are sent individually so each recipient can be greeted by name.
       <% if @last_broadcast_at.present? %>
         <br>Last sent <%= b270_datetime(@last_broadcast_at) %><% if @last_broadcast_subject.present? %>: <em><%= @last_broadcast_subject %></em><% end %>.
       <% end %>
@@ -210,4 +172,46 @@
   <% end %>
 </div>
 
+<div class="b270-panel">
+  <h2 class="b270-subhead">Start a new run</h2>
+  <p class="b270-hint">
+    Admins and Site-admins start fresh with zero progress and no personal start date; other readers become alumni.
+    Enrollment opens for a new group. Past progress stays read-only, reflections remain open, and admin roles are unchanged.
+  </p>
+  <%= form_with url: admin_restart_path, method: :post, class: 'b270-startform b270-restart-form',
+        data: { b270_admin_confirm: 'Start a new run? Admins and Site-admins will start fresh with zero progress and no personal start date. Other readers will become alumni, and enrollment will open. Past progress and reflections will be preserved; admin roles will not change.' } do %>
+    <%= hidden_field_tag :expected_run_id, @current_run.id %>
+    <%= hidden_field_tag :confirm_restart, '1' %>
+    <%= label_tag 'b270-restart-date', 'Start date:' %>
+    <%= date_field_tag :start_date, nil, required: true, id: 'b270-restart-date' %>
+    <%= submit_tag 'Start a new run', class: 'b270-btn' %>
+  <% end %>
+</div>
+
+<% if @current_run.revertible? %>
+  <div class="b270-panel">
+    <%= form_with url: admin_revert_path, method: :post, class: 'b270-form b270-revert-form',
+          data: { b270_admin_confirm: 'Revert to the previous run? Saved reader statuses, personal dates, shared-calendar settings and enrollment settings will be restored for everyone, including admins. Readers who joined only the newer run will become alumni. Both runs’ progress, reflections and admin roles will be preserved.' } do %>
+      <%= hidden_field_tag :expected_run_id, @current_run.id %>
+      <%= hidden_field_tag :confirm_revert, '1' %>
+      <%= submit_tag 'Revert to previous run', class: 'b270-btn' %>
+    <% end %>
+    <p class="b270-hint">
+      Restore saved statuses, calendar dates and enrollment settings for everyone, including admins.
+      Newer-run-only readers become alumni. Both runs’ progress, reflections and admin roles are kept.
+    </p>
+  </div>
+<% end %>
+
+<details class="b270-index b270-alumni" id="b270-alumni">
+  <summary>
+    <span class="b270-alumni-show">Show Alumni (<%= @alumni_count %>)</span>
+    <span class="b270-alumni-hide">Hide Alumni (<%= @alumni_count %>)</span>
+  </summary>
+  <%= render 'reader_list', readers: @alumni, days_completed: @days_completed,
+        report: @alumni_report, activities: @alumni_activities %>
+  <% if @alumni.empty? %><p class="b270-hint">No alumni yet.</p><% end %>
+</details>
+
 <p style="margin-top:18px"><%= link_to '← Back to the plan', root_path %></p>
+<%= render 'bible270/shared/admin_confirmations' %>

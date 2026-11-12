@@ -12,7 +12,7 @@ module Bible270
       return message.perform_deliveries = false if @reader.nil? || addresses.empty?
 
       @app_name = Bible270.config.app_name
-      @total = Reader.count
+      @total = Reader.active.count
       @admin_url = admin_url_for(@reader)
 
       mail to: addresses, subject: "#{@app_name}: #{@reader.display_name} has joined"
@@ -54,7 +54,7 @@ module Bible270
     def daily_reminder(reader_id:, day:, on: Bible270.today)
       @reader = Reader.find_by(id: reader_id)
       return message.perform_deliveries = false unless Bible270.config.daily_reminders?
-      return message.perform_deliveries = false if @reader.nil? || !@reader.daily_reminders? || @reader.email.blank?
+      return message.perform_deliveries = false if @reader.nil? || @reader.alumni? || !@reader.daily_reminders? || @reader.email.blank?
 
       @day = day.to_i
       @on = Plan.to_date(on)

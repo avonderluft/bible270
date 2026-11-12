@@ -4,9 +4,8 @@ module Bible270
   # Small administrative panel: remove readers, adjust their completions, and
   # move them to a given day of the plan.
   #
-  # Access is controlled by Bible270.config.admin_emails / admin_resolver. With
-  # neither set the panel is unreachable, and every action 404s rather than 403s
-  # so its existence isn't advertised.
+  # Configured site-admins and UI-appointed admins share panel access.
+  # Unauthorized requests 404 so its existence is not advertised.
   class AdminController < ApplicationController
     LAST_BROADCAST_AT = 'last_broadcast_at'
     LAST_BROADCAST_SUBJECT = 'last_broadcast_subject'
@@ -25,26 +24,82 @@ module Bible270
     before_action :require_admin_view!, except: %i[index update_view]
     before_action :load_reader,
                   only: %i[show destroy update_start update_profile update_theme update_notifications update_completion_animation
-                           remove_avatar complete_through toggle_day]
+                           remove_avatar complete_through toggle_day update_participation]
+    before_action :require_active_reader!, only: %i[update_start complete_through toggle_day]
+    rescue_from Participation::ArchivedProgress, with: :archived_progress
+    rescue_from PlanRun::StaleRun, with: :stale_run
     before_action :load_comment, only: %i[hide_comment unhide_comment destroy_comment]
 
     # ---- enrolment --------------------------------------------------------
 
     def update_enrollment
-      case params[:state]
-      when 'closed'
-        Setting.close_enrollment!
-        redirect_to admin_path, notice: 'Closed to new readers. Existing readers can still sign in.'
-      when 'open'
-        Setting.open_enrollment!
-        redirect_to admin_path, notice: 'Open to new readers.'
-      else
-        redirect_to admin_path, alert: 'Choose whether enrollment is open or closed. Nothing was changed.'
+      run = PlanRun.current
+      run.with_lock do
+        raise PlanRun::StaleRun unless run.current?
+
+        case params[:state]
+        when 'closed'
+          Setting.close_enrollment!
+          redirect_to admin_path, notice: 'Closed to new readers. Existing readers can still sign in.'
+        when 'open'
+          Setting.open_enrollment!
+          redirect_to admin_path, notice: 'Open to new readers.'
+        else
+          redirect_to admin_path, alert: 'Choose whether enrollment is open or closed. Nothing was changed.'
+        end
       end
     end
 
+    def restart
+      unless params[:confirm_restart] == '1'
+        return redirect_to admin_path, alert: 'Confirm starting a new run: admins start fresh and other readers become alumni. Nothing was changed.'
+      end
+
+      PlanRun.restart!(start_date: params[:start_date], expected_run_id: params[:expected_run_id])
+      redirect_to admin_path,
+                  notice: 'Started a new run and opened enrollment. Admins and Site-admins are active with zero progress and no personal start date; other readers are alumni. Past progress, reflections and admin roles are preserved.'
+    rescue PlanRun::InvalidStartDate
+      redirect_to admin_path, alert: 'Choose a valid start date. Nothing was changed.'
+    rescue PlanRun::StaleRun
+      redirect_to admin_path, alert: 'The current run changed. Reload this page before starting a new run. Nothing was changed.'
+    end
+
+    def revert
+      unless params[:confirm_revert] == '1'
+        return redirect_to admin_path, alert: 'Confirm that you want to restore the previous run. Nothing was changed.'
+      end
+
+      PlanRun.revert!(expected_run_id: params[:expected_run_id])
+      redirect_to admin_path,
+                  notice: 'Previous run restored with saved reader statuses, calendars and enrollment settings for everyone, including admins. Both runs’ progress, reflections and roles are preserved.'
+    rescue PlanRun::CannotRevert
+      redirect_to admin_path, alert: 'There is no saved restart to revert. Nothing was changed.'
+    rescue PlanRun::StaleRun
+      redirect_to admin_path, alert: 'The current run changed. Reload this page before reverting. Nothing was changed.'
+    end
+
+    def update_participation
+      unless %w[active alumni].include?(params[:status])
+        return redirect_to admin_reader_path(@reader), alert: 'Choose Active or Alumni. Nothing was changed.'
+      end
+
+      run = PlanRun.current
+      run.with_lock do
+        unless run.current? && run.id.to_s == params[:expected_run_id].to_s
+          raise PlanRun::StaleRun
+        end
+
+        @reader.reload
+        params[:status] == 'active' ? @reader.activate! : @reader.archive!
+      end
+      notice = params[:status] == 'active' ? 'Reader is active in the current run.' : 'Reader marked as alumni. Progress and history are preserved.'
+      redirect_to admin_reader_path(@reader), notice: notice
+    rescue PlanRun::StaleRun
+      redirect_to admin_reader_path(@reader), alert: 'The current run changed. Reload this page before changing membership. Nothing was changed.'
+    end
+
     def update_run_start
-      if Setting.set_run_start_date!(params[:start_date])
+      if with_current_run { Setting.set_run_start_date!(params[:start_date]) }
         date = Setting.run_start_date
         redirect_to admin_path, notice: "Current run start date changed to #{date.strftime('%B %-d, %Y')}."
       else
@@ -53,8 +108,10 @@ module Bible270
     end
 
     def reset_run_start
-      Setting.clear_run_start_date!
-      date = Setting.run_start_date
+      date = with_current_run do
+        Setting.clear_run_start_date!
+        Setting.run_start_date
+      end
       notice = if date
                  "Current run now uses the configured start date, #{date.strftime('%B %-d, %Y')}."
                else
@@ -85,7 +142,10 @@ module Bible270
       @days_completed = Reader.completed_days_by_id
       @reader_sort_options = READER_SORT_OPTIONS
       @reader_sort = READER_SORT_OPTIONS.key?(params[:sort]) ? params[:sort] : 'first_name'
-      readers = Reader.with_avatar.load
+      @current_run = PlanRun.current
+
+      @alumni_count = Reader.alumni.count
+      readers = Reader.active.with_avatar.load
       @recent_reader_activities = Checkoff.recent_activity_by_reader(readers.map(&:id))
       @reader_report = ReaderProgressReport.new(
         readers: readers,
@@ -94,6 +154,16 @@ module Bible270
         sort: @reader_sort
       )
       @readers = @reader_report.sorted_readers
+      @alumni = Reader.alumni.with_avatar.to_a
+      @alumni_activities = {}
+      if @alumni.any?
+        @alumni_activities = Checkoff.recent_activity_by_reader(@alumni.map(&:id))
+        @alumni_report = ReaderProgressReport.new(
+          readers: @alumni, completed_days: @days_completed,
+          recent_activities: @alumni_activities, sort: @reader_sort
+        )
+        @alumni = @alumni_report.sorted_readers
+      end
       @run_start_date = Setting.run_start_date
       @configured_start_date = Bible270.config.start_date
       @run_start_date_overridden = Setting.run_start_date_overridden?
@@ -106,12 +176,18 @@ module Bible270
       end
       reachable_readers = @readers.select { |reader| reader.email.present? }
       @reachable = reachable_readers.size
-      @reachable_admins = reachable_readers.count { |reader| Bible270.config.admin?(reader) }
+      @reachable_admins = broadcast_recipients('admins').count
       @last_broadcast_at = parsed_time(Setting.read(LAST_BROADCAST_AT))
       @last_broadcast_subject = Setting.read(LAST_BROADCAST_SUBJECT)
     end
 
     def show
+      @current_run = PlanRun.current
+      @past_participations = @reader.participations.where(active: false).includes(:plan_run).order(plan_run_id: :desc).load
+      @history_completed_days = Hash.new(0)
+      Checkoff.where(participation_id: @past_participations.map(&:id)).group(:participation_id, :day).count.each do |(participation_id, day), count|
+        @history_completed_days[participation_id] += 1 if count >= Plan.total_parts(day)
+      end
       @comment_notifications_available = comment_notifications_available_for?(@reader)
       @completion_dove_preference_available = completion_dove_available_for(@reader)
       @days_completed = @reader.days_completed
@@ -149,8 +225,23 @@ module Bible270
 
     def destroy
       name = @reader.display_name
-      @reader.destroy
-      redirect_to admin_path, notice: "Removed #{name} and all their check-offs and reflections."
+      denial = nil
+      # Role changes use the same row lock, so deletion cannot authorize against
+      # a stale role while a site-admin promotes this reader.
+      @reader.with_lock do
+        if Bible270.config.site_admin?(@reader)
+          denial = 'Configured site-admins cannot be removed here. Their privileges are controlled by configuration.'
+        elsif Bible270.config.admin?(@reader) && !b270_site_admin?
+          denial = 'Only a site-admin may remove an admin.'
+        else
+          @reader.destroy!
+        end
+      end
+      if denial
+        redirect_to admin_reader_path(@reader), alert: denial
+      else
+        redirect_to admin_path, notice: "Removed #{name} and all their check-offs and reflections."
+      end
     end
 
     # Put the reader on a given day as of today, or set an explicit start date.
@@ -350,7 +441,7 @@ module Bible270
 
     def broadcast_recipients(audience)
       recipients = Reader.where.not(email: [nil, '']).order(:id)
-      return recipients if audience == 'everyone'
+      return recipients.active if audience == 'everyone'
 
       admin_ids = recipients.select { |reader| Bible270.config.admin?(reader) }.map(&:id)
       recipients.where(id: admin_ids)
@@ -372,6 +463,33 @@ module Bible270
     end
 
   private
+
+    def require_active_reader!
+      return archived_progress if @reader.alumni?
+
+      return unless params.key?(:participation_id) && params[:participation_id].to_s != @reader.participation.id.to_s
+
+      stale_run
+    end
+
+    def with_current_run
+      run = PlanRun.current
+      run.with_lock do
+        unless run.current? && (!params.key?(:expected_run_id) || params[:expected_run_id].to_s == run.id.to_s)
+          raise PlanRun::StaleRun
+        end
+
+        yield
+      end
+    end
+
+    def stale_run
+      redirect_to admin_path, alert: 'The current run changed. Reload this page before making changes. Nothing was changed.'
+    end
+
+    def archived_progress
+      redirect_to admin_reader_path(@reader), alert: 'Alumni progress is read-only. Reactivate this reader in the current run before changing progress.'
+    end
 
     def render_theme_error(message)
       respond_to do |format|

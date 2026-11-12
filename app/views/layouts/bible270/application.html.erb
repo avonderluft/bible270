@@ -26,6 +26,13 @@
   <%= render "bible270/shared/theme_scenery" %>
   <div class="b270-wrap">
     <%= render "bible270/shared/header" %>
+    <% if current_reader&.alumni? %>
+      <p class="b270-flash notice b270-alumni-notice">
+        You are viewing as alumni. Your previous progress is preserved.
+        You can still visit <%= link_to 'Community', community_path %> and share reflections.
+        An admin can add you to the current run with fresh progress.
+      </p>
+    <% end %>
     <% if flash[:alert] %><div class="b270-flash alert"><%= flash[:alert] %></div><% end %>
     <% if flash[:notice] %><div class="b270-flash notice"><%= flash[:notice] %></div><% end %>
     <%= yield %>

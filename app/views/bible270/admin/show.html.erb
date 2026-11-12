@@ -11,6 +11,7 @@
   <% elsif @reader.past_end_date? %>· finished <%= @reader.plan_end_date.strftime('%b %-d, %Y') %><% end %>
 </p>
 
+
 <div class="b270-panel">
   <h2 class="b270-subhead">Name and picture</h2>
   <%= form_with url: admin_reader_profile_path(@reader), method: :patch, class: "b270-emailform",
@@ -131,32 +132,11 @@
   <% end %>
 </div>
 
-<div class="b270-panel">
-  <h2 class="b270-subhead">Completion animation</h2>
-  <% unless @completion_dove_preference_available %>
-    <p class="b270-flash alert" style="margin:0">
-      Run the pending Bible270 database migration before changing the completion animation.
-    </p>
-  <% else %>
-    <%= form_with url: admin_reader_completion_animation_path(@reader), method: :patch,
-                  class: "b270-emailform" do %>
-      <div class="b270-field">
-        <label class="b270-reminder-optin">
-          <%= check_box_tag :completion_dove_disabled, "1", @reader.completion_dove_disabled? %>
-          <span>Turn off the dove animation for this reader</span>
-        </label>
-      </div>
-      <p class="b270-hint" style="margin:0">
-        Day completion and progress tracking still work normally when the animation is off.
-      </p>
-      <%= submit_tag 'Save', class: 'b270-btn' %>
-    <% end %>
-  <% end %>
-</div>
-
+<% unless @reader.alumni? %>
 <div class="b270-panel">
   <h2 class="b270-subhead">Where they are in the plan</h2>
   <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
+    <%= hidden_field_tag :participation_id, @reader.participation.id %>
     <label class="b270-field">
       <span>Put them on day (as of today)</span>
       <%= number_field_tag :day, @reader.calendar_day || 1, min: 1, max: Bible270::Plan::DAYS %>
@@ -164,6 +144,7 @@
     <%= submit_tag 'Move', class: 'b270-btn' %>
   <% end %>
   <%= form_with url: admin_reader_start_path(@reader), method: :patch, class: "b270-startform" do %>
+    <%= hidden_field_tag :participation_id, @reader.participation.id %>
     <label class="b270-field">
       <span>…or set the start date directly</span>
       <%= date_field_tag :start_date, @reader.started_on %>
@@ -172,6 +153,51 @@
   <% end %>
   <p class="b270-hint">Moving someone re-maps the calendar only. Their check-offs are keyed to day
      numbers and are not touched.</p>
+</div>
+<% end %>
+
+<div class="b270-panel b270-admin-control" id="b270-role">
+  <h2 class="b270-subhead">Role: <%= Bible270.config.site_admin?(@reader) ? 'Site-admin' : (Bible270.config.admin?(@reader) ? 'Admin' : 'Reader') %></h2>
+  <% unless Bible270.config.site_admin?(@reader) %>
+    <% if b270_site_admin? && @reader != current_reader %>
+      <%= button_to(Bible270.config.admin?(@reader) ? 'Remove admin access' : 'Grant admin access',
+            admin_reader_role_path(@reader), method: :patch,
+            params: { role: Bible270.config.admin?(@reader) ? 'reader' : 'admin' }, class: 'b270-btn',
+            form: { data: { b270_admin_confirm: 'Change this reader’s admin access? Membership and progress will not change.' } }) %>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="b270-panel b270-admin-control" id="b270-participation">
+  <h2 class="b270-subhead">Status: <%= @reader.alumni? ? 'Alumni' : 'Active' %></h2>
+  <% if @reader.alumni? %>
+    <%= button_to 'Make active', admin_reader_participation_path(@reader), method: :patch,
+          params: { status: 'active', expected_run_id: @current_run.id }, class: 'b270-btn',
+          form: { data: { b270_admin_confirm: 'Reactivate this reader in the current run? Same-run progress is preserved; joining a different run starts fresh progress and clears their personal start date. Past history is preserved.' } } %>
+  <% else %>
+    <%= button_to 'Make alumni', admin_reader_participation_path(@reader), method: :patch,
+          params: { status: 'alumni', expected_run_id: @current_run.id }, class: 'b270-btn',
+          form: { data: { b270_admin_confirm: 'Mark this reader as alumni? Their calendar and progress will become read-only. History, reflections and admin privileges are preserved.' } } %>
+  <% end %>
+</div>
+
+<div class="b270-panel b270-admin-control" id="b270-completion-animation">
+  <h2 class="b270-subhead" id="b270-completion-animation-heading">Completion animation</h2>
+  <% unless @completion_dove_preference_available %>
+    <p class="b270-flash alert" style="margin:0">
+      Run the pending Bible270 database migration before changing the completion animation.
+    </p>
+  <% else %>
+    <%= form_with url: admin_reader_completion_animation_path(@reader), method: :patch,
+                  class: "b270-admin-inline-form", html: { aria: { labelledby: "b270-completion-animation-heading" } } do %>
+      <label class="b270-admin-inline-option">
+        <%= check_box_tag :completion_dove_disabled, "1", @reader.completion_dove_disabled?,
+              aria: { label: "Turn off completion animation" } %>
+        <span>Off</span>
+      </label>
+      <%= submit_tag 'Save', class: 'b270-btn' %>
+    <% end %>
+  <% end %>
 </div>
 
 
@@ -183,7 +209,9 @@
 
 <div class="b270-panel">
   <h2 class="b270-subhead">Completions</h2>
+  <% unless @reader.alumni? %>
   <%= form_with url: admin_reader_through_path(@reader), method: :patch, class: "b270-startform" do %>
+    <%= hidden_field_tag :participation_id, @reader.participation.id %>
     <label class="b270-field">
       <span>Mark complete through day (0 clears everything)</span>
       <%= number_field_tag :day, @days_completed, min: 0, max: Bible270::Plan::DAYS %>
@@ -191,28 +219,63 @@
     <%= submit_tag 'Apply', class: 'b270-btn' %>
   <% end %>
   <p class="b270-hint">This also clears anything after that day, so it sets their progress exactly.</p>
+  <% end %>
 
   <div class="b270-grid" style="margin-top:16px">
     <% (1..Bible270::Plan::DAYS).each do |d| %>
-      <%= button_to d, admin_reader_day_path(@reader, d), method: :post,
-            class: b270_day_cell_classes(d, reader: @reader),
-            title: b270_day_readings(d),
-            form: { style: 'display:contents', id: "day-#{d}" } %>
+      <% if @reader.alumni? %>
+        <%= content_tag :span, d, class: b270_day_cell_classes(d, reader: @reader), title: b270_day_readings(d), id: "day-#{d}" %>
+      <% else %>
+        <%= button_to d, admin_reader_day_path(@reader, d), method: :post,
+              params: { participation_id: @reader.participation.id }, class: b270_day_cell_classes(d, reader: @reader),
+              title: b270_day_readings(d),
+              form: { style: 'display:contents', id: "day-#{d}" } %>
+      <% end %>
     <% end %>
   </div>
-  <p class="b270-hint">Click a day to toggle it complete.</p>
+  <p class="b270-hint"><%= @reader.alumni? ? 'Archived completions are read-only.' : 'Click a day to toggle it complete.' %></p>
 </div>
+
+<% if @past_participations.any? %>
+  <div class="b270-panel" id="b270-run-history">
+    <h2 class="b270-subhead">Past runs / history</h2>
+    <p class="b270-hint">Frozen calendar dates and completed days are read-only.</p>
+    <div class="b270-run-history-scroll" role="region" aria-label="Past runs" tabindex="0">
+    <table class="b270-run-history-table">
+      <thead><tr><th scope="col">Run</th><th>Start date</th><th>End date</th><th>Archived on</th><th>Days completed</th></tr></thead>
+      <tbody>
+        <% @past_participations.each do |participation| %>
+          <tr>
+            <td>Run <%= participation.plan_run.id %><% if participation.plan_run.reverted_at %> (reverted)<% end %></td>
+            <td><%= participation.frozen_start_date ? participation.frozen_start_date.strftime('%b %-d, %Y') : 'Undated' %></td>
+            <td><%= participation.frozen_start_date ? Bible270::Plan.end_date_for(participation.frozen_start_date).strftime('%b %-d, %Y') : 'Undated' %></td>
+            <td><%= participation.archived_on ? participation.archived_on.strftime('%b %-d, %Y') : '—' %></td>
+            <td><%= @history_completed_days[participation.id] %>/<%= Bible270::Plan::DAYS %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    </div>
+  </div>
+<% end %>
 
 <div class="b270-panel">
   <h2 class="b270-subhead">Remove</h2>
-  <p class="b270-hint" style="margin-top:0">Deletes the reader together with every check-off and
-     reflection they have written. This cannot be undone.</p>
-  <%= button_to "Remove #{@reader.display_name}", admin_reader_path(@reader), method: :delete,
-        class: 'b270-btn', form: { data: { b270_remove_reader: "Are you sure you want to remove #{@reader.display_name} from the plan? All their check-offs and reflections will be permanently deleted. This cannot be undone." } } %>
+  <% if Bible270.config.site_admin?(@reader) %>
+    <p class="b270-hint">Configured site-admins cannot be removed here. Their privileges are controlled by configuration.</p>
+  <% elsif Bible270.config.admin?(@reader) && !b270_site_admin? %>
+    <p class="b270-hint">Only a site-admin may remove an admin.</p>
+  <% else %>
+    <p class="b270-hint" style="margin-top:0">Deletes the reader together with every check-off and
+       reflection from all their runs. This cannot be undone.</p>
+    <%= button_to "Remove #{@reader.display_name}", admin_reader_path(@reader), method: :delete,
+          class: 'b270-btn', form: { data: { b270_remove_reader: "Are you sure you want to remove #{@reader.display_name} from the plan? All their check-offs and reflections will be permanently deleted. This cannot be undone." } } %>
+  <% end %>
 </div>
 
 <p style="margin-top:18px"><%= link_to '← All readers', admin_path %></p>
 <%= render "bible270/shared/interaction_ui" %>
+<%= render 'bible270/shared/admin_confirmations' %>
 <script nonce="<%= content_security_policy_nonce %>" data-b270-reader-removal>
   (() => {
     if (window.Bible270ReaderRemoval) return;

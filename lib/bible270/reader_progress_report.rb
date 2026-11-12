@@ -10,9 +10,10 @@ module Bible270
     DEFAULT_SORT = 'most_completed'
     Row = Struct.new(:name, :days_read, :status, :last_activity, keyword_init: true)
 
-    def initialize(readers: Reader.all, completed_days: Reader.completed_days_by_id, recent_activities: nil,
+    def initialize(readers: Reader.active.with_avatar, completed_days: Reader.completed_days_by_id, recent_activities: nil,
                    sort: DEFAULT_SORT)
       @readers = readers.to_a
+      ActiveRecord::Associations::Preloader.new(records: @readers, associations: { participation: :plan_run }).call
       @completed_days = completed_days
       @recent_activities = recent_activities || Checkoff.recent_activity_by_reader(@readers.map(&:id))
       @sort = SORTS.include?(sort.to_s) ? sort.to_s : DEFAULT_SORT

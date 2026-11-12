@@ -356,6 +356,26 @@ class ViewsTest < Minitest::Test
     assert_match(%r{opacity:(?:0?\.\d+)}, disabled)
   end
 
+  def test_reader_badges_share_compact_theme_colors_and_capital_letter_alignment
+    styles = File.read(STYLES)
+    badge = styles[%r{\.b270-reader-badge\{([^\}]+)}, 1]
+
+    refute_nil badge
+    assert_includes badge, 'background:var(--line-soft)'
+    assert_includes badge, 'background:color-mix(in srgb,var(--card) 80%,var(--ink))'
+    assert_includes badge, 'color:var(--ink)'
+    assert_includes badge, 'align-items:center'
+    assert_includes badge, 'padding:2px 5px'
+    assert_includes badge, 'margin:0'
+    assert_includes badge, 'min-height:15px'
+    assert_includes badge, 'font-family:"Inter",system-ui,sans-serif'
+    assert_includes badge, 'font-size:9px'
+    text = styles[%r{\.b270-reader-badge>span\{([^\}]+)}, 1]
+    assert_includes text, 'display:block'
+    assert_includes text, 'text-box:trim-both cap alphabetic'
+    refute_includes text, 'transform'
+  end
+
   def test_readable_palette_colours_meet_aa_contrast
     styles = File.read(STYLES)
     selectors = ['.b270'] + %w[sage mist dark dark_green dark_blue system].map { |mode| ".b270[data-display-mode=\"#{mode}\"]" }

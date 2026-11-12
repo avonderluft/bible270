@@ -6,18 +6,28 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Added
 
-- distinguish configured Site-admins from stored Admin grants, keeping access independent of configuration presence
-- preview full photos after hovering over an avatar for 3 seconds; fit originals within the screen and fade out when the pointer leaves, without changing touch behavior
+- show full-photo previews after a 3-second avatar hover; fit photos to the screen and fade out when the pointer leaves. Touch behavior is unchanged
+- add **Start a new run** in Admin: give Admins and Site-admins a fresh active membership with zero progress and no personal start date, move other readers to alumni, and open enrollment; preserve accounts, photos, past progress, and discussions
+- add confirmed **Revert to previous run**: restore saved statuses for everyone, including admins, plus calendars and enrollment settings; preserve both runs' progress and discussions. Available for restarts made after upgrading
+- add Active/Alumni controls, an initially collapsed **Show / Hide Alumni** disclosure with shared sorting, and read-only run history; returning to a new run starts fresh, while same-run reactivation preserves progress
+- let configured Site-admins grant or remove admin access; roles persist across runs, independently of Active/Alumni status. Site-admins can change their own status, but their role is controlled by configuration
 
 ### Changed
 
-- place Admin and Profile name fields side by side with shorter inputs
+- alumni can still sign in, visit Community, and join discussions; their reflections remain available to later groups, while past progress stays frozen
+- exclude alumni from current-group lists, reminders, broad reflection notices, and “everyone” broadcasts; retain opted-in personal notices and “all admins” broadcasts for alumni admins
+- keep separate progress and consistency history for each run
 - speed up the full test suite with CPU-aware workers, smaller feature-focused test files, and quieter logs; retain all tests and coverage
+- compact Status, Role, and Completion animation into single-row Admin controls without explanatory text
+- place Admin and Profile name fields side by side with shorter inputs; order Admin settings as Theme, Email, Where they are, Role, Status, and Completion animation
+
+**Upgrade:** Back up the database, then copy and run migrations `20260101000024`–`20260101000026` from the host app. Existing readers and check-offs become the initial run. The run-history migration is intentionally irreversible.
 
 ### Fixed
 
-- shorten theme and upload hints on Admin and Profile; keep the System hint on one line
 - always confirm reader removal before deleting their check-offs and reflections, even when Turbo is unavailable
+- give Admin, Site-admin, and Alumni labels matching compact, theme-colored badges; center uppercase text without font-dependent offsets
+- shorten theme and upload hints on Admin and Profile; keep the System hint on one line
 
 ## [1.15.1] - 2026-11-06
 

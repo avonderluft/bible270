@@ -21,6 +21,10 @@ if RAILS_LOADED
       @migration.verbose = false
     end
 
+    def teardown
+      restore_checkoff_schema! if @migration
+    end
+
     # One row per track is what the old schema stored, and it meant "the whole
     # reading is done".
     def legacy_checkoff(day, track)
@@ -42,6 +46,14 @@ if RAILS_LOADED
 
       assert_equal Bible270::Plan.total_parts(1), @reader.checkoffs.where(day: 1).count
       assert @reader.day_complete?(1), 'a day that was finished must stay finished'
+    end
+
+    def test_legacy_rows_and_expanded_parts_belong_to_the_readers_participation
+      legacy_checkoff(1, 'ot')
+      expand!
+
+      assert_equal [@reader.participation.id], @reader.checkoffs.distinct.pluck(:participation_id)
+      assert_equal 3, @reader.checkoffs.count
     end
 
     def test_it_fills_in_every_chapter_of_the_reading
@@ -85,7 +97,7 @@ if RAILS_LOADED
     # never runs. It collapses each track back to a single check-off, which is
     # what the old schema meant, and drops the column.
     #
-    # The schema is restored in the ensure block: the suite shares one in-memory
+    # The schema is restored in teardown: the suite shares one in-memory
     # database, so leaving it rolled back would break every later test.
     def test_the_rollback_collapses_chapters_back_to_tracks
       Bible270::Plan.present_tracks(1).each { |track| legacy_checkoff(1, track) }
@@ -97,10 +109,6 @@ if RAILS_LOADED
       refute_includes Bible270::Checkoff.column_names, 'part'
       assert_equal 3, @reader.checkoffs.where(day: 1).count, 'one row per track, as before'
       assert_equal %w[nt ot pp], @reader.checkoffs.where(day: 1).pluck(:track).sort
-    ensure
-      # Restore the schema whatever happened: the suite shares one in-memory
-      # database, so leaving it rolled back would break every later test.
-      @migration.up unless Bible270::Checkoff.column_names.include?('part')
     end
 
     def test_the_rollback_and_replay_leave_the_reader_where_they_were
@@ -117,6 +125,22 @@ if RAILS_LOADED
       assert_equal 5, @reader.checkoffs.where(day: 1).count
     end
 
+    def test_schema_cleanup_restores_modern_uniqueness_after_rollback_or_replay
+      [false, true].each do |replay|
+        @migration.down
+        @migration.up if replay
+
+        restore_checkoff_schema!
+
+        connection = Bible270::Checkoff.connection
+        index = connection.indexes(:bible270_checkoffs).find { |candidate| candidate.name == 'idx_b270_checkoffs_part_unique' }
+        assert_equal %w[participation_id day track part], index.columns
+        assert index.unique
+        refute connection.index_name_exists?(:bible270_checkoffs, 'idx_b270_checkoffs_unique')
+        assert_includes Bible270::Checkoff.column_names, 'part'
+      end
+    end
+
     def test_it_covers_the_longest_reading_in_the_plan
       # Day 270 is Zechariah 14 plus Malachi 1-4: five chapters.
       legacy_checkoff(270, 'ot')
@@ -124,6 +148,25 @@ if RAILS_LOADED
 
       assert_equal Bible270::Plan.part_count(270, 'ot'),
                    @reader.checkoffs.where(day: 270, track: 'ot').count
+    end
+
+  private
+
+    def restore_checkoff_schema!
+      connection = Bible270::Checkoff.connection
+      unless connection.column_exists?(:bible270_checkoffs, :part)
+        connection.add_column :bible270_checkoffs, :part, :integer, null: false, default: 0
+      end
+      %w[idx_b270_checkoffs_unique idx_b270_checkoffs_part_unique].each do |name|
+        connection.remove_index :bible270_checkoffs, name: name if connection.index_name_exists?(:bible270_checkoffs, name)
+      end
+      columns = if connection.column_exists?(:bible270_checkoffs, :participation_id)
+                  %i[participation_id day track part]
+                else
+                  %i[reader_id day track part]
+                end
+      connection.add_index :bible270_checkoffs, columns, unique: true, name: 'idx_b270_checkoffs_part_unique'
+      Bible270::Checkoff.reset_column_information
     end
   end
 end

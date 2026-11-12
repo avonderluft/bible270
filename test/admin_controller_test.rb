@@ -68,16 +68,28 @@ if RAILS_LOADED
       end
     end
 
-    def test_reader_detail_panels_place_completions_between_translation_and_remove
+    def test_reader_detail_panels_follow_the_requested_order
       sign_in_as_admin
       get "#{mount}/admin/readers/#{@reader.id}"
 
       headings = css_select('.b270-panel > h2').map { |heading| heading.text.strip }
-      assert_equal ['Name and picture', 'Which translation they read', 'Theme', 'Email notifications'], headings.first(4)
+      assert_equal ['Name and picture', 'Which translation they read', 'Theme', 'Email notifications',
+                    'Where they are in the plan', 'Role: Reader', 'Status: Active', 'Completion animation'], headings.first(8)
       assert_equal 1, headings.count('Which translation they read')
       assert_equal 1, headings.count('Completions')
       assert_operator headings.index('Which translation they read'), :<, headings.index('Completions')
       assert_operator headings.index('Completions'), :<, headings.index('Remove')
+    end
+
+    def test_alumni_detail_panels_keep_the_same_order_without_schedule_controls
+      sign_in_as_admin
+      @reader.archive!
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      headings = css_select('.b270-panel > h2').map { |heading| heading.text.strip }
+      assert_equal ['Name and picture', 'Which translation they read', 'Theme', 'Email notifications',
+                    'Role: Reader', 'Status: Alumni', 'Completion animation'], headings.first(7)
+      refute_includes headings, 'Where they are in the plan'
     end
 
     def test_reader_detail_email_is_a_mailto_link_with_provider_fallback

@@ -4,6 +4,7 @@
   parts = Bible270::Plan.parts_for(day, track)
   read_parts = signed_in? ? current_reader.read_parts_for(day, track) : []
   done = ref.present? && read_parts.size >= parts.size
+  can_check_off = signed_in? && !current_reader.alumni?
 %>
 <% if ref %>
   <div class="b270-reading <%= track %> <%= 'multi' if parts.size > 1 %> <%= 'done' if done %>"
@@ -19,9 +20,9 @@
           <% parts.each_with_index do |part_ref, index| %>
             <% part_done = read_parts.include?(index) %>
             <li class="b270-part <%= 'done' if part_done %>">
-              <% if signed_in? %>
+              <% if can_check_off %>
                 <%= button_to toggle_checkoff_part_path(day, track, index), class: "b270-toggle",
-                      params: { checked: part_done ? "0" : "1" },
+                      params: { checked: part_done ? "0" : "1", participation_id: current_reader.participation.id },
                       form: { data: { turbo_stream: true, b270_submit: true, b270_checkoff: true,
                                       b270_pending: "Saving reading…",
                                       b270_success: (part_done ? "Reading marked unread." : "Reading marked read."),
@@ -43,9 +44,9 @@
         </div>
       </div>
     <% else %>
-      <% if signed_in? %>
+      <% if can_check_off %>
         <%= button_to toggle_checkoff_part_path(day, track, 0), class: "b270-toggle",
-              params: { checked: done ? "0" : "1" },
+              params: { checked: done ? "0" : "1", participation_id: current_reader.participation.id },
               form: { data: { turbo_stream: true, b270_submit: true, b270_checkoff: true,
                               b270_pending: "Saving reading…",
                               b270_success: (done ? "Reading marked unread." : "Reading marked read."),

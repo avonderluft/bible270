@@ -5,7 +5,7 @@ module Bible270
     def index
       # Community is a directory of fellow readers, not a leaderboard. Keep the
       # order predictable without implying that progress determines standing.
-      @readers = Reader.with_avatar.to_a.sort_by(&:sort_name)
+      @readers = Reader.active.with_avatar.to_a.sort_by(&:sort_name)
       @today_day = current_reader&.today_day
       @show_admin_progress = b270_admin_view?
       return unless signed_in?

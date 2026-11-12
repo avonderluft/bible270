@@ -6,7 +6,13 @@ module Bible270
   class Reader < ApplicationRecord
     self.table_name = 'bible270_readers'
 
-    has_many :checkoffs, class_name: 'Bible270::Checkoff', dependent: :destroy
+    # Keep destruction unscoped: the selected progress association intentionally
+    # exposes only one run, but deleting an identity must remove every run's rows.
+    has_many :all_checkoffs, class_name: 'Bible270::Checkoff', dependent: :destroy, inverse_of: :reader
+    has_many :participations, class_name: 'Bible270::Participation', dependent: :destroy, inverse_of: :reader
+    has_one :participation, -> { chosen }, class_name: 'Bible270::Participation'
+    has_many :checkoffs, ->(reader) { where(Checkoff.arel_table[:participation_id].eq(reader.participation&.id)) },
+             class_name: 'Bible270::Checkoff', inverse_of: :reader
     has_many :comments,  class_name: 'Bible270::Comment',  dependent: :destroy
     has_many :likes,     class_name: 'Bible270::Like',     dependent: :destroy, inverse_of: :reader
     belongs_to :owner, polymorphic: true, optional: true
@@ -24,7 +30,16 @@ module Bible270
 
     def self.avatar_uploads? = AVATAR_UPLOADS
 
-    scope :with_avatar, -> { avatar_uploads? ? includes(AVATAR_ASSOCIATIONS) : all }
+    scope :with_avatar, -> {
+      relation = preload(participation: :plan_run)
+      avatar_uploads? ? relation.includes(AVATAR_ASSOCIATIONS) : relation
+    }
+    scope :active, -> { where(id: Participation.active.select(:reader_id)) }
+    scope :alumni, -> { where.not(id: Participation.active.select(:reader_id)) }
+
+    after_create :enroll_in_current_run!
+    before_update :protect_archived_schedule
+    after_update :sync_participation_start_date
 
     # Fires for every way a reader comes into existence — email sign-in, OmniAuth,
     # or a bridged host user — rather than in each controller, so no path can
@@ -63,7 +78,7 @@ module Bible270
               if: -> { self.class.daily_reminder_columns? }
 
     scope :daily_reminder_recipients, ->(on:) {
-      where(daily_reminders: true)
+      active.where(daily_reminders: true)
         .where.not(email: [nil, ''])
         .where.not(id: where(last_daily_reminder_sent_on: on).select(:id))
     }
@@ -90,7 +105,8 @@ module Bible270
     end
 
     def self.completed_days_by_id
-      Checkoff.group(:reader_id, :day).count.each_with_object(Hash.new(0)) do |((reader_id, day), done), totals|
+      Checkoff.where(participation_id: Participation.chosen.select(:id))
+        .group(:reader_id, :day).count.each_with_object(Hash.new(0)) do |((reader_id, day), done), totals|
         totals[reader_id] += 1 if done >= Plan.total_parts(day)
       end
     end
@@ -98,7 +114,7 @@ module Bible270
     # A day is completed when its final required checkoff is created, so MAX(created_at)
     # is the completion moment. Keep reader_id as a deterministic tie-breaker.
     def self.completers_for(day)
-      reader_ids = Checkoff.where(day: day)
+      reader_ids = Checkoff.where(day: day, participation_id: Participation.active.select(:id))
         .group(:reader_id)
         .having('COUNT(*) >= ?', Plan.total_parts(day))
         .order(Checkoff.arel_table[:created_at].maximum.asc, :reader_id)
@@ -329,7 +345,7 @@ module Bible270
     def self.all_comment_notification_recipients
       return none unless comment_notification_columns?
 
-      where(notify_on_all_comments: true).where.not(email: [nil, ''])
+      active.where(notify_on_all_comments: true).where.not(email: [nil, ''])
     end
 
     def self.completion_dove_column?
@@ -461,6 +477,88 @@ module Bible270
       display_name.to_s.split(%r{\s+}).first(2).map { |w| w[0] }.join.upcase.presence || '?'
     end
 
+    def alumni?
+      participation.nil? || participation.alumni? || !participation.plan_run.current?
+    end
+
+    # Used by admin membership changes and new-run admin enrollment, never by
+    # sign-in or comments. A new run clears the personal date; a same-run return retains its own date
+    # and checkoffs. Historical calendars live on the archived participation.
+    def activate!
+      run = PlanRun.current
+      run.with_lock do
+        raise PlanRun::StaleRun, 'The current run changed; retry activation' unless run.current?
+
+        with_lock do
+          membership = participations.find_by(plan_run_id: run.id)
+          if membership
+            update_columns(started_on: membership.started_on)
+            membership.update!(active: true, archived_on: nil, frozen_start_date: nil)
+          else
+            update_columns(started_on: nil)
+            participations.create!(plan_run: run, joined_at: Time.current)
+          end
+        end
+      end
+      reload_progress
+      participation
+    end
+
+    def archive!
+      run = PlanRun.current
+      run.with_lock do
+        with_lock { participation&.archive! }
+      end
+      reload_progress
+      participation
+    end
+
+    def ensure_progress_writable!
+      membership = participation
+      raise Participation::ArchivedProgress, 'Reader has no participation' unless membership
+
+      # Recheck persisted state even when this Reader predates an admin restart.
+      membership.reload
+      membership.association(:plan_run).reset
+      membership.ensure_writable!
+    end
+
+    def enroll_in_current_run!
+      # A restart may win between selection and locking. Retry within this new
+      # reader's creation, rather than failing a sign-in whose token was consumed.
+      3.times do
+        run = PlanRun.current
+        membership = run.with_lock do
+          next unless run.current?
+
+          participations.create!(plan_run: run, joined_at: created_at, started_on: started_on)
+        end
+        return membership if membership
+      end
+      raise PlanRun::StaleRun, 'The current run kept changing during enrollment; retry sign-in'
+    end
+
+    def with_writable_progress
+      membership = participation
+      raise Participation::ArchivedProgress, 'Reader has no participation' unless membership
+
+      membership.plan_run.with_lock do
+        ensure_progress_writable!
+        yield
+      end
+    end
+
+    def protect_archived_schedule
+      # save's outer transaction retains this row lock through the reader update
+      # and sync_participation_start_date, even after with_writable_progress returns.
+      with_writable_progress { true } if will_save_change_to_started_on?
+    end
+
+    def sync_participation_start_date
+      participation.update!(started_on: started_on) if saved_change_to_started_on?
+    end
+    private :enroll_in_current_run!, :protect_archived_schedule, :sync_participation_start_date, :with_writable_progress
+
     # {day => number of tracks checked off}
     def checked_counts
       @checked_counts ||= checkoffs.group(:day).count
@@ -562,13 +660,12 @@ module Bible270
     def mark_day_complete!(day)
       return false unless Plan.valid_day?(day)
 
-      # Deliberately not find_or_create_by!: since Rails 8.1 that creates first
-      # and rescues RecordNotUnique, but Checkoff validates uniqueness, so a
-      # duplicate raises RecordInvalid before the database is reached and is
-      # never rescued. Reading what exists first is also one query per day rather
-      # than one per chapter.
-      missing = missing_parts_on(day)
-      insert_checkoffs(day, missing) if missing.any?
+      with_writable_progress do
+        # Read first rather than rescuing RecordNotUnique: model uniqueness
+        # validation can reject duplicates before they reach the database.
+        missing = missing_parts_on(day)
+        insert_checkoffs(day, missing) if missing.any?
+      end
 
       reload_progress
       true
@@ -588,7 +685,8 @@ module Bible270
       now = Time.current
       Checkoff.insert_all(
         pairs.map do |track, part|
-          { reader_id: id, day: day, track: track, part: part, created_at: now, updated_at: now }
+          { reader_id: id, participation_id: participation.id, day: day, track: track, part: part,
+            created_at: now, updated_at: now }
         end
       )
     end
@@ -596,7 +694,7 @@ module Bible270
     def clear_day!(day)
       return false unless Plan.valid_day?(day)
 
-      checkoffs.where(day: day).destroy_all
+      with_writable_progress { checkoffs.where(day: day).destroy_all }
       reload_progress
       true
     end
@@ -610,7 +708,7 @@ module Bible270
       day = day.to_i
       return false unless day.between?(0, Plan::DAYS)
 
-      transaction do
+      with_writable_progress do
         checkoffs.where(day: (day + 1)..).delete_all
         (1..day).each { |d| mark_day_complete!(d) }
       end
@@ -649,6 +747,12 @@ module Bible270
 
     def reload_progress
       @checked_counts = nil
+      association(:participation).reset
+      association(:participations).reset
+      association(:checkoffs).reset
+      # The association scope binds the selected membership ID; a revert can
+      # select an older membership on this same Reader instance.
+      association(:checkoffs).reset_scope
       self
     end
 
@@ -656,14 +760,25 @@ module Bible270
 
     # The start date that actually governs this reader. A reader's own
     # started_on wins when per-reader dates are allowed; otherwise (or if they
-    # haven't got one) the current run's shared date applies. Nil means the plan
-    # is undated for this reader and no calendar mapping exists.
+    # haven't got one) the current run's shared date applies. Alumni instead use
+    # their immutable participation snapshot, including an explicitly undated one.
     def effective_start_date
-      if Bible270.config.allow_reader_start_date && started_on
-        started_on
+      membership = participation
+      return membership.frozen_start_date if membership&.alumni?
+
+      # The selected run's snapshot remains authoritative after a revert, even
+      # when this Reader instance still holds the newer run's personal date.
+      personal_date = membership ? membership.started_on : started_on
+      if Bible270.config.allow_reader_start_date && personal_date
+        personal_date
       else
         Setting.run_start_date
       end
+    end
+
+    # Calendar status and consistency stop moving on the archive date.
+    def progress_today
+      participation&.archived_on || Bible270.today
     end
 
     def dated?
@@ -677,7 +792,7 @@ module Bible270
 
     # The plan day that today corresponds to (clamped into range), or nil when undated.
     def calendar_day
-      Plan.day_for(Bible270.today, effective_start_date)
+      Plan.day_for(progress_today, effective_start_date)
     end
 
     def progress_status(completed_days: days_completed)
@@ -696,6 +811,8 @@ module Bible270
     # plan's window. calendar_day clamps, so before the start date it reports day
     # 1 — which made day 1 claim to be "today" for anyone whose plan hadn't begun.
     def today_day
+      return nil if alumni?
+
       raw = raw_calendar_day
       return nil if raw.nil?
 
@@ -707,15 +824,15 @@ module Bible270
     end
 
     def raw_calendar_day
-      Plan.day_for(Bible270.today, effective_start_date, clamp: false)
+      Plan.day_for(progress_today, effective_start_date, clamp: false)
     end
 
     def not_started_yet?
-      Plan.before_start?(Bible270.today, effective_start_date)
+      Plan.before_start?(progress_today, effective_start_date)
     end
 
     def past_end_date?
-      Plan.after_end?(Bible270.today, effective_start_date)
+      Plan.after_end?(progress_today, effective_start_date)
     end
 
     def plan_end_date
@@ -758,6 +875,7 @@ module Bible270
     # Called when a reader first participates. Only stamps a personal start date
     # when per-reader dates are enabled and a shared date isn't already in force.
     def ensure_started!
+      return if alumni?
       return unless Bible270.config.allow_reader_start_date
       return if started_on.present?
       return if Setting.run_start_date.present?
