@@ -789,8 +789,10 @@ for (const phase of ['before rAF', 'holding', 'flying', 'fading']) {
 
 test('completion layout centers, scrolls, preserves theme surfaces and dove stacking, and fades both together without a final freeze (optional Chromium)', { timeout: 60000 }, (t) => {
   const { spawnSync } = require('node:child_process');
-  const probe = spawnSync('chromium', ['--version'], { timeout: 15000, encoding: 'utf8' });
-  if (probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; full-script VM tests still run');
+  const browser = process.env.CHROME_BIN || 'chromium';
+  const probe = spawnSync(browser, ['--version'], { timeout: 15000, encoding: 'utf8' });
+  if (!process.env.CHROME_BIN && probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; full-script VM tests still run');
+  assert.ifError(probe.error);
   assert.equal(probe.status, 0, probe.stderr || String(probe.error));
   const stripERB = (name) => readFileSync(resolve(__dirname, `../../app/views/bible270/shared/${name}.html.erb`), 'utf8').replace(/<%[\s\S]*?%>/g, '');
   const styles = stripERB('_styles');
@@ -944,13 +946,14 @@ test('completion layout centers, scrolls, preserves theme surfaces and dove stac
     document.body.append(result);
   }</script></body></html>`;
   for (const reduced of [false, true]) {
-    const result = spawnSync('chromium', ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--disable-background-networking',
+    const result = spawnSync(browser, ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--disable-background-networking',
       ...(reduced ? ['--force-prefers-reduced-motion'] : []), '--dump-dom', '--timeout=6000', '--virtual-time-budget=1000', `data:text/html,${encodeURIComponent(page)}`], {
       timeout: 20000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024
     });
+    assert.ifError(result.error);
     assert.equal(result.status, 0, result.stderr || String(result.error));
     const output = result.stdout.match(/<pre id="result">([^<]*)<\/pre>/);
-    assert.ok(output, `Chromium completed completion layout checks: ${result.stderr}`);
+    assert.ok(output, `${browser} completed completion layout checks: ${result.stderr}\n${result.stdout.slice(0, 1000)}`);
     const report = JSON.parse(output[1].replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'));
     assert.equal(report.error, undefined, report.error);
     assert.equal(report.reduced, reduced, 'Chromium applied the requested motion preference');

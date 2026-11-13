@@ -51,8 +51,10 @@ const reader = (disabled) => `<div class="b270-panel">
 </div>`;
 
 test('admin rows, separate position forms and completion control fit (optional Chromium)', { timeout: 45000 }, (t) => {
-  const probe = spawnSync('chromium', ['--version'], { timeout: 15000, encoding: 'utf8' });
-  if (probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; optional admin layout checks skipped');
+  const browser = process.env.CHROME_BIN || 'chromium';
+  const probe = spawnSync(browser, ['--version'], { timeout: 15000, encoding: 'utf8' });
+  if (!process.env.CHROME_BIN && probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; optional admin layout checks skipped');
+  assert.ifError(probe.error);
   assert.equal(probe.status, 0, probe.stderr || String(probe.error));
   const styles = readFileSync(resolve(__dirname, '../../app/views/bible270/shared/_styles.html.erb'), 'utf8');
   const screens = { library, 'reader-disable': reader(false), 'reader-enable': reader(true) };
@@ -192,15 +194,16 @@ test('admin rows, separate position forms and completion control fit (optional C
   // CSP also applies to the same-origin about:blank frames; all content is inline.
   const csp = `default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-src 'self' about:`;
   const page = `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${csp}"></head><body><script>(${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(screens)},${JSON.stringify(widths)})</script></body></html>`;
-  const result = spawnSync('chromium', [
+  const result = spawnSync(browser, [
     '--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
     '--disable-background-networking', '--disable-component-update', '--no-first-run', '--no-default-browser-check',
     '--host-resolver-rules=MAP * ~NOTFOUND', '--dump-dom', '--timeout=5000', '--virtual-time-budget=1000',
     `data:text/html,${encodeURIComponent(page)}`
   ], { timeout: 20000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 });
+  assert.ifError(result.error);
   assert.equal(result.status, 0, result.stderr || String(result.error));
   const output = result.stdout.match(/<pre id="result">([^<]*)<\/pre>/);
-  assert.ok(output, `Chromium completed all admin layout checks: ${result.stderr}`);
+  assert.ok(output, `${browser} completed all admin layout checks: ${result.stderr}\n${result.stdout.slice(0, 1000)}`);
   const report = JSON.parse(output[1].replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'));
   assert.equal(report.scenarios, widths.length * Object.keys(screens).length);
   assert.equal(report.failures.length, 0, report.failures.join('\n'));

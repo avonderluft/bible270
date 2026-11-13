@@ -683,8 +683,10 @@ test('translation and attribution are per entry, including NKJV rather than a fi
 
 test('mobile header fits, icon/title centers align, theme changes only the board, and long art scrolls (optional Chromium)', { timeout: 45000 }, (t) => {
   const { spawnSync } = require('node:child_process');
-  const probe = spawnSync('chromium', ['--version'], { timeout: 15000, encoding: 'utf8' });
-  if (probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; VM and static checks still run');
+  const browser = process.env.CHROME_BIN || 'chromium';
+  const probe = spawnSync(browser, ['--version'], { timeout: 15000, encoding: 'utf8' });
+  if (!process.env.CHROME_BIN && probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; VM and static checks still run');
+  assert.ifError(probe.error);
   assert.equal(probe.status, 0, probe.stderr || String(probe.error));
   const styles = readFileSync(resolve(__dirname, '../../app/views/bible270/shared/_styles.html.erb'), 'utf8');
   const favicon = readFileSync(resolve(__dirname, '../../lib/bible270/favicon.rb'), 'utf8');
@@ -839,12 +841,13 @@ test('mobile header fits, icon/title centers align, theme changes only the board
     document.body.append(result);
   };
   const page = `<!doctype html><html><body><script>(${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(svg)},${JSON.stringify(figure)},${JSON.stringify(papyrus)},${JSON.stringify(librarySource)})</script></body></html>`;
-  const result = spawnSync('chromium', ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--dump-dom', '--timeout=10000', '--virtual-time-budget=1000', `data:text/html,${encodeURIComponent(page)}`], {
+  const result = spawnSync(browser, ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--dump-dom', '--timeout=10000', '--virtual-time-budget=1000', `data:text/html,${encodeURIComponent(page)}`], {
     timeout: 20000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024
   });
+  assert.ifError(result.error);
   assert.equal(result.status, 0, result.stderr || String(result.error));
   const output = result.stdout.match(/<pre id="result">([^<]*)<\/pre>/);
-  assert.ok(output, 'browser completed all layout checks');
+  assert.ok(output, `${browser} completed all layout checks: ${result.stderr}\n${result.stdout.slice(0, 1000)}`);
   const report = JSON.parse(output[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
   assert.deepEqual(report.failures, [], JSON.stringify(report.failures, null, 2));
   assert.equal(report.scenarios, 42);
