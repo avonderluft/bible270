@@ -1,0 +1,16 @@
+<script nonce="<%= content_security_policy_nonce %>" data-b270-admin-confirmations>
+  (() => {
+    if (window.Bible270AdminConfirmations) return;
+    window.Bible270AdminConfirmations = true;
+
+    // Capture native and keyboard submissions before Turbo can handle them.
+    document.addEventListener("submit", (event) => {
+      const form = event.target;
+      if (event.defaultPrevented || !form.matches("form[data-b270-admin-confirm]")) return;
+      if (window.confirm(form.dataset.b270AdminConfirm)) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+  })();
+</script>

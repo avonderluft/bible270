@@ -1,0 +1,72 @@
+<% if @scripture_frame.errors.any? %>
+  <div class="b270-panel" role="alert" id="b270-scripture-frame-errors">
+    <h2 class="b270-subhead">Please check this text</h2>
+    <ul>
+      <% @scripture_frame.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<% quotation = Bible270::ScriptureFrames.quotation?(@scripture_frame.translation) %>
+<p class="b270-hint" id="b270-scripture-frame-rights">Bible translation credits are added automatically. For other quotations, name the author or source. Use text you have permission to reproduce.</p>
+<p class="b270-hint" id="b270-scripture-frame-format">Custom texts supplement the bundled YAML defaults without changing them. Plain text only, not HTML or Markdown. Line breaks are preserved in the frame.</p>
+
+<%= form_with model: @scripture_frame, scope: :scripture_frame,
+      url: @scripture_frame.persisted? ? admin_scripture_frame_path(@scripture_frame) : admin_scripture_frames_path,
+      method: @scripture_frame.persisted? ? :patch : :post, local: true, class: 'b270-form',
+      html: { data: { b270_scripture_form: true }, aria: { describedby: 'b270-scripture-frame-rights b270-scripture-frame-format' } } do |f| %>
+  <%= hidden_field_tag :sort, @reader_sort %>
+  <div class="b270-scripture-fields">
+    <div class="b270-field">
+      <%= f.label :reference, quotation ? 'Author / source' : 'Reference' %>
+      <%= f.text_field :reference, required: true, maxlength: 200 %>
+    </div>
+    <div class="b270-field">
+      <%= f.label :translation, 'Translation' %>
+      <span class="b270-select-wrap b270-select-wrap--full">
+        <% choices = Bible270::ScriptureFrames.translation_options.map { |label, code| [label, code, { 'data-credit' => Bible270::ScriptureFrames.attribution_for(code) }] } %>
+        <%= f.select :translation, choices, { include_blank: true },
+              required: true, class: 'b270-select', aria: { describedby: 'b270-scripture-frame-credit' } %>
+      </span>
+    </div>
+  </div>
+  <div class="b270-field">
+    <%= f.label :text, 'Text' %>
+    <%= f.text_area :text, required: true, maxlength: 4000, rows: 8 %>
+  </div>
+  <% credit = Bible270::ScriptureFrames.attribution_for(@scripture_frame.translation) %>
+  <p class="b270-hint" id="b270-scripture-frame-credit" aria-live="polite" <%= 'hidden' if quotation %>><% unless quotation %>Attribution: <%= credit.presence || 'No attribution is configured for this translation.' %><% end %></p>
+  <div class="b270-field">
+    <%= f.label :enabled do %>
+      <%= f.check_box :enabled %> Enabled
+    <% end %>
+  </div>
+  <p class="b270-hint">Disabled texts stay saved but are not available to readers.</p>
+  <%= f.submit @scripture_frame.persisted? ? 'Save text' : 'Add text', class: 'b270-btn' %>
+  <%= link_to 'Cancel', scripture_frames_return_path %>
+<% end %>
+
+<script nonce="<%= content_security_policy_nonce %>" data-b270-scripture-form-ui>
+  (() => {
+    if (!window.Bible270ScriptureForm) {
+      const sync = (form) => {
+        const select = form.querySelector('[name="scripture_frame[translation]"]');
+        const quotation = select.value === "OTHER";
+        form.querySelector('label[for="scripture_frame_reference"]').textContent = quotation ? "Author / source" : "Reference";
+        const credit = form.querySelector("#b270-scripture-frame-credit");
+        credit.hidden = quotation;
+        credit.textContent = quotation ? "" : `Attribution: ${select.selectedOptions[0]?.dataset.credit || "No attribution is configured for this translation."}`;
+      };
+      const refresh = () => document.querySelectorAll("form[data-b270-scripture-form]").forEach(sync);
+      window.Bible270ScriptureForm = { refresh };
+      document.addEventListener("change", (event) => {
+        const form = event.target.closest?.("form[data-b270-scripture-form]");
+        if (form && event.target.name === "scripture_frame[translation]") sync(form);
+      });
+      document.addEventListener("turbo:load", refresh);
+    }
+    window.Bible270ScriptureForm.refresh();
+  })();
+</script>

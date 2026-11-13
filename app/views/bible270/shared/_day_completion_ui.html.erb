@@ -1,0 +1,152 @@
+<script nonce="<%= content_security_policy_nonce %>">
+  (() => {
+    if (window.Bible270CompletionUI) {
+      window.Bible270CompletionUI.reset();
+      return;
+    }
+
+    const selector = "[data-b270-completion]";
+    const shown = new Set();
+    const motion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const fadeInDuration = () => motion?.matches ? 0 : 1300;
+    const fadeOutDuration = () => motion?.matches ? 0 : 200;
+    let active = null;
+
+    function claim(element) {
+      const eventId = element.dataset.b270CompletionEvent;
+      if (!eventId) return false;
+
+      // Reuse the dove's event key so cached responses from before an upgrade
+      // cannot replay a completion that has already been celebrated.
+      const key = `b270-completion-dove:${eventId}`;
+      if (shown.has(key)) return false;
+      try {
+        if (window.sessionStorage.getItem(key) === "shown") return false;
+        window.sessionStorage.setItem(key, "shown");
+      } catch (_error) {
+        // The in-memory set still deduplicates Turbo responses in privacy modes.
+      }
+      shown.add(key);
+      return true;
+    }
+
+    function clearTimers(state) {
+      state.timers.forEach(clearTimeout);
+      state.timers.clear();
+      if (state.raf !== null) cancelAnimationFrame(state.raf);
+      state.raf = null;
+    }
+
+    function dispose(state) {
+      clearTimers(state);
+      state.element.remove();
+      if (active === state) active = null;
+    }
+
+    function current(state) {
+      return active === state && state.element.isConnected;
+    }
+
+    function later(state, callback, delay) {
+      const timer = setTimeout(() => {
+        state.timers.delete(timer);
+        if (current(state)) callback();
+        else if (active === state) dispose(state);
+      }, delay);
+      state.timers.add(timer);
+    }
+
+    function finish(state) {
+      if (!current(state) || state.finishing) return;
+      state.finishing = true;
+      clearTimers(state);
+      state.element.classList.remove("is-flying");
+      state.dove?.remove();
+      state.element.classList.remove("is-visible");
+      state.element.setAttribute("aria-hidden", "true");
+      if (state.frame && fadeOutDuration()) later(state, () => dispose(state), fadeOutDuration());
+      else dispose(state);
+    }
+
+    function endFlight(state) {
+      if (current(state) && !state.finishing) dispose(state);
+    }
+
+    function fly(state) {
+      if (!current(state)) return;
+      if (!state.dove || motion?.matches) {
+        finish(state);
+        return;
+      }
+      state.flying = true;
+      state.element.classList.add("is-flying");
+      state.dove.classList.add("b270-completion-dove-active");
+      // animationend is authoritative; the fallback also cleans up when CSS
+      // animations are blocked or a browser drops the event.
+      later(state, () => endFlight(state), 1600);
+    }
+
+    function initialize(element) {
+      if (!element.isConnected || element.dataset.b270CompletionInitialized === "true") return;
+      element.dataset.b270CompletionInitialized = "true";
+      if (!claim(element)) {
+        element.remove();
+        return;
+      }
+      if (active) dispose(active);
+      const state = {
+        element, frame: element.querySelector("[data-b270-completion-frame]"),
+        dove: element.querySelector("[data-b270-completion-dove]"),
+        timers: new Set(), raf: null, flying: false, finishing: false
+      };
+      active = state;
+      // A replayed Turbo replacement must not cut short the original sequence.
+      document.body.appendChild(element);
+      element.hidden = false;
+      element.removeAttribute("aria-hidden");
+      element.getBoundingClientRect();
+      state.raf = requestAnimationFrame(() => {
+        state.raf = null;
+        if (!current(state)) return;
+        element.classList.add("is-visible");
+        if (state.frame) later(state, () => fly(state), fadeInDuration() + 5500);
+        else fly(state);
+      });
+    }
+
+    function reset(root = document) {
+      if (root.matches?.(selector)) initialize(root);
+      root.querySelectorAll?.(selector).forEach(initialize);
+    }
+
+    function cleanup() {
+      if (active) dispose(active);
+      document.querySelectorAll(selector).forEach((element) => element.remove());
+    }
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) reset(node);
+        });
+      });
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+
+    ["animationend", "animationcancel"].forEach((name) => {
+      document.addEventListener(name, (event) => {
+        if (active?.flying && event.animationName === "b270-dove-flight" && event.target === active.dove) endFlight(active);
+      });
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && active) finish(active);
+    });
+    document.addEventListener("turbo:load", () => reset());
+    document.addEventListener("turbo:before-cache", cleanup);
+    document.addEventListener("turbo:before-render", cleanup);
+    window.addEventListener("pagehide", cleanup);
+    window.addEventListener("pageshow", () => reset());
+    window.Bible270CompletionUI = { reset, cleanup };
+    reset();
+  })();
+</script>

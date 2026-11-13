@@ -127,13 +127,13 @@ module Bible270
     # people to each other beside their reflections, so this is on by default.
     attr_accessor :email_sign_in_require_name
 
-    # Who may reach the admin panel. Either a list of email addresses, or a
-    # lambda taking the current reader and returning true/false:
+    # Who has configuration-controlled site-admin access. Either a list of
+    # email addresses, or a lambda taking the current reader and returning true/false:
     #
     #   config.admin_emails = %w[andrew@example.org]
     #   config.admin_resolver = ->(reader) { reader.email.end_with?('@example.org') }
     #
-    # With neither set the panel is unreachable and its routes 404.
+    # Readers may also receive ordinary admin access through a stored role.
     # Break points set from the host app, overriding Plan::CHAPTER_BREAKS.
     # Keys may be ['Psalm', 18] or 'Psalm 18'; [] keeps a chapter whole.
     # Largest avatar a reader may upload, in bytes. Uploading needs Active
@@ -204,11 +204,17 @@ module Bible270
     #   Psalm 78: [20, 39, 55]
     attr_accessor :chapter_breaks_path
 
-    def admin?(reader)
+    def site_admin?(reader)
       return false if reader.nil?
       return !!admin_resolver.call(reader) if admin_resolver.respond_to?(:call)
 
       Array(admin_emails).map { |e| e.to_s.downcase }.include?(reader.email.to_s.downcase)
+    end
+
+    def admin?(reader)
+      # Before the role migration, Active Record readers have no admin accessor.
+      # Only a real boolean grant may add access; configuration still works.
+      site_admin?(reader) || (reader.respond_to?(:admin) && reader.admin == true)
     end
 
     # The addresses to notify, normalised and de-duplicated. :admins follows
@@ -225,6 +231,8 @@ module Bible270
       registration_notice_recipients.any?
     end
 
+    # Configuration presence only, not an access gate: stored admins may exist
+    # without configured site-admins. Keep this check independent of the database.
     def admin_configured?
       admin_resolver.respond_to?(:call) || Array(admin_emails).any?
     end
@@ -274,6 +282,10 @@ module Bible270
     # Which translations readers may choose from. Defaults to all of
     # Bible270::Translations::VERSIONS; narrow it to offer fewer.
     attr_accessor :bible_versions
+
+    # Optional host YAML catalog for bread-icon Scripture frames. Admin additions
+    # are stored separately and supplement either the bundled or host catalog.
+    attr_accessor :scripture_frames_path
 
     # Who to email when someone new joins. Three forms:
     #
@@ -360,6 +372,7 @@ module Bible270
       @reflections_page_size = 10
       @mention_notifications = true
       @header_mark = nil
+      @scripture_frames_path = nil
       @remember_for = 365 * 24 * 60 * 60
       @require_sign_in_to_participate = true
       self.mount_at = '/daily-bread'

@@ -33,6 +33,11 @@ module Bible270
       'AddBodyFormatToBible270Comments' => :check_comment_body_format,
       'ChangeAllCommentNoticesDefaultToTrue' => :check_all_comment_notices_default,
       'AddDisplayModeToBible270Readers' => :check_display_mode,
+      'CreateBible270PlanRuns' => :check_plan_runs,
+      'AddAdminToBible270Readers' => :check_admin,
+      'AddRevertToBible270PlanRuns' => :check_run_revert,
+      'CreateBible270ScriptureFrames' => :check_scripture_frames,
+
       'CreateActiveStorageTables' => :check_active_storage
     }.freeze
 
@@ -132,11 +137,15 @@ module Bible270
     end
 
     def check_checkoff_parts
-      table_missing(
-        :bible270_checkoffs,
-        columns: %i[part],
-        indexes: [{ columns: %i[reader_id day track part], unique: true }]
-      )
+      missing = table_missing(:bible270_checkoffs, columns: %i[part])
+      return missing if missing.any?
+
+      legacy_index = missing_indexes(:bible270_checkoffs, [{ columns: %i[reader_id day track part], unique: true }])
+      # Migration 24 replaces the legacy index. Only a complete replacement schema
+      # is sufficient evidence that migration 9 has already been incorporated.
+      return [] if legacy_index.empty? || check_plan_runs.empty?
+
+      legacy_index
     end
 
     def check_remember_token
@@ -233,6 +242,66 @@ module Bible270
       missing
     end
 
+    def check_plan_runs
+      missing = table_missing(
+        :bible270_plan_runs,
+        columns: %i[id current start_date archived_at created_at updated_at],
+        indexes: [{ columns: %i[current], unique: true }]
+      ) + table_missing(
+        :bible270_participations,
+        columns: %i[id reader_id plan_run_id active joined_at started_on archived_on frozen_start_date created_at updated_at],
+        indexes: [
+          { columns: %i[reader_id] },
+          { columns: %i[plan_run_id] },
+          { columns: %i[reader_id plan_run_id], unique: true }
+        ],
+        foreign_keys: [
+          { column: :reader_id, to_table: :bible270_readers, on_delete: :cascade },
+          { column: :plan_run_id, to_table: :bible270_plan_runs }
+        ]
+      ) + table_missing(
+        :bible270_checkoffs,
+        columns: %i[participation_id day track part],
+        indexes: [
+          { columns: %i[participation_id] },
+          { columns: %i[participation_id day track part], unique: true }
+        ],
+        foreign_keys: [{ column: :participation_id, to_table: :bible270_participations, on_delete: :cascade }]
+      )
+      missing += missing_column_definitions(:bible270_plan_runs, current: { type: :boolean, null: true })
+      missing += missing_column_definitions(
+        :bible270_participations,
+        reader_id: { null: false }, plan_run_id: { null: false },
+        active: { type: :boolean, null: false, default: true }, joined_at: { null: false }
+      )
+      missing += missing_column_definitions(:bible270_checkoffs, participation_id: { null: false })
+      if connection.data_source_exists?(:bible270_checkoffs) &&
+         missing_indexes(:bible270_checkoffs, [{ columns: %i[reader_id day track part], unique: true }]).empty?
+        missing << 'obsolete unique index bible270_checkoffs(reader_id, day, track, part)'
+      end
+      missing
+    end
+
+    def check_run_revert
+      table_missing(:bible270_plan_runs, columns: %i[restart_snapshot reverted_at]) +
+        missing_column_definitions(:bible270_plan_runs, restart_snapshot: { type: :json }, reverted_at: { type: :datetime })
+    end
+
+    def check_scripture_frames
+      table_missing(:bible270_scripture_frames,
+                    columns: %i[id reference text translation attribution enabled created_at updated_at],
+                    indexes: [{ columns: %i[enabled] }]) +
+        missing_column_definitions(:bible270_scripture_frames,
+                                   reference: { null: false }, text: { type: :text, null: false },
+                                   translation: { null: false, default: 'NASB95' },
+                                   enabled: { type: :boolean, null: false, default: true })
+    end
+
+    def check_admin
+      table_missing(:bible270_readers, columns: %i[admin]) +
+        missing_column_definitions(:bible270_readers, admin: { type: :boolean, null: false, default: false })
+    end
+
     def check_all_comment_notices_default
       missing = table_missing(:bible270_readers, columns: %i[notify_on_all_comments])
       return missing if missing.any?
@@ -285,6 +354,18 @@ module Bible270
       end
     end
 
+    def missing_column_definitions(table, definitions)
+      return [] unless connection.data_source_exists?(table)
+
+      connection.columns(table).flat_map do |column|
+        definitions.fetch(column.name.to_sym, {}).filter_map do |attribute, expected|
+          actual = column.public_send(attribute)
+          actual = ActiveModel::Type::Boolean.new.cast(actual) if attribute == :default && column.type == :boolean
+          "column #{table}.#{column.name} #{attribute} #{expected}" unless actual == expected
+        end
+      end
+    end
+
     def missing_indexes(table, expected_indexes)
       existing = connection.indexes(table)
       expected_indexes.filter_map do |expected|
@@ -297,7 +378,7 @@ module Bible270
     end
 
     def matching_index?(index, columns, expected)
-      index.columns == columns && (!expected.key?(:unique) || index.unique == expected[:unique])
+      index.columns == columns && index.where.nil? && (!expected.key?(:unique) || index.unique == expected[:unique])
     end
 
     def missing_foreign_keys(table, expected_foreign_keys)
@@ -305,13 +386,15 @@ module Bible270
       expected_foreign_keys.filter_map do |expected|
         next if existing.any? { |foreign_key| matching_foreign_key?(foreign_key, expected) }
 
-        "foreign key #{table}.#{expected[:column]} -> #{expected[:to_table]}"
+        description = "foreign key #{table}.#{expected[:column]} -> #{expected[:to_table]}"
+        expected[:on_delete] ? "#{description} on delete #{expected[:on_delete]}" : description
       end
     end
 
     def matching_foreign_key?(foreign_key, expected)
       foreign_key.column.to_s == expected.fetch(:column).to_s &&
-        foreign_key.to_table.to_s == expected.fetch(:to_table).to_s
+        foreign_key.to_table.to_s == expected.fetch(:to_table).to_s &&
+        (!expected.key?(:on_delete) || foreign_key.on_delete == expected[:on_delete])
     end
   end
 end

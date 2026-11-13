@@ -27,6 +27,7 @@ module Bible270
 
     def initialize(readers:, today: Bible270.today)
       readers = readers.to_a
+      ActiveRecord::Associations::Preloader.new(records: readers, associations: { participation: :plan_run }).call
       @today = today
       dates_by_reader = completion_dates(readers.map(&:id))
       @results = readers.to_h do |reader|
@@ -43,7 +44,8 @@ module Bible270
     def completion_dates(reader_ids)
       return {} if reader_ids.empty?
 
-      checkoffs = Checkoff.where(reader_id: reader_ids, day: 1..Plan::DAYS).group(:reader_id, :day)
+      checkoffs = Checkoff.where(reader_id: reader_ids, participation_id: Participation.chosen.select(:id),
+                                 day: 1..Plan::DAYS).group(:reader_id, :day)
       counts = checkoffs.count
       latest = checkoffs.maximum(:created_at)
       dates = Hash.new { |hash, id| hash[id] = [] }
@@ -59,7 +61,7 @@ module Bible270
     end
 
     def start_date_for(reader)
-      return reader.effective_start_date if reader.own_start_date?
+      return reader.effective_start_date if reader.participation&.alumni? || reader.own_start_date?
       return @shared_start_date if defined?(@shared_start_date)
 
       # effective_start_date reads the shared Setting; do that only once per collection.
@@ -71,8 +73,10 @@ module Bible270
       unranked = Result.new(score: nil, on_track_percentage: nil, days_evaluated: 0)
       return unranked unless start_date
 
-      first = [start_date, Bible270.local_time(reader.created_at).to_date].max
-      last = [@today - 1, start_date + Plan::DAYS - 1].min
+      joined_at = reader.participation&.joined_at || reader.created_at
+      first = [start_date, Bible270.local_time(joined_at).to_date].max
+      cutoff = [@today, reader.participation&.archived_on].compact.min
+      last = [cutoff - 1, start_date + Plan::DAYS - 1].min
       return unranked if first > last
 
       completed = 0

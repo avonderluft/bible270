@@ -1,9 +1,17 @@
 <header class="b270-topbar">
   <div class="b270-brand">
-    <%= link_to root_path, class: "b270-brandlink" do %>
-      <%= b270_mark %>
-      <span class="b270-title"><%= Bible270.config.app_name %></span>
-    <% end %>
+    <div class="b270-brand-home">
+      <% unless Bible270.config.header_mark == false %>
+        <button type="button" class="b270-scripture-trigger" data-b270-scripture-trigger
+                data-b270-scripture-url="<%= scripture_frame_path %>"
+                aria-label="Show a Scripture frame" aria-controls="b270-scripture-frame" aria-expanded="false">
+          <%= b270_mark(size: 34) %>
+        </button>
+      <% end %>
+      <%= link_to root_path, class: "b270-brandlink" do %>
+        <span class="b270-title"><%= Bible270.config.app_name %></span>
+      <% end %>
+    </div>
     <% if current_reader && Bible270::Reader.display_mode_column? %>
       <%= form_with url: profile_theme_path, method: :patch, class: "b270-header-theme" do %>
         <span class="b270-select-wrap b270-select-wrap--compact">

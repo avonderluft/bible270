@@ -1,0 +1,34 @@
+<script nonce="<%= content_security_policy_nonce %>" data-b270-scripture-library-ui>
+  (() => {
+    if (window.Bible270ScriptureLibrary) return;
+    window.Bible270ScriptureLibrary = true;
+
+    const selector = "details.b270-scripture-library-disclosure";
+    const dismissed = "data-b270-scripture-preview-dismissed";
+
+    // Suppress hover/focus preview before the native summary click closes details.
+    document.addEventListener("click", (event) => {
+      if (event.defaultPrevented) return;
+      const summary = event.target.closest?.("summary");
+      const disclosure = summary?.parentElement;
+      if (!disclosure?.matches(selector)) return;
+      if (disclosure.open) disclosure.setAttribute(dismissed, "");
+      else disclosure.removeAttribute(dismissed);
+    });
+
+    document.addEventListener("toggle", (event) => {
+      const disclosure = event.target;
+      if (!disclosure.matches?.(selector)) return;
+      if (disclosure.open) disclosure.removeAttribute(dismissed);
+      else disclosure.setAttribute(dismissed, "");
+    }, true);
+
+    function freshPreview(event) {
+      const disclosure = event.target.closest?.(selector);
+      if (disclosure && !disclosure.contains(event.relatedTarget)) disclosure.removeAttribute(dismissed);
+    }
+
+    document.addEventListener("pointerover", freshPreview);
+    document.addEventListener("focusin", freshPreview);
+  })();
+</script>

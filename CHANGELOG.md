@@ -1,16 +1,44 @@
 # Changelog
 
-Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Release headings link to comparisons; all release links are listed at the end.
+Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Release comparisons are linked below.
 
 ## [Unreleased]
 
 ### Added
 
-- preview full photos after hovering over an avatar for 3 seconds; fit originals within the screen and fade out when the pointer leaves, without changing touch behavior
+- show full-photo previews after a 3-second avatar hover; fit photos to the screen and fade out when the pointer leaves. Touch behavior is unchanged
+- show random, theme-matched Scripture frames on a 3-second bread-icon hover or immediately by tap, click, or keyboard
+- add a compact Scripture frames panel near the bottom of Admin with reference/translation headings and passage tooltips; database additions supplement YAML defaults, with automatic translation credits
+- support non-Scripture custom texts with an **Other quotation** option and **Author / source** field; omit Bible translation credits and include enabled quotes in bread-icon and completion frames
+- add right-aligned Enable/Disable buttons for default Scripture texts in Admin; all start enabled, with choices saved across runs and applied to bread-icon and completion frames without changing YAML
+- add **Start a new run** in Admin: give Admins and Site-admins a fresh active membership with zero progress and no personal start date, move other readers to alumni, and open enrollment; preserve accounts, photos, past progress, and discussions
+- add confirmed **Revert to previous run**: restore saved statuses for everyone, including admins, plus calendars and enrollment settings; preserve both runs' progress and discussions. Available for restarts made after upgrading
+- add Active/Alumni controls, initially expanded **Show / Hide Active Readers** (remembered for the current tab's sign-in session) and collapsed **Show / Hide Alumni** disclosures with shared sorting and per-reader **Make Active** buttons, and read-only run history; returning to a new run starts fresh, while same-run reactivation preserves progress
+- let configured Site-admins grant or remove admin access; roles persist across runs, independently of Active/Alumni status. Site-admins can change their own status, but their role is controlled by configuration
+
+### Changed
+
+- on a day's final check-off, fade in a random Scripture frame over 1.3 seconds, hold for 5.5 seconds, play a 1.4-second dove flight unless disabled, and fade the continuously moving dove and frame together over the flight's final 0.4 seconds without a final freeze or extra delay; retain a static frame for reduced-motion users
+- enlarge the bread icon, give it a theme-aware background, and center the app title beside it; shrink Papyrus curls sooner on narrower screens
+- simplify Scripture frames by removing the close control; retain bread-toggle, outside-click, and Escape dismissal, without a lingering pointer-focus outline
+- alumni can still sign in, visit Community, and join discussions; their reflections remain available to later groups, while past progress stays frozen
+- exclude alumni from current-group lists, reminders, broad reflection notices, and “everyone” broadcasts; retain opted-in personal notices and “all admins” broadcasts for alumni admins
+- keep separate progress and consistency history for each run
+- speed up the full test suite with CPU-aware workers, smaller feature-focused test files, and quieter logs; retain all tests and coverage
+- compact Status, Role, and Completion animation into single-row Admin controls; replace the completion checkbox and Save with one Enable/Disable button, and align Move and Set date forms on one row
+- place Scripture Reference and Translation first, side by side with inline labels; require pasted Text below, with API retrieval deferred
+- consolidate Scripture management on the main Admin page with custom passages first in biblical order, followed by custom quotations and defaults; retain Custom/Default on each row without group headings, place Add text beside Scripture frames, and keep inline Edit/Enable/Disable/Delete controls; remove redundant hints and redirect the old Manage texts page to this panel
+- place Admin and Profile name fields side by side with shorter inputs; order Admin settings as Theme, Email, Where they are, Role, Status, and Completion animation
+
+**Upgrade:** Back up the database, then copy and run migrations `20260101000024`–`20260101000027` from the host app. Existing readers and check-offs become the initial run. The run-history migration is intentionally irreversible.
 
 ### Fixed
 
+- hide collapsed Scripture passages immediately in Admin, without a lingering hover or focus preview; restore previews on fresh pointer or keyboard focus
 - always confirm reader removal before deleting their check-offs and reflections, even when Turbo is unavailable
+- give Admin, Site-admin, and Alumni labels matching compact, theme-colored badges; center uppercase text without font-dependent offsets
+- shorten theme and upload hints on Admin and Profile; keep the System hint on one line
+- resolve the day grid’s calendar once per render instead of repeating hundreds of setting lookups
 
 ## [1.15.1] - 2026-11-06
 
@@ -22,17 +50,17 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Added
 
-- show Community progress bars and completed-day counts to signed-in readers, including non-admin preview; retain alphabetical order and admin-only management links and written schedule status
+- show Community progress bars and completed-day counts to signed-in readers, including non-admin preview; keep alphabetical order and admin-only management links and schedule details
 - use muted, theme-matched bar colors, including warm tan for Cedar, with at least 3:1 fill-to-track contrast
 - mark today on each reader's active schedule with a thin line, tooltip, and accessible day description; omit markers for undated, future, and ended schedules
 
-Counts include only fully completed days and use one bulk progress query. Visitor listings are unchanged; no migration is required.
+Counts include only fully completed days and use one query. Visitor listings are unchanged; no migration is required.
 
 ## [1.14.0] - 2026-11-06
 
 ### Added
 
-- add a session-only **View as non-admin** toggle; hide admin-only details and disable admin actions while retaining the Admin tab to switch back. Own check-offs and reflections still work; roles and other sessions are unchanged.
+- add **View as non-admin** for the current session: hide admin details and actions but keep the Admin tab to switch back. Personal check-offs and reflections still work; roles and other sessions are unchanged.
 
 ### Changed
 
@@ -95,16 +123,16 @@ Counts include only fully completed days and use one bulk progress query. Visito
 
 ### Fixed
 
-- load avatars eagerly without forced asynchronous decoding, while retaining attachment preloading and bounded database queries
-- recover failed avatar requests with up to two automatic retries, refreshing same-origin uploaded-image redirects without modifying signed provider URLs
-- show accessible initials instead of broken images when avatars fail, including cached failures and images inserted during navigation or conversations
+- load avatars promptly without forced asynchronous decoding or extra per-reader database queries
+- retry failed avatars up to twice; refresh expired upload redirects without changing signed provider URLs
+- show accessible initials when avatars fail, including cached failures and images added during navigation or conversations
 - preserve the previous picture and profile settings when upload processing or storage fails, and remove both original and thumbnail attachments when a picture is removed
-- prevent duplicate or stale avatar attachments during concurrent uploads and backfills; retain unattached blob records for cleanup retries when storage deletion fails
+- prevent conflicting avatar changes during simultaneous uploads and backfills; retain file records for cleanup retries if storage deletion fails
 
 ### Added
 
 - optimize uploads as 256×256 center-cropped WebP avatars at quality 85, correcting orientation, converting to sRGB, preserving transparency, and stripping metadata; animated images use the first frame
-- retain originals and display thumbnails only after processing and storage succeed; no request-time processing
+- retain original photos and display thumbnails only after processing and storage succeed; do not process images during page loads
 - validate image data with a 40-megapixel limit and the configurable upload limit (2 MiB by default)
 - add `bible270:avatars:optimize` with metadata-only `DRY_RUN=1`, `FORCE=1`, `BATCH_SIZE`, safe reruns, and protection against concurrent picture changes
 - report backfill counts and before/after display sizes; continue after individual failures but exit nonzero if any fail
@@ -116,7 +144,7 @@ Counts include only fully completed days and use one bulk progress query. Visito
 
 **Upgrade:** Install libvips with PNG, JPEG, GIF and WebP support on upload/backfill hosts. The gem adds `image_processing` and `ruby-vips`; hosts using Active Storage need no new migration. Run the backfill from the host Rails app after deployment. Existing uploads display originals until optimized; provider images are unchanged.
 
-Originals are retained: optimization reduces download size, not storage use. Run upload/backfill services outside caller-owned database transactions to avoid orphaned files after rollback.
+Originals are retained, so optimization saves bandwidth, not storage. Uploads and backfills must run outside an existing database transaction to avoid leftover files after rollback.
 
 ## [1.11.1] - 2026-10-22
 
@@ -130,7 +158,7 @@ Originals are retained: optimization reduces download size, not storage use. Run
 
 ### Fixed
 
-- declare the selected color scheme early in the page and synchronize root settings and metadata on theme changes and Turbo navigation
+- declare the color scheme before rendering and keep it synchronized during theme changes and navigation
 - request `color-scheme: only light` for Papyrus, Meadow, and Ocean while preserving System's device-following behavior
 
 Browser website-darkening features can still override theme colors. In iOS Brave, disabling Night Mode resolved the reported darkened light themes and white Forest trees.
@@ -149,7 +177,7 @@ Browser website-darkening features can still override theme colors. In iOS Brave
 - save and apply theme selections immediately from the header, Profile, and Admin without submitting unrelated edits
 - synchronize controls for the same reader while keeping an admin's own theme independent of another reader's setting
 - use short theme names, list light themes first, and retain Light/Dark descriptions in Profile and Admin
-- keep the header icon, title, spacing, and theme selector consistently compact across desktop and mobile, without wrapping the navigation
+- keep the header and theme selector compact on desktop and mobile without wrapping navigation
 - let System follow the device appearance using Papyrus for light and Cedar for dark, including their artwork
 
 ### Fixed
@@ -306,18 +334,18 @@ Upgrading hosts must install and run the new reader display-preference migration
 
 ### Changed
 
-- send each broad reflection/reply notification once with all eligible subscribers in BCC, while keeping direct reply and mention notices individually addressed
-- expand regression coverage for registration delivery and failure isolation, legacy reader names, custom footer composition, mention compatibility, and stale completion-animation schema caches
+- send broad reflection/reply notices once using BCC; keep personal reply and mention notices individually addressed
+- expand tests for registration delivery, legacy names, custom footers, mentions, and completion-animation settings after migrations
 
 ### Fixed
 
-- normalize boolean column defaults reported by Rails adapters so migration reconciliation and tests work consistently across Rails 7.1 through 8.1
+- handle boolean defaults consistently across Rails 7.1–8.1 during migration reconciliation and testing
 
 ## [1.5.1] - 2026-09-11
 
 ### Added
 
-- add `bible270:notifications:enable_all` to opt existing readers into all reflection/reply emails, with counts and empty-database guidance
+- add `bible270:notifications:enable_all` to opt existing readers into all reflection/reply emails and report the result
 - add `bible270:readers:list` to print aligned Name, Days Read, and schedule Status columns, ordered by completed days
 
 ### Changed
@@ -328,7 +356,7 @@ Upgrading hosts must install and run the new reader display-preference migration
 
 ### Added
 
-- add Markdown formatting and server-rendered previews for reflections/replies, supporting safe rendering, formatted emails, mentions, and browser drafts; existing plain text stays literal. **Upgrade:** copy and run the `body_format` comment migration.
+- add Markdown formatting and previews for reflections/replies, including formatted emails, mentions, and browser drafts; existing plain text is unchanged. **Upgrade:** copy and run the `body_format` comment migration.
 
 ### Changed
 
@@ -347,18 +375,18 @@ Upgrading hosts must install and run the new reader display-preference migration
 
 ### Changed
 
-- keep the completion dove bright in dark mode, grow it to an 80%-of-viewport fit with a smoother rounded silhouette, and finish with a centered fade instead of veering offscreen
+- keep the completion dove bright in dark mode, enlarge it to fit 80% of the screen, smooth its outline, and finish with a centered fade
 - show every reader who finished a day after the Reflections section, using compact 56px avatars ordered from earliest to latest completion
 
 ### Fixed
 
-- show the dove only once for each persisted day completion, including during concurrent final checkoffs, Turbo response replays, and stale-session retries
+- show the dove once per saved day completion, even with simultaneous check-offs, repeated responses, or session retries
 
 ## [1.4.1] - 2026-09-02
 
 ### Changed
 
-- run the day-completion dove as one continuous, server-confirmed animation from the lower center, avoiding a stagger between submission and the Turbo or HTML response
+- animate the completion dove from the lower center after saving, without a pause between submission and response
 - improve installer guidance for OmniAuth providers, deferred bundling, Active Storage, pending migrations, and OAuth callback setup
 - detect existing engine mounts more reliably and move them above catch-all routes when necessary
 
@@ -368,7 +396,7 @@ Upgrading hosts must install and run the new reader display-preference migration
 - apply admin profile name and avatar changes atomically, preventing partial updates when validation fails
 - report broadcast queueing, delivery failures, and partial success accurately without recording an entirely failed broadcast as sent
 - restrict reflection return redirects to safe application URLs
-- honor the install generator's `--mailer-from` option, reject unsafe provider identifiers, and safely quote generated configuration values
+- honor the installer's `--mailer-from` option and reject or safely quote unsafe configuration values
 
 ## [1.4.0] - 2026-09-02
 
@@ -382,7 +410,7 @@ Upgrading hosts must install and run the new reader display-preference migration
 
 ### Fixed
 
-- keep repeated or concurrent explicit checkoffs idempotent instead of raising a duplicate-validation Rails 422 error
+- accept repeated or simultaneous check-off requests without duplicate-record errors
 
 ## [1.3.2] - 2026-09-02
 
@@ -408,7 +436,7 @@ Upgrading hosts must install and run the new reader display-preference migration
 ### Added
 
 - let readers and admins choose all reflection/reply emails, only personal replies/mentions, or none; preserve existing preferences and explain pending migrations
-- suggest up to five unambiguous reader handles only while a signed-in writer types `@`, with keyboard and touch selection and no change to server-authoritative mention resolution
+- suggest up to five unambiguous reader handles when a signed-in writer types `@`, with keyboard and touch selection; server-side mention checks are unchanged
 
 ### Fixed
 
@@ -431,7 +459,7 @@ Upgrading hosts must install and run the new reader display-preference migration
 ### Changed
 
 - keep Bible270 open while using one Scripture tab for Bible Gateway and Blue Letter Bible: desktop browsers reuse the existing tab, while iOS Safari replaces its background tab so each click reliably switches to the reading
-- centralize daily-reading and Reflections Scripture anchors in one passage-link helper with secure no-JavaScript fallback behavior
+- use one Scripture-link helper for daily readings and Reflections, preserving safe links without JavaScript
 
 ### Removed
 
@@ -503,14 +531,14 @@ Upgrading hosts must install and run the new reader display-preference migration
 - actionable Progress sections for unfinished portions, the current calendar week, milestones, and schedule recovery without losing reading or reflection history
 - browser-local reflection and reply drafts, day and author filters, pagination, and new-activity markers on the Reflections page
 - a remembered compact reading mode that keeps passages, checkoffs, navigation, and completion next steps in focus
-- a two-worker default `test` task with live colored progress, aggregate results/timing, merged `coverage/` reports, runtime recording, and a `test:serial` alternative
+- run `test` with two workers by default, showing live progress, combined results and coverage, and recorded runtimes; offer `test:serial` as an alternative
 
 ### Changed
 
 - replace progress-ranked community lists with transparent recent-participation and alphabetical views that emphasize reading together
 - show why each reader appears in Reading together, including their latest reading, reflection, or join activity
 - add consistent pending, success, and retry feedback to reading, like, reflection, and reply actions, with repeat-safe checkoff and like requests
-- improve accessibility with AA text contrast, consistent focus indicators, descriptive day-grid labels, semantic boundary navigation, touch-friendly tooltips, responsive forms, and reduced-motion support
+- improve accessibility with AA text contrast, visible keyboard focus, descriptive day-grid labels, clear day navigation, touch-friendly tooltips, responsive forms, and reduced-motion support
 - replace the reminder time field with aligned hour and minute selectors and an accessible time-zone tooltip
 - hide personal start-date controls and calendar prompts when the community configuration does not allow readers to change dates
 
@@ -671,7 +699,7 @@ Upgrading hosts must install and run the new reader display-preference migration
 
 ### Added
 
-- add registration notices via `config.registration_notice_emails` (address list or `:admins`; off by default) for email, OmniAuth, and bridged users. Notices include reader details and counts, plus an admin link when `mailer_host` is set. Delivery failures never block registration; `registration_notice_deliver_later` enables queued delivery.
+- add registration notices for all sign-in methods via `config.registration_notice_emails` (address list or `:admins`; off by default). Include reader details, counts, and an admin link when `mailer_host` is set. Failed delivery never blocks registration; `registration_notice_deliver_later` enables queued delivery.
 
 ### Fixed
 
@@ -705,8 +733,8 @@ Upgrading hosts must install and run the new reader display-preference migration
 
 ### Added
 
-- let readers edit their name and picture at `<mount>/profile`, and admins edit any reader. Require first/last names, normalize whitespace, and preserve capitalization; prefill OmniAuth names from display names.
-- accept PNG, JPEG, GIF and WebP avatars up to `config.avatar_max_bytes` (2MB), with removal controls. Reject SVG. Uploads require host Active Storage; otherwise use provider avatars. Originals are served without resizing in this release.
+- let readers edit their name and picture at `<mount>/profile`, and admins edit any reader. Require first/last names, trim spacing, preserve capitalization, and prefill OmniAuth names.
+- accept removable PNG, JPEG, GIF and WebP avatars up to `config.avatar_max_bytes` (2MB); reject SVG. Uploads require host Active Storage. Otherwise use provider avatars. This release serves originals without resizing.
 - let admins close enrollment while existing readers can still sign in. Enforce closure at all email and OmniAuth creation points; store it in `bible270_settings`. Use `config.enrollment_open = false` to launch closed.
 - show the All 270 days index on every page
 
@@ -724,7 +752,7 @@ Upgrading hosts must install and run the new reader display-preference migration
 
 ### Internal
 
-- add regression tests for independent library loading, configuration accessors, qualified view constants, CSS precedence, admin permissions, and enrollment closure
+- test library loading, configuration, view constants, CSS, admin permissions, and enrollment closure
 - add settings migration `20260101000007`; install host Active Storage tables with `bin/rails active_storage:install`
 
 ## [0.10.0] - 2026-07-26
@@ -756,7 +784,7 @@ Upgrading hosts must install and run the new reader display-preference migration
 - prevent nested HTML layouts in sign-in emails
 - remove the `cgi` dependency for Ruby 4.0 compatibility
 - normalize blank reflection tracks to NULL before validation
-- make `email_sign_in_log_link` tri-state: nil logs in development/test, true always logs, false never logs. Log sent, rate-limited, and failed deliveries without exposing them in responses.
+- let `email_sign_in_log_link` use nil to log in development/test, true to always log, or false to never log. Record delivery outcomes without exposing them in responses.
 - test that all used configuration accessors exist
 
 ### Notes

@@ -3,6 +3,7 @@
 # Rails routes are intentionally kept in one cohesive DSL block.
 Bible270::Engine.routes.draw do
   root to: 'days#index'
+  get 'scripture-frame', to: 'scripture_frames#show', as: :scripture_frame, defaults: { format: 'json' }
 
   get 'day/:day', to: 'days#show', as: :day, constraints: { day: %r{\d+} }
 
@@ -18,12 +19,16 @@ Bible270::Engine.routes.draw do
   patch  'comments/:id',           to: 'comments#update'
   delete 'comments/:id',           to: 'comments#destroy', as: :comment
 
-  # Admin panel — 404s unless config.admin_emails / admin_resolver allows you.
+  # Admin panel — configured site-admins and readers granted admin access.
+  patch 'admin/scripture-frame-defaults/:id', to: 'admin_scripture_frames#update_default', as: :admin_default_scripture_frame
+  resources :admin_scripture_frames, path: 'admin/scripture-frames', only: %i[index new create edit update destroy]
   get    'admin',                        to: 'admin#index',            as: :admin
   patch  'admin/view',                   to: 'admin#update_view',      as: :admin_view
   get    'admin/readers/:id',            to: 'admin#show',             as: :admin_reader
   delete 'admin/readers/:id',            to: 'admin#destroy'
-  patch  'admin/readers/:id/profile',    to: 'admin#update_profile', as: :admin_reader_profile
+  patch  'admin/readers/:id/role',       to: 'admin_roles#update', as: :admin_reader_role
+  patch  'admin/readers/:id/participation', to: 'admin#update_participation', as: :admin_reader_participation
+  patch  'admin/readers/:id/profile', to: 'admin#update_profile', as: :admin_reader_profile
   patch  'admin/readers/:id/theme', to: 'admin#update_theme', as: :admin_reader_theme
   patch  'admin/readers/:id/notifications', to: 'admin#update_notifications', as: :admin_reader_notifications
   patch  'admin/readers/:id/completion-animation', to: 'admin#update_completion_animation',
@@ -34,6 +39,8 @@ Bible270::Engine.routes.draw do
   patch  'admin/readers/:id/through',    to: 'admin#complete_through', as: :admin_reader_through
   post   'admin/readers/:id/days/:day',  to: 'admin#toggle_day',       as: :admin_reader_day
 
+  post   'admin/restart',                to: 'admin#restart',          as: :admin_restart
+  post   'admin/revert',                 to: 'admin#revert',           as: :admin_revert
   post   'admin/broadcast',              to: 'admin#broadcast',        as: :admin_broadcast
   patch  'admin/enrollment',             to: 'admin#update_enrollment', as: :admin_enrollment
   patch  'admin/run-start',              to: 'admin#update_run_start', as: :admin_run_start

@@ -3,7 +3,7 @@
 <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
   <%= b270_avatar(@reader, size: 72, loading: 'eager') %>
   <div>
-    <h1 style="margin:0"><%= @reader.display_name %></h1>
+    <h1 style="margin:0"><%= @reader.display_name %><% if @reader.alumni? %> <span class="b270-badge b270-reader-badge"><span>Alumni</span></span><% end %></h1>
     <% if signed_in? && current_reader.id == @reader.id %>
       <p style="margin:2px 0 0"><%= link_to 'Edit your name', profile_path, class: 'b270-linkbtn' %></p>
     <% end %>

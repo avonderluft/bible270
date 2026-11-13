@@ -63,7 +63,7 @@ dummy_root = File.expand_path('dummy', __dir__)
 
 FileUtils.mkdir_p File.join(dummy_root, 'log')
 
-FileUtils.rm_f File.join(dummy_root, 'log', 'test.log')
+FileUtils.rm_f File.join(dummy_root, 'log', "test-#{Process.pid}.log")
 
 # ---- the dummy application ------------------------------------------------
 #
@@ -89,6 +89,8 @@ RAILS_LOADED =
       migrations << ActiveStorage::Engine.root.join('db/migrate').to_s
     end
     ActiveRecord::MigrationContext.new(migrations).migrate
+    # Models loaded during migration must see the final schema, not an earlier step.
+    ActiveRecord::Base.descendants.each(&:reset_column_information)
 
     # A table for the dummy's own user model. Reader.for_owner takes a polymorphic
     # owner, which needs a real record rather than a stand-in object.
@@ -194,7 +196,10 @@ module RailsBacked
     Bible270::Checkoff.delete_all
     Bible270::Comment.delete_all
     Bible270::SignInToken.delete_all
+    Bible270::ScriptureFrame.delete_all
+    Bible270::Participation.delete_all
     Bible270::Reader.delete_all
+    Bible270::PlanRun.delete_all
     Bible270::Setting.delete_all
   end
 end

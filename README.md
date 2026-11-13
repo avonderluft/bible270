@@ -2,7 +2,7 @@
 
 [![Rails CI](https://github.com/avonderluft/bible270/actions/workflows/railsci.yml/badge.svg)](https://github.com/avonderluft/bible270/actions/workflows/railsci.yml) [![Test Coverage](https://img.shields.io/coverallsCoverage/github/avonderluft/bible270?branch=main&cacheSeconds=300)](https://coveralls.io/github/avonderluft/bible270?branch=main) [![Gem Version](https://img.shields.io/gem/v/bible270)](https://rubygems.org/gems/bible270) [![Downloads](https://img.shields.io/gem/dt/bible270)](https://rubygems.org/gems/bible270) [![GitHub Release Date - Published_At](https://img.shields.io/github/release-date/avonderluft/bible270?label=last%20release&color=seagreen)](https://github.com/avonderluft/bible270/releases)
 
-A mountable **Rails engine** for a 270-day (9-month) Bible reading plan. Readers check off readings, share reflections, and follow one another's progress.
+A **Rails engine** for a 270-day (9-month) Bible reading plan. Readers check off readings, share reflections, and follow one another's progress.
 
 Created for [Kingdom Movement School of Ministry](https://www.kmsm.life/) and designed to work with [ComfyMiddleSeat](https://github.com/avonderluft/comfy-middle-seat) CMS, it also works in other Rails apps.
 
@@ -20,17 +20,17 @@ By default, psalms of 25 verses or fewer stay whole. Longer chapters use selecte
 
 The Old Testament and Revelation 22 finish on day 270 alongside Psalm 1. Daily readings average about 115 verses (range 76–166).
 
-`Bible270::Plan` generates the schedule deterministically from `Bible270::Versification`; the schedule is not stored in the database. **Progress and reflections are public.**
+`Bible270::Plan` generates the schedule from `Bible270::Versification`, not the database. **Progress and reflections are public.**
 
-Signed-in readers see a small progress bar and completed-day count on Community, including in non-admin preview. The list stays alphabetical; only fully completed days count. A thin line marks today on each reader's active schedule; undated, future, and ended schedules have no marker. Visitors see names and join dates; management links and written ahead/behind status remain admin-only.
+Community lists readers alphabetically. Signed-in readers, including admins in non-admin view, see progress bars and completed-day counts. A line marks today on active schedules, except undated, future, or ended ones. Visitors see names and join dates; management links and ahead/behind labels are admin-only.
 
 ## Requirements
 
 - **Ruby >= 3.2** and a **Rails >= 7.2** host app. CI covers selected combinations through Ruby 4.0 / Rails 8.1; check your host's dependencies before upgrading Ruby.
 - Turbo JavaScript for check-offs without a page reload. The gem includes `turbo-rails`; ordinary HTML forms remain available without JavaScript.
-- For picture uploads and backfills: **Active Storage** and **libvips** with PNG, JPEG, GIF, and WebP support on every upload/backfill host. Install libvips with, for example, `sudo apt-get install libvips-tools` on Ubuntu or `sudo pacman -S libvips` on Arch. The gem supplies `image_processing` and `ruby-vips`; native processing loads only when optimizing an image, not when displaying existing or provider avatars.
+- For picture uploads and backfills: **Active Storage** and **libvips** with PNG, JPEG, GIF, and WebP support on each upload/backfill host. Install with `sudo apt-get install libvips-tools` (Ubuntu) or `sudo pacman -S libvips` (Arch). The gem includes `image_processing` and `ruby-vips`; libvips loads only for optimization, not avatar display.
 
-JavaScript controls show pending, success, and retry feedback. Repeated check-off and like requests converge on the requested state rather than reversing it.
+JavaScript controls show pending, success, and retry feedback. Repeating a request keeps the intended check-off or like state.
 
 ## Install
 
@@ -65,9 +65,7 @@ The interactive generator:
 4. Writes `config/initializers/bible270.rb` and, for social sign-in, `omniauth.rb`.
 5. Adds `mount Bible270::Engine, at: Bible270.config.mount_at` to your routes.
 
-Defaults use `/daily-bread` with email and GitHub sign-in. **You must still configure mail delivery, provider credentials, and OAuth callback URLs** as listed by the generator. Migrations run before the initializers are written.
-
-Copied migrations belong to your app. The engine does not also add its migration directory to your app's migration paths.
+Defaults use `/daily-bread` with email and GitHub sign-in. **Configure mail delivery, provider credentials, and OAuth callback URLs** as listed by the generator. Migrations run before initializers are written; the copied migrations belong to your app, with no duplicate engine migration path.
 
 For non-interactive setup:
 
@@ -88,7 +86,7 @@ bin/rails generate bible270:install --defaults \
 | `--migrate` / `--no-migrate` | Run or skip migrations |
 | `--active-storage` / `--no-active-storage` | Install or skip missing Active Storage tables |
 
-Re-running skips existing strategy gems and reuses the engine mount, moving it above catch-all routes if needed. Rails prompts before overwriting an initializer. If you skip bundling or migrations, complete them before using the affected features.
+Re-running skips existing strategy gems and reuses the mount, moving it above catch-all routes if needed. Rails prompts before overwriting initializers. Complete any skipped bundling or migrations before using affected features.
 
 <details>
 <summary>Manual installation</summary>
@@ -125,7 +123,7 @@ Configure Action Mailer delivery and, if needed, [OmniAuth](#social-sign-in).
 
 ### Upgrading
 
-No generator re-run is needed:
+**Back up the host database before migrating.** From the host Rails app (no generator re-run needed):
 
 ```bash
 bundle update bible270
@@ -133,7 +131,12 @@ bin/rails bible270:install:migrations # skips existing copies
 bin/rails db:migrate
 ```
 
-Review the [changelog](CHANGELOG.md) before deploying. Copy and run **all current migrations**, not just those for a feature you use; feature-specific migration notes appear below.
+Review the [changelog](CHANGELOG.md) before deploying and run **all current migrations**, not just those for features you use.
+
+- `20260101000024` saves existing readers and progress as the first run. **This migration cannot be rolled back without losing run history.** Keep a pre-migration backup for recovery.
+- `20260101000025` enables admin roles in the panel. Configured admins become Site-admins and keep their access.
+- `20260101000026` saves restart snapshots so future new runs can be reverted.
+- `20260101000027` stores admin-added Scripture frame texts.
 
 **Schedule changes do not remap existing day-based check-offs.** Compared with 1.13.3, the current default Psalms/Proverbs assignments differ on days 112–113 and 117–270, including the closing Psalm 1 reading. Review the effect on an active group before upgrading.
 
@@ -145,14 +148,14 @@ A copied database may already contain the tables but have migration versions tha
 bin/rails bible270:migrations:reconcile
 ```
 
-The task recognizes Bible270 migrations and the related generated Active Storage migration by name, then checks tables, columns, indexes, and foreign keys. An existing table alone is not sufficient. **Review the preview and back up the database** before applying:
+The task matches Bible270 and generated Active Storage migrations by name, then checks tables, columns, indexes, and foreign keys—not just table existence. **Review the preview and back up the database** before applying:
 
 ```bash
 APPLY=1 bin/rails bible270:migrations:reconcile
 bin/rails db:migrate
 ```
 
-Preview writes nothing. Apply only records verified local versions in `schema_migrations`; it does not alter application tables. Missing changes remain pending for `db:migrate`.
+Preview writes nothing. Apply records verified versions in `schema_migrations`, without changing application tables. Missing changes remain pending for `db:migrate`.
 
 ## Mount point
 
@@ -192,10 +195,10 @@ Bible270.configure do |config|
 end
 ```
 
-- Tokens are 256-bit, URL-safe, single-use, and expire after 20 minutes by default. Conditional updates prevent double claims.
-- Only a **SHA-256 token digest** is stored, not the raw token or a password. Token records still contain personal data such as email addresses.
-- Valid-address requests receive the same “Check your inbox” response whether known, unknown, or rate-limited, avoiding disclosure through that message.
-- Names come from the reader, falling back to the email address (`mary.anne.smith@…` → “Mary Anne Smith”). Email readers use `provider: "email"` in the same identity model as OmniAuth readers.
+- Links are single-use and expire after 20 minutes by default. Tokens are 256-bit and URL-safe.
+- Only a **SHA-256 token digest** is stored, not the raw token or a password. Records still contain personal data, including email addresses.
+- All valid-address requests get “Check your inbox,” whether known, unknown, or rate-limited, to avoid revealing accounts.
+- Names come from the reader or email address (`mary.anne.smith@…` → “Mary Anne Smith”). Email readers use `provider: "email"`.
 - Schedule `Bible270::SignInToken.sweep!` to remove expired or consumed records older than seven days by default.
 
 ### Social sign-in
@@ -245,7 +248,7 @@ end
 
 ## Admin panel
 
-The panel at `<mount>/admin` returns **404** unless you explicitly authorize administrators:
+The panel at `<mount>/admin` returns **404** for unauthorized readers. Configure Site-admins in the host initializer:
 
 ```ruby
 config.admin_emails = %w[andrew@example.org]
@@ -253,17 +256,25 @@ config.admin_emails = %w[andrew@example.org]
 config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@example.org') }
 ```
 
-Authorized readers get an Admin link. **View as non-admin** hides admin-only details and disables admin actions for the current session. You stay signed in as yourself; your check-offs and reflections still work. The Admin tab remains available with **Return to admin view**. This does not change roles or affect other sessions, and signing in again restores admin view.
+The generated initializer labels this section **Site-admins**; the option names remain `admin_emails` and `admin_resolver`. A callable resolver takes precedence over the email list.
+
+- **Site-admins** can grant or revoke admin access on any reader's Admin page, including alumni, and delete other admins. Configured Site-admins cannot be demoted or deleted in the UI.
+- **Admins** manage readers but cannot change roles or delete privileged readers.
+- Roles persist across runs, independently of **Active/Alumni** status. Site-admins can change their own membership status.
+
+Authorized readers get an **Admin** link. **View as non-admin** hides admin details and disables all administration for this session, including role and membership changes. You remain signed in; reflections and active check-offs still work. Use **Return to admin view** in the Admin tab or sign in again to restore access. Roles and other sessions are unchanged.
 
 The panel supports:
 
-- Sorting readers by name, completed days, activity, or consistency, with **Reader Stats** following the selected sort.
-- Changing reader profiles, themes, and notification preferences. Another reader's theme does not change your own.
-- Moving a reader to a day by adjusting their start date; check-offs remain tied to day numbers.
-- Setting progress exactly through day N, **clearing completions after N**, or toggling individual days.
-- Removing a reader **and all their check-offs and reflections**.
-- Moderating reflections at `<mount>/admin/comments`: hide reversibly or delete. Reflections are public immediately, without prior approval.
-- Sending individually addressed broadcasts to all readers with email addresses or only administrators.
+- Sort active readers by name, completed days, activity, or consistency; **Reader Stats** follows the same sort.
+- Edit profiles, themes, and notification preferences. Editing another reader's theme leaves yours unchanged. Enable or disable the completion dove with one button.
+- Adjust active readers' start dates; check-offs stay tied to day numbers.
+- Set progress through day N, **clearing completions after N**, or toggle individual days.
+- Mark readers as alumni, reactivate them, and view past-run history.
+- Delete unprotected readers **and all their check-offs and reflections across runs**.
+- Hide (reversibly) or delete reflections at `<mount>/admin/comments`. Posts are public immediately, without approval.
+- Manage [Scripture frame](#scripture-frame) texts near the bottom of the panel: add texts, edit or delete custom texts, and enable or disable any text.
+- Send individually addressed email: **Write to everyone** reaches active readers; **Write to all admins** includes alumni admins. Both require an email address.
 
 To print a progress report ordered by completed days:
 
@@ -271,7 +282,33 @@ To print a progress report ordered by completed days:
 docker compose exec -e RAILS_ENV=production rails bin/rails bible270:readers:list
 ```
 
-The report shows completed days, last activity, and calendar status: on track, ahead, behind, or undated.
+The report defaults to active readers, showing completed days, last activity, and status: on track, ahead, behind, or undated.
+
+### Runs and alumni
+
+At the bottom of Admin, enter a start date, choose **Start a new run**, and accept the confirmation prompt. This:
+
+- Archives the current memberships and freezes their calendars and statistics.
+- Makes all current Admins and Site-admins active in the new run, with zero progress and no personal start date. Previous progress stays in read-only history.
+- Leaves other readers as alumni and opens enrollment, even if the installation started with `config.enrollment_open = false`.
+- Keeps reader accounts, photos, check-offs, reflections, replies, likes, and admin roles.
+
+**Revert to previous run** restores the reader statuses, personal dates, shared-date override, and enrollment settings saved before the restart. Everyone, including Admins and Site-admins, returns to their saved status; readers who joined only the newer run become alumni. Both runs' progress and discussions are kept, and admin roles do not change. Accept the confirmation prompt to proceed. Revert is available only for restarts made after migration `20260101000026`; earlier states cannot be reconstructed safely. Restored settings without an override follow the current site configuration.
+
+Alumni can sign in, view Community's **active-reader list**, and post, reply to, and like reflections. Earlier reflections remain visible under the same moderation rules. Archived check-offs are read-only and excluded from current statistics and daily completer lists.
+
+**Show / Hide Active Readers** starts expanded and remembers your choice in the current tab's sign-in session, including after sorting or revisiting Admin. Sorting and Reader Stats stay accessible when it is collapsed.
+
+**Show / Hide Alumni** at the bottom of Admin uses the browser's built-in expandable section, starting collapsed like **View all 270 days**. It needs no JavaScript or reload and changes no membership. It uses the selected sort and frozen reader statistics; the main list and Reader Stats show active readers only. Each alumni row has a confirmed **Make Active** button that returns to Admin with the same sort.
+
+Only admins reactivate alumni; signing in or posting does not re-enroll them:
+
+- **New run:** zero completions and no personal start date; old history stays intact.
+- **Same run:** progress and personal start date are preserved.
+
+Each reader's **Past runs / history** table shows read-only start/end dates, archive date, and completed days.
+
+Admin templates include `bible270/shared/admin_confirmations`, even with custom layouts. Keep this partial in host template overrides; no layout include is needed.
 
 ### Consistency ranking
 
@@ -279,24 +316,24 @@ Consistency is the average end-of-day score on a dated schedule:
 
 `100 + 5 × min(days ahead, 7) − 10 × days behind`
 
-A score of 100 is an average on-track baseline, not a percentage. Negative scores display as `0` but retain their true value for ranking. Scores, on-track/ahead percentages, and evaluated-day counts appear for every Admin sort; sorting by consistency also shows the scoring explanation and adds a **Rank** column to Reader Stats.
+A score of 100 means on track on average, not 100%. Negative scores display as `0` but keep their true ranking. All Admin sorts show scores, on-track/ahead percentages, and evaluated-day counts; consistency sort adds an explanation and **Rank** column.
 
-- Evaluation runs from the later of plan start or account creation through the earlier of yesterday or plan end, in the plan's time zone. Late enrollment does not reset the scheduled day.
+- Evaluation runs from the later of plan start or joining the run (`joined_at`) through the earlier of yesterday or plan end, in the plan's time zone. Archives use frozen dates and stop before the archive date. Joining late does not reset the scheduled day.
 - A day counts when all required readings are checked off, using the latest check-off timestamp. Early completions carry forward; today's catch-up does not improve previous evenings.
 - Readers with seven or more evaluated evenings rank first, then **Provisional** readers with one to six, then **Not ranked** readers with none.
-- Within each ranked group, ordering uses unrounded score, on-track/ahead percentage, and evaluated days. Equal metrics share competition ranks (`1, 1, 1, 4`); name and ID order ties. Unranked readers show a dash.
+- Rank uses unrounded score, then on-track/ahead percentage, then evaluated days. Ties share ranks (`1, 1, 1, 4`), ordered by name and ID. Unranked readers show a dash.
 
-This is **reconstructed history, not an audit log**. Rechecking readings, bulk progress edits, or start-date changes can alter scores. Timestamps record when completion was entered, not necessarily when reading occurred. No snapshot job or additional migration is required.
+This is **reconstructed history, not an audit log**. Rechecking readings, bulk progress edits, or date changes can alter active-run scores. Completion timestamps record entry time, not necessarily reading time. No snapshot job is required.
 
 ## Reflections and notifications
 
-The Reflections page groups conversations by their latest approved reply, with day/author filters, pagination, and activity indicators since the reader's previous visit.
+Reflections are ordered by latest approved reply, with day/author filters, page navigation, and new-activity indicators.
 
-Drafts stay in the current browser for up to **30 days** and clear after a successful post. If storage is blocked or full, a warning appears but posting still works. On shared devices, clear browser storage to remove saved drafts.
+Drafts stay in this browser for up to **30 days**, clearing after a successful post. Blocked or full storage triggers a warning but does not prevent posting. **Clear browser storage on shared devices** to remove drafts.
 
-Typing `@` offers up to five unambiguous reader handles; manual mentions work without JavaScript. **Formatting** opens tools for bold, italic, quotations, lists, links, and YouTube videos. **Preview** uses the same server-side sanitizer as posted content. Existing reflections remain literal plain text until deliberately converted; without the `body_format` migration (`20260101000021`), the composer falls back to plain text.
+Type `@` for up to five reader-handle suggestions; manual mentions work without JavaScript. **Formatting** adds bold, italic, quotations, lists, links, and YouTube videos. **Preview** applies the same safety filtering as posts. Existing reflections stay plain text unless converted; without migration `20260101000021` (`body_format`), the composer also uses plain text.
 
-When `config.mention_notifications` is enabled, readers can choose email for every new reflection/reply, only direct replies and mentions, or none. Admins can change the same preference. Broad notices use BCC; direct notices are individually addressed.
+With `config.mention_notifications` enabled, readers or admins can choose email for all reflections/replies, only direct replies and mentions, or none. Broad notices use BCC and exclude alumni. Personal notices are individually addressed and still reach opted-in alumni; saved preferences are kept.
 
 Migration `20260101000018` adds broad notifications without changing existing choices; `20260101000022` makes them the default for new readers only. Follow [Upgrading](#upgrading) to install these and the visit-tracking migration (`20260101000017`).
 
@@ -320,11 +357,37 @@ The **Video** button accepts YouTube watch, share (`youtu.be`), Shorts, live, an
 [YouTube video](https://www.youtube.com/watch?v=aB3_dE-fG12 "bible270-video")
 ```
 
-Preview and posted content show **View video**, or **View video ‘Name’**. No remote thumbnail or player loads until the reader requests playback. The player uses `www.youtube-nocookie.com` without autoplay; **loading it shares the reader's IP address and request metadata with YouTube**. Privacy-enhanced mode is not anonymous playback.
+Preview and posts show **View video** or **View video ‘Name’**. No remote thumbnail or player loads until playback is requested. The player uses `www.youtube-nocookie.com` without autoplay. **Loading it shares the reader's IP address and request metadata with YouTube**; privacy-enhanced mode is not anonymous.
 
-An **Open on YouTube** link remains available without JavaScript or when embedding is blocked. It opens a new tab with `rel="nofollow ugc noopener"`. Notification emails use ordinary links and preserve the optional name. Unmarked or unsupported links stay links; start times and playlist parameters are not retained. No API key, upload support, extra gem, or additional migration is needed.
+**Open on YouTube** works without JavaScript or when embeds are blocked, opening a new tab with `rel="nofollow ugc noopener"`. Emails use ordinary links with the optional name. Unmarked or unsupported links stay links; start times and playlists are not retained. No API key, extra gem, or migration is needed; uploads are not supported.
 
-For a host Content Security Policy, add `https://www.youtube-nocookie.com` to the existing **`frame-src`** directive. Do not replace the policy or allow arbitrary frames. Custom engine layouts must also render `bible270/shared/video_embeds` once alongside the other shared scripts.
+For a host Content Security Policy (CSP), add `https://www.youtube-nocookie.com` to existing **`frame-src`**; do not replace the policy or allow arbitrary frames. Custom layouts must render `bible270/shared/video_embeds` once.
+
+## Scripture frame
+
+Hover over the header's bread icon for **3 seconds** to open a random passage in a theme-matched frame. Tap, click, or focus the icon and press Enter/Space to open immediately. Hover previews fade when you leave; Escape, selecting the bread again, or clicking outside dismisses the frame.
+
+Completing a day's final check-off fades in a random frame over **1.3 seconds**, holds it for **5.5 seconds**, then plays a **1.4-second** dove flight. The dove keeps moving while it and the frame fade together over the flight's final **0.4 seconds**, with no final pause or extra delay. Disabling the dove keeps the frame, which fades out over **0.2 seconds** after the hold. Reduced-motion users see a static frame without the dove; Escape dismisses the sequence early.
+
+The [bundled YAML catalog](config/scripture_frames.yml) includes Deuteronomy 6:6-7 (NASB95), Deuteronomy 11:18 (NKJV), Deuteronomy 30:14 (ESV), Psalm 19:8 (NKJV), Psalm 107:20 (NKJV), Psalm 119:11 (NASB95), Psalm 119:47 (NKJV), Psalm 119:103 (NASB95), Psalm 119:105 (NKJV), Psalm 119:130 (NASB95), Proverbs 6:23 (NASB95), Isaiah 55:11 (ESV), Jeremiah 15:16 (NASB95), Jeremiah 23:29 (NKJV), John 6:63 (NKJV), John 17:17 (NASB95), 2 Corinthians 4:6 (NKJV), Colossians 3:16 (ESV), 2 Timothy 3:16-17 (ESV), Hebrews 4:12 (NKJV), and 1 Peter 2:2-3 (NASB95), in biblical order. Near the bottom of **Admin**, **Scripture frames** lists custom passages in biblical order before defaults, with Custom/Default marked on each row rather than separate group headings. Non-Scripture quotations follow custom passages. Hover or focus a row's heading to preview the text; select it to expand. **Add text** sits beside **Scripture frames**; Edit, Disable/Enable, and Delete sit beside each custom heading. All text management lives on this page. To add a passage, enter Reference and Translation on the top row, then paste the required Text (up to 4,000 characters). Bible translation credits are automatic; line breaks are preserved. For non-Scripture text, select **Other quotation**, enter **Author / source**, and paste the quote. These frames show the source without a Bible translation or its copyright credit and join the same random selection when enabled. Use texts you have permission to reproduce.
+
+**Admin additions are stored in the database and supplement the defaults. They never change the YAML file.** Defaults start enabled. Use the **Enable/Disable** button to the right of each default in Admin; disabled texts remain previewable but are excluded from bread-icon and completion frames. These switches are saved across runs without changing YAML or requiring a new migration. Default text cannot be edited or deleted; custom texts can be edited, disabled, or deleted. Adding custom texts requires migration `20260101000027`.
+
+**TODO:** Integrate the [YouVersion API](https://developers.youversion.com/) to retrieve Scripture text by reference and translation. Keep the app key server-side, confirm permission to store and display each translation, and preserve required attribution. For now, paste the text; no API setup is needed.
+
+Hosts can optionally replace the default catalog:
+
+```ruby
+config.scripture_frames_path = Rails.root.join('config/bible270_scripture_frames.yml')
+```
+
+Use the bundled YAML structure: a list of entries with a unique slug `id`, `reference`, `translation`, `text`, and optional `attribution`. Keep one consistent attribution per translation. Catalog translations become choices in Admin, alongside NKJV, NASB95, LSB, ESV, KJV, YLT, CSB, and NIV. Shared choices follow the reader-preference order; CSB and NIV follow them. Custom database texts still supplement the chosen catalog. Invalid or unreadable host catalogs fall back to the bundled defaults.
+
+Custom layouts that include the header must also render the shared styles and this partial once near the end of `<body>`:
+
+```erb
+<%= render "bible270/shared/scripture_frame_ui" %>
+```
 
 ## Themes
 
@@ -357,7 +420,7 @@ config.allow_reader_start_date = true
 | a date | false | Shared date for everyone; stored personal dates ignored |
 | nil | false | Fully undated |
 
-Dated plans show dates, a **Today** badge, and a “Go to today” link. Admins can override the shared `config.start_date` without deploying, or reset it to the configured value. Shared-date changes immediately remap dates, Today, and reminders for readers on that calendar. Personal calendars can also be adjusted. **Check-offs and reflections stay tied to day numbers.**
+Dated active plans show dates, a **Today** badge, and “Go to today.” Admins can override the shared `config.start_date` without deploying, reset it, or adjust personal calendars. Changes immediately shift dates, Today, and reminders for affected active readers. **Check-offs and reflections stay tied to day numbers.** Archives keep their frozen calendar (including undated ones), with no Today marker; later date or calendar-setting changes do not affect them. Changing the start date does not [start a new run](#runs-and-alumni).
 
 Date helpers work without Rails:
 
@@ -371,7 +434,7 @@ Bible270::Plan.before_start?(date, start)
 
 ## Daily reading reminders
 
-Reminders require both host enablement and reader opt-in; both default to off. Readers choose a time in Profile (default `08:00`, quarter-hour choices). Existing off-quarter times remain available until changed. Times use the **plan's time zone**, shown in Profile, not the device's zone.
+Reminders require host enablement and reader opt-in; both default to off. Profile offers quarter-hour times (default `08:00`), preserving older off-quarter choices until changed. Times use the **plan's time zone**, shown in Profile, not the device's.
 
 ```ruby
 # config/initializers/bible270.rb
@@ -403,7 +466,7 @@ For Docker Compose, use `pwd` in the Compose directory and `command -v docker` t
 
 `-T` disables the interactive terminal that cron cannot provide. Verify with `crontab -l` and check the log after the next interval. **Run one scheduler per database**, not one per web container.
 
-The task sends inline with `deliver_now` on the first run at or after the chosen local time and records the sent date only after successful delivery. It skips readers already sent that date, undated or out-of-range calendars, completed days, blank email addresses, and readers not opted in. Individual failures are logged without stopping other deliveries; each run prints the delivered count.
+The task uses `deliver_now` on the first run at or after the chosen local time, recording the sent date only after success. It skips alumni, already-sent dates, undated or out-of-range calendars, completed days, blank emails, and readers not opted in. Failures are logged without stopping other deliveries; each run prints a delivered count.
 
 ## Avatar optimization
 
@@ -411,7 +474,9 @@ Profile and Admin uploads produce a **256×256 static WebP at quality 85**: auto
 
 Limits are **2 MiB** by default (`config.avatar_max_bytes`) and **40 million pixels** in the selected frame/container canvas. The pixel limit bounds dimensions, not total processor memory. Processing or storage failure leaves the previous picture and profile details unchanged.
 
-The current original, **including its metadata**, remains in `avatar`; the display image is stored as `avatar_thumbnail`. This retains a source for reprocessing, not a picture history, and increases storage even though downloads shrink. Removing or replacing a picture detaches the old pair; **keep Active Job workers running** for Active Storage purge jobs. No new migration is needed if Active Storage is already installed.
+The original, **including its metadata**, stays in `avatar`; `avatar_thumbnail` holds the display image. This allows reprocessing, not picture history: storage grows even as downloads shrink. Replacing or removing a picture detaches the old pair; **keep Active Job workers running** for purge jobs. No migration is needed if Active Storage is installed.
+
+On desktop, hover over an avatar for **3 seconds** to preview the uncropped original, fitted to the viewport with a 200 ms fade. The original is fetched on demand; touch behavior is unchanged.
 
 ### Backfill existing uploads
 
@@ -428,12 +493,12 @@ RAILS_ENV=production bundle exec rake bible270:avatars:optimize BATCH_SIZE=100
 RAILS_ENV=production bundle exec rake bible270:avatars:optimize FORCE=1
 ```
 
-- Skips current thumbnails, protects concurrent avatar changes, continues after individual failures, and exits nonzero if any fail. Correct failed files, limits, storage access, or processor dependencies, then rerun.
-- Reports reader IDs, counts, and original/optimized **display-byte totals**, not total storage savings.
-- `BATCH_SIZE` defaults to 100 (allowed: 1–1000). Dry-run checks eligibility only, not file availability or decodability.
-- Reads originals and writes thumbnails to configured storage; remote storage may incur request/transfer costs. It does not fetch provider avatars or change unrelated host attachments.
+- Skips current thumbnails, protects concurrent avatar changes, and continues after failures, exiting nonzero if any fail. Fix files, limits, storage access, or processor dependencies, then rerun.
+- Reports reader IDs, counts, and original/optimized **display-byte totals**, not storage savings.
+- `BATCH_SIZE` defaults to 100 (range: 1–1000). Dry-run checks eligibility, not file availability or decodability.
+- Reads originals and writes thumbnails; remote storage may incur request/transfer costs. Provider avatars and unrelated host attachments are untouched.
 
-Host upload code should use `reader.attach_avatar(upload)` or `Bible270::AvatarImages.update!(reader, attributes, upload: upload)`. Direct Active Storage attachment bypasses optimization. **Uploads and backfills must run outside caller-owned database transactions**: the service owns the commit boundary to prevent outer rollbacks from orphaning uploaded files. Failed cleanup retains unattached blob records and storage keys for retry; use logged blob IDs in your host's unattached-blob maintenance.
+Host uploads should use `reader.attach_avatar(upload)` or `Bible270::AvatarImages.update!(reader, attributes, upload: upload)`; direct attachment bypasses optimization. **Run uploads and backfills outside caller-owned database transactions** to avoid orphaned files after rollback. Failed cleanup retains unattached blob records and storage keys for retry; use logged blob IDs in host cleanup.
 
 ## Configuration reference
 
@@ -444,7 +509,7 @@ Bible270.configure do |config|
   config.mount_at = "/daily-bread"
   config.app_name = "Daily Bread"
   config.tagline = "Journeying through Scripture in 9 months"
-  config.admin_emails = %w[andrew@example.org]
+  config.admin_emails = %w[andrew@example.org] # Site-admins
 
   config.start_date = nil                  # no shared calendar by default
   config.allow_reader_start_date = true
@@ -536,14 +601,17 @@ Mount the engine and add a CMS navigation link to use its own themed pages. To u
 
 | Table | Holds |
 |-------|-------|
-| `bible270_readers` | Identity, provider/uid or polymorphic owner, start date, and reader preferences |
-| `bible270_checkoffs` | One row per reader/day/track/part, protected by a unique index |
+| `bible270_readers` | Identity, provider/uid or polymorphic owner, personal start date, preferences, and persistent `admin` boolean |
+| `bible270_plan_runs` | Current-run marker, shared start date, and archive timestamp |
+| `bible270_participations` | One membership per reader/run (unique pair), Active/Alumni status, `joined_at`, personal date, archive date, and frozen effective start date |
+| `bible270_checkoffs` | Reader and participation references; one row per participation/day/track/part, protected by a unique index |
 | `bible270_comments` | Day/track reflections and replies, stored as plain text or safely rendered Markdown |
 | `bible270_likes` | Reader likes on comments |
-| `bible270_settings` | Shared run and administrative settings |
+| `bible270_settings` | Current shared-date override, enrollment state, and administrative settings |
+| `bible270_scripture_frames` | Admin-added passages, translation credits, and enabled status; shared across runs |
 | `bible270_sign_in_tokens` | Email, token digest, expiry, and consumption time |
 
-A day is complete when all parts of all three tracks are checked off. Progress and visible reflections are public; they are not private journals.
+A complete day requires all parts of all three tracks. Progress uses the current membership, or the latest historical one if absent; runs are never added together. Reflections, replies, and likes belong to readers and remain shared across groups. **Progress and visible reflections are public, not private journals.**
 
 ## Routes (inside the mount point)
 
@@ -562,6 +630,7 @@ DELETE /comments/:id                  comments#destroy
 POST   /comments/:id/like             likes#toggle
 GET    /community                     readers#index
 GET    /mention-suggestions           readers#mention_suggestions (signed-in JSON)
+GET    /scripture-frame               scripture_frames#show (public JSON)
 GET    /readers/:id                    readers#show
 GET    /progress                      readers#progress
 GET    /sign_in                       sessions#new
@@ -602,9 +671,9 @@ Precedence is built-in `CHAPTER_BREAKS`, then `config.chapter_breaks`, then YAML
 | `PSALM_119_SECTION_SIZE` | `16` | Default verses per Psalm 119 section |
 | `CHAPTER_BREAKS` | Built-in chapter map | Selected breaks and whole-chapter overrides |
 
-For New Testament and Psalms/Proverbs readings, explicit breaks fix a chapter's reading count; unpinned chapters divide by verse load to fill the remaining days. The Psalms/Proverbs track reserves the final day for Psalm 1. Without explicit breaks, divided chapters use equal parts.
+For New Testament and Psalms/Proverbs, explicit breaks fix a chapter's reading count; other chapters divide by verse load to fill remaining days, using equal parts. Psalms/Proverbs reserves the final day for Psalm 1.
 
-Breaks must be ascending, distinct, and inside the chapter; invalid entries or too many pinned readings raise `ArgumentError`. Results are memoized and refreshed when configured breaks change. There is no stored schedule to migrate, but **changing assignments does not remap existing check-offs or reflections**. Test custom schedules before using them with an active group.
+Breaks must be ascending, distinct, and inside the chapter; invalid entries or too many pinned readings raise `ArgumentError`. Cached results refresh when breaks change. No schedule migration is needed, but **changed assignments do not remap check-offs or reflections**. Test custom schedules before using them with an active group.
 
 ## Scaling
 
@@ -622,11 +691,11 @@ Custom controls must POST with a CSRF token; use `button_to`. Confirm `omniauth-
 
 **No email arrives**
 
-Check Action Mailer delivery settings, an accepted `mailer_from`, and logs. Sign-in uses `deliver_now` unless `email_sign_in_deliver_later` is enabled; for queued mail, check the Active Job worker too. Delivery failures are not shown to readers to avoid disclosing account information.
+Check Action Mailer settings, an accepted `mailer_from`, and logs. Sign-in uses `deliver_now` unless `email_sign_in_deliver_later` is enabled; then check the Active Job worker too. Delivery errors are hidden from readers to avoid revealing accounts.
 
 **“That link has expired or was already used”**
 
-Request a fresh link. Links are single-use and expire after 20 minutes by default. Mail scanners or preview bots can consume them before the reader clicks; investigate prefetching if it recurs. Increase `email_sign_in_ttl` only if expiry is the problem—it cannot restore a consumed link.
+Request a fresh link. Links are single-use and expire after 20 minutes by default. Mail scanners or preview bots can consume them early; investigate prefetching if it recurs. Increasing `email_sign_in_ttl` helps only with expiry, not consumed links.
 
 **Custom layout is unstyled**
 
@@ -641,7 +710,9 @@ node --test test/javascript/*.cjs
 bundle exec rubocop --cache false
 ```
 
-`rake test` defaults to six isolated processes, prints combined results, writes coverage to `coverage/index.html`, and records runtimes in `tmp/parallel_runtime_test.log` for balancing. Set `PARALLEL_WORKERS` to change the count, or use `bundle exec rake test:serial` for serial coverage.
+`rake test` uses one isolated worker per available CPU, up to eight. Coverage stays enabled at `coverage/index.html`; recorded runtimes in `tmp/parallel_runtime_test.log` balance the work. Large Admin and Profile tests are split by feature, with shared setup in `test/support`.
+
+Use `PARALLEL_WORKERS=4 bundle exec rake test` to choose the count, or `bundle exec rake test:serial` for serial coverage. Logs keep warnings and errors in `test/dummy/log/test-*.log`; set `TEST_LOG_LEVEL=debug` for request, template, and SQL details.
 
 Video UI tests require **Node.js 22+**, use the built-in runner with no npm dependencies, and do not contact YouTube. Check live playback and host CSP separately in a browser. Plan logic is unit-tested without a Rails dependency.
 
@@ -660,7 +731,7 @@ Use your local host/port. If `raw` is nil, the address is invalid or rate-limite
 
 Report bugs or open pull requests at <https://github.com/avonderluft/bible270>.
 
-Fork and clone the repository, branch from `main` (`git checkout -b my-feature`), and add tests with your change. Run the [development checks](#development), commit with a clear message, and open a pull request against `main` explaining what changed and why.
+Fork, clone, and branch from `main` (`git checkout -b my-feature`). Add tests, run the [development checks](#development), and open a pull request against `main` explaining the change.
 
 - Keep plan logic independent of Rails.
 - Pin exact expected references in tests for schedule changes.

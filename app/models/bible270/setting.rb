@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 module Bible270
-  # Runtime state an admin can change without a deploy: enrollment and the
-  # current run's shared calendar date.
+  # Runtime state an admin can change without a deploy: enrollment, the
+  # current run's shared calendar date, and default Scripture text availability.
   class Setting < ApplicationRecord
     self.table_name = 'bible270_settings'
 
     ENROLLMENT_CLOSED_AT = 'enrollment_closed_at'
     RUN_START_DATE = 'run_start_date'
+    ENROLLMENT_OPEN = 'enrollment_open'
 
     validates :key, presence: true, uniqueness: true
 
@@ -62,6 +63,8 @@ module Bible270
     def self.enrollment_closed?
       return true if read(ENROLLMENT_CLOSED_AT).present?
 
+      return false if read(ENROLLMENT_OPEN) == 'true'
+
       Bible270.config.respond_to?(:enrollment_open) && Bible270.config.enrollment_open == false
     end
 
@@ -75,12 +78,18 @@ module Bible270
     end
 
     def self.close_enrollment!(at: Time.current)
-      write(ENROLLMENT_CLOSED_AT, at.iso8601)
+      transaction do
+        delete_key(ENROLLMENT_OPEN)
+        write(ENROLLMENT_CLOSED_AT, at.iso8601)
+      end
       true
     end
 
     def self.open_enrollment!
-      delete_key(ENROLLMENT_CLOSED_AT)
+      transaction do
+        delete_key(ENROLLMENT_CLOSED_AT)
+        write(ENROLLMENT_OPEN, 'true')
+      end
       true
     end
   end

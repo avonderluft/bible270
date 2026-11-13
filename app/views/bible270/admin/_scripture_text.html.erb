@@ -1,0 +1,11 @@
+<% disabled = source == 'Default' ? Array(@disabled_default_scripture_frame_ids).include?(frame.id) : !frame.enabled? %>
+<details class="b270-scripture-library-disclosure">
+  <summary aria-describedby="<%= text_id %>"><strong><%= frame.reference %></strong> · <%= Bible270::ScriptureFrames.quotation?(frame.translation) ? 'Other quotation' : frame.translation %> · <%= source %><% if disabled %> · Disabled<% end %></summary>
+  <blockquote class="b270-scripture-library-text" id="<%= text_id %>" role="tooltip" tabindex="0"><%= frame.text %></blockquote>
+</details>
+<% if source == 'Default' && @scripture_frame_default_settings_available %>
+  <%= button_to disabled ? 'Enable' : 'Disable', admin_default_scripture_frame_path(frame.id), method: :patch,
+        params: { enabled: disabled ? '1' : '0', return_to: local_assigns.fetch(:return_to, 'texts'), sort: @reader_sort },
+        class: 'b270-linkbtn', form: { class: 'b270-scripture-default-toggle' },
+        aria: { label: "#{disabled ? 'Enable' : 'Disable'} #{frame.reference}" } %>
+<% end %>

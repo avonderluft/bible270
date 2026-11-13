@@ -14,9 +14,9 @@
           <label class="b270-field">
             <span>Picture</span>
             <%= file_field_tag :avatar, accept: Bible270::Avatars.content_types.join(',') %>
-            <span class="b270-hint" style="margin:0">
-              PNG, JPEG, GIF or WebP, up to <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %> and <%= Bible270::AvatarOptimizer::MAX_PIXELS / 1_000_000 %> megapixels.
-              Automatically center-cropped to a square. Animated pictures use the first frame.
+            <span class="b270-hint b270-avatar-hint" style="margin:0">
+              PNG/JPEG/GIF/WebP · max <%= Bible270::Avatars.human_size(Bible270::Avatars.max_bytes) %>, <%= Bible270::AvatarOptimizer::MAX_PIXELS / 1_000_000 %>MP.
+              Center-cropped square; animations use first frame.
             </span>
           </label>
           <% if current_reader.avatar_uploaded? %>
@@ -28,14 +28,16 @@
     </div>
 
 
-    <label class="b270-field">
-      <span>First name</span>
-      <%= text_field_tag :first_name, @names[:first_name], required: true, autocomplete: "given-name" %>
-    </label>
-    <label class="b270-field">
-      <span>Last name</span>
-      <%= text_field_tag :last_name, @names[:last_name], required: true, autocomplete: "family-name" %>
-    </label>
+    <div class="b270-name-fields">
+      <label class="b270-field">
+        <span>First name</span>
+        <%= text_field_tag :first_name, @names[:first_name], size: 16, required: true, autocomplete: "given-name" %>
+      </label>
+      <label class="b270-field">
+        <span>Last name</span>
+        <%= text_field_tag :last_name, @names[:last_name], size: 16, required: true, autocomplete: "family-name" %>
+      </label>
+    </div>
     <label class="b270-field">
       <span>Bible translation</span>
       <span class="b270-select-wrap b270-select-wrap--full">
@@ -57,7 +59,7 @@
                 data: { b270_theme_url: profile_theme_path, b270_theme_apply: true,
                         b270_saved_theme: current_reader.effective_display_mode } %>
         </span>
-        <span id="b270-display-hint" class="b270-hint" style="margin:0">System follows your device's setting: Papyrus for light, Cedar for dark.</span>
+        <span id="b270-display-hint" class="b270-hint b270-theme-hint" style="margin:0">System: Papyrus (light), Cedar (dark).</span>
       </label>
       <p id="b270-theme-status" class="b270-hint" role="status" aria-live="polite" style="margin:0"></p>
     <% else %>

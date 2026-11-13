@@ -1,0 +1,55 @@
+<div class="b270-list">
+  <% readers.each do |reader| %>
+    <div class="b270-li b270-reader-theme" data-display-mode="<%= reader.effective_display_mode %>">
+      <%= link_to b270_avatar(reader, size: 72), admin_reader_path(reader),
+            "aria-label": reader.display_name %>
+      <div class="b270-admin-reader-details">
+        <div class="name"><%= link_to reader.display_name, admin_reader_path(reader), style: 'text-decoration:none' %>
+          <% if Bible270.config.site_admin?(reader) %>
+            <span class="b270-badge b270-reader-badge b270-role-badge"><span>Site-admin</span></span>
+          <% elsif Bible270.config.admin?(reader) %>
+            <span class="b270-badge b270-reader-badge b270-role-badge"><span>Admin</span></span>
+          <% end %>
+          <% if reader.alumni? %><span class="b270-badge b270-reader-badge"><span>Alumni</span></span><% end %>
+        </div>
+        <div class="sub">
+          <% if reader.email.present? %>
+            <%= mail_to reader.email %>
+          <% else %>
+            <%= reader.provider %>
+          <% end %>
+          <% if reader.dated? %>· started <%= reader.effective_start_date.strftime('%b %-d, %Y') %><% end %>
+          · <%= days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days
+          · <%= report.status_for(reader) %>
+        </div>
+        <% consistency = report.consistency_for(reader) %>
+        <div class="sub b270-reader-consistency">
+          <% if consistency.ranked? %>
+            <% if consistency.provisional? %><strong>Provisional</strong> · <% end %>
+            Consistency: <%= consistency.score.negative? ? '0' : number_with_precision(consistency.score.to_f, precision: 1) %>
+            · On track/ahead: <%= consistency.on_track_percentage.round %>%
+            · <%= pluralize(consistency.days_evaluated, 'day') %> evaluated
+          <% else %>
+            Consistency: Not ranked
+          <% end %>
+        </div>
+        <div class="sub b270-reader-activity">
+          <% if (activity = activities[reader.id]) %>
+            <%= b270_activity_datetime(activity.occurred_at) %>: <%= b270_reader_activity_description(activity) %>
+          <% else %>
+            No reading activity yet
+          <% end %>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="big"><%= (days_completed[reader.id].to_f / Bible270::Plan::DAYS * 100).round %>%</span>
+        <% if reader.alumni? %>
+          <%= button_to 'Make Active', admin_reader_participation_path(reader), method: :patch,
+                params: { status: 'active', expected_run_id: @current_run.id, return_to: 'admin', sort: @reader_sort },
+                class: 'b270-btn b270-admin-activate',
+                form: { data: { b270_admin_confirm: 'Reactivate this reader in the current run? Same-run progress is preserved; joining a different run starts fresh progress and clears their personal start date. Past history is preserved.' } } %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

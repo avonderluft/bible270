@@ -29,7 +29,7 @@ module Bible270
     rescue_from ActionController::InvalidAuthenticityToken, with: :recover_from_stale_page
 
     helper_method :current_reader, :signed_in?, :b270_config, :enrollment_closed?,
-                  :b270_admin?, :b270_reader_view?, :b270_admin_view?
+                  :b270_admin?, :b270_site_admin?, :b270_reader_view?, :b270_admin_view?
 
   private
 
@@ -105,7 +105,11 @@ module Bible270
     end
 
     def b270_admin?
-      Bible270.config.admin_configured? && Bible270.config.admin?(current_reader)
+      Bible270.config.admin?(current_reader)
+    end
+
+    def b270_site_admin?
+      Bible270.config.site_admin?(current_reader)
     end
 
     def b270_reader_view?
@@ -115,6 +119,18 @@ module Bible270
     # Keep real admin identity separate so preview mode always has a way back.
     def b270_admin_view?
       b270_admin? && !b270_reader_view?
+    end
+
+    def require_admin!
+      return if b270_admin?
+
+      raise ActionController::RoutingError, 'Not Found'
+    end
+
+    def require_admin_view!
+      return if b270_admin_view?
+
+      raise ActionController::RoutingError, 'Not Found'
     end
 
     # A suspended mobile tab can outlive its Rails session cookie. The page still

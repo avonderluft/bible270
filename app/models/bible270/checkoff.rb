@@ -8,18 +8,52 @@ module Bible270
     RecentActivity = Struct.new(:occurred_at, :day, :track, :part, :day_completed?, keyword_init: true)
 
     belongs_to :reader, class_name: 'Bible270::Reader'
+    belongs_to :participation, class_name: 'Bible270::Participation', inverse_of: :checkoffs
+
+    before_validation :assign_participation
+    validate :participation_matches_reader
+    validate :participation_is_writable
+    around_save :with_writable_participation
+    around_destroy :with_writable_participation
 
     validates :day, inclusion: { in: 1..Plan::DAYS }
     validates :track, inclusion: { in: Plan::TRACKS.keys }
-    validates :track, uniqueness: { scope: %i[reader_id day part] }
+    validates :track, uniqueness: { scope: %i[participation_id day part] }
     validates :part, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
     validate  :track_present_on_day
     validate  :part_within_reading
 
+    # Legacy callers (including historical chapter backfills) use insert_all
+    # without a membership. Resolve those IDs in bulk without creating membership
+    # or reactivating anyone. Explicit participation IDs remain a trusted bulk API.
+    def self.insert_all(attributes, **)
+      return super unless column_names.include?('participation_id') && attributes.any? { |row| !row.key?(:participation_id) }
+
+      transaction do
+        ids = attributes.filter_map { |row| row[:reader_id] unless row.key?(:participation_id) }.uniq
+        memberships = Participation.chosen.where(reader_id: ids).index_by(&:reader_id)
+        # Use the same locks as archive/restart, in a stable order for batches.
+        # Keep them until after super, not merely until validation has finished.
+        runs = PlanRun.where(id: memberships.values.map(&:plan_run_id).uniq).order(:id).lock.index_by(&:id)
+        memberships.each_value do |membership|
+          membership.reload
+          membership.plan_run = runs.fetch(membership.plan_run_id)
+          membership.ensure_writable!
+        end
+        attributes = attributes.map do |row|
+          next row if row.key?(:participation_id)
+
+          row.merge(participation_id: memberships.fetch(row[:reader_id]).id)
+        end
+        super
+      end
+    end
+
     # The most recently created check-off still present for each reader. This uses
     # three bulk queries regardless of the number of readers displayed in Admin.
     def self.recent_activity_by_reader(reader_ids)
-      latest_ids = where(reader_id: reader_ids).group(:reader_id).maximum(:id).values
+      latest_ids = where(reader_id: reader_ids, participation_id: Participation.chosen.select(:id))
+        .group(:reader_id).maximum(:id).values
       latest_checkoffs = where(id: latest_ids).index_by(&:reader_id)
       day_counts = recent_activity_day_counts(latest_checkoffs.values)
 
@@ -37,11 +71,43 @@ module Bible270
     def self.recent_activity_day_counts(checkoffs)
       return {} if checkoffs.empty?
 
-      where(reader_id: checkoffs.map(&:reader_id), day: checkoffs.map(&:day)).group(:reader_id, :day).count
+      where(participation_id: checkoffs.map(&:participation_id), day: checkoffs.map(&:day))
+        .group(:reader_id, :day).count
     end
     private_class_method :recent_activity_day_counts
 
   private
+
+    def assign_participation
+      self.participation ||= reader&.participation
+    end
+
+    def participation_matches_reader
+      if persisted? && (will_save_change_to_reader_id? || will_save_change_to_participation_id?)
+        errors.add(:participation, 'cannot change the owner of existing progress')
+      end
+      return unless participation && participation.reader_id != reader_id
+
+      errors.add(:participation, 'must belong to the same reader')
+    end
+
+    def participation_is_writable
+      return unless participation
+      return if Participation.active.where(id: participation.id).exists?
+
+      errors.add(:participation, 'has archived progress and is read-only')
+    end
+
+    # Share the run lock with restart/archive, including the actual write, not
+    # just its validation. Cascading identity deletion intentionally removes history.
+    def with_writable_participation
+      return yield if destroyed_by_association
+
+      participation.plan_run.with_lock do
+        participation.reload.ensure_writable!
+        yield
+      end
+    end
 
     def track_present_on_day
       return if day.nil? || track.nil?

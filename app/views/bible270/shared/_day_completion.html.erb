@@ -1,0 +1,13 @@
+<%# locals: (day:, reader:, completion_event_id:) %>
+<% frame = Bible270::ScriptureFrames.random %>
+<div class="b270-completion" data-b270-completion data-b270-day="<%= day %>"
+     data-b270-completion-event="<%= completion_event_id %>" data-turbo-temporary hidden>
+  <% if frame %>
+    <div class="b270-completion-frame" data-b270-completion-frame role="region" aria-label="Day <%= day %> completion Scripture">
+      <%= render "bible270/shared/scripture_frame", frame: frame %>
+    </div>
+  <% end %>
+  <% unless reader&.completion_dove_disabled? %>
+    <%= render "bible270/shared/day_completion_dove", day: day, completion_event_id: completion_event_id %>
+  <% end %>
+</div>

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 Rails.application.configure do
+  config.cache_classes = true
   config.eager_load = false
 
   # The engine's migrations are run by hand into an in-memory database in
@@ -18,9 +19,8 @@ Rails.application.configure do
   # Rails maps to statuses and raises everything else.
   config.action_dispatch.show_exceptions = :rescuable
 
-  # And keep a log, so anything that does get swallowed is still recoverable.
-  # The application config sends logs to /dev/null to keep test output clean;
-  # a file gives us both.
-  config.logger = ActiveSupport::Logger.new(Rails.root.join('log/test.log'))
-  config.log_level = :debug
+  # Keep diagnostics isolated between parallel workers and storage-probe children.
+  # TEST_LOG_LEVEL=debug restores request, template, and SQL details when needed.
+  config.logger = ActiveSupport::Logger.new(Rails.root.join("log/test-#{Process.pid}.log"))
+  config.log_level = ENV.fetch('TEST_LOG_LEVEL', 'warn').to_sym
 end
