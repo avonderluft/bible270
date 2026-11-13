@@ -4,9 +4,24 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+## [1.17.1] - 2026-11-13
+
 ### Added
 
-- preview original avatar photos after a 3-second hover; keep touch behavior unchanged
+- expand the bundled Scripture frame collection
+
+### Changed
+
+- simplify documentation
+
+### Fixed
+
+- fix iPhone completion rendering; grow and fade the dove without a final flash
+
+## [1.17.0] - 2026-11-12
+
+### Added
+
 - show random, theme-matched Scripture frames on a 3-second bread-icon hover or immediately by tap, click, or keyboard
 - manage Scripture texts in Admin; custom texts supplement YAML defaults with automatic translation credits
 - support custom quotations with **Author / source**, without Bible translation credits
@@ -34,12 +49,20 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ### Fixed
 
-- fix iPhone completion rendering and fade the dove without a final flash
 - hide collapsed Scripture passages immediately; restore previews on fresh hover or focus
-- always confirm reader removal before deleting progress and reflections
 - align Admin, Site-admin, and Alumni badges with compact, theme-matched styling
 - shorten theme and upload hints on Admin and Profile; keep the System hint on one line
 - avoid repeated calendar lookups when rendering the day grid
+
+## [1.16.0] - 2026-11-10
+
+### Added
+
+- preview original avatar photos after a 3-second hover; keep touch behavior unchanged
+
+### Fixed
+
+- always confirm reader removal before deleting progress and reflections
 
 ## [1.15.1] - 2026-11-06
 
@@ -852,7 +875,10 @@ This is the initial public release.
 
 - Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.15.1...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.17.1...main
+[1.17.1]: https://github.com/avonderluft/bible270/compare/v1.17.0...v1.17.1
+[1.17.0]: https://github.com/avonderluft/bible270/compare/v1.16.0...v1.17.0
+[1.16.0]: https://github.com/avonderluft/bible270/compare/v1.15.1...v1.16.0
 [1.15.1]: https://github.com/avonderluft/bible270/compare/v1.15.0...v1.15.1
 [1.15.0]: https://github.com/avonderluft/bible270/compare/v1.14.0...v1.15.0
 [1.14.0]: https://github.com/avonderluft/bible270/compare/v1.13.5...v1.14.0
