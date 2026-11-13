@@ -62,6 +62,22 @@ jobs:
           CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
         run: node --test --test-concurrency=1 test/javascript/*.cjs
 
+  webkit:
+    name: WebKit completion UI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --prefix tmp/browser-tests --no-save --no-package-lock playwright@1.65.0
+      - run: tmp/browser-tests/node_modules/.bin/playwright install --with-deps webkit
+      - name: Test mobile and desktop WebKit rendering
+        env:
+          NODE_PATH: ${{ github.workspace }}/tmp/browser-tests/node_modules
+          B270_WEBKIT_TESTS: "1"
+        run: node --test test/javascript/day_completion_webkit_test.cjs
+
   lint:
     name: RuboCop
     runs-on: ubuntu-latest

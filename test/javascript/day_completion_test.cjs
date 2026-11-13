@@ -187,7 +187,8 @@ function harness({ reduced = false, matchMedia = true, storage = new Map(), stor
       }
     }
     const bird = (options.dove ?? dove) ? marked(root, 'dove') : null;
-    const path = bird ? bird.appendChild(element('path')) : null;
+    const artwork = bird ? bird.appendChild(element('svg')) : null;
+    const path = artwork ? artwork.appendChild(element('path')) : null;
     return { root, frame: board, dove: bird, path, fields, texts: fields.map((field) => field.textContent) };
   };
   const initial = makeCompletion();
@@ -335,10 +336,10 @@ for (const type of ['animationend', 'animationcancel']) {
   });
 }
 
-test('missing animation events use the exact 1600ms flight fallback to dispose the whole sequence immediately', () => {
+test('missing animation events use the exact 1200ms flight fallback to dispose the whole sequence immediately', () => {
   const h = setup();
   startFlight(h);
-  h.advance(1599);
+  h.advance(1199);
   assert.equal(h.dove.isConnected, true);
   flying(h.dove);
   visible(h.root);
@@ -366,7 +367,7 @@ test('unrelated animations, descendant targets, early flight events, and other k
     h.animation(type, h.outside);
   }
   h.key('Tab');
-  h.advance(1599);
+  h.advance(1199);
   assert.equal(h.dove.isConnected, true);
   visible(h.root);
   h.animation();
@@ -409,7 +410,7 @@ test('missing matchMedia uses normal timing and animation rather than throwing',
   flying(h.dove, false);
   h.advance(1);
   flying(h.dove);
-  h.advance(1600);
+  h.advance(1200);
   disposed(h);
 });
 
@@ -426,10 +427,10 @@ test('without a frame, the dove flies on the first rAF and removes the whole roo
   untouched(h);
 });
 
-test('a frameless dove still has the exact 1900ms animation fallback, with no frame fade', () => {
+test('a frameless dove still has the exact 1200ms animation fallback, with no frame fade', () => {
   const h = setup({ frame: false });
   h.paint();
-  h.advance(1599);
+  h.advance(1199);
   assert.equal(h.root.isConnected, true);
   h.advance(1);
   assert.equal(h.root.isConnected, false);
@@ -797,14 +798,15 @@ test('completion layout centers, scrolls, preserves theme surfaces and dove stac
   const stripERB = (name) => readFileSync(resolve(__dirname, `../../app/views/bible270/shared/${name}.html.erb`), 'utf8').replace(/<%[\s\S]*?%>/g, '');
   const styles = stripERB('_styles');
   const figure = stripERB('_scripture_frame');
-  const browserCheck = function(styles, figure) {
+  const doveMarkup = stripERB('_day_completion_dove');
+  const browserCheck = function(styles, figure, doveMarkup) {
     const failures = [];
     const surfaces = new Set();
     const check = (condition, message) => { if (!condition) failures.push(message); };
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    for (const width of [360, 1280]) {
+    for (const [width, height] of [[360, 720], [844, 390], [1280, 720]]) {
       const viewport = document.createElement('iframe');
-      viewport.style.cssText = `display:block;border:0;width:${width}px;height:720px`;
+      viewport.style.cssText = `display:block;border:0;width:${width}px;height:${height}px`;
       document.body.append(viewport);
       const doc = viewport.contentDocument;
       doc.open();
@@ -813,7 +815,7 @@ test('completion layout centers, scrolls, preserves theme surfaces and dove stac
         <body class="b270" data-display-mode="light">
         <div class="b270-completion" data-b270-completion data-b270-completion-event="layout" hidden>
           <div class="b270-completion-frame" data-b270-completion-frame>${figure}</div>
-          <svg class="b270-completion-dove" data-b270-completion-dove viewBox="0 0 100 100"><rect width="100" height="100" fill="white"/></svg>
+          ${doveMarkup}
         </div></body></html>`);
       doc.close();
       const css = (node) => viewport.contentWindow.getComputedStyle(node);
@@ -824,8 +826,8 @@ test('completion layout centers, scrolls, preserves theme surfaces and dove stac
       const centeredAndBounded = (label) => {
         const rect = frame.getBoundingClientRect();
         check(rect.width > 0 && rect.height > 0, `${width}/${label}: frame is laid out`);
-        check(Math.abs((rect.left + rect.right) / 2 - width / 2) < 1 && Math.abs((rect.top + rect.bottom) / 2 - 360) < 1, `${width}/${label}: frame centered`);
-        check(rect.left >= 11.5 && rect.right <= width - 11.5 && rect.top >= 11.5 && rect.bottom <= 708.5, `${width}/${label}: frame stays within viewport gutters`);
+        check(Math.abs((rect.left + rect.right) / 2 - width / 2) < 1 && Math.abs((rect.top + rect.bottom) / 2 - height / 2) < 1, `${width}/${label}: frame centered`);
+        check(rect.left >= 11.5 && rect.right <= width - 11.5 && rect.top >= 11.5 && rect.bottom <= height - 11.5, `${width}/${label}: frame stays within viewport gutters`);
         check(doc.documentElement.scrollWidth <= width && frame.scrollWidth <= frame.clientWidth + 1, `${width}/${label}: no horizontal overflow`);
       };
       check(css(root).display === 'none' && frame.getClientRects().length === 0, `${width}: hidden root is display:none`);
@@ -861,7 +863,10 @@ test('completion layout centers, scrolls, preserves theme surfaces and dove stac
       swatch.remove();
       dove.classList.add('b270-completion-dove-active');
       root.classList.add('is-flying');
-      check(css(dove).position === 'fixed' && css(dove).pointerEvents === 'none', `${width}: dove is fixed and noninteractive`);
+      check(css(root).position === 'fixed' && css(dove).position === 'absolute' && css(dove).pointerEvents === 'none', `${width}: dove is anchored inside the fixed overlay and noninteractive`);
+      const artwork = dove.querySelector(':scope > svg');
+      check(dove.tagName === 'DIV' && artwork?.viewBox.baseVal.width === 260, `${width}: the actual dove SVG lives inside an HTML animation layer`);
+      check(css(dove).filter === 'none' && css(artwork).filter === 'none' && css(dove).willChange === 'auto', `${width}: SVG scaling avoids filtered or pre-rasterized layers`);
       if (reduced) {
         check(css(dove).display === 'none', `${width}: reduced motion hides the dove`);
         check(parseFloat(css(frame).transitionDuration) < 0.001, `${width}: reduced motion removes the perceptible fade`);
@@ -878,26 +883,26 @@ test('completion layout centers, scrolls, preserves theme surfaces and dove stac
           const opacity = Number(css(root).opacity);
           const transform = new viewport.contentWindow.DOMMatrix(css(dove).transform);
           return { frame: Number(css(frame).opacity) * opacity, dove: Number(css(dove).opacity) * opacity,
-            top: parseFloat(css(dove).top), scale: Math.hypot(transform.a, transform.b) };
+            top: dove.getBoundingClientRect().top + dove.getBoundingClientRect().height / 2, scale: Math.hypot(transform.a, transform.b) };
         };
         if (animation && frameAnimation) {
           const doveTiming = animation.effect.getComputedTiming();
           const frameTiming = frameAnimation.effect.getComputedTiming();
-          check(doveTiming.duration === 1400, `${width}: dove flight lasts 1.4 seconds`);
-          check(frameTiming.duration === 400 && Math.abs(frameTiming.delay - 1000) < 0.01 && css(root).animationTimingFunction === 'ease-in-out', `${width}: shared fade covers the flight's final 400ms`);
+          check(doveTiming.duration === 1000, `${width}: dove flight lasts one second`);
+          check(frameTiming.duration === 200 && Math.abs(frameTiming.delay - 800) < 0.01 && css(root).animationTimingFunction === 'ease-in-out', `${width}: shared fade covers the flight's final 200ms`);
           check(Math.abs(frameTiming.endTime - doveTiming.endTime) < 0.01 && frameTiming.fill === 'both', `${width}: frame exit ends with the dove`);
         }
-        at(1100);
+        at(650);
         check(Number(css(dove).opacity) > 0 && css(dove).visibility === 'visible' && css(dove).display !== 'none', `${width}: mid-flight dove is visible`);
         check(Number(css(dove).zIndex) > (Number(css(frame).zIndex) || 0), `${width}: dove stacks above the frame`);
         // Temporarily enable hit testing to verify paint order, not just z-index declarations.
         dove.style.pointerEvents = 'auto';
-        check(dove.contains(doc.elementFromPoint(width / 2, 360)), `${width}: the dove paints above the frame at their overlap`);
+        check(dove.contains(doc.elementFromPoint(width / 2, height / 2)), `${width}: the dove paints above the frame at their overlap`);
         dove.style.removeProperty('pointer-events');
-        let previous = at(500);
-        for (const time of [600, 850, 1000, 1100, 1200, 1300, 1350, 1390, 1399]) {
+        let previous = at(350);
+        for (const time of [450, 600, 700, 800, 850, 900, 950, 990, 999]) {
           const sample = at(time);
-          if (time <= 1000) check(sample.frame === 1 && sample.dove > 0.7, `${width}/${time}ms: frame stays opaque until the final 400ms`);
+          if (time <= 800) check(sample.frame === 1 && sample.dove > 0.7, `${width}/${time}ms: frame stays opaque until the final 200ms`);
           else {
             check(sample.frame > 0 && sample.frame < previous.frame, `${width}/${time}ms: frame visibly fades before flight ends`);
             check(sample.dove > 0 && sample.dove < previous.dove && Math.abs(sample.dove - sample.frame) < 0.05, `${width}/${time}ms: dove and frame fade together`);
@@ -905,15 +910,32 @@ test('completion layout centers, scrolls, preserves theme surfaces and dove stac
           check(sample.top < previous.top && sample.scale > previous.scale, `${width}/${time}ms: dove keeps moving and growing without a final freeze`);
           previous = sample;
         }
-        const flightEnd = at(1400);
-        check(flightEnd.frame === 0 && flightEnd.dove === 0 && css(root).visibility === 'hidden', `${width}: frame and dove finish fading together at 1.4 seconds`);
+        const overlay = root.getBoundingClientRect();
+        const coveredByBird = () => {
+          const inverse = artwork.getScreenCTM().inverse();
+          const paths = [...artwork.querySelectorAll('.b270-dove-silhouette path')];
+          return [0, .25, .5, .75, 1].every((x) => [0, .25, .5, .75, 1].every((y) => {
+            const point = new viewport.contentWindow.DOMPoint(overlay.left + x * overlay.width, overlay.top + y * overlay.height).matrixTransform(inverse);
+            return paths.some((path) => path.isPointInFill(point));
+          }));
+        };
+        at(550);
+        const earlyBounds = dove.getBoundingClientRect();
+        check(earlyBounds.width < overlay.width && earlyBounds.height < overlay.height, `${width}: the dove remains recognizable throughout the flight`);
+        at(800);
+        check(!coveredByBird(), `${width}: the dove does not create a screen-filling white flash before fading`);
+        check(css(root).overflow === 'hidden', `${width}: the zoom is clipped to the viewport`);
+        const flightEnd = at(1000);
+        check(!coveredByBird(), `${width}: the finish preserves the dove silhouette instead of flashing white`);
+        check(Math.abs(flightEnd.scale - 1.15) < 0.001, `${width}: dove continues growing through the final fade`);
+        check(flightEnd.frame === 0 && flightEnd.dove === 0 && css(root).visibility === 'hidden', `${width}: frame and dove finish fading together at one second`);
         if (animation && frameAnimation) {
           // Changing the shared duration must move both endpoints, not leave a fixed frame delay behind.
           root.style.setProperty('--b270-dove-duration', '2.1s');
           root.getAnimations(); // Flush the updated CSS timing before inspecting the existing animation objects.
           const doveTiming = animation.effect.getComputedTiming();
           const frameTiming = frameAnimation.effect.getComputedTiming();
-          check(doveTiming.duration === 2100 && frameTiming.duration === 400 && Math.abs(frameTiming.delay - 1700) < 0.01 && Math.abs(frameTiming.endTime - doveTiming.endTime) < 0.01,
+          check(doveTiming.duration === 2100 && frameTiming.duration === 200 && Math.abs(frameTiming.delay - 1900) < 0.01 && Math.abs(frameTiming.endTime - doveTiming.endTime) < 0.01,
             `${width}: shared fade and dove duration share --b270-dove-duration`);
           root.style.removeProperty('--b270-dove-duration');
         }
@@ -938,7 +960,7 @@ test('completion layout centers, scrolls, preserves theme surfaces and dove stac
     document.body.append(result);
   };
   const page = `<!doctype html><html><body><script>try {
-    (${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(figure)});
+    (${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(figure)},${JSON.stringify(doveMarkup)});
   } catch (error) {
     const result = document.createElement('pre');
     result.id = 'result';

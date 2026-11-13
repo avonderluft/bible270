@@ -83,7 +83,7 @@
       state.dove.classList.add("b270-completion-dove-active");
       // animationend is authoritative; the fallback also cleans up when CSS
       // animations are blocked or a browser drops the event.
-      later(state, () => endFlight(state), 1600);
+      later(state, () => endFlight(state), 1200);
     }
 
     function initialize(element) {

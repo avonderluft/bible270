@@ -86,11 +86,11 @@ if RAILS_LOADED
       assert_match(%r{window\.location\.reload}, response.body)
       assert_match(%r{completedDay}, response.body)
       assert_select '[data-b270-completion-dove-template]', count: 0
-      assert_match(%r{width:min\(80vw,104vh\)}, response.body)
+      assert_match(%r{width:min\(94vw,112vh\)}, response.body)
       assert_match(%r{color-scheme:only light}, response.body)
       assert_match(%r{forced-color-adjust:none}, response.body)
-      assert_match(%r{\d+%\{top:50vh;left:50vw;opacity:1;visibility:visible;.*scale\(1\)}, response.body)
-      assert_match(%r{100%\{top:50vh;left:50vw;opacity:1;visibility:visible;.*scale\(1\)}, response.body)
+      assert_match(%r{100%\{opacity:1;visibility:visible;.*scale\(1\.15\)}, response.body)
+      assert_match(%r{\.b270-completion-dove\{position:absolute;[^\}]*top:50%;left:50%}, response.body)
       assert_match(%r{\.b270-completion\.is-visible\.is-flying\{animation:b270-completion-exit}, response.body)
       refute_match(%r{left:115vw}, response.body)
       assert_match(%r{sessionStorage\.getItem}, response.body)
@@ -116,8 +116,9 @@ if RAILS_LOADED
       assert_select 'turbo-stream[action="replace"][target="day_progress_1"]' do
         assert_completion_root(completion_event_id) do
           assert_completion_frame(frame)
-          assert_select "svg[data-b270-completion-dove][aria-hidden='true'][data-b270-day='1']" \
+          assert_select "div[data-b270-completion-dove][aria-hidden='true'][data-b270-day='1']" \
                         "[data-b270-completion-event='#{completion_event_id}'][data-turbo-temporary]", count: 1 do
+            assert_select '> svg[viewBox="0 0 260 200"][width="260"][height="200"]', count: 1
             assert_select '.b270-dove-feathers', count: 0
             assert_select 'path.b270-dove-beak', count: 1
             assert_select '.b270-dove-light-center[stop-color="#fff"]', count: 1
@@ -181,7 +182,7 @@ if RAILS_LOADED
           assert_completion_frame(frame)
         end
       end
-      assert_select '#day_progress_1 svg[data-b270-completion-dove][data-b270-day="1"]', count: 1
+      assert_select '#day_progress_1 div[data-b270-completion-dove][data-b270-day="1"] > svg', count: 1
       assert_select '#b270-interaction-status', text: '', count: 1
 
       Bible270::ScriptureFrames.stub(:random, -> { flunk 'an ordinary revisit must not select a frame' }) do
@@ -296,7 +297,7 @@ if RAILS_LOADED
         assert_completion_root(@reader.reload.checkoffs.where(day: 1).maximum(:id)) do
           assert_select '[data-b270-completion-frame], .b270-completion-frame', count: 0
           assert_select '[data-b270-scripture-art]', count: 0
-          assert_select 'svg[data-b270-completion-dove]', count: 1
+          assert_select 'div[data-b270-completion-dove] > svg', count: 1
         end
         assert_select '.b270-day-complete', text: %r{Day 1 complete}
       end

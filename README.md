@@ -256,7 +256,7 @@ config.admin_emails = %w[andrew@example.org]
 config.admin_resolver = ->(reader) { reader.email.to_s.end_with?('@example.org') }
 ```
 
-The generated initializer labels this section **Site-admins**; the option names remain `admin_emails` and `admin_resolver`. A callable resolver takes precedence over the email list.
+The `admin_resolver` callback takes precedence over `admin_emails`.
 
 - **Site-admins** can grant or revoke admin access on any reader's Admin page, including alumni, and delete other admins. Configured Site-admins cannot be demoted or deleted in the UI.
 - **Admins** manage readers but cannot change roles or delete privileged readers.
@@ -267,13 +267,13 @@ Authorized readers get an **Admin** link. **View as non-admin** hides admin deta
 The panel supports:
 
 - Sort active readers by name, completed days, activity, or consistency; **Reader Stats** follows the same sort.
-- Edit profiles, themes, and notification preferences. Editing another reader's theme leaves yours unchanged. Enable or disable the completion dove with one button.
+- Edit profiles, themes, notification preferences, and the completion-dove setting.
 - Adjust active readers' start dates; check-offs stay tied to day numbers.
 - Set progress through day N, **clearing completions after N**, or toggle individual days.
 - Mark readers as alumni, reactivate them, and view past-run history.
 - Delete unprotected readers **and all their check-offs and reflections across runs**.
 - Hide (reversibly) or delete reflections at `<mount>/admin/comments`. Posts are public immediately, without approval.
-- Manage [Scripture frame](#scripture-frame) texts near the bottom of the panel: add texts, edit or delete custom texts, and enable or disable any text.
+- Manage [Scripture frame](#scripture-frame) texts.
 - Send individually addressed email: **Write to everyone** reaches active readers; **Write to all admins** includes alumni admins. Both require an email address.
 
 To print a progress report ordered by completed days:
@@ -293,13 +293,13 @@ At the bottom of Admin, enter a start date, choose **Start a new run**, and acce
 - Leaves other readers as alumni and opens enrollment, even if the installation started with `config.enrollment_open = false`.
 - Keeps reader accounts, photos, check-offs, reflections, replies, likes, and admin roles.
 
-**Revert to previous run** restores the reader statuses, personal dates, shared-date override, and enrollment settings saved before the restart. Everyone, including Admins and Site-admins, returns to their saved status; readers who joined only the newer run become alumni. Both runs' progress and discussions are kept, and admin roles do not change. Accept the confirmation prompt to proceed. Revert is available only for restarts made after migration `20260101000026`; earlier states cannot be reconstructed safely. Restored settings without an override follow the current site configuration.
+**Revert to previous run** restores saved memberships (including admins), personal dates, the shared-date override, and enrollment settings. Newcomers become alumni; both runs' progress and discussions remain, and roles do not change. Confirm to proceed. Revert requires a restart made after migration `20260101000026`. Without a saved date override, the current site configuration applies.
 
 Alumni can sign in, view Community's **active-reader list**, and post, reply to, and like reflections. Earlier reflections remain visible under the same moderation rules. Archived check-offs are read-only and excluded from current statistics and daily completer lists.
 
-**Show / Hide Active Readers** starts expanded and remembers your choice in the current tab's sign-in session, including after sorting or revisiting Admin. Sorting and Reader Stats stay accessible when it is collapsed.
+**Show / Hide Active Readers** starts expanded and remembers your choice for the current tab's sign-in session. Sorting and Reader Stats remain accessible when collapsed.
 
-**Show / Hide Alumni** at the bottom of Admin uses the browser's built-in expandable section, starting collapsed like **View all 270 days**. It needs no JavaScript or reload and changes no membership. It uses the selected sort and frozen reader statistics; the main list and Reader Stats show active readers only. Each alumni row has a confirmed **Make Active** button that returns to Admin with the same sort.
+**Show / Hide Alumni** starts collapsed. Alumni use the selected sort and frozen statistics; each row has a confirmed **Make Active** button. Reader Stats includes active readers only.
 
 Only admins reactivate alumni; signing in or posting does not re-enroll them:
 
@@ -365,15 +365,21 @@ For a host Content Security Policy (CSP), add `https://www.youtube-nocookie.com`
 
 ## Scripture frame
 
-Hover over the header's bread icon for **3 seconds** to open a random passage in a theme-matched frame. Tap, click, or focus the icon and press Enter/Space to open immediately. Hover previews fade when you leave; Escape, selecting the bread again, or clicking outside dismisses the frame.
+Hover over the bread icon for **3 seconds**, or open it immediately by tap, click, or Enter/Space. The random, theme-matched frame closes when you leave a hover preview, press Escape, click outside, or select the bread again.
 
-Completing a day's final check-off fades in a random frame over **1.3 seconds**, holds it for **5.5 seconds**, then plays a **1.4-second** dove flight. The dove keeps moving while it and the frame fade together over the flight's final **0.4 seconds**, with no final pause or extra delay. Disabling the dove keeps the frame, which fades out over **0.2 seconds** after the hold. Reduced-motion users see a static frame without the dove; Escape dismisses the sequence early.
+Completing a day shows a random frame followed by the optional dove; both fade out together. Disabling the dove keeps the frame. Reduced-motion users see a static frame, and Escape dismisses the sequence.
 
-The [bundled YAML catalog](config/scripture_frames.yml) includes Deuteronomy 6:6-7 (NASB95), Deuteronomy 11:18 (NKJV), Deuteronomy 30:14 (ESV), Psalm 19:8 (NKJV), Psalm 107:20 (NKJV), Psalm 119:11 (NASB95), Psalm 119:47 (NKJV), Psalm 119:103 (NASB95), Psalm 119:105 (NKJV), Psalm 119:130 (NASB95), Proverbs 6:23 (NASB95), Isaiah 55:11 (ESV), Jeremiah 15:16 (NASB95), Jeremiah 23:29 (NKJV), John 6:63 (NKJV), John 17:17 (NASB95), 2 Corinthians 4:6 (NKJV), Colossians 3:16 (ESV), 2 Timothy 3:16-17 (ESV), Hebrews 4:12 (NKJV), and 1 Peter 2:2-3 (NASB95), in biblical order. Near the bottom of **Admin**, **Scripture frames** lists custom passages in biblical order before defaults, with Custom/Default marked on each row rather than separate group headings. Non-Scripture quotations follow custom passages. Hover or focus a row's heading to preview the text; select it to expand. **Add text** sits beside **Scripture frames**; Edit, Disable/Enable, and Delete sit beside each custom heading. All text management lives on this page. To add a passage, enter Reference and Translation on the top row, then paste the required Text (up to 4,000 characters). Bible translation credits are automatic; line breaks are preserved. For non-Scripture text, select **Other quotation**, enter **Author / source**, and paste the quote. These frames show the source without a Bible translation or its copyright credit and join the same random selection when enabled. Use texts you have permission to reproduce.
+The [bundled YAML catalog](config/scripture_frames.yml) supplies the defaults in biblical order. Manage texts under **Admin → Scripture frames**:
 
-**Admin additions are stored in the database and supplement the defaults. They never change the YAML file.** Defaults start enabled. Use the **Enable/Disable** button to the right of each default in Admin; disabled texts remain previewable but are excluded from bread-icon and completion frames. These switches are saved across runs without changing YAML or requiring a new migration. Default text cannot be edited or deleted; custom texts can be edited, disabled, or deleted. Adding custom texts requires migration `20260101000027`.
+- **Add text:** enter Reference, Translation, and the required Text (up to 4,000 characters). Line breaks are preserved; Bible translation credits are automatic.
+- For non-Scripture text, select **Other quotation** under Translation and enter **Author / source** and the quote. No Bible credit is attached.
+- Edit or delete custom texts; enable or disable any text. Disabled texts remain previewable but do not appear in random frames.
 
-**TODO:** Integrate the [YouVersion API](https://developers.youversion.com/) to retrieve Scripture text by reference and translation. Keep the app key server-side, confirm permission to store and display each translation, and preserve required attribution. For now, paste the text; no API setup is needed.
+Custom passages come first in biblical order, then quotations and defaults. Hover or focus a heading to preview; select it to expand. Use text you have permission to reproduce.
+
+**Custom texts are stored in the database and supplement, not change, the YAML catalog.** Texts and enable/disable choices persist across runs. Defaults start enabled and cannot be edited or deleted. Custom texts require migration `20260101000027`.
+
+**TODO:** Add [YouVersion API](https://developers.youversion.com/) lookup by reference and translation, with server-side credentials and required licensing and attribution.
 
 Hosts can optionally replace the default catalog:
 
@@ -381,7 +387,7 @@ Hosts can optionally replace the default catalog:
 config.scripture_frames_path = Rails.root.join('config/bible270_scripture_frames.yml')
 ```
 
-Use the bundled YAML structure: a list of entries with a unique slug `id`, `reference`, `translation`, `text`, and optional `attribution`. Keep one consistent attribution per translation. Catalog translations become choices in Admin, alongside NKJV, NASB95, LSB, ESV, KJV, YLT, CSB, and NIV. Shared choices follow the reader-preference order; CSB and NIV follow them. Custom database texts still supplement the chosen catalog. Invalid or unreadable host catalogs fall back to the bundled defaults.
+Use the bundled format: entries with a unique slug `id`, `reference`, `translation`, `text`, and optional `attribution`. Keep one consistent credit per translation. Catalog translations join the built-in Admin choices. Custom texts still supplement the catalog; invalid or unreadable catalogs fall back to the bundled defaults.
 
 Custom layouts that include the header must also render the shared styles and this partial once near the end of `<body>`:
 
@@ -710,11 +716,19 @@ node --test test/javascript/*.cjs
 bundle exec rubocop --cache false
 ```
 
-`rake test` uses one isolated worker per available CPU, up to eight. Coverage stays enabled at `coverage/index.html`; recorded runtimes in `tmp/parallel_runtime_test.log` balance the work. Large Admin and Profile tests are split by feature, with shared setup in `test/support`.
+`rake test` uses up to eight CPU-aware workers and writes coverage to `coverage/index.html`. Tests share setup in `test/support`.
 
 Use `PARALLEL_WORKERS=4 bundle exec rake test` to choose the count, or `bundle exec rake test:serial` for serial coverage. Logs keep warnings and errors in `test/dummy/log/test-*.log`; set `TEST_LOG_LEVEL=debug` for request, template, and SQL details.
 
-Video UI tests require **Node.js 22+**, use the built-in runner with no npm dependencies, and do not contact YouTube. Check live playback and host CSP separately in a browser. Plan logic is unit-tested without a Rails dependency.
+JavaScript tests require **Node.js 22+**. Chromium layout checks run when a browser is available (`CHROME_BIN` selects it). Video tests do not contact YouTube; check live playback and host CSP separately.
+
+CI also checks completion rendering in mobile and desktop WebKit. To run that check locally:
+
+```bash
+npm install --prefix tmp/browser-tests --no-save --no-package-lock playwright@1.65.0
+tmp/browser-tests/node_modules/.bin/playwright install --with-deps webkit
+NODE_PATH=./tmp/browser-tests/node_modules B270_WEBKIT_TESTS=1 node --test test/javascript/day_completion_webkit_test.cjs
+```
 
 ### Get an email link for local testing
 
