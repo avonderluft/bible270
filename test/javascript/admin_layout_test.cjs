@@ -115,6 +115,8 @@ test('admin rows, separate position forms and completion control fit (optional C
           const add = panel.querySelector('a[href="#add"]');
           check(add.parentElement === heading.parentElement, `${name}: Add text belongs to the panel heading row`);
           beside(heading, add, `${name}/panel heading and Add text`, true);
+          inContent(heading, panel, `${name}/panel heading`);
+          check(viewport.contentWindow.getComputedStyle(heading).minWidth === '0px', `${name}: heading can shrink around the fixed-width Add text button`);
           inContent(add, panel, `${name}/Add text`);
           const rows = [...doc.querySelectorAll('.b270-scripture-library-entry')];
           check(rows.length === 4, `${name}: both enabled/disabled custom and default fixtures exist`);
