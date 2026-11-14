@@ -751,7 +751,10 @@ if RAILS_LOADED
         assert_select '#b270-alumni + #b270-scripture-frames', count: 1
         assert_select '#b270-scripture-frames + p a', text: '← Back to the plan'
         assert_select '#b270-scripture-frames' do
-          assert_select 'h2', text: 'Scripture frames'
+          assert_select '> details#b270-scripture-frames-list[open] > summary' do
+            assert_select '.b270-disclosure-show', text: 'Show Scripture frames'
+            assert_select '.b270-disclosure-hide', text: 'Hide Scripture frames'
+          end
           assert_select "a[href='#{frames_path}']", count: 0
           assert_select "a[href='#{frames_path}/new?sort=first_name']", text: 'Add text'
           assert_select 'article[data-source="custom"] > details + .b270-scripture-actions', count: 2

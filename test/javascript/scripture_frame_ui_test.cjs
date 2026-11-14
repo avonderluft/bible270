@@ -681,8 +681,9 @@ test('translation and attribution are per entry, including NKJV rather than a fi
   assert.equal(h.fields.attribution.textContent, 'Entry-provided attribution');
 });
 
-test('mobile header fits, icon/title centers align, theme changes only the board, and long art scrolls (optional Chromium)', { timeout: 45000 }, (t) => {
+test('mobile header fits, icon/title centers align, theme changes only the board, and long art scrolls (optional Chromium)', { timeout: 45000 }, async (t) => {
   const { spawnSync } = require('node:child_process');
+  const { evaluateInChromium } = require('./helpers/chromium.cjs');
   const browser = process.env.CHROME_BIN || 'chromium';
   const probe = spawnSync(browser, ['--version'], { timeout: 15000, encoding: 'utf8' });
   if (!process.env.CHROME_BIN && probe.error?.code === 'ENOENT') return t.skip('Chromium is not installed; VM and static checks still run');
@@ -750,12 +751,16 @@ test('mobile header fits, icon/title centers align, theme changes only the board
           check(openBorder !== 'rgba(0, 0, 0, 0)', `${name}: open frame has a subtle trigger border`);
           trigger.setAttribute('aria-expanded', 'false');
           check(viewport.contentWindow.getComputedStyle(trigger).borderTopColor === 'rgba(0, 0, 0, 0)', `${name}: dismissed frame leaves no trigger border`);
-          trigger.focus();
+          trigger.focus({ preventScroll: true });
+          check(doc.hasFocus() && trigger.matches(':focus'), `${name}: focus checks run in an active document`);
           trigger.setAttribute('data-b270-scripture-pointer-focus', '');
           check(viewport.contentWindow.getComputedStyle(trigger).outlineStyle === 'none', `${name}: pointer focus has no bright outline`);
           trigger.removeAttribute('data-b270-scripture-pointer-focus');
-          trigger.focus({ focusVisible: true });
-          check(viewport.contentWindow.getComputedStyle(trigger).outlineWidth === '2px', `${name}: keyboard focus indicator is retained (${viewport.contentWindow.getComputedStyle(trigger).outlineWidth}; focused ${doc.activeElement === trigger}; visible ${trigger.matches(':focus-visible')})`);
+          // Refocusing the same element can ignore new focus options in Chromium.
+          trigger.blur();
+          trigger.focus({ preventScroll: true, focusVisible: true });
+          const focusStyle = viewport.contentWindow.getComputedStyle(trigger);
+          check(trigger.matches(':focus-visible') && focusStyle.outlineStyle === 'solid' && focusStyle.outlineWidth === '2px', `${name}: keyboard focus indicator is retained (${focusStyle.outlineWidth}; focused ${doc.activeElement === trigger}; visible ${trigger.matches(':focus-visible')})`);
         }
         const alumni = doc.querySelector('#b270-alumni');
         const library = doc.querySelector('#b270-scripture-frames');
@@ -835,20 +840,12 @@ test('mobile header fits, icon/title centers align, theme changes only the board
     }
     check(fills.size === 6, 'all six theme boards have distinct palette colours');
     check(surfaces.size === 6, 'all six Scripture frame surfaces follow their theme');
-    const result = document.createElement('pre');
-    result.id = 'result';
-    result.textContent = JSON.stringify({ failures, scenarios: widths.length * 3, boards });
-    document.body.append(result);
+    return { failures, scenarios: widths.length * 3, boards };
   };
-  const page = `<!doctype html><html><body><script>(${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(svg)},${JSON.stringify(figure)},${JSON.stringify(papyrus)},${JSON.stringify(librarySource)})</script></body></html>`;
-  const result = spawnSync(browser, ['--headless', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--dump-dom', '--timeout=10000', '--virtual-time-budget=1000', `data:text/html,${encodeURIComponent(page)}`], {
-    timeout: 20000, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024
-  });
-  assert.ifError(result.error);
-  assert.equal(result.status, 0, result.stderr || String(result.error));
-  const output = result.stdout.match(/<pre id="result">([^<]*)<\/pre>/);
-  assert.ok(output, `${browser} completed all layout checks: ${result.stderr}\n${result.stdout.slice(0, 1000)}`);
-  const report = JSON.parse(output[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
+  // Focus emulation activates the page before checks run; activeElement alone
+  // does not guarantee :focus-visible or native focusin events in headless CI.
+  const expression = `(${browserCheck.toString()})(${JSON.stringify(styles)},${JSON.stringify(svg)},${JSON.stringify(figure)},${JSON.stringify(papyrus)},${JSON.stringify(librarySource)})`;
+  const report = await evaluateInChromium(browser, expression);
   assert.deepEqual(report.failures, [], JSON.stringify(report.failures, null, 2));
   assert.equal(report.scenarios, 42);
 });
