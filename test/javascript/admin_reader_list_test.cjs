@@ -6,7 +6,9 @@ const vm = require('node:vm');
 
 const filename = resolve(__dirname, '../../app/views/bible270/shared/_admin_reader_list_ui.html.erb');
 const source = readFileSync(filename, 'utf8').replace(/<%[\s\S]*?%>/g, '').match(/<script\b[^>]*>([\s\S]*?)<\/script>/i)[1];
-const selector = 'details[data-b270-active-readers-key]';
+const selector = 'details[data-b270-active-readers-key], details[data-b270-admin-disclosure-key]';
+const scriptureKey = '/reading/admin:session-1:scripture-frames';
+const scriptureStorageKey = `b270-admin-disclosure:${scriptureKey}`;
 const storageKey = (key = '/reading/admin:session-1') => `b270-active-readers:${key}`;
 
 function harness({ storage = new Map(), blocked = false } = {}) {
@@ -50,9 +52,9 @@ function harness({ storage = new Map(), blocked = false } = {}) {
   return {
     document, documentListeners, windowListeners, context, storage, writes, emit,
     evaluate: () => vm.runInContext(source, context, { filename, timeout: 1000 }),
-    details(key = '/reading/admin:session-1', open = true) {
+    details(key = '/reading/admin:session-1', open = true, generic = false) {
       const element = {
-        open, isConnected: true, dataset: key == null ? {} : { b270ActiveReadersKey: key },
+        open, isConnected: true, dataset: key == null ? {} : { [generic ? 'b270AdminDisclosureKey' : 'b270ActiveReadersKey']: key },
         matches: (query) => query === selector && key != null
       };
       nodes.push(element);
@@ -82,6 +84,38 @@ for (const state of ['open', 'closed']) {
     }
   });
 }
+
+test('Scripture frames default open and remember their toggle independently of active readers', () => {
+  const storage = new Map();
+  const h = harness({ storage });
+  const active = h.details();
+  const scripture = h.details(scriptureKey, true, true);
+  h.evaluate();
+  assert.equal(scripture.open, true);
+  scripture.open = false;
+  h.emit('toggle', scripture);
+  assert.equal(storage.get(scriptureStorageKey), 'closed');
+  assert.equal(active.open, true);
+  assert.equal(storage.has(storageKey()), false);
+
+  scripture.isConnected = false;
+  const replacement = h.details(scriptureKey, true, true);
+  h.emit('turbo:load');
+  assert.equal(replacement.open, false);
+  replacement.open = true;
+  h.emit('toggle', replacement);
+  assert.equal(storage.get(scriptureStorageKey), 'open');
+
+  storage.set(scriptureStorageKey, 'closed');
+  const reload = harness({ storage });
+  const restored = reload.details(scriptureKey, true, true);
+  const readers = reload.details();
+  const newSession = reload.details('/reading/admin:session-2:scripture-frames', true, true);
+  reload.evaluate();
+  assert.equal(restored.open, false);
+  assert.equal(readers.open, true);
+  assert.equal(newSession.open, true);
+});
 
 test('native toggles save both choices and use capture because toggle does not bubble', () => {
   const h = harness();

@@ -4,6 +4,11 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Added
+
+- add a session-remembered Show/Hide Scripture frames toggle in Admin
+- expand the bundled Scripture frame collection
+
 ## [1.17.1] - 2026-11-13
 
 ### Added

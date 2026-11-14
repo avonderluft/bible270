@@ -508,6 +508,11 @@
   .b270-scripture-fields label{white-space:nowrap}
   .b270-scripture-fields .b270-field>input,.b270-scripture-fields .b270-select-wrap{flex:1;min-width:0}
   .b270-scripture-panel-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}
+  details.b270-scripture-frames>summary.b270-scripture-panel-header{margin:0 0 8px}
+  .b270-scripture-frames:not([open])>:not(summary){display:none}
+  .b270-scripture-frames>.b270-scripture-panel-header .b270-disclosure-hide{display:none}
+  .b270-scripture-frames[open]>.b270-scripture-panel-header .b270-disclosure-show{display:none}
+  .b270-scripture-frames[open]>.b270-scripture-panel-header .b270-disclosure-hide{display:inline}
   .b270-scripture-panel-header>.b270-subhead,.b270 .b270-scripture-panel-header>.b270-btn{margin:0}
   .b270-scripture-panel-header>.b270-subhead{min-width:0;overflow-wrap:anywhere}
   .b270 .b270-scripture-panel-header>.b270-btn{flex-shrink:0;padding:6px 10px;font-size:12.5px;white-space:nowrap}
@@ -767,8 +772,8 @@
 
   .b270-footer{margin-top:20px;padding-top:11px;border-top:1px solid var(--line-soft);color:var(--faint);font-size:13px}
   .b270-footer p{margin:0;line-height:1.5}
-  details.b270-index summary{cursor:pointer;font-family:"Spectral",serif;font-size:18px;font-weight:600;list-style:none;margin-top:30px}
-  details.b270-index summary::-webkit-details-marker{display:none}
+  details.b270-index>summary{cursor:pointer;font-family:"Spectral",serif;font-size:18px;font-weight:600;list-style:none;margin-top:30px}
+  details.b270-index>summary::-webkit-details-marker{display:none}
   details.b270-active-readers{margin-bottom:24px}
   details.b270-active-readers>summary{margin:0 0 12px}
   details.b270-active-readers .b270-active-readers-hide{display:none}

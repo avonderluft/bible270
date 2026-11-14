@@ -1,10 +1,15 @@
 <section class="b270-panel" id="b270-scripture-frames" aria-labelledby="b270-scripture-frames-heading">
-  <div class="b270-scripture-panel-header">
-    <h2 class="b270-subhead" id="b270-scripture-frames-heading">Scripture frames</h2>
+  <details class="b270-index b270-scripture-frames" id="b270-scripture-frames-list"
+           data-b270-admin-disclosure-key="<%= "#{admin_path}:#{@active_readers_session_key}:scripture-frames" %>" open>
+  <summary class="b270-scripture-panel-header">
+    <span class="b270-subhead" id="b270-scripture-frames-heading">
+      <span class="b270-disclosure-show">Show Scripture frames</span>
+      <span class="b270-disclosure-hide">Hide Scripture frames</span>
+    </span>
     <% if @scripture_frame_storage %>
       <%= link_to 'Add text', new_admin_scripture_frame_path(sort: @reader_sort), class: 'b270-btn' %>
     <% end %>
-  </div>
+  </summary>
   <% unless @scripture_frame_storage %>
     <p class="b270-hint">Run the pending database migration to add custom texts.</p>
   <% end %>
@@ -31,4 +36,5 @@
       <% end %>
     </div>
   <% end %>
+  </details>
 </section>

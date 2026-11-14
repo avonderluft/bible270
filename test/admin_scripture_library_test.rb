@@ -102,7 +102,7 @@ if RAILS_LOADED
         assert_match(%r{\.b270-scripture-library-entry--#{source}[^\{]*\{[^\}]*display:grid;grid-template-columns:minmax\(0,1fr\) auto;}, styles)
       end
       assert_match(%r{\.b270-scripture-actions\{[^\}]*display:flex;[^\}]*white-space:nowrap}, styles)
-      assert_select '#b270-scripture-frames .b270-scripture-actions > br, #b270-scripture-frames details form', count: 0
+      assert_select '#b270-scripture-frames .b270-scripture-actions > br, #b270-scripture-frames .b270-scripture-library-disclosure form', count: 0
     end
 
     def test_pending_migration_keeps_default_disclosures_without_custom_queries_or_add_link
@@ -137,6 +137,24 @@ if RAILS_LOADED
       end
     end
 
+    def test_scripture_frames_have_an_expanded_session_scoped_toggle_with_add_text_beside_it
+      get admin_path
+
+      assert_response :success
+      assert_select '#b270-scripture-frames > details#b270-scripture-frames-list.b270-index[open]' do
+        assert_select '> summary .b270-disclosure-show', text: 'Show Scripture frames'
+        assert_select '> summary .b270-disclosure-hide', text: 'Hide Scripture frames'
+        assert_select '> summary a', text: 'Add text'
+        assert_select '#b270-custom-scripture-texts, #b270-default-scripture-texts', count: 2
+      end
+      key = css_select('#b270-scripture-frames-list').first['data-b270-admin-disclosure-key']
+      active_key = css_select('#b270-active-readers').first['data-b270-active-readers-key']
+      assert_equal "#{active_key}:scripture-frames", key
+      get admin_path, params: { sort: 'last_name' }
+      assert_equal key, css_select('#b270-scripture-frames-list').first['data-b270-admin-disclosure-key']
+      assert_select 'script[data-b270-admin-reader-list]', count: 1
+    end
+
     def test_add_text_sits_beside_panel_heading_above_custom_first_list_without_group_labels
       get admin_path
 
@@ -146,7 +164,8 @@ if RAILS_LOADED
         assert scripts.first.xpath('preceding::*[@id="b270-scripture-frames"]').any?, 'Library script must follow the main panel'
       end
       assert_select '#b270-scripture-frames' do
-        assert_select '#b270-scripture-frames-heading', text: 'Scripture frames'
+        assert_select '#b270-scripture-frames-heading .b270-disclosure-show', text: 'Show Scripture frames'
+        assert_select '#b270-scripture-frames-heading .b270-disclosure-hide', text: 'Hide Scripture frames'
         assert_select '#b270-scripture-frames-heading' do |headings|
           assert_select headings.first.parent, "> a[href='#{frames_path}/new?sort=first_name']", text: 'Add text', count: 1
         end

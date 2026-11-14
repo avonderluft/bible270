@@ -5,14 +5,18 @@
       return;
     }
 
-    const selector = "details[data-b270-active-readers-key]";
+    const selector = "details[data-b270-active-readers-key], details[data-b270-admin-disclosure-key]";
     const initialized = new WeakSet();
     const states = new Map();
-    const keyFor = (element) => `b270-active-readers:${element.dataset.b270ActiveReadersKey}`;
+    const keyFor = (element) => {
+          if (element.dataset.b270AdminDisclosureKey) return `b270-admin-disclosure:${element.dataset.b270AdminDisclosureKey}`;
+          if (element.dataset.b270ActiveReadersKey) return `b270-active-readers:${element.dataset.b270ActiveReadersKey}`;
+          return null;
+        };
 
     function remember(element) {
-      if (!element.isConnected || !element.dataset.b270ActiveReadersKey) return;
       const key = keyFor(element);
+      if (!element.isConnected || !key) return;
       const value = element.open ? "open" : "closed";
       states.set(key, value);
       try { window.sessionStorage.setItem(key, value); } catch (_error) { /* Keep Turbo visits working without storage. */ }
@@ -20,8 +24,8 @@
 
     function restore(force = false) {
       document.querySelectorAll(selector).forEach((element) => {
-        if (!element.dataset.b270ActiveReadersKey || (initialized.has(element) && !force)) return;
         const key = keyFor(element);
+        if (!key || (initialized.has(element) && !force)) return;
         let value = states.get(key);
         if (value === undefined) {
           try { value = window.sessionStorage.getItem(key); } catch (_error) { /* Native disclosure remains usable. */ }

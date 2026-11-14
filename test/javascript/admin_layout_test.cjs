@@ -24,11 +24,12 @@ const scriptureRow = (source, disabled, reference, index) => {
     </details>${actions}</article>`;
 };
 const library = `<section class="b270-panel" id="b270-scripture-frames" aria-labelledby="b270-scripture-frames-heading">
-  <div class="b270-scripture-panel-header"><h2 class="b270-subhead" id="b270-scripture-frames-heading">Scripture frames</h2><a href="#add" class="b270-btn">Add text</a></div>
+  <details class="b270-index b270-scripture-frames" open>
+  <summary class="b270-scripture-panel-header"><span class="b270-subhead" id="b270-scripture-frames-heading"><span class="b270-disclosure-show">Show Scripture frames</span><span class="b270-disclosure-hide">Hide Scripture frames</span></span><a href="#add" class="b270-btn">Add text</a></summary>
   ${['Custom', 'Default'].map((source) => `<div>
     ${scriptureRow(source, false, 'John 3:16', 0)}
     ${scriptureRow(source, true, 'A much longer Scripture reference, Psalm 119:105–112', 1)}</div>`).join('')}
-</section>`;
+</details></section>`;
 const reader = (disabled) => `<div class="b270-panel">
   <h2 class="b270-subhead">Where they are in the plan</h2>
   <div class="b270-admin-position-controls">
@@ -118,6 +119,12 @@ test('admin rows, separate position forms and completion control fit (optional C
           inContent(heading, panel, `${name}/panel heading`);
           check(viewport.contentWindow.getComputedStyle(heading).minWidth === '0px', `${name}: heading can shrink around the fixed-width Add text button`);
           inContent(add, panel, `${name}/Add text`);
+          const libraryToggle = panel.querySelector(':scope > details');
+          check(heading.querySelector('.b270-disclosure-hide').getBoundingClientRect().width > 0, `${name}: expanded toggle says Hide`);
+          libraryToggle.open = false;
+          check(heading.querySelector('.b270-disclosure-show').getBoundingClientRect().width > 0, `${name}: collapsed toggle says Show`);
+          check(panel.querySelector('.b270-scripture-library-entry').getBoundingClientRect().height === 0, `${name}: collapsed library hides entries`);
+          libraryToggle.open = true;
           const rows = [...doc.querySelectorAll('.b270-scripture-library-entry')];
           check(rows.length === 4, `${name}: both enabled/disabled custom and default fixtures exist`);
           for (const open of [false, true]) {
