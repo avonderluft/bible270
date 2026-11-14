@@ -7,10 +7,11 @@ class ProgressSyncJobTest < Minitest::Test
   Sync = Bible270::ProgressSync
   Job = Bible270::ProgressSyncJob if RAILS_LOADED
 
-  class DurableAdapter
+  class DurableAdapter < ActiveJob::QueueAdapters::AbstractAdapter
     attr_reader :jobs
 
     def initialize
+      super
       @jobs = []
     end
 
