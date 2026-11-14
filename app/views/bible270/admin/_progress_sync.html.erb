@@ -62,7 +62,7 @@
               <p><strong><%= label %></strong> · <%= link.remote_name %> · <%= link.status %></p>
               <p class="b270-hint">
                 Run <%= link.participation.plan_run_id %> ·
-                Last synced: <%= link.last_synced_at ? link.last_synced_at.strftime('%b %-d, %Y %H:%M %Z') : 'Never' %> ·
+                Last synced: <%= link.last_synced_at ? b270_datetime(link.last_synced_at) : 'Never' %> ·
                 Pending: <%= link.pending_count %>
                 <% unless link.last_added.nil? || link.last_existing.nil? %>
                   · <%= link.last_added %> added; <%= link.last_existing %> already present

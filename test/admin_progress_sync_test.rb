@@ -300,6 +300,42 @@ if RAILS_LOADED
       refute Bible270::ProgressSyncLink.exists?(link.id)
     end
 
+    def test_last_synced_uses_system_time_zone_including_daylight_saving
+      previous_zone = ENV.fetch('TZ', nil)
+      ENV['TZ'] = 'America/Los_Angeles'
+      Bible270.config.time_zone = nil
+      link = create_link
+      sign_in(@admin)
+
+      Time.use_zone('UTC') do
+        {
+          Time.utc(2026, 1, 15, 2, 30) => 'Jan 14, 2026 at 6:30 PM',
+          Time.utc(2026, 7, 15, 2, 30) => 'Jul 14, 2026 at 7:30 PM'
+        }.each do |timestamp, expected|
+          link.update!(last_synced_at: timestamp)
+          get reader_path
+          assert_response :success
+          assert_select '.b270-progress-sync-link .b270-hint', text: %r{Last synced: #{Regexp.escape(expected)}}
+          assert_equal timestamp, link.reload.last_synced_at
+        end
+      end
+    ensure
+      ENV['TZ'] = previous_zone
+    end
+
+    def test_last_synced_honors_the_configured_time_zone_override
+      Bible270.config.time_zone = 'Asia/Tokyo'
+      link = create_link
+      link.update!(last_synced_at: Time.utc(2026, 1, 15, 2, 30))
+      sign_in(@admin)
+
+      Time.use_zone('UTC') do
+        get reader_path
+        assert_response :success
+        assert_select '.b270-progress-sync-link .b270-hint', text: %r{Last synced: Jan 15, 2026 at 11:30 AM}
+      end
+    end
+
     def test_unusable_links_need_explicit_find_and_link_not_copy_or_auto_resume
       link = create_link
       @membership.increment!(:progress_sync_generation)
