@@ -779,6 +779,17 @@
   .b270-footer p{margin:0;line-height:1.5}
   details.b270-index>summary{cursor:pointer;font-family:"Spectral",serif;font-size:18px;font-weight:600;list-style:none;margin-top:30px}
   details.b270-index>summary::-webkit-details-marker{display:none}
+  details.b270-admin-section>summary{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;cursor:pointer;
+                                     list-style:none;font-family:"Spectral",serif;font-size:18px;font-weight:600}
+  details.b270-admin-section>summary::-webkit-details-marker{display:none}
+  details.b270-admin-section>summary:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:4px}
+  .b270-admin-section>summary .b270-disclosure-hide{display:none}
+  .b270-admin-section[open]>summary .b270-disclosure-show{display:none}
+  .b270-admin-section[open]>summary .b270-disclosure-hide{display:inline}
+  .b270-admin-section:not([open])>:not(summary){display:none}
+  .b270-admin-section-content{margin-top:12px}
+  .b270-disclosure-label{flex:none}
+  .b270-completions-summary{min-width:0;font-family:system-ui,sans-serif;font-size:12.5px;font-weight:400;color:var(--muted)}
   details.b270-active-readers{margin-bottom:24px}
   details.b270-active-readers>summary{margin:0 0 12px}
   details.b270-active-readers .b270-active-readers-hide{display:none}

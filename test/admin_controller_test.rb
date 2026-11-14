@@ -76,9 +76,59 @@ if RAILS_LOADED
       assert_equal ['Name and picture', 'Which translation they read', 'Theme', 'Email notifications',
                     'Where they are in the plan', 'Role: Reader', 'Status: Active', 'Completion animation'], headings.first(8)
       assert_equal 1, headings.count('Which translation they read')
-      assert_equal 1, headings.count('Completions')
-      assert_operator headings.index('Which translation they read'), :<, headings.index('Completions')
-      assert_operator headings.index('Completions'), :<, headings.index('Remove')
+      assert_select 'details#b270-reader-completions:not([open])', count: 1
+      assert_operator response.body.index('Which translation they read'), :<, response.body.index('Show Completions')
+      assert_operator response.body.index('Show Completions'), :<, response.body.index('>Remove</h2>')
+    end
+
+    def test_reflections_and_completions_are_collapsed_native_disclosures
+      comment = @reader.comments.create!(day: 2, body: 'A reader reflection')
+      @reader.mark_day_complete!(1)
+      sign_in_as_admin
+      get "#{mount}/admin/readers/#{@reader.id}"
+
+      assert_response :success
+      { 'b270-reader-reflections' => 'Their reflections', 'b270-reader-completions' => 'Completions' }.each do |id, label|
+        assert_select "details##{id}.b270-panel.b270-admin-section:not([open])", count: 1 do
+          assert_select '> summary .b270-disclosure-show', text: "Show #{label}"
+          assert_select '> summary .b270-disclosure-hide', text: "Hide #{label}"
+          assert_select '> .b270-admin-section-content', count: 1
+          assert_select '> h2', count: 0
+        end
+      end
+      assert_select "#b270-reader-reflections #comment-#{comment.id} .b270-cbody", text: comment.body
+      assert_select '#b270-reader-completions .b270-grid form', count: Bible270::Plan::DAYS
+      assert_select '#b270-reader-completions form input[value="Apply"]'
+      assert_select '#b270-reader-completions > summary .b270-completions-summary',
+                    text: %r{1/270 days\s*· 0%\s*· #{Regexp.escape(@reader.progress_status(completed_days: 1))}}
+      assert_select '#b270-reader-reflections #b270-interaction-status', count: 0
+      assert_select '#b270-interaction-status', count: 1
+    end
+
+    def test_completion_summary_matches_the_main_admin_reader_row_for_active_and_alumni
+      Bible270.config.start_date = nil
+      Bible270.config.allow_reader_start_date = true
+      @reader.update!(started_on: Bible270.today - 12)
+      @reader.mark_day_complete!(1)
+      @reader.mark_day_complete!(2)
+      sign_in_as_admin
+
+      [false, true].each do |alumni|
+        @reader.archive! if alumni
+        get "#{mount}/admin"
+        row = css_select('.b270-li').find { |element| element.at_css('.name').text.include?(@reader.display_name) }
+        list_summary = row.at_css('.sub').text.split('·').last(2).map(&:strip)
+        get "#{mount}/admin/readers/#{@reader.id}"
+        assert_select '#b270-reader-completions:not([open]) > summary .b270-completions-summary' do |summaries|
+          parts = summaries.first.text.split('·').map(&:strip)
+          assert_equal list_summary, [parts.first, parts.last]
+          assert_equal '1%', parts[1]
+        end
+        if alumni
+          assert_select '#b270-reader-completions form', count: 0
+          assert_select '#b270-reader-completions .b270-grid > span', count: Bible270::Plan::DAYS
+        end
+      end
     end
 
     def test_alumni_detail_panels_keep_the_same_order_without_schedule_controls

@@ -19,8 +19,7 @@
             <%= reader.provider %>
           <% end %>
           <% if reader.dated? %>· started <%= reader.effective_start_date.strftime('%b %-d, %Y') %><% end %>
-          · <%= days_completed[reader.id] %>/<%= Bible270::Plan::DAYS %> days
-          · <%= report.status_for(reader) %>
+          · <%= render 'bible270/admin/reader_completion_summary', reader: reader, days_completed: days_completed[reader.id] %>
         </div>
         <% consistency = report.consistency_for(reader) %>
         <div class="sub b270-reader-consistency">

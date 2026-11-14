@@ -68,7 +68,8 @@ if RAILS_LOADED
       assert_empty Bible270::ProgressSyncLink.all
       follow_redirect!
       assert_response :success
-      assert_select '#b270-progress-sync h2', text: 'Progress sync'
+      assert_select 'details#b270-progress-sync-panel:not([open]) > summary .b270-disclosure-show', text: 'Show Progress sync'
+      assert_select 'details#b270-progress-sync-panel > section#b270-progress-sync .b270-progress-sync-candidate', count: 1
       assert_select '#b270-progress-sync .b270-select-wrap select[name="destination"]'
       assert_select '.b270-progress-sync-candidate', text: %r{Remote Reader <trusted>.*READER@example.org.*Confirm this account\. Existing progress is copied only when requested\.}m do |candidates|
         refute_match(%r{membership|generation}i, candidates.first.text)
@@ -268,6 +269,20 @@ if RAILS_LOADED
       assert Bible270::ProgressSyncLink.exists?(link.id)
       assert_empty link.deliveries
       assert_equal before, progress_snapshot
+    end
+
+    def test_progress_sync_uses_a_collapsed_native_disclosure_with_a_revealable_redirect_target
+      sign_in(@admin)
+      get reader_path
+
+      assert_response :success
+      assert_select 'details#b270-progress-sync-panel.b270-panel.b270-admin-section:not([open])' do
+        assert_select '> summary .b270-disclosure-show', text: 'Show Progress sync'
+        assert_select '> summary .b270-disclosure-hide', text: 'Hide Progress sync'
+        assert_select '> section#b270-progress-sync.b270-admin-section-content[aria-labelledby="b270-progress-sync-heading"]' do
+          assert_select 'form input[value="Find account"]'
+        end
+      end
     end
 
     def test_panel_lists_history_status_results_and_safe_errors_with_shared_confirmations

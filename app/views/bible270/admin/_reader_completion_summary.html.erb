@@ -1,0 +1,4 @@
+<%# locals: (reader:, days_completed:, percentage: false) %>
+<%= days_completed %>/<%= Bible270::Plan::DAYS %> days
+<% if percentage %>· <%= (days_completed.to_f / Bible270::Plan::DAYS * 100).round %>%<% end %>
+· <%= reader.progress_status(completed_days: days_completed) %>

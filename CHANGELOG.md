@@ -11,6 +11,10 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 **Setup:** Install migration `20260101000028` on each instance, configure trusted connections, and schedule delivery on the primary. Progress sync is off until configured.
 
+### Changed
+
+- collapse Progress sync, Their reflections, and Completions on Admin reader pages; keep the completion summary visible
+
 ### Fixed
 
 - display the last sync time in the system time zone instead of UTC

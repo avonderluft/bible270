@@ -264,6 +264,8 @@ The `admin_resolver` callback takes precedence over `admin_emails`.
 
 Authorized readers get an **Admin** link. **View as non-admin** hides admin details and disables all administration for this session, including role and membership changes. You remain signed in; reflections and active check-offs still work. Use **Return to admin view** in the Admin tab or sign in again to restore access. Roles and other sessions are unchanged.
 
+Reader pages start with **Progress sync**, **Their reflections**, and **Completions** collapsed. Completion counts, percentage, and schedule status remain visible.
+
 The panel supports:
 
 - Sort active readers by name, completed days, activity, or consistency; **Reader Stats** follows the same sort.

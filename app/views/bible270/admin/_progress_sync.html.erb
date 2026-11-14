@@ -7,8 +7,12 @@
     .where(bible270_participations: { reader_id: @reader.id }).includes(:participation).order(created_at: :desc, id: :desc).to_a : []
 %>
 <% if destinations.any? || links.any? %>
-  <section class="b270-panel b270-progress-sync" id="b270-progress-sync" aria-labelledby="b270-progress-sync-heading">
-    <h2 class="b270-subhead" id="b270-progress-sync-heading">Progress sync</h2>
+  <details class="b270-panel b270-admin-section" id="b270-progress-sync-panel">
+    <summary id="b270-progress-sync-heading">
+      <span class="b270-disclosure-show">Show Progress sync</span>
+      <span class="b270-disclosure-hide">Hide Progress sync</span>
+    </summary>
+    <section class="b270-progress-sync b270-admin-section-content" id="b270-progress-sync" aria-labelledby="b270-progress-sync-heading">
     <p class="b270-hint">New check-offs sync one way to an account with the same email.</p>
     <% unless schema_available %>
       <p class="b270-flash alert">Progress sync needs a site update. Contact the site administrator.</p>
@@ -88,5 +92,6 @@
         </ul>
       <% end %>
     <% end %>
-  </section>
+    </section>
+  </details>
 <% end %>

@@ -201,14 +201,29 @@
 
 <%= render 'progress_sync' %>
 
-<div class="b270-panel">
-  <%= render "bible270/shared/interaction_status" %>
-  <%= render "bible270/shared/reflections", comments: @comments, moderate: true, editable: true, actions: true %>
-</div>
+<%= render "bible270/shared/interaction_status" %>
+<details class="b270-panel b270-admin-section" id="b270-reader-reflections">
+  <summary>
+    <span class="b270-disclosure-show">Show Their reflections</span>
+    <span class="b270-disclosure-hide">Hide Their reflections</span>
+  </summary>
+  <div class="b270-admin-section-content">
+    <%= render "bible270/shared/reflections", comments: @comments, title: nil, moderate: true, editable: true, actions: true %>
+  </div>
+</details>
 
 
-<div class="b270-panel">
-  <h2 class="b270-subhead">Completions</h2>
+<details class="b270-panel b270-admin-section" id="b270-reader-completions">
+  <summary>
+    <span class="b270-disclosure-label">
+      <span class="b270-disclosure-show">Show Completions</span>
+      <span class="b270-disclosure-hide">Hide Completions</span>
+    </span>
+    <span class="b270-completions-summary">
+      <%= render 'reader_completion_summary', reader: @reader, days_completed: @days_completed, percentage: true %>
+    </span>
+  </summary>
+  <div class="b270-admin-section-content">
   <% unless @reader.alumni? %>
   <%= form_with url: admin_reader_through_path(@reader), method: :patch, class: "b270-startform" do %>
     <%= hidden_field_tag :participation_id, @reader.participation.id %>
@@ -234,7 +249,8 @@
     <% end %>
   </div>
   <p class="b270-hint"><%= @reader.alumni? ? 'Archived completions are read-only.' : 'Click a day to toggle it complete.' %></p>
-</div>
+  </div>
+</details>
 
 <% if @past_participations.any? %>
   <div class="b270-panel" id="b270-run-history">
