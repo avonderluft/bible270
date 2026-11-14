@@ -4,10 +4,16 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+## [1.17.2] - 2026-11-13
+
 ### Added
 
 - add a session-remembered Show/Hide Scripture frames toggle in Admin
 - expand the bundled Scripture frame collection
+
+### Fixed
+
+- update Admin assertions and stabilize headless browser focus tests
 
 ## [1.17.1] - 2026-11-13
 
@@ -880,7 +886,8 @@ This is the initial public release.
 
 - Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.17.1...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.17.2...main
+[1.17.2]: https://github.com/avonderluft/bible270/compare/v1.17.1...v1.17.2
 [1.17.1]: https://github.com/avonderluft/bible270/compare/v1.17.0...v1.17.1
 [1.17.0]: https://github.com/avonderluft/bible270/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/avonderluft/bible270/compare/v1.15.1...v1.16.0
