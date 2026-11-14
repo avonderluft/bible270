@@ -54,12 +54,16 @@ Bible270.configure do |config|
   # --- Progress sync (optional) ---------------------------------------------
   # Admin-managed one-way check-offs between trusted installations. See README.
   # config.progress_sync_instance_id = 'primary'
-  # config.progress_sync_destinations = {
-  #   'church' => { label: 'Church', url: 'https://church.example/daily-bread',
-  #                 secret: ENV.fetch('B270_PRIMARY_CHURCH_SYNC_SECRET') }
-  # }
+  # Credentials are runtime-only; leave sync disabled during image builds.
+  # if (sync_secret = ENV['B270_PRIMARY_CHURCH_SYNC_SECRET'])
+  #   config.progress_sync_destinations = {
+  #     'church' => { label: 'Church', url: 'https://church.example/daily-bread', secret: sync_secret }
+  #   }
+  # end
   # On the receiving installation, authorize that source with the same secret:
-  # config.progress_sync_sources = { 'primary' => { secret: ENV.fetch('B270_PRIMARY_CHURCH_SYNC_SECRET') } }
+  # if (sync_secret = ENV['B270_PRIMARY_CHURCH_SYNC_SECRET'])
+  #   config.progress_sync_sources = { 'primary' => { secret: sync_secret } }
+  # end
   # Schedule bible270:progress_sync:deliver every minute on the primary.
   # config.progress_sync_deliver_later = true # optional: persistent Active Job backend + worker
 

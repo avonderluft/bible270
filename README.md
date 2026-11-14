@@ -321,21 +321,25 @@ On the **primary**:
 
 ```ruby
 config.progress_sync_instance_id = 'primary'
-config.progress_sync_destinations = {
-  'church' => {
-    label: 'Church', url: 'https://church.example/daily-bread',
-    secret: ENV.fetch('B270_PRIMARY_CHURCH_SYNC_SECRET')
+if (sync_secret = ENV['B270_PRIMARY_CHURCH_SYNC_SECRET'])
+  config.progress_sync_destinations = {
+    'church' => {
+      label: 'Church', url: 'https://church.example/daily-bread',
+      secret: sync_secret
+    }
   }
-}
+end
 ```
 
 On the **destination**:
 
 ```ruby
-config.progress_sync_sources = {
-  'primary' => { secret: ENV.fetch('B270_PRIMARY_CHURCH_SYNC_SECRET') }
-}
+if (sync_secret = ENV['B270_PRIMARY_CHURCH_SYNC_SECRET'])
+  config.progress_sync_sources = { 'primary' => { secret: sync_secret } }
+end
 ```
+
+Supply the secret at container runtime, not during image builds. Without it, sync stays disabled.
 
 Use the same randomly generated secret on both sides, at least 32 characters; `bin/rails secret` can generate one. Use a separate secret for each destination. URLs must be canonical HTTPS engine mount URLs, without redirects. Trust authorizes the primary's admins to link accounts by email; grant it only to installations you control or trust.
 
