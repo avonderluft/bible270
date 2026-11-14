@@ -4,12 +4,11 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+## [1.18.1] - 2026-11-14
+
 ### Added
 
-- let admins link matching reader accounts for one-way progress sync, including existing completions
-- queue reliable delivery between trusted instances, with retries and optional immediate background jobs
-
-**Setup:** Install migration `20260101000028` on each instance, configure trusted connections, and schedule delivery on the primary. Progress sync is off until configured.
+- expand the bundled Scripture frame collection
 
 ### Changed
 
@@ -18,6 +17,20 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 ### Fixed
 
 - display the last sync time in the system time zone instead of UTC
+- guard sync-secret configuration in setup examples so Docker builds need no runtime secrets
+
+## [1.18.0] - 2026-11-14
+
+### Added
+
+- let admins link matching reader accounts for one-way progress sync, including existing completions
+- queue reliable delivery between trusted instances, with retries and optional immediate background jobs
+
+**Setup:** Install migration `20260101000028` on each instance, configure trusted connections, and schedule delivery on the primary. Progress sync is off until configured.
+
+### Fixed
+
+- make the sync job test adapter compatible with Rails 7.2
 
 ## [1.17.2] - 2026-11-13
 
@@ -901,7 +914,9 @@ This is the initial public release.
 
 - Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.17.2...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.18.1...main
+[1.18.1]: https://github.com/avonderluft/bible270/compare/v1.18.0...v1.18.1
+[1.18.0]: https://github.com/avonderluft/bible270/compare/v1.17.2...v1.18.0
 [1.17.2]: https://github.com/avonderluft/bible270/compare/v1.17.1...v1.17.2
 [1.17.1]: https://github.com/avonderluft/bible270/compare/v1.17.0...v1.17.1
 [1.17.0]: https://github.com/avonderluft/bible270/compare/v1.16.0...v1.17.0
