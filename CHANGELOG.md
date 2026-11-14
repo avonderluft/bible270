@@ -4,6 +4,13 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Added
+
+- let admins link matching reader accounts for one-way progress sync, including existing completions
+- queue reliable delivery between trusted instances, with retries and optional immediate background jobs
+
+**Setup:** Install migration `20260101000028` on each instance, configure trusted connections, and schedule delivery on the primary. Progress sync is off until configured.
+
 ## [1.17.2] - 2026-11-13
 
 ### Added

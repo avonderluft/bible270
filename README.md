@@ -274,6 +274,7 @@ The panel supports:
 - Delete unprotected readers **and all their check-offs and reflections across runs**.
 - Hide (reversibly) or delete reflections at `<mount>/admin/comments`. Posts are public immediately, without approval.
 - Manage [Scripture frame](#scripture-frame) texts.
+- Link readers to trusted instances for [one-way progress sync](#progress-sync).
 - Send individually addressed email: **Write to everyone** reaches active readers; **Write to all admins** includes alumni admins. Both require an email address.
 
 To print a progress report ordered by completed days:
@@ -309,6 +310,46 @@ Only admins reactivate alumni; signing in or posting does not re-enroll them:
 Each reader's **Past runs / history** table shows read-only start/end dates, archive date, and completed days.
 
 Admin templates include `bible270/shared/admin_confirmations`, even with custom layouts. Keep this partial in host template overrides; no layout include is needed.
+
+### Progress sync
+
+Admins can link a reader to existing, active accounts on other installations with the same email. Readers sign in only on the primary site. New check-offs sync automatically; **Sync existing progress** copies earlier completions. Both add only missing check-offs—never uncheck readings, change dates, or copy reflections.
+
+Install migration `20260101000028` on every participating installation. Site administrators configure trust in their host initializers; no destination credentials are entered in Admin.
+
+On the **primary**:
+
+```ruby
+config.progress_sync_instance_id = 'primary'
+config.progress_sync_destinations = {
+  'church' => {
+    label: 'Church', url: 'https://church.example/daily-bread',
+    secret: ENV.fetch('B270_PRIMARY_CHURCH_SYNC_SECRET')
+  }
+}
+```
+
+On the **destination**:
+
+```ruby
+config.progress_sync_sources = {
+  'primary' => { secret: ENV.fetch('B270_PRIMARY_CHURCH_SYNC_SECRET') }
+}
+```
+
+Use the same randomly generated secret on both sides, at least 32 characters; `bin/rails secret` can generate one. Use a separate secret for each destination. URLs must be canonical HTTPS engine mount URLs, without redirects. Trust authorizes the primary's admins to link accounts by email; grant it only to installations you control or trust.
+
+Schedule this command **every minute on the primary**, using the host's scheduler:
+
+```bash
+RAILS_ENV=production bin/rails bible270:progress_sync:deliver
+```
+
+If the host already has a **persistent Active Job backend and running worker**, also set `config.progress_sync_deliver_later = true` for immediate delivery. Keep the scheduled task for retries and recovery; inline and in-memory adapters are not used. No worker is needed on destinations.
+
+In **Admin → reader → Progress sync**, select a destination, **Find account**, then **Link account**. Repeat for other destinations. Use **Sync existing progress** when wanted. Status, pending deliveries, and the latest result appear beside each link; **Unlink** stops queued updates without deleting progress. A request already being delivered may still finish.
+
+Reading assignments must match, though start dates may differ. Account links use fixed reader/run identities after matching. Alumni status, run changes (including restart/revert), or changed assignments require explicit relinking. Imported progress is never forwarded. After repeated delivery failures, inspect the error, relink, and copy existing progress again if needed.
 
 ### Consistency ranking
 

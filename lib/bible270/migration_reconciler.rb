@@ -37,6 +37,7 @@ module Bible270
       'AddAdminToBible270Readers' => :check_admin,
       'AddRevertToBible270PlanRuns' => :check_run_revert,
       'CreateBible270ScriptureFrames' => :check_scripture_frames,
+      'CreateBible270ProgressSync' => :check_progress_sync,
 
       'CreateActiveStorageTables' => :check_active_storage
     }.freeze
@@ -297,6 +298,15 @@ module Bible270
                                    enabled: { type: :boolean, null: false, default: true })
     end
 
+    def check_progress_sync
+      missing_progress_sync_columns(
+        :bible270_participations,
+        progress_sync_generation: { type: :integer, default: 0 }
+      ) + missing_progress_sync_columns(:bible270_progress_sync_links, progress_sync_link_columns) +
+        missing_progress_sync_columns(:bible270_progress_sync_deliveries, progress_sync_delivery_columns) +
+        progress_sync_relationships_missing + progress_sync_link_indexes_missing
+    end
+
     def check_admin
       table_missing(:bible270_readers, columns: %i[admin]) +
         missing_column_definitions(:bible270_readers, admin: { type: :boolean, null: false, default: false })
@@ -339,6 +349,125 @@ module Bible270
 
     attr_reader :connection, :migration_context
 
+    def progress_sync_link_columns
+      {
+        id: progress_sync_id_definition,
+        participation_id: progress_sync_id_definition,
+        source_generation: { type: :integer },
+        destination: { type: :string },
+        destination_url: { type: :string },
+        remote_reader_id: progress_sync_id_definition,
+        remote_participation_id: progress_sync_id_definition,
+        remote_generation: { type: :integer },
+        remote_name: { type: :string },
+        email: { type: :string },
+        plan_fingerprint: { type: :string },
+        state: { type: :string, default: 'active' },
+        last_synced_at: { type: :datetime, null: true },
+        last_error: { type: :text, null: true },
+        last_added: { type: :integer, null: true },
+        last_existing: { type: :integer, null: true },
+        created_at: { type: :datetime },
+        updated_at: { type: :datetime }
+      }
+    end
+
+    def progress_sync_delivery_columns
+      {
+        id: progress_sync_id_definition,
+        progress_sync_link_id: progress_sync_id_definition,
+        readings: { type: :json },
+        attempts: { type: :integer, default: 0 },
+        next_attempt_at: { type: :datetime },
+        locked_until: { type: :datetime, null: true },
+        claim_token: { type: :string, null: true },
+        delivered_at: { type: :datetime, null: true },
+        last_error: { type: :text, null: true },
+        created_at: { type: :datetime },
+        updated_at: { type: :datetime }
+      }
+    end
+
+    def progress_sync_id_definition
+      # SQLite uses 64-bit integers for both INTEGER references and bigint IDs.
+      { type: :integer, limit: connection.adapter_name == 'SQLite' ? nil : 8 }
+    end
+
+    def missing_progress_sync_columns(table, definitions)
+      definitions = definitions.to_h do |name, attributes|
+        definition = { null: false, default: nil, default_function: nil }.merge(attributes)
+        # PostgreSQL's generated primary key uses a sequence default.
+        definition.delete(:default_function) if name == :id
+        [name, definition]
+      end
+      table_missing(table, columns: definitions.keys) + missing_column_definitions(table, definitions)
+    end
+
+    def progress_sync_relationships_missing
+      table_missing(
+        :bible270_progress_sync_links,
+        columns: [],
+        indexes: [{ columns: %i[participation_id] }],
+        foreign_keys: [{ column: :participation_id, to_table: :bible270_participations, primary_key: :id, on_delete: :cascade }]
+      ) + table_missing(
+        :bible270_progress_sync_deliveries,
+        columns: [],
+        indexes: [{ columns: %i[progress_sync_link_id] }, { columns: %i[delivered_at next_attempt_at locked_until] }],
+        foreign_keys: [{ column: :progress_sync_link_id, to_table: :bible270_progress_sync_links, primary_key: :id, on_delete: :cascade }]
+      )
+    end
+
+    def progress_sync_link_indexes_missing
+      table = :bible270_progress_sync_links
+      return [] unless connection.data_source_exists?(table)
+
+      columns = %w[participation_id destination]
+      indexes = connection.indexes(table)
+      missing = []
+      unless indexes.any? { |index| index.columns == columns && index.unique && active_destination_predicate?(index.where) }
+        missing << "unique index #{table}(participation_id, destination) where state = 'active'"
+      end
+      if indexes.any? { |index| index.unique && index.where.nil? && index.columns.is_a?(Array) && index.columns.sort == columns.sort }
+        missing << "conflicting unconditional unique index #{table}(participation_id, destination)"
+      end
+      missing
+    end
+
+    def active_destination_predicate?(predicate)
+      operands = unwrap_index_expression(predicate.to_s.strip).split('=', -1)
+      return false unless operands.length == 2
+
+      ['state', '"state"'].include?(unwrap_index_text_operand(operands[0])) &&
+        unwrap_index_text_operand(operands[1]) == "'active'"
+    end
+
+    def unwrap_index_text_operand(expression)
+      loop do
+        expression = unwrap_index_expression(expression.strip)
+        uncast = expression.sub(%r{\s*::\s*(?:text|varchar|character\s+varying)\z}, '')
+        return expression if expression == uncast
+
+        expression = uncast
+      end
+    end
+
+    # Only peel enclosing pairs, never parentheses inside an identifier/literal
+    # or a broader expression. Operand matching then allows just state = 'active'.
+    def unwrap_index_expression(expression)
+      while expression.start_with?('(') && expression.end_with?(')')
+        depth = 0
+        closing = expression.each_char.with_index.find do |character, _index|
+          depth += 1 if character == '('
+          depth -= 1 if character == ')'
+          depth.zero?
+        end
+        break unless closing && closing.last == expression.length - 1
+
+        expression = expression[1...-1].strip
+      end
+      expression
+    end
+
     def table_missing(table, columns:, indexes: [], foreign_keys: [])
       return ["table #{table}"] unless connection.data_source_exists?(table)
 
@@ -361,6 +490,9 @@ module Bible270
         definitions.fetch(column.name.to_sym, {}).filter_map do |attribute, expected|
           actual = column.public_send(attribute)
           actual = ActiveModel::Type::Boolean.new.cast(actual) if attribute == :default && column.type == :boolean
+          if attribute == :default && column.type == :integer && actual.is_a?(String) && actual.match?(%r{\A[+-]?\d+\z})
+            actual = Integer(actual, 10)
+          end
           "column #{table}.#{column.name} #{attribute} #{expected}" unless actual == expected
         end
       end
@@ -394,6 +526,7 @@ module Bible270
     def matching_foreign_key?(foreign_key, expected)
       foreign_key.column.to_s == expected.fetch(:column).to_s &&
         foreign_key.to_table.to_s == expected.fetch(:to_table).to_s &&
+        (!expected.key?(:primary_key) || foreign_key.primary_key.to_s == expected[:primary_key].to_s) &&
         (!expected.key?(:on_delete) || foreign_key.on_delete == expected[:on_delete])
     end
   end

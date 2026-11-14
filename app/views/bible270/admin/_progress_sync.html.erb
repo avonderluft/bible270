@@ -1,0 +1,92 @@
+<%
+  config = Bible270.config
+  destinations = config.respond_to?(:progress_sync_destinations) ? config.progress_sync_destinations : {}
+  destinations = {} unless destinations.is_a?(Hash)
+  schema_available = Bible270::ProgressSync.available?
+  links = schema_available ? Bible270::ProgressSyncLink.joins(:participation)
+    .where(bible270_participations: { reader_id: @reader.id }).includes(:participation).order(created_at: :desc, id: :desc).to_a : []
+%>
+<% if destinations.any? || links.any? %>
+  <section class="b270-panel b270-progress-sync" id="b270-progress-sync" aria-labelledby="b270-progress-sync-heading">
+    <h2 class="b270-subhead" id="b270-progress-sync-heading">Progress sync</h2>
+    <p class="b270-hint">New check-offs sync one way to an account with the same email.</p>
+    <% unless schema_available %>
+      <p class="b270-flash alert">Progress sync needs a site update. Contact the site administrator.</p>
+    <% else %>
+      <% destination_options = destinations.filter_map do |key, entry|
+           next unless entry.is_a?(Hash)
+           [(entry[:label] || entry['label']).presence || key.to_s, key.to_s]
+         end %>
+      <% instance_configured = config.respond_to?(:progress_sync_instance_id) && config.progress_sync_instance_id.to_s.strip.present? %>
+      <% membership = Bible270::Participation.chosen.active.find_by(reader_id: @reader.id) %>
+      <% email_valid = @reader.email.to_s.bytesize <= 320 && @reader.email.to_s.strip.match?(%r{\A[^@\s]+@[^@\s]+\z}) %>
+      <% if destination_options.empty? || !instance_configured %>
+        <p class="b270-hint">Ask the site administrator to set up progress sync.</p>
+      <% elsif !membership %>
+        <p class="b270-hint">Make this reader active to link an account.</p>
+      <% elsif !email_valid %>
+        <p class="b270-hint">Add a valid email address to find an account.</p>
+      <% else %>
+        <% candidate_token = session[Bible270::AdminProgressSyncsController::CANDIDATE_SESSION_KEY] %>
+        <% candidate = Bible270::AdminProgressSyncsController.candidate_for(candidate_token, reader: @reader, admin: current_reader) %>
+        <%= form_with url: lookup_admin_reader_progress_sync_path(@reader), method: :post, local: true, class: 'b270-emailform' do %>
+          <label class="b270-field" for="b270-progress-sync-destination">Destination</label>
+          <span class="b270-select-wrap b270-select-wrap--full">
+            <%= select_tag :destination, options_for_select(destination_options, candidate && candidate['destination']),
+                  id: 'b270-progress-sync-destination', class: 'b270-select' %>
+          </span>
+          <%= submit_tag 'Find account', class: 'b270-btn' %>
+        <% end %>
+        <% if candidate %>
+          <% remote = candidate.fetch('remote') %>
+          <div class="b270-progress-sync-candidate">
+            <p><strong><%= remote['name'] %></strong> · <%= remote['email'] %></p>
+            <p class="b270-hint">Confirm this account. Existing progress is copied only when requested.</p>
+            <%= form_with url: admin_reader_progress_syncs_path(@reader), method: :post, local: true, class: 'b270-emailform' do %>
+              <%= hidden_field_tag :candidate, candidate_token %>
+              <%= hidden_field_tag :destination, candidate['destination'] %>
+              <%= submit_tag 'Link account', class: 'b270-btn' %>
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+
+      <% if links.empty? %>
+        <p class="b270-hint">No linked accounts.</p>
+      <% else %>
+        <ul class="b270-progress-sync-links">
+          <% links.each do |link| %>
+            <% entry = destinations[link.destination] %>
+            <% label = entry.is_a?(Hash) ? ((entry[:label] || entry['label']).presence || link.destination) : link.destination %>
+            <li class="b270-progress-sync-link">
+              <p><strong><%= label %></strong> · <%= link.remote_name %> · <%= link.status %></p>
+              <p class="b270-hint">
+                Run <%= link.participation.plan_run_id %> ·
+                Last synced: <%= link.last_synced_at ? link.last_synced_at.strftime('%b %-d, %Y %H:%M %Z') : 'Never' %> ·
+                Pending: <%= link.pending_count %>
+                <% unless link.last_added.nil? || link.last_existing.nil? %>
+                  · <%= link.last_added %> added; <%= link.last_existing %> already present
+                <% end %>
+              </p>
+              <% if link.last_error.present? %>
+                <p class="b270-flash alert"><%= link.last_error %></p>
+              <% end %>
+              <% usable = link.usable? %>
+              <% unless usable %>
+                <p class="b270-hint">Find and link the account again to resume syncing.</p>
+              <% end %>
+              <div class="b270-progress-sync-actions">
+                <% if usable %>
+                  <%= button_to 'Sync existing progress', copy_admin_reader_progress_sync_path(@reader, link), method: :post,
+                        class: 'b270-btn', form: { class: 'b270-admin-inline-form', data: { b270_admin_confirm: 'Sync existing progress? Only missing check-offs will be added. Nothing will be removed.' } } %>
+                <% end %>
+                <%= button_to 'Unlink', admin_reader_progress_sync_path(@reader, link), method: :delete,
+                      class: 'b270-btn', form: { class: 'b270-admin-inline-form', data: { b270_admin_confirm: 'Unlink this account? Queued syncs will stop. All check-offs will remain.' } } %>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      <% end %>
+    <% end %>
+  </section>
+<% end %>

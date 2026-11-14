@@ -217,7 +217,10 @@ if RAILS_LOADED
       assert_equal [active_admin.id], Bible270::Reader.active.pluck(:id)
       [@admin, @site_admin, @reader, active_admin].each do |reader|
         reader.reload
-        assert_equal original_memberships.fetch(reader.id), reader.participation.attributes.except('updated_at')
+        original = original_memberships.fetch(reader.id)
+        # Membership is restored, but links invalidated by archiving stay invalid.
+        generation = original.fetch('progress_sync_generation') + (original.fetch('active') ? 1 : 0)
+        assert_equal original.merge('progress_sync_generation' => generation), reader.participation.attributes.except('updated_at')
       end
       [@admin, @site_admin, @reader].each { |reader| assert reader.alumni? }
       assert Bible270.config.admin?(@admin)

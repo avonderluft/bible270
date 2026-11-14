@@ -10,6 +10,8 @@ module Bible270
     belongs_to :plan_run, class_name: 'Bible270::PlanRun', inverse_of: :participations
     has_many :checkoffs, class_name: 'Bible270::Checkoff', dependent: :destroy, inverse_of: :participation
 
+    before_update :invalidate_progress_sync_generation
+
     validates :reader_id, uniqueness: { scope: :plan_run_id }
     validates :joined_at, presence: true
 
@@ -59,6 +61,14 @@ module Bible270
       update!(active: false, archived_on: on, frozen_start_date: date, started_on: reader.started_on)
       self
     end
+
+    # Reverting a run or reactivating an alumnus must not silently restore a sync link.
+    def invalidate_progress_sync_generation
+      return unless has_attribute?(:progress_sync_generation) && will_save_change_to_active? && !active?
+
+      self.progress_sync_generation += 1
+    end
+    private :invalidate_progress_sync_generation
 
     def ensure_writable!
       unless active? && plan_run.current?

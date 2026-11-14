@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Rails routes are intentionally kept in one cohesive DSL block.
-Bible270::Engine.routes.draw do
+Bible270::Engine.routes.draw do # rubocop:disable Metrics/BlockLength
   root to: 'days#index'
   get 'scripture-frame', to: 'scripture_frames#show', as: :scripture_frame, defaults: { format: 'json' }
 
@@ -19,7 +19,15 @@ Bible270::Engine.routes.draw do
   patch  'comments/:id',           to: 'comments#update'
   delete 'comments/:id',           to: 'comments#destroy', as: :comment
 
+  # Server-to-server requests use signed instance credentials, never browser sessions.
+  post 'progress-sync/lookup', to: 'progress_sync#lookup', defaults: { format: :json }
+  post 'progress-sync/complete', to: 'progress_sync#complete', defaults: { format: :json }
+
   # Admin panel — configured site-admins and readers granted admin access.
+  post 'admin/readers/:reader_id/progress-sync/lookup', to: 'admin_progress_syncs#lookup', as: :lookup_admin_reader_progress_sync
+  post 'admin/readers/:reader_id/progress-sync', to: 'admin_progress_syncs#create', as: :admin_reader_progress_syncs
+  post 'admin/readers/:reader_id/progress-sync/:id/copy', to: 'admin_progress_syncs#copy', as: :copy_admin_reader_progress_sync
+  delete 'admin/readers/:reader_id/progress-sync/:id', to: 'admin_progress_syncs#destroy', as: :admin_reader_progress_sync
   patch 'admin/scripture-frame-defaults/:id', to: 'admin_scripture_frames#update_default', as: :admin_default_scripture_frame
   resources :admin_scripture_frames, path: 'admin/scripture-frames', only: %i[index new create edit update destroy]
   get    'admin',                        to: 'admin#index',            as: :admin

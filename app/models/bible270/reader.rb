@@ -689,6 +689,7 @@ module Bible270
             created_at: now, updated_at: now }
         end
       )
+      ProgressSync.capture(participation, pairs.map { |track, part| [day, track, part] })
     end
 
     def clear_day!(day)

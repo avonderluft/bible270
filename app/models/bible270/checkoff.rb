@@ -10,6 +10,7 @@ module Bible270
     belongs_to :reader, class_name: 'Bible270::Reader'
     belongs_to :participation, class_name: 'Bible270::Participation', inverse_of: :checkoffs
 
+    after_create :capture_progress_sync
     before_validation :assign_participation
     validate :participation_matches_reader
     validate :participation_is_writable
@@ -77,6 +78,10 @@ module Bible270
     private_class_method :recent_activity_day_counts
 
   private
+
+    def capture_progress_sync
+      ProgressSync.capture(participation, [[day, track, part]])
+    end
 
     def assign_participation
       self.participation ||= reader&.participation

@@ -163,6 +163,14 @@ Progress mutations also enforce `Participation#ensure_writable!` in the model la
 
 On final check-off, `shared/_day_completion.html.erb` selects a random frame server-side. `_day_completion_ui.html.erb` runs a 1.3-second fade-in, 5.5-second hold, and optional 1-second dove flight, with a shared fade over the final 0.2 seconds. Without the dove, the frame fades out over 0.2 seconds; reduced motion uses a static 5.5-second frame. The dove grows and fades with the frame without a white-screen finish, using transforms rather than SVG filters. Completion IDs prevent replay; Escape and navigation dismiss the overlay.
 
+### Cross-instance progress sync
+
+`ProgressSync` binds admin-confirmed accounts to fixed participation IDs, generations, destination URLs, and a fingerprint of the actual reading assignments. Archiving increments the generation, so reactivation or reverting a run cannot silently restore an old link. Confirmation tokens are signed and expire after ten minutes.
+
+Checkoff creation and Admin bulk completions record an outbox entry in the same transaction. A scheduled `bible270:progress_sync:deliver` task claims due entries with expiring leases and contacts destinations outside database locks. Optional `ProgressSyncJob` dispatch runs after commit; the task remains the retry fallback. Failed deliveries back off and pause after eight attempts.
+
+The isolated API authenticates HMAC-signed, size-limited requests from configured sources. It validates the complete batch and membership under run-then-reader locks, inserts only missing checkoffs, and suppresses forwarding. HTTPS requests have a 30-second total timeout, reject redirects, and never use environment proxies. Browser sessions cannot authorize API calls.
+
 ## 6. How dates and “today” work
 
 Plan history is keyed to plan day numbers, not calendar dates. Changing a start date remaps the calendar without moving checkoffs or reflections.

@@ -287,6 +287,11 @@ module Bible270
     # are stored separately and supplement either the bundled or host catalog.
     attr_accessor :scripture_frames_path
 
+    # Explicit trust between installations; credentials stay in host configuration.
+    attr_accessor :progress_sync_instance_id, :progress_sync_destinations, :progress_sync_sources
+    # Enable only with a persistent Active Job adapter and a running worker.
+    attr_accessor :progress_sync_deliver_later
+
     # Who to email when someone new joins. Three forms:
     #
     #   config.registration_notice_emails = %w[andrew@example.org]  # an explicit list
@@ -373,6 +378,10 @@ module Bible270
       @mention_notifications = true
       @header_mark = nil
       @scripture_frames_path = nil
+      @progress_sync_instance_id = nil
+      @progress_sync_destinations = {}
+      @progress_sync_sources = {}
+      @progress_sync_deliver_later = false
       @remember_for = 365 * 24 * 60 * 60
       @require_sign_in_to_participate = true
       self.mount_at = '/daily-bread'

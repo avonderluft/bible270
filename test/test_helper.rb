@@ -193,6 +193,8 @@ module RailsBacked
   def clear_engine_tables!
     return unless RAILS_LOADED
 
+    Bible270::ProgressSyncDelivery.delete_all
+    Bible270::ProgressSyncLink.delete_all
     Bible270::Checkoff.delete_all
     Bible270::Comment.delete_all
     Bible270::SignInToken.delete_all
