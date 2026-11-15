@@ -83,6 +83,16 @@
     He who gives attention to the word will find good,
     And blessed is he who trusts in the LORD.
   attribution: NASB 1995 © The Lockman Foundation.
+- id: isaiah-40-7-8
+  reference: Isaiah 40:7-8
+  translation: NASB95
+  text: |-
+    The grass withers, the flower fades,
+    When the breath of the LORD blows upon it;
+    Surely the people are grass.
+    The grass withers, the flower fades,
+    But the word of our God stands forever.
+  attribution: NASB 1995 © The Lockman Foundation.
 - id: isaiah-55-11
   reference: Isaiah 55:11
   translation: ESV
@@ -117,6 +127,11 @@
   text: |-
     “Is not My word like a fire?” says the LORD,
     “And like a hammer that breaks the rock in pieces?
+  attribution: NKJV © 1982 Thomas Nelson.
+- id: matthew-24-35
+  reference: Matthew 24:35
+  translation: NKJV
+  text: Heaven and earth will pass away, but My words will by no means pass away.
   attribution: NKJV © 1982 Thomas Nelson.
 - id: john-6-63
   reference: John 6:63
