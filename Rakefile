@@ -161,13 +161,15 @@ namespace :test do
   Rake::Task['test:serial'].enhance(['test:prepare_serial'])
 
   task :parallel do
-    workers = ENV.fetch('PARALLEL_WORKERS') { Etc.nprocessors.clamp(1, 8).to_s }
+    workers = ENV.fetch('PARALLEL_WORKERS') { Etc.nprocessors.clamp(1, 16).to_s }
     FileUtils.rm_rf('coverage')
     env = {
       'PARALLEL_COVERAGE' => 'true',
       'RECORD_RUNTIME' => 'true',
       'SKIP_COV' => nil,
       'NO_COLOR' => '1',
+      # Parallel processes already use the CPUs; avoid nested libvips thread pools.
+      'VIPS_CONCURRENCY' => ENV.fetch('VIPS_CONCURRENCY', '1'),
       'TMPDIR' => ENV.fetch('BIBLE270_TEST_TMPDIR', '/tmp')
     }
     command = ['bundle', 'exec', 'parallel_test', 'test', '--type', 'test', '-n', workers]

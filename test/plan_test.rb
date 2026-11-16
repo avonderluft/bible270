@@ -398,6 +398,60 @@ class ChapterBreakSourcesTest < Minitest::Test
     assert_equal 4, psalm78.size, 'CHAPTER_BREAKS divides Psalm 78 four ways'
   end
 
+  def test_unchanged_sources_do_not_remerge_the_defaults
+    P.total_parts(1)
+    merges = 0
+    trace = TracePoint.new(:c_call) do |event|
+      merges += 1 if event.method_id == :merge && event.self.equal?(P::CHAPTER_BREAKS)
+    end
+
+    trace.enable { 10.times { assert_equal 5, P.total_parts(1) } }
+    assert_equal 0, merges, 'cached lookups should not copy the default break hash'
+  end
+
+  def test_equivalent_config_replacement_keeps_memoized_results
+    Bible270.config.chapter_breaks = { 'Psalm 78' => [36] }
+    original = P.pp_readings
+
+    Bible270.config.chapter_breaks = { ['Psalm', 78] => [36] }
+    assert_same original, P.pp_readings
+    Bible270.config.chapter_breaks = { 'Psalm 78' => [] }
+    refute_same original, P.pp_readings
+    assert_equal [['Psalm', 78]], psalm78
+  end
+
+  def test_in_place_config_changes_invalidate_memoized_results
+    points = [36]
+    Bible270.config.chapter_breaks = { 'Psalm 78' => points }
+    original = P.pp_readings
+    assert_equal ['Psalm', 78, 1, 36], psalm78.first
+
+    points[0] = 35
+    refute_same original, P.pp_readings
+    assert_equal ['Psalm', 78, 1, 35], psalm78.first
+
+    Bible270.config.chapter_breaks['Psalm 78'] = []
+    assert_equal [['Psalm', 78]], psalm78
+    Bible270.config.chapter_breaks.clear
+    assert_equal 4, psalm78.size
+  end
+
+  def test_returned_breaks_are_mutable_without_corrupting_the_cache
+    Bible270.config.chapter_breaks = { 'Psalm 78' => [36] }
+    original = P.pp_readings
+    breaks = P.configured_breaks
+    breaks[['Psalm', 78]][0] = 35
+    breaks[['Psalm', 18]].clear
+    breaks.keys.find { |key| key == ['Psalm', 78] }[0].replace('Proverbs')
+    breaks.clear
+    P.chapter_breaks_for('Psalm', 78).clear
+
+    assert_equal [36], P.configured_breaks[['Psalm', 78]]
+    assert_equal [24], P.chapter_breaks_for('Psalm', 18)
+    assert_equal [36], Bible270.config.chapter_breaks['Psalm 78']
+    assert_same original, P.pp_readings
+  end
+
   def test_config_overrides_the_constant_with_either_key_style
     Bible270.config.chapter_breaks = { 'Psalm 78' => [] }
     assert_equal [['Psalm', 78]], psalm78
@@ -409,19 +463,120 @@ class ChapterBreakSourcesTest < Minitest::Test
   def test_a_file_wins_and_is_re_read_when_it_changes
     file = Tempfile.new(['breaks', '.yml'])
     Bible270.config.chapter_breaks_path = file.path
+    Bible270.config.chapter_breaks = { 'Psalm 78' => [24, 48] }
 
     File.write(file.path, "Psalm 78: [36]\n")
     assert_equal 2, psalm78.size
+    assert_same P.pp_readings, P.pp_readings
 
-    sleep 0.01
     File.write(file.path, "Psalm 78: []\n")
     assert_equal [['Psalm', 78]], psalm78, 'an edited file should be picked up with no reset'
 
     File.write(file.path, "{}\n")
-    assert_equal 4, psalm78.size, 'emptying the file falls back to the constant'
+    assert_equal 3, psalm78.size, 'emptying the file falls back to config'
+    Bible270.config.chapter_breaks.clear
+    assert_equal 4, psalm78.size, 'removing config falls back to the constant'
   ensure
     file&.close
     file&.unlink
+  end
+
+  def test_same_size_file_edits_are_detected_by_mtime
+    Tempfile.create(['breaks', '.yml']) do |file|
+      Bible270.config.chapter_breaks_path = file.path
+      File.write(file.path, "Psalm 78: [36]\n")
+      assert_equal ['Psalm', 78, 1, 36], psalm78.first
+      original_mtime = File.mtime(file.path)
+
+      File.write(file.path, "Psalm 78: [35]\n")
+      File.utime(original_mtime + 1, original_mtime + 1, file.path)
+      assert_equal ['Psalm', 78, 1, 35], psalm78.first
+    end
+  end
+
+  def test_file_path_changes_are_detected_even_with_matching_metadata
+    Tempfile.create(['breaks', '.yml']) do |first|
+      Tempfile.create(['breaks', '.yml']) do |second|
+        File.write(first.path, "Psalm 78: [36]\n")
+        File.write(second.path, "Psalm 78: [35]\n")
+        time = File.mtime(first.path)
+        File.utime(time, time, second.path)
+        path = first.path.dup
+        Bible270.config.chapter_breaks_path = path
+        assert_equal ['Psalm', 78, 1, 36], psalm78.first
+
+        path.replace(second.path)
+        assert_equal ['Psalm', 78, 1, 35], psalm78.first
+      end
+    end
+  end
+
+  def test_file_creation_deletion_and_removing_the_path_restore_precedence
+    Tempfile.create(['breaks', '.yml']) do |file|
+      File.unlink(file.path)
+      Bible270.config.chapter_breaks_path = file.path
+      Bible270.config.chapter_breaks = { 'Psalm 78' => [] }
+      assert_equal [['Psalm', 78]], psalm78
+
+      File.write(file.path, "Psalm 78: [36]\n")
+      assert_equal 2, psalm78.size
+      File.unlink(file.path)
+      assert_equal [['Psalm', 78]], psalm78
+
+      File.write(file.path, "Psalm 78: [36]\n")
+      assert_equal 2, psalm78.size
+      Bible270.config.chapter_breaks_path = nil
+      assert_equal [['Psalm', 78]], psalm78
+    end
+  end
+
+  def test_reset_discards_merged_sources_and_the_parsed_file_cache
+    Tempfile.create(['breaks', '.yml']) do |file|
+      Bible270.config.chapter_breaks_path = file.path
+      File.write(file.path, "Psalm 78: [36]\n")
+      original = P.pp_readings
+      assert_equal ['Psalm', 78, 1, 36], psalm78.first
+      time = File.mtime(file.path)
+
+      File.write(file.path, "Psalm 78: [35]\n")
+      File.utime(time, time, file.path)
+      assert_same original, P.pp_readings, 'the file cache still uses only mtime and size'
+      assert P.reset!
+      refute_same original, P.pp_readings
+      assert_equal ['Psalm', 78, 1, 35], psalm78.first
+    end
+  end
+
+  def test_invalid_files_keep_raising_until_repaired
+    Tempfile.create(['breaks', '.yml']) do |file|
+      Bible270.config.chapter_breaks_path = file.path
+      File.write(file.path, "Psalm 78: [\n")
+      2.times { assert_raises(ArgumentError) { P.total_parts(1) } }
+
+      File.write(file.path, "Psalm 78: [36]\n")
+      assert_equal 2, psalm78.size
+
+      ["Psalm 78: [\n", "- not a mapping\n", "Psalm: []\n"].each do |invalid|
+        File.write(file.path, invalid)
+        2.times { assert_raises(ArgumentError) { P.pp_readings } }
+      end
+
+      File.write(file.path, "Psalm 78: []\n")
+      assert_equal [['Psalm', 78]], psalm78
+    end
+  end
+
+  def test_invalid_config_after_a_cached_lookup_is_not_hidden
+    P.total_parts(1)
+    Bible270.config.chapter_breaks['Psalm'] = []
+    2.times { assert_raises(ArgumentError) { P.total_parts(1) } }
+    Bible270.config.chapter_breaks.clear
+    assert_equal 5, P.total_parts(1)
+
+    Bible270.config.chapter_breaks['Psalm 78'] = [36, 35]
+    2.times { assert_raises(ArgumentError) { psalm78 } }
+    Bible270.config.chapter_breaks['Psalm 78'].replace([36])
+    assert_equal 2, psalm78.size
   end
 
   def test_the_plan_still_fills_270_days_whatever_the_source

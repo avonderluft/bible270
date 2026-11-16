@@ -409,13 +409,15 @@ Migration `20260101000027` creates `bible270_scripture_frames` for site-wide cus
 
 Tests cover plan/calendar rules, chapter-level progress, authentication, enrollment and authorization, profiles and mail, social interactions, Turbo/HTML responses, UI/accessibility, and installation/migration/packaging behavior.
 
-`bundle exec rake test` uses up to eight isolated workers through `parallel_tests`, capped by available CPUs. Each worker has a distinct SimpleCov command name, and the final merged report is written to:
+`bundle exec rake test` uses up to 16 isolated workers through `parallel_tests`, capped by available CPUs. Each defaults to one libvips thread to avoid nested CPU contention. Each worker has a distinct SimpleCov command name, and the final merged report is written to:
 
 ```text
 coverage/index.html
 ```
 
-Admin, Profile, and admin-preview tests are grouped into smaller feature files, sharing unchanged setup in `test/support`. Runtime logs balance files between workers. The dummy app disables class reloading and caches template lookup, but still renders every response. Per-process logs keep warnings/errors; `TEST_LOG_LEVEL=debug` restores request, rendering, and SQL detail.
+Admin, Profile, and progress-sync tests are grouped by feature, sharing setup in `test/support`. Runtime logs balance files between workers. Redirect/form context matrices omit the surrounding layout; full-page tests retain it. Community display fixtures use bulk inserts rather than replaying hundreds of progress mutations.
+
+The dummy app disables class reloading and expected-error debug pages, while `show_exceptions = :rescuable` still raises unexpected errors. Regression tests cover both behaviors. `TEST_ERROR_PAGES=1` restores developer pages; `TEST_LOG_LEVEL=debug` adds request, rendering, and SQL detail.
 
 Override the worker count when needed:
 

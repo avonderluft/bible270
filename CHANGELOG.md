@@ -8,6 +8,8 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 - give longer completion passages more reading time, from 5.5 to 30 seconds
 - rotate Scripture frames in shuffled rounds shared by the bread popup and day completion
+- speed up tests with balanced files, leaner fixtures, and CPU-aware image processing
+- reuse unchanged reading-plan cache settings while preserving live configuration updates
 
 **Upgrade:** Install migration `20260101000029` to save readers' rotation across visits and devices.
 

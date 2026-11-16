@@ -187,7 +187,7 @@ module Bible270
     # Validated on the way out so a typo fails loudly instead of silently
     # producing overlapping or out-of-range readings.
     def chapter_breaks_for(book, chapter)
-      points = configured_breaks[[book, chapter]]
+      points = cached_configured_breaks[[book, chapter]]
       return nil if points.nil?
 
       total = verses_for(book, chapter)
@@ -197,13 +197,13 @@ module Bible270
               "verse numbers between 1 and #{total - 1}, got #{points.inspect}"
       end
 
-      points
+      points.dup
     end
 
     # {index => reading count} for chapters whose breaks are set explicitly.
     def pinned_from_breaks(chapters)
       chapters.each_with_index.filter_map do |(book, chapter), idx|
-        points = configured_breaks[[book, chapter]]
+        points = cached_configured_breaks[[book, chapter]]
         [idx, points.size + 1] if points
       end.to_h
     end
@@ -233,7 +233,7 @@ module Bible270
     # all at once rather than leaving a half-rebuilt plan.
 
     def memo(key)
-      fingerprint = configured_breaks
+      fingerprint = cached_configured_breaks
       if @cache_fingerprint != fingerprint
         @cache = {}
         @cache_fingerprint = fingerprint
@@ -247,6 +247,10 @@ module Bible270
     def reset!
       @cache = {}
       @cache_fingerprint = nil
+      @break_source_fingerprint = nil
+      @configured_breaks = nil
+      @file_breaks_stamp = nil
+      @file_breaks = nil
       true
     end
 
@@ -257,11 +261,26 @@ module Bible270
     # Bible270.config.chapter_breaks_path. The file is re-read whenever it
     # changes, so break points can be tuned without restarting the server.
 
+    # Keep the public result mutable without exposing the internal cache.
     def configured_breaks
-      base = CHAPTER_BREAKS.merge(config_breaks)
-      path = breaks_file_path
-      path ? base.merge(file_breaks(path)) : base
+      cached_configured_breaks.to_h { |(book, chapter), points| [[book.dup, chapter], points.dup] }
     end
+
+    def cached_configured_breaks
+      # Normalization snapshots mutable override arrays on every lookup.
+      overrides = config_breaks
+      path = breaks_file_path
+      from_file = file_breaks(path) if path
+      fingerprint = [CHAPTER_BREAKS, overrides, path && @file_breaks_stamp, from_file]
+      return @configured_breaks if @break_source_fingerprint == fingerprint
+
+      merged = CHAPTER_BREAKS.merge(overrides)
+      merged.merge!(from_file) if from_file
+      @configured_breaks = merged.freeze
+      @break_source_fingerprint = fingerprint
+      @configured_breaks
+    end
+    private_class_method :cached_configured_breaks
 
     def config_breaks
       return {} unless bible270_config.respond_to?(:chapter_breaks)
@@ -284,11 +303,12 @@ module Bible270
     # not re-parsed on every request.
     def file_breaks(path)
       stat = File.stat(path)
-      stamp = [path, stat.mtime.to_f, stat.size]
+      stamp = [path.dup, stat.mtime.to_f, stat.size]
       return @file_breaks if @file_breaks_stamp == stamp
 
+      parsed = parse_breaks_file(path)
       @file_breaks_stamp = stamp
-      @file_breaks = parse_breaks_file(path)
+      @file_breaks = parsed
     end
 
     def parse_breaks_file(path)

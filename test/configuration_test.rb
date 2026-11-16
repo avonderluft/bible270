@@ -51,6 +51,37 @@ class ConfigurationTest < Minitest::Test
     refute requirement.satisfied_by?(Gem::Version.new('3.0.0'))
   end
 
+  def test_expected_not_found_errors_use_plain_responses_without_debug_pages
+    needs_rails!
+    error = ActionController::RoutingError.new('Not Found')
+    application = ->(_env) { raise error }
+    fallback = ->(env) {
+      assert_instance_of ActionController::RoutingError, env['action_dispatch.exception']
+      [404, { 'content-type' => 'text/plain' }, ['Not Found']]
+    }
+    stack = ActionDispatch::ShowExceptions.new(ActionDispatch::DebugExceptions.new(application), fallback)
+    env = Rack::MockRequest.env_for('/expected-not-found').merge(Rails.application.env_config)
+    env['action_dispatch.show_detailed_exceptions'] = false
+
+    status, _headers, body = stack.call(env)
+
+    assert_equal :rescuable, env['action_dispatch.show_exceptions']
+    assert_equal 404, status
+    assert_equal ['Not Found'], body
+  end
+
+  def test_unexpected_controller_errors_still_raise_without_debug_pages
+    needs_rails!
+    error = RuntimeError.new('Unexpected controller failure')
+    application = ->(_env) { raise error }
+    fallback = ->(_env) { flunk 'Unexpected errors must not become ordinary error responses' }
+    stack = ActionDispatch::ShowExceptions.new(ActionDispatch::DebugExceptions.new(application), fallback)
+    env = Rack::MockRequest.env_for('/unexpected-failure').merge(Rails.application.env_config)
+    env['action_dispatch.show_detailed_exceptions'] = false
+
+    assert_same error, assert_raises(RuntimeError) { stack.call(env) }
+  end
+
   def test_plan_dates_do_not_use_the_rails_zone_directly
     root = File.expand_path('..', __dir__)
     offenders = Dir.glob(File.join(root, '{app,lib}/**/*.{rb,erb}')).flat_map do |path|

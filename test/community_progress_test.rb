@@ -27,7 +27,7 @@ if RAILS_LOADED
     end
 
     def test_signed_in_readers_see_zero_and_half_complete_progress
-      @reader.mark_through!(135)
+      complete_days(@reader, 1..135)
       sign_in
 
       get "#{mount}/community"
@@ -40,7 +40,7 @@ if RAILS_LOADED
     end
 
     def test_finishing_the_plan_shows_270_days_and_a_full_bar
-      @other.mark_through!(270)
+      complete_days(@other, 1..270)
       sign_in
 
       get "#{mount}/community"
@@ -54,7 +54,7 @@ if RAILS_LOADED
       get "#{mount}/community"
       assert_progress(@other, days: 0, width: 0.0)
 
-      [2, 10, 270].each { |day| @other.mark_day_complete!(day) }
+      complete_days(@other, [2, 10, 270])
       get "#{mount}/community"
 
       assert_progress(@other, days: 3, width: 100.0 / 90)
@@ -196,8 +196,24 @@ if RAILS_LOADED
       end
     end
 
+    # These are display fixtures; reader mutation behavior has its own tests.
+    def complete_days(reader, days)
+      membership = reader.participation
+      now = Time.current
+      rows = days.flat_map do |day|
+        Bible270::Plan.present_tracks(day).flat_map do |track|
+          Array.new(Bible270::Plan.part_count(day, track)) do |part|
+            { reader_id: reader.id, participation_id: membership.id, day: day, track: track, part: part,
+              created_at: now, updated_at: now }
+          end
+        end
+      end
+      Bible270::Checkoff.insert_all(rows)
+      reader.reload_progress
+    end
+
     def assert_bulk_progress(preview: false)
-      @reader.mark_through!(135)
+      complete_days(@reader, 1..135)
       sign_in
       if preview
         patch "#{mount}/admin/view", params: { view: 'reader' }
