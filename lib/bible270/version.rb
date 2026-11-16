@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module Bible270
-  VERSION = '1.18.1'
+  VERSION = '1.19.0'
 end
