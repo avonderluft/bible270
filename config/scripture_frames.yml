@@ -13,6 +13,16 @@
   translation: ESV
   text: But the word is very near you. It is in your mouth and in your heart, so that you can do it.
   attribution: ESV © 2001 Crossway.
+- id: psalm-1-1-2
+  reference: Psalm 1:1-2
+  translation: NASB95
+  text: |-
+    How blessed is the man who does not walk in the counsel of the wicked,
+    Nor stand in the path of sinners,
+    Nor sit in the seat of scoffers!
+    But his delight is in the law of the LORD,
+    And in His law he meditates day and night.
+  attribution: NASB 1995 © The Lockman Foundation.
 - id: psalm-19-8
   reference: Psalm 19:8
   translation: NKJV
@@ -68,6 +78,13 @@
   text: |-
     The unfolding of Your words gives light;
     It gives understanding to the simple.
+  attribution: NASB 1995 © The Lockman Foundation.
+- id: psalm-119-162
+  reference: Psalm 119:162
+  translation: NASB95
+  text: |-
+    I rejoice at Your word,
+    As one who finds great spoil.
   attribution: NASB 1995 © The Lockman Foundation.
 - id: proverbs-6-23
   reference: Proverbs 6:23

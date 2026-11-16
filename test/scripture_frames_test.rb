@@ -16,6 +16,9 @@ if RAILS_LOADED
       { id: 'default:deuteronomy-30-14', reference: 'Deuteronomy 30:14', translation: 'ESV',
         text: 'But the word is very near you. It is in your mouth and in your heart, so that you can do it.',
         attribution: 'ESV © 2001 Crossway.' },
+      { id: 'default:psalm-1-1-2', reference: 'Psalm 1:1-2', translation: 'NASB95',
+        text: "How blessed is the man who does not walk in the counsel of the wicked,\nNor stand in the path of sinners,\nNor sit in the seat of scoffers!\nBut his delight is in the law of the LORD,\nAnd in His law he meditates day and night.",
+        attribution: 'NASB 1995 © The Lockman Foundation.' },
       { id: 'default:psalm-19-8', reference: 'Psalm 19:8', translation: 'NKJV',
         text: "The statutes of the LORD are right, rejoicing the heart;\nThe commandment of the LORD is pure, enlightening the eyes.",
         attribution: 'NKJV © 1982 Thomas Nelson.' },
@@ -41,6 +44,9 @@ if RAILS_LOADED
         text: "The unfolding of Your words gives light;\nIt gives understanding to the simple.",
         attribution: 'NASB 1995 © The Lockman Foundation.' },
 
+      { id: 'default:psalm-119-162', reference: 'Psalm 119:162', translation: 'NASB95',
+        text: "I rejoice at Your word,\nAs one who finds great spoil.",
+        attribution: 'NASB 1995 © The Lockman Foundation.' },
       { id: 'default:proverbs-6-23', reference: 'Proverbs 6:23', translation: 'NASB95',
         text: "For the commandment is a lamp and the teaching is light;\nAnd reproofs for discipline are the way of life",
         attribution: 'NASB 1995 © The Lockman Foundation.' },
@@ -349,6 +355,61 @@ if RAILS_LOADED
       use_host(YAML.dump([host_row]))
       assert_equal "custom:#{custom.id}", CATALOG.random(exclude: 'default:host-example').id
       assert_equal 'default:host-example', CATALOG.random(exclude: "custom:#{custom.id}").id
+    end
+
+    def test_rotation_refreshes_enabled_custom_and_default_frames_after_every_catalog_change
+      use_host(YAML.dump([host_row(id: 'one'), host_row(id: 'two')]))
+      custom = Bible270::ScriptureFrame.create!(reference: 'Quotation', translation: 'OTHER', text: 'A quotation.')
+      session = {}
+      ids = ['default:one', 'default:two', "custom:#{custom.id}"]
+      choose = -> { CATALOG.random(session: session) }
+      assert_equal ids.sort, Array.new(3) { choose.call.id }.sort
+
+      CATALOG.set_default_enabled!('default:one', enabled: false)
+      custom.update!(enabled: false)
+      3.times { assert_equal 'default:two', choose.call.id }
+      custom.update!(enabled: true)
+      assert_equal "custom:#{custom.id}", choose.call.id, 're-enabled frames enter a fresh cycle without repeating last'
+      assert_equal 'OTHER', custom.translation
+      custom.destroy!
+      assert_equal 'default:two', choose.call.id
+      CATALOG.set_default_enabled!('default:one', enabled: true)
+      assert_equal 'default:one', choose.call.id
+      added = Bible270::ScriptureFrame.create!(reference: 'New quotation', translation: 'OTHER', text: 'New text.')
+      selected = Array.new(3) { choose.call.id }
+      refute_equal 'default:one', selected.first
+      assert_equal ['default:one', 'default:two', "custom:#{added.id}"].sort, selected.sort
+      CATALOG.set_default_enabled!('default:one', enabled: false)
+      CATALOG.set_default_enabled!('default:two', enabled: false)
+      added.destroy!
+      assert_nil choose.call
+    end
+
+    def test_host_catalog_reordering_preserves_rotation_but_added_and_removed_ids_refresh_it
+      rows = [host_row(id: 'one'), host_row(id: 'two'), host_row(id: 'three')]
+      use_host(YAML.dump(rows))
+      session = {}
+      first = CATALOG.random(session: session).id
+      state = JSON.parse(JSON.generate(session))
+      use_host(YAML.dump(rows.reverse))
+      second = CATALOG.random(session: session).id
+      use_host(YAML.dump(rows))
+      assert_equal second, CATALOG.random(session: state).id
+      assert_equal 2, [first, second].uniq.length
+      use_host(YAML.dump([rows.first]))
+      assert_equal 'default:one', CATALOG.random(session: session).id
+      use_host(YAML.dump(rows))
+      refute_equal 'default:one', CATALOG.random(session: session).id
+    end
+
+    def test_rotation_works_without_settings_or_custom_tables
+      Bible270::Setting.stub(:table_exists?, false) do
+        Bible270::ScriptureFrame.stub(:table_exists?, false) do
+          session = {}
+          ids = Array.new(default_ids.length) { CATALOG.random(session: session).id }
+          assert_equal default_ids.sort, ids.sort
+        end
+      end
     end
 
     def test_custom_pool_uses_current_credit_including_nil_and_preserves_credit_after_translation_removal

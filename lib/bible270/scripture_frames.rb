@@ -2,6 +2,7 @@
 
 require 'yaml'
 require 'bible270/translations'
+require 'bible270/scripture_frame_rotation'
 
 module Bible270
   module ScriptureFrames
@@ -156,7 +157,7 @@ module Bible270
     end
     private_class_method :default_disable_setting
 
-    def random(exclude: nil)
+    def random(exclude: nil, reader: nil, session: nil)
       disabled_ids = disabled_default_ids
       pool = defaults.reject { |frame| disabled_ids.include?(frame.id) }
       if custom_available?
@@ -165,6 +166,8 @@ module Bible270
                     translation: frame.translation, text: frame.text, attribution: frame.attribution)
         end
       end
+      return ScriptureFrameRotation.select(pool, reader: reader, session: session, exclude: exclude) if reader || session
+
       pool = pool.reject { |frame| frame.id == exclude } if pool.length > 1 && exclude.is_a?(String)
       pool.sample
     end

@@ -126,7 +126,7 @@ if RAILS_LOADED
         end
       end
 
-      Bible270::ScriptureFrames.stub(:random, -> { flunk 'a repeated checkoff must not select a frame' }) do
+      Bible270::ScriptureFrames.stub(:random, ->(**) { flunk 'a repeated checkoff must not select a frame' }) do
         post "#{mount}/day/1/toggle/nt/0",
              params: { checked: '1' }, headers: turbo_stream_headers
       end
@@ -185,7 +185,7 @@ if RAILS_LOADED
       assert_select '#day_progress_1 div[data-b270-completion-dove][data-b270-day="1"] > svg', count: 1
       assert_select '#b270-interaction-status', text: '', count: 1
 
-      Bible270::ScriptureFrames.stub(:random, -> { flunk 'an ordinary revisit must not select a frame' }) do
+      Bible270::ScriptureFrames.stub(:random, ->(**) { flunk 'an ordinary revisit must not select a frame' }) do
         get "#{mount}/day/1"
       end
 
@@ -223,7 +223,7 @@ if RAILS_LOADED
     def test_incomplete_requests_do_not_select_or_render_a_completion_frame
       sign_in_as(@reader)
 
-      Bible270::ScriptureFrames.stub(:random, -> { flunk 'an incomplete day must not select a frame' }) do
+      Bible270::ScriptureFrames.stub(:random, ->(**) { flunk 'an incomplete day must not select a frame' }) do
         get "#{mount}/day/1"
         assert_response :success
         assert_select '[data-b270-completion]', count: 0
@@ -246,6 +246,7 @@ if RAILS_LOADED
       end
 
       refute @reader.reload_progress.day_complete?(1)
+      assert_equal({}, @reader.reload.scripture_frame_rotation)
     end
 
     def test_the_server_selected_enabled_custom_frame_is_inline_escaped_and_credited
@@ -263,7 +264,9 @@ if RAILS_LOADED
       sign_in_as(@reader)
       selections = 0
 
-      Bible270::ScriptureFrames.stub(:random, -> {
+      Bible270::ScriptureFrames.stub(:random, ->(reader:, session:) {
+        assert_equal @reader.id, reader.id
+        refute_nil session
         selections += 1
         frame
       }) do
@@ -281,6 +284,29 @@ if RAILS_LOADED
       end
       refute_includes response.body, "<script>alert('sample')</script>"
       refute_includes response.body, 'Forged credit.'
+    end
+
+    def test_completion_and_popup_consume_the_same_reader_rotation
+      sign_in_as(@reader)
+      @reader.mark_day_complete!(1)
+      @reader.checkoffs.find_by!(day: 1, track: 'nt', part: 0).destroy!
+      pool = Bible270::ScriptureFrames.defaults.first(3)
+      ids = []
+
+      Bible270::ScriptureFrames.stub(:defaults, pool) do
+        get "#{mount}/scripture-frame"
+        ids << response.parsed_body['id']
+        post "#{mount}/day/1/toggle/nt/0", params: { checked: '1' }, headers: turbo_stream_headers
+        assert_response :success
+        assert_select '[data-b270-completion-frame] [data-b270-scripture-reference]', count: 1 do |nodes|
+          ids << pool.find { |frame| frame.reference == nodes.first.text }.id
+        end
+        get "#{mount}/scripture-frame", params: { exclude: ids.first }
+        ids << response.parsed_body['id']
+      end
+
+      assert_equal pool.map(&:id).sort, ids.sort
+      assert_equal 3, @reader.reload.scripture_frame_rotation['cursor']
     end
 
     def test_a_nil_frame_keeps_the_completion_root_and_original_dove_fallback

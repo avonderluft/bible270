@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'json'
+
 module Bible270
   # Repairs schema_migrations after a database is copied without matching migration
   # bookkeeping. A migration is safe to mark only when every table, column and
@@ -38,6 +40,7 @@ module Bible270
       'AddRevertToBible270PlanRuns' => :check_run_revert,
       'CreateBible270ScriptureFrames' => :check_scripture_frames,
       'CreateBible270ProgressSync' => :check_progress_sync,
+      'AddScriptureFrameRotationToBible270Readers' => :check_scripture_frame_rotation,
 
       'CreateActiveStorageTables' => :check_active_storage
     }.freeze
@@ -307,6 +310,12 @@ module Bible270
         progress_sync_relationships_missing + progress_sync_link_indexes_missing
     end
 
+    def check_scripture_frame_rotation
+      table_missing(:bible270_readers, columns: %i[scripture_frame_rotation]) +
+        missing_column_definitions(:bible270_readers,
+                                   scripture_frame_rotation: { type: :json, null: false, default: {} })
+    end
+
     def check_admin
       table_missing(:bible270_readers, columns: %i[admin]) +
         missing_column_definitions(:bible270_readers, admin: { type: :boolean, null: false, default: false })
@@ -489,6 +498,13 @@ module Bible270
       connection.columns(table).flat_map do |column|
         definitions.fetch(column.name.to_sym, {}).filter_map do |attribute, expected|
           actual = column.public_send(attribute)
+          if attribute == :default && column.type == :json && actual.is_a?(String)
+            begin
+              actual = JSON.parse(actual)
+            rescue JSON::ParserError
+              # Leave malformed defaults unmatched.
+            end
+          end
           actual = ActiveModel::Type::Boolean.new.cast(actual) if attribute == :default && column.type == :boolean
           if attribute == :default && column.type == :integer && actual.is_a?(String) && actual.match?(%r{\A[+-]?\d+\z})
             actual = Integer(actual, 10)

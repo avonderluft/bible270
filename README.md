@@ -414,7 +414,9 @@ For a host Content Security Policy (CSP), add `https://www.youtube-nocookie.com`
 
 Hover over the bread icon for **3 seconds**, or open it immediately by tap, click, or Enter/Space. The random, theme-matched frame closes when you leave a hover preview, press Escape, click outside, or select the bread again.
 
-Completing a day shows a random frame followed by the optional dove; both fade out together. Disabling the dove keeps the frame. Reduced-motion users see a static frame, and Escape dismisses the sequence.
+Completion frames stay fully visible for **5.5–30 seconds**, based on passage length, before the optional dove and shared fade. Disabling the dove keeps the frame. Reduced-motion users see a static frame, and Escape dismisses the sequence.
+
+The popup and completion frames share a shuffled rotation: each enabled text is selected before repeating, without back-to-back repeats when alternatives exist. Changing the available texts starts a fresh round. Migration `20260101000029` saves signed-in readers' rotation across visits and devices; visitors and installations awaiting migration use browser-session rotation.
 
 The [bundled YAML catalog](config/scripture_frames.yml) supplies the defaults in biblical order. Manage texts under **Admin → Scripture frames**:
 

@@ -9,6 +9,13 @@ const markup = readFileSync(filename, 'utf8');
 const source = markup.replace(/<%[\s\S]*?%>/g, '').match(/<script\b[^>]*>([\s\S]*?)<\/script>/i)[1];
 const flightClass = 'b270-completion-dove-active';
 const storageKey = (id) => `b270-completion-dove:${id}`;
+const words = (count) => Array(count).fill('word').join(' ');
+const expectedHold = (completion) => {
+  const text = completion.frame?.querySelector('[data-b270-scripture-text]')?.textContent || '';
+  const count = text.split(/[\s\p{White_Space}]+/u).filter(Boolean).length;
+  return Math.min(30000, Math.max(5500, 2000 + count * 250));
+};
+const expectedDelay = (completion, reduced = false) => (reduced ? 0 : 1300) + expectedHold(completion);
 
 class Element {
   constructor(tag, mutate, effects) {
@@ -85,7 +92,8 @@ class Element {
 }
 
 function harness({ reduced = false, matchMedia = true, storage = new Map(), storageThrows,
-  frame = true, dove = true, eventId = 'completion-1', long = false } = {}) {
+  frame = true, dove = true, eventId = 'completion-1', long = false,
+  passage = 'The LORD is my shepherd,\nI shall not want. <script>literal text</script>' } = {}) {
   const effects = [];
   const observers = [];
   const mutate = (target, addedNodes, removedNodes) => {
@@ -176,13 +184,17 @@ function harness({ reduced = false, matchMedia = true, storage = new Map(), stor
     if (board) {
       board.setAttribute('role', 'region');
       board.setAttribute('aria-label', 'Day 27 completion Scripture');
-      for (const text of ['Psalm 23:1', 'The LORD is my shepherd,\nI shall not want. <script>literal text</script>', 'NASB95', 'Translation attribution']) {
+      const scripture = Object.hasOwn(options, 'passage') ? options.passage : passage;
+      for (const [name, text] of [['reference', 'Psalm 23:1'], ['text', scripture], ['translation', 'NASB95'], ['credits', 'Translation attribution']]) {
+        if (text === null) continue;
         const field = board.appendChild(element('span'));
+        field.setAttribute(`data-b270-scripture-${name}`, '');
         field._text = text;
         fields.push(field);
       }
       if (options.long ?? long) {
-        fields[1]._text = `${fields[1]._text}\n`.repeat(1000);
+        const text = board.querySelector('[data-b270-scripture-text]');
+        if (text) text._text = `${text._text}\n`.repeat(1000);
         root.rect = { width: 600, height: 24000, top: 0, bottom: 24000 };
       }
     }
@@ -248,7 +260,7 @@ function untouched(h, completion = h) {
 }
 function startFlight(h) {
   h.paint();
-  h.advance(6800);
+  h.advance(expectedDelay(h, h.motion.matches));
   flying(h.dove);
   assert.equal(h.root.classList.contains('is-flying'), true);
 }
@@ -313,6 +325,93 @@ test('moves the existing root to body, unhides before rAF, then waits the full 1
   assert.equal(h.dove.isConnected, false);
   disposed(h);
   untouched(h);
+});
+
+for (const [count, hold] of [[0, 5500], [10, 5500], [13, 5500], [14, 5500], [15, 5750], [20, 7000],
+  [40, 12000], [60, 17000], [80, 22000], [111, 29750], [112, 30000], [113, 30000], [200, 30000]]) {
+  for (const options of [{}, { dove: false }, { reduced: true }, { reduced: true, dove: false }]) {
+    test(`${count} passage words hold for exactly ${hold}ms after fade-in: ${JSON.stringify(options)}`, () => {
+      const h = setup({ passage: words(count), ...options });
+      h.paint();
+      assert.equal(h.timers.size, 1);
+      assert.equal([...h.timers.values()][0].due, (options.reduced ? 0 : 1300) + hold);
+      if (!options.reduced) h.advance(1300);
+      h.advance(hold - 1);
+      visible(h.root);
+      assert.equal(h.root.isConnected, true);
+      assert.equal(h.root.classList.contains('is-flying'), false);
+      if (h.dove) flying(h.dove, false);
+      h.advance(1);
+      if (options.reduced) {
+        if (h.dove) flying(h.dove, false);
+        disposed(h);
+      } else if (h.dove) {
+        flying(h.dove);
+        assert.equal([...h.timers.values()][0].due, 1300 + hold + 1200, 'the flight fallback is unchanged');
+        h.animation();
+        disposed(h);
+      } else finishFade(h);
+      untouched(h);
+    });
+  }
+}
+
+for (const [label, passage, hold] of [
+  ['multiline and Unicode whitespace', `\u00a0\n${Array(20).fill('word').join('\t\r\n\u00a0\u2003\u2028\u2029\u202f\u3000\u0085\ufeff')}\n\u2003`, 7000],
+  ['only whitespace', '\t\r\n\u00a0\u2003\u2028\u2029\u202f\u3000\u0085\ufeff', 5500],
+  ['missing passage element', null, 5500],
+  ['whitespace-separated punctuation and quotes', Array(15).fill('“well-being,”').join(' '), 5750]
+]) {
+  test(`${label} uses the passage word count with a ${hold}ms hold`, () => {
+    const h = setup({ passage });
+    h.paint();
+    h.advance(1300 + hold - 1);
+    flying(h.dove, false);
+    visible(h.root);
+    h.advance(1);
+    flying(h.dove);
+    h.animation();
+    disposed(h);
+    untouched(h);
+  });
+}
+
+test('only passage text inside the active frame contributes, never captions, reference, translation, credits, or outside passages', () => {
+  const h = harness({ passage: words(20) });
+  for (const field of h.fields) {
+    if (!field.matches('[data-b270-scripture-text]')) field._text = words(1000);
+  }
+  const caption = h.frame.appendChild(h.element('figcaption'));
+  caption._text = words(1000);
+  h.texts = h.fields.map((field) => field.textContent);
+  h.outside.setAttribute('data-b270-scripture-text', '');
+  h.outside._text = words(1000);
+  const decoy = h.root.appendChild(h.element('span'));
+  decoy.setAttribute('data-b270-scripture-text', '');
+  decoy._text = words(1000);
+  h.root.appendChild(h.frame); // Put the out-of-frame passage first in root selector order.
+  h.evaluate();
+  h.flushMutations();
+  h.paint();
+  h.advance(8299);
+  flying(h.dove, false);
+  h.advance(1);
+  flying(h.dove);
+  h.animation();
+  disposed(h);
+  untouched(h);
+});
+
+test('a missing passage does not borrow passage text from outside its frame', () => {
+  const h = harness({ passage: null });
+  const decoy = h.root.appendChild(h.element('span'));
+  decoy.setAttribute('data-b270-scripture-text', '');
+  decoy._text = words(200);
+  h.evaluate();
+  h.flushMutations();
+  startFlight(h);
+  h.animation();
+  disposed(h);
 });
 
 for (const type of ['animationend', 'animationcancel']) {
@@ -764,12 +863,15 @@ for (const phase of ['before rAF', 'holding', 'flying', 'fading']) {
     assert.equal(h.root.rect.height, 24000);
     if (phase !== 'before rAF') h.paint();
     if (phase === 'holding') h.advance(2000);
-    if (phase === 'flying' || phase === 'fading') h.advance(6800);
+    if (phase === 'flying' || phase === 'fading') {
+      h.advance(expectedDelay(h));
+      flying(h.dove);
+    }
     if (phase === 'fading') beginManualFade(h);
     h.root.remove();
     const effectCount = h.effects.length;
     h.paint();
-    h.advance(20000);
+    h.advance(expectedDelay(h) + 1200);
     h.animation();
     h.key();
     assert.equal(h.effects.length, effectCount);
@@ -780,7 +882,7 @@ for (const phase of ['before rAF', 'holding', 'flying', 'fading']) {
     const next = h.makeCompletion('after-disconnect');
     h.flushMutations();
     h.paint();
-    h.advance(6800);
+    h.advance(expectedDelay(next));
     flying(next.dove);
     h.animation('animationend', next.dove);
     disposed(h, next.root);

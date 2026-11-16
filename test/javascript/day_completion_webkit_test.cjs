@@ -178,16 +178,28 @@ test('WebKit renders the real completion dove on mobile and desktop', {
           <body class="b270" data-display-mode="dark"><div class="b270-completion" data-b270-completion data-b270-completion-event="webkit-live" hidden>
           <div class="b270-completion-frame" data-b270-completion-frame>${figure}</div>${dove}</div></body></html>`);
         await page.evaluate(() => {
+          const passage = document.querySelector('[data-b270-scripture-text]');
+          passage.textContent = 'The LORD is my shepherd,\nI shall not want.';
+          const count = passage.textContent.trim().split(/\s+/u).length;
+          window.expectedFlightDelay = 1300 + Math.min(30000, Math.max(5500, 2000 + count * 250));
           document.addEventListener('animationstart', (event) => {
             if (event.animationName === 'b270-dove-flight') window.flightStarted = performance.now();
           });
+          const root = document.querySelector('[data-b270-completion]');
+          new MutationObserver(() => {
+            if (root.classList.contains('is-visible') && window.frameShown === undefined) window.frameShown = performance.now();
+          }).observe(root, { attributes: true, attributeFilter: ['class'] });
         });
         const ui = stripERB('_day_completion_ui').match(/<script\b[^>]*>([\s\S]*?)<\/script>/i)[1];
         await page.addScriptTag({ content: ui });
         const brightPixels = async () => (await renderedPixels(page)).bright;
         await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-b270-completion-frame]')).opacity === '1');
         const background = await brightPixels();
-        await page.waitForFunction(() => typeof window.flightStarted === 'number');
+        await page.waitForFunction(() => typeof window.flightStarted === 'number', null, { timeout: 10000 });
+        const timing = await page.evaluate(() => ({ elapsed: window.flightStarted - window.frameShown, expected: window.expectedFlightDelay }));
+        assert.equal(timing.expected, 6800, 'the free-running passage uses the minimum hold to keep runtime bounded');
+        assert.ok(timing.elapsed >= timing.expected - 20 && timing.elapsed < timing.expected + 1000,
+          `flight follows the fade-in and passage hold: ${JSON.stringify(timing)}`);
         const footprints = [];
         for (const time of [150, 300, 500]) {
           await page.waitForFunction((time) => performance.now() - window.flightStarted >= time, time);

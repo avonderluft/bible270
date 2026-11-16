@@ -46,6 +46,60 @@ if RAILS_LOADED
       assert_equal 0, Bible270::Reader.count
     end
 
+    def test_visitor_rotates_across_requests_and_cycles_without_changing_public_json_fields
+      pool = @default_frames.first(4)
+      Bible270::ScriptureFrames.stub(:defaults, pool) do
+        previous = nil
+        4.times do
+          ids = Array.new(pool.length) do
+            get endpoint
+            assert_response :success
+            id = response.parsed_body['id']
+            refute_equal previous, id
+            assert_equal %w[attribution id reference text translation], response.parsed_body.keys.sort
+            previous = id
+          end
+          assert_equal pool.map(&:id).sort, ids.sort
+        end
+      end
+      assert_equal 0, Bible270::Reader.count
+    end
+
+    def test_signed_in_rotation_is_shared_across_two_browser_sessions_without_profile_writes
+      reader = Bible270::Reader.create!(provider: 'email', uid: 'rotation@example.org',
+                                        email: 'rotation@example.org', display_name: 'Reader')
+      browsers = Array.new(2) do
+        browser = open_session
+        _record, token = Bible270::SignInToken.issue!(reader.email)
+        browser.get "#{Bible270.config.mount_at.chomp('/')}/sign_in/email/#{token}"
+        browser
+      end
+      attributes = reader.reload.attributes.except('scripture_frame_rotation')
+      pool = @default_frames.first(4)
+      Bible270::ScriptureFrames.stub(:defaults, pool) do
+        ids = Array.new(pool.length) do |index|
+          browser = browsers[index % browsers.length]
+          browser.get endpoint
+          assert_equal 200, browser.response.status
+          browser.response.parsed_body['id']
+        end
+        assert_equal pool.map(&:id).sort, ids.sort
+        assert_equal attributes, reader.reload.attributes.except('scripture_frame_rotation')
+        assert_equal pool.length, reader.scripture_frame_rotation['cursor']
+      end
+    end
+
+    def test_large_visitor_pool_fits_in_a_cookie
+      pool = Array.new(10_000) { |index| Bible270::ScriptureFrames::Entry.new(id: "default:large-#{index}", text: 'Text.') }
+      Bible270::ScriptureFrames.stub(:defaults, pool) do
+        3.times do
+          get endpoint
+          assert_response :success
+          assert_operator response.headers['Set-Cookie'].to_s.bytesize, :<, 2000
+        end
+      end
+    end
+
     def test_each_default_is_public_with_its_own_text_translation_and_credit
       @default_frames.each do |frame|
         Bible270::ScriptureFrames.stub(:defaults, [frame.dup]) do
@@ -113,6 +167,8 @@ if RAILS_LOADED
           assert_nil response.parsed_body['attribution']
         end
         assert_equal 'Original credit.', record.reload[:attribution]
+        get endpoint, params: { exclude: "custom:#{record.id}" }
+        assert_equal 'default:host-example', response.parsed_body['id']
       end
 
       empty_defaults
@@ -130,10 +186,17 @@ if RAILS_LOADED
       Bible270::ScriptureFrame.create!(reference: 'Disabled example', text: 'Hidden sample.', enabled: false)
       ids = default_ids + ["custom:#{record.id}"]
 
-      ids.each do |previous|
-        get endpoint, params: { exclude: previous }
-        assert_response :success
-        assert_includes ids - [previous], response.parsed_body['id']
+      previous = nil
+      2.times do
+        selected = Array.new(ids.length) do
+          get endpoint, params: { exclude: previous }
+          assert_response :success
+          current = response.parsed_body['id']
+          assert_includes ids, current
+          refute_equal previous, current
+          previous = current
+        end
+        assert_equal ids.sort, selected.sort
       end
       empty_defaults
       get endpoint

@@ -161,7 +161,9 @@ Progress mutations also enforce `Participation#ensure_writable!` in the model la
 
 `app/views/bible270/checkoffs/toggle.turbo_stream.erb` updates the reading control, day progress, and completion information without a full reload.
 
-On final check-off, `shared/_day_completion.html.erb` selects a random frame server-side. `_day_completion_ui.html.erb` runs a 1.3-second fade-in, 5.5-second hold, and optional 1-second dove flight, with a shared fade over the final 0.2 seconds. Without the dove, the frame fades out over 0.2 seconds; reduced motion uses a static 5.5-second frame. The dove grows and fades with the frame without a white-screen finish, using transforms rather than SVG filters. Completion IDs prevent replay; Escape and navigation dismiss the overlay.
+On final check-off, `shared/_day_completion.html.erb` selects a frame server-side. `_day_completion_ui.html.erb` runs a 1.3-second fade-in, then holds for `clamp(2 + words × 0.25, 5.5, 30)` seconds, counting only passage text. An optional 1-second dove flight ends with a shared 0.2-second fade. Without the dove, the frame fades over 0.2 seconds; reduced motion uses the same reading time without animations. The dove uses transforms rather than SVG filters. Completion IDs prevent replay; Escape and navigation dismiss the overlay.
+
+`ScriptureFrameRotation` shares shuffled rounds between completion frames and the bread popup. Signed-in readers store a compact seed, cursor, and deferred positions in `readers.scripture_frame_rotation` under a row lock. Visitors and older schemas use identity-scoped session state. Each round covers every enabled frame, and a new round avoids the preceding frame when possible. Catalog changes restart the round; disabled and deleted entries are excluded.
 
 ### Cross-instance progress sync
 

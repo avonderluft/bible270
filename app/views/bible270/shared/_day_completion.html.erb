@@ -1,5 +1,5 @@
 <%# locals: (day:, reader:, completion_event_id:) %>
-<% frame = Bible270::ScriptureFrames.random %>
+<% frame = Bible270::ScriptureFrames.random(reader: reader, session: session) %>
 <div class="b270-completion" data-b270-completion data-b270-day="<%= day %>"
      data-b270-completion-event="<%= completion_event_id %>" data-turbo-temporary hidden>
   <% if frame %>

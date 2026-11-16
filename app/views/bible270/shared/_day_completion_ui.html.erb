@@ -72,6 +72,12 @@
       if (current(state) && !state.finishing) dispose(state);
     }
 
+    function holdDuration(state) {
+      const text = state.frame.querySelector("[data-b270-scripture-text]")?.textContent || "";
+      const wordCount = text.match(/[^\s\p{White_Space}]+/gu)?.length || 0;
+      return Math.min(30000, Math.max(5500, 2000 + wordCount * 250));
+    }
+
     function fly(state) {
       if (!current(state)) return;
       if (!state.dove || motion?.matches) {
@@ -109,7 +115,7 @@
         state.raf = null;
         if (!current(state)) return;
         element.classList.add("is-visible");
-        if (state.frame) later(state, () => fly(state), fadeInDuration() + 5500);
+        if (state.frame) later(state, () => fly(state), fadeInDuration() + holdDuration(state));
         else fly(state);
       });
     }

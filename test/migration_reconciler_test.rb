@@ -170,6 +170,19 @@ if RAILS_LOADED
       assert_empty build_reconciler(FakeContext.new([migration], [migration.version])).statuses
     end
 
+    def test_scripture_frame_rotation_migration_is_recognized
+      migration = FakeMigration.new('AddScriptureFrameRotationToBible270Readers', 20_260_101_000_029)
+      context = FakeContext.new([migration])
+      reconciler = build_reconciler(context)
+      status = reconciler.statuses.first
+
+      assert status.complete?, status.missing.join(', ')
+      assert_equal :check_scripture_frame_rotation, Bible270::MigrationReconciler::CHECKS.fetch(migration.name)
+      reconciler.mark_applied!(status)
+      assert_equal ['20260101000029'], context.schema_migration.versions
+      assert_empty build_reconciler(FakeContext.new([migration], [migration.version])).statuses
+    end
+
     def test_only_pending_bible270_migrations_are_assessed
       migrations = [
         FakeMigration.new('CreateBible270Readers', 101),
@@ -398,6 +411,37 @@ if RAILS_LOADED
 
       refute status.complete?
       assert_raises(ArgumentError) { @reconciler.mark_applied!(status) }
+    end
+
+    def test_scripture_frame_rotation_requires_a_json_nonnull_column_with_an_empty_object_default
+      refute_empty @reconciler.check_scripture_frame_rotation
+      [[:json, { null: true, default: {} }],
+       [:json, { null: false }],
+       [:json, { null: false, default: [] }],
+       [:json, { null: false, default: { 'seed' => 1 } }],
+       [:string, { null: false, default: '{}' }]].each do |type, options|
+        rollback_schema_change do
+          @connection.add_column :bible270_readers, :scripture_frame_rotation, type, **options
+          refute_empty @reconciler.check_scripture_frame_rotation
+        end
+      end
+      @connection.add_column :bible270_readers, :scripture_frame_rotation, :json, null: false, default: {}
+      assert_empty @reconciler.check_scripture_frame_rotation
+      @connection.drop_table :bible270_checkoffs
+      @connection.drop_table :bible270_readers
+      assert_includes @reconciler.check_scripture_frame_rotation, 'table bible270_readers'
+    end
+
+    def test_scripture_frame_rotation_accepts_postgresql_and_sqlite_json_default_metadata_only_for_empty_objects
+      column_type = Struct.new(:name, :type, :null, :default)
+      [{}, '{}', ' { } '].each do |default|
+        column = column_type.new('scripture_frame_rotation', :json, false, default)
+        @connection.stub(:columns, [column]) { assert_empty @reconciler.check_scripture_frame_rotation }
+      end
+      [nil, 'null', '[]', 'broken', '{"seed":1}'].each do |default|
+        column = column_type.new('scripture_frame_rotation', :json, false, default)
+        @connection.stub(:columns, [column]) { refute_empty @reconciler.check_scripture_frame_rotation }
+      end
     end
 
     def test_admin_requires_boolean_type_nonnull_and_false_default
