@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
-require 'test_helper'
+require_relative 'support/admin_scripture_frames_test_case'
 
 if RAILS_LOADED
   class AdminScriptureLibraryTest < ActionDispatch::IntegrationTest
+    include Bible270AdminScripturePreviewAssertions
+
     def setup
       needs_rails!
       clear_engine_tables!
@@ -96,7 +98,7 @@ if RAILS_LOADED
 
       assert_response :success
       assert_select '#b270-custom-scripture-texts article > details + .b270-scripture-actions', count: 2
-      assert_select '#b270-default-scripture-texts article > details + form.b270-scripture-default-toggle', count: Bible270::ScriptureFrames.defaults.length
+      assert_select '#b270-default-scripture-texts article > details + div.b270-scripture-actions > form.b270-scripture-default-toggle', count: Bible270::ScriptureFrames.defaults.length
       styles = css_select('style').map(&:text).join
       %w[custom default].each do |source|
         assert_match(%r{\.b270-scripture-library-entry--#{source}[^\{]*\{[^\}]*display:grid;grid-template-columns:minmax\(0,1fr\) auto;}, styles)
@@ -131,7 +133,8 @@ if RAILS_LOADED
         get admin_path
 
         assert_response :success
-        assert_select '#b270-scripture-frames, #b270-active-readers, #b270-reader-stats-dialog', count: 0
+        assert_select '#b270-scripture-frames, #b270-active-readers, #b270-reader-stats-dialog, #b270-scripture-preview', count: 0
+        assert_select '[data-b270-scripture-preview], script[data-b270-scripture-preview-ui]', count: 0
         assert_select "a[href='#{frames_path}'], a[href='#{frames_path}/new']", count: 0
         assert_select '.b270-scripture-library-text', count: 0
       end
@@ -182,7 +185,7 @@ if RAILS_LOADED
         end
         assert_select '#b270-default-scripture-texts' do
           assert_select 'article > details.b270-scripture-library-disclosure:not([open])', count: Bible270::ScriptureFrames.defaults.size
-          assert_select '.b270-scripture-actions', count: 0
+          assert_select 'div.b270-scripture-actions', count: Bible270::ScriptureFrames.defaults.length
           assert_default_toggles(sort: 'first_name')
         end
         assert_select '.b270-scripture-art, .b270-scripture-library-entry [data-b270-scripture-attribution]', count: 0
@@ -253,7 +256,7 @@ if RAILS_LOADED
       end
     end
 
-    def test_unavailable_default_settings_hide_only_default_buttons_not_passage_previews_or_custom_controls
+    def test_unavailable_default_settings_hide_only_default_toggles_not_preview_buttons_or_custom_controls
       Bible270::ScriptureFrames.stub(:default_settings_available?, false) do
         get admin_path
         assert_response :success
@@ -272,7 +275,9 @@ if RAILS_LOADED
         assert_select '#b270-default-scripture-texts' do
           assert_select 'details.b270-scripture-library-disclosure:not([open])', count: Bible270::ScriptureFrames.defaults.length
           assert_select 'blockquote', count: Bible270::ScriptureFrames.defaults.length
-          assert_select 'form, button', count: 0
+          assert_select 'form', count: 0
+          assert_library_entries(Bible270::ScriptureFrames.defaults, source: 'default')
+          assert_select 'button[data-b270-scripture-preview]', count: Bible270::ScriptureFrames.defaults.length
         end
         assert_select '#b270-custom-scripture-texts .b270-scripture-actions', count: 2
         assert_select '#b270-custom-scripture-texts button', text: 'Delete', count: 2
@@ -285,7 +290,10 @@ if RAILS_LOADED
       assert_select 'article.b270-scripture-library-entry--custom[data-source="custom"]', count: 2 do |entries|
         entries.zip([@frame, @disabled]).each do |entry, frame|
           path = "#{frames_path}/#{frame.id}"
-          assert_select entry, '> details.b270-scripture-library-disclosure + .b270-scripture-actions', count: 1 do
+          assert_scripture_preview_button(entry, frame)
+          assert_select entry, '> details.b270-scripture-library-disclosure + div.b270-scripture-actions', count: 1 do |actions|
+            assert_equal %w[button a form form], actions.first.element_children.map(&:name)
+            assert_equal ['Preview', 'Edit', frame.enabled? ? 'Disable' : 'Enable', 'Delete'], actions.first.css('button, a').map(&:text)
             assert_select "> a[href='#{path}/edit?sort=#{sort}']", text: 'Edit', count: 1 do |links|
               assert_equal "Edit #{frame.reference}", links.first['aria-label']
             end
@@ -325,7 +333,11 @@ if RAILS_LOADED
         entries.zip(defaults).each do |entry, frame|
           enabled = !disabled_ids.include?(frame.id)
           action = enabled ? 'Disable' : 'Enable'
-          assert_select entry, '> details.b270-scripture-library-disclosure + form.b270-scripture-default-toggle[method="post"]', count: 1 do |forms|
+          assert_scripture_preview_button(entry, frame)
+          assert_select entry, '> div.b270-scripture-actions', count: 1 do |actions|
+            assert_equal %w[button form], actions.first.element_children.map(&:name)
+          end
+          assert_select entry, '> details.b270-scripture-library-disclosure + div.b270-scripture-actions > form.b270-scripture-default-toggle[method="post"]', count: 1 do |forms|
             assert_equal "#{admin_path}/scripture-frame-defaults/#{frame.id}", forms.first['action']
             assert_select 'input[type="hidden"][name="_method"][value="patch"]', count: 1
             assert_select 'input[type="hidden"][name="enabled"]', count: 1 do |inputs|
@@ -334,12 +346,13 @@ if RAILS_LOADED
             assert_select 'input[type="hidden"][name="sort"]', count: 1 do |inputs|
               assert_equal sort, inputs.first['value']
             end
+            assert_select 'input[type="hidden"][name="return_to"][value="admin"]', count: 1
             assert_select 'button[type="submit"]', text: action, count: 1 do |buttons|
               assert_equal "#{action} #{frame.reference}", buttons.first['aria-label']
             end
           end
           assert_select entry, 'form', count: 1
-          assert_select entry, 'details form, summary button, .b270-scripture-actions, a', count: 0
+          assert_select entry, 'details form, summary button, a', count: 0
           assert_select entry, 'details > blockquote[role="tooltip"][tabindex="0"]', count: 1 do |texts|
             assert_equal frame.text, texts.first.text
           end
@@ -354,10 +367,12 @@ if RAILS_LOADED
         entries.zip(frames).each do |entry, frame|
           label = source == 'custom' ? 'Custom text' : 'Bundled text'
           assert_equal "#{label}: #{frame.reference}", entry['aria-label']
+          assert_scripture_preview_button(entry, frame)
           enabled = source == 'custom' ? frame.enabled? : !Bible270::ScriptureFrames.disabled_default_ids.include?(frame.id)
           disabled = enabled ? '' : ' · Disabled'
           assert_select entry, '> details.b270-scripture-library-disclosure:not([open])', count: 1 do
-            assert_select '> summary', text: "#{frame.reference} · #{frame.translation} · #{source.capitalize}#{disabled}" do |summaries|
+            translation = Bible270::ScriptureFrames.quotation?(frame.translation) ? 'Other quotation' : frame.translation
+            assert_select '> summary', text: "#{frame.reference} · #{translation} · #{source.capitalize}#{disabled}" do |summaries|
               assert_select 'strong', text: frame.reference
               assert_select 'blockquote, .b270-scripture-library-text', count: 0
               assert_select entry, '> details > blockquote.b270-scripture-library-text[role="tooltip"][tabindex="0"]', count: 1 do |texts|

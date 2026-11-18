@@ -1,0 +1,113 @@
+<dialog id="b270-scripture-preview" class="b270-scripture-preview" aria-label="Scripture frame preview" data-b270-scripture-preview-dialog>
+  <form method="dialog" class="b270-scripture-preview-close">
+    <button type="submit" class="b270-linkbtn" aria-label="Close preview" autofocus>×</button>
+  </form>
+  <%= render partial: "bible270/shared/scripture_frame", locals: { frame: nil } %>
+</dialog>
+
+<script nonce="<%= content_security_policy_nonce %>" data-b270-scripture-preview-ui>
+  (() => {
+    if (window.Bible270ScripturePreview) {
+      window.Bible270ScripturePreview.reset();
+      return;
+    }
+
+    const selector = "button[data-b270-scripture-preview]";
+    const keys = ["reference", "translation", "text", "attribution"];
+    let active = null;
+    let backdropStart = false;
+
+    function clear(dialog) {
+      dialog.returnValue = "";
+      dialog.removeAttribute("open");
+      const art = dialog.querySelector("[data-b270-scripture-art]");
+      if (art) art.hidden = true;
+      keys.forEach((key) => {
+        const field = dialog.querySelector(`[data-b270-scripture-${key}]`);
+        if (!field) return;
+        field.textContent = "";
+        if (key === "translation" || key === "attribution") field.hidden = true;
+      });
+    }
+
+    function reset() {
+      const state = active;
+      active = null;
+      backdropStart = false;
+      if (!state) return;
+      // Native close restores its original focus target even after blur. Make
+      // that target briefly inert so navigation cannot refocus the departing page.
+      const previousFocus = state.previousFocus;
+      const wasInert = previousFocus?.inert;
+      if (previousFocus) previousFocus.inert = true;
+      if (state.dialog.contains(document.activeElement)) document.activeElement.blur();
+      if (state.dialog.open) state.dialog.close();
+      if (previousFocus) previousFocus.inert = wasInert;
+      clear(state.dialog);
+    }
+
+    function outside(dialog, event) {
+      const rect = dialog.getBoundingClientRect();
+      return event.clientX < rect.left || event.clientX > rect.right ||
+        event.clientY < rect.top || event.clientY > rect.bottom;
+    }
+
+    document.addEventListener("pointerdown", (event) => {
+      backdropStart = !!active && event.target === active.dialog && outside(active.dialog, event);
+    });
+    document.addEventListener("pointercancel", () => { backdropStart = false; });
+
+    document.addEventListener("click", (event) => {
+      const startedOutside = backdropStart;
+      backdropStart = false;
+      if (event.defaultPrevented) return;
+      const trigger = event.target.closest?.(selector);
+      if (!trigger) {
+        const dismiss = active && startedOutside && event.target === active.dialog && outside(active.dialog, event);
+        if (dismiss) active.dialog.close();
+        return;
+      }
+      const dialog = document.getElementById(trigger.getAttribute("aria-controls"));
+      if (!trigger.isConnected || !dialog?.matches("dialog[data-b270-scripture-preview-dialog]") ||
+          !dialog.isConnected || typeof dialog.showModal !== "function") return;
+      const art = dialog.querySelector("[data-b270-scripture-art]");
+      const fields = keys.map((key) => art?.querySelector(`[data-b270-scripture-${key}]`));
+      if (!art || fields.some((field) => !field)) return;
+      event.preventDefault();
+      if (active && active.dialog !== dialog) reset();
+      const previousFocus = active?.dialog === dialog && dialog.open ? active.previousFocus : document.activeElement;
+      active = { dialog, trigger, previousFocus };
+      backdropStart = false;
+      const quotation = trigger.getAttribute("data-b270-preview-translation") === "OTHER";
+      keys.forEach((key, index) => {
+        const value = trigger.getAttribute(`data-b270-preview-${key}`) || "";
+        const omit = quotation && (key === "translation" || key === "attribution");
+        fields[index].textContent = omit ? "" : value;
+        if (key === "translation" || key === "attribution") fields[index].hidden = omit || !value.trim();
+      });
+      art.hidden = false;
+      try {
+        if (!dialog.open) dialog.showModal();
+        dialog.scrollTop = 0;
+      } catch (_) {
+        reset();
+      }
+    });
+
+    // Native form dismissal and Escape both deliver close, which does not bubble.
+    document.addEventListener("close", (event) => {
+      const state = active;
+      // A queued close from an earlier session must not clear a reopened dialog.
+      if (!state || event.target !== state.dialog || state.dialog.open) return;
+      active = null;
+      backdropStart = false;
+      clear(state.dialog);
+      if (state.dialog.isConnected && state.trigger.isConnected) state.trigger.focus({ preventScroll: true });
+    }, true);
+
+    document.addEventListener("turbo:before-cache", reset);
+    document.addEventListener("turbo:before-render", reset);
+    window.addEventListener("pagehide", reset);
+    window.Bible270ScripturePreview = { reset };
+  })();
+</script>

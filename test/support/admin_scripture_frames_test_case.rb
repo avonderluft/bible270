@@ -3,7 +3,31 @@
 require_relative '../test_helper'
 
 if RAILS_LOADED
+  module Bible270AdminScripturePreviewAssertions
+    def assert_scripture_preview_button(entry, frame)
+      assert_equal %w[details div], entry.element_children.map(&:name)
+      assert_select entry, '> details + div.b270-scripture-actions', count: 1 do |actions|
+        assert_select '> button.b270-linkbtn[data-b270-scripture-preview]', text: 'Preview', count: 1 do |buttons|
+          button = buttons.first
+          assert_equal button, actions.first.element_children.first, 'Preview must be the first action'
+          assert_equal 'button', button['type']
+          assert_equal "Preview #{frame.reference}", button['aria-label']
+          assert_equal 'dialog', button['aria-haspopup']
+          assert_equal 'b270-scripture-preview', button['aria-controls']
+          %i[reference translation text attribution].each do |field|
+            assert_equal frame.public_send(field).to_s, button["data-b270-preview-#{field}"], "Preview #{field} must preserve stored plaintext"
+          end
+          assert_empty button.element_children
+          assert_empty button.ancestors('form, summary')
+        end
+      end
+      assert_select entry, '[data-b270-scripture-art], .b270-scripture-art, dialog', count: 0
+    end
+  end
+
   class Bible270AdminScriptureFramesTestCase < ActionDispatch::IntegrationTest
+    include Bible270AdminScripturePreviewAssertions
+
     def setup
       needs_rails!
       clear_engine_tables!
@@ -38,8 +62,10 @@ if RAILS_LOADED
           disabled = enabled ? '' : ' · Disabled'
           label = source == 'custom' ? 'Custom text' : 'Bundled text'
           assert_equal "#{label}: #{frame.reference}", entry['aria-label']
+          assert_scripture_preview_button(entry, frame)
           assert_select entry, '> details.b270-scripture-library-disclosure:not([open])', count: 1
-          assert_select entry, 'summary', text: "#{frame.reference} · #{frame.translation} · #{source.capitalize}#{disabled}"
+          translation = Bible270::ScriptureFrames.quotation?(frame.translation) ? 'Other quotation' : frame.translation
+          assert_select entry, 'summary', text: "#{frame.reference} · #{translation} · #{source.capitalize}#{disabled}"
           assert_select entry, 'strong', text: frame.reference
           assert_select entry, 'blockquote', count: 1 do |nodes|
             assert_equal frame.text, nodes.first.text

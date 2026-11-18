@@ -722,16 +722,17 @@ test('mobile header fits, icon/title centers align, theme changes only the board
           <div class="b270-navmenu"><button type="button" class="b270-navtoggle">☰</button></div></nav></header>
           <details class="b270-index b270-alumni" id="b270-alumni"><summary>Show Alumni</summary><div class="b270-list">Reader</div></details>
           <section class="b270-panel" id="b270-scripture-frames"><details class="b270-scripture-library-disclosure"><summary>Sample passage · NKJV · Custom</summary><blockquote class="b270-scripture-library-text">Sample Scripture text.</blockquote></details>
-                    <article class="b270-scripture-library-entry b270-scripture-library-entry--default"><details class="b270-scripture-library-disclosure"><summary>A long default reference · NASB95 · Default · Disabled</summary><blockquote class="b270-scripture-library-text">Default passage.</blockquote></details><form class="b270-scripture-default-toggle"><button type="submit" class="b270-linkbtn">Enable</button></form></article></section></div>
+                    <article class="b270-scripture-library-entry b270-scripture-library-entry--default"><details class="b270-scripture-library-disclosure"><summary>A long default reference · NASB95 · Default · Disabled</summary><blockquote class="b270-scripture-library-text">Default passage.</blockquote></details><div class="b270-scripture-actions"><button type="button" class="b270-linkbtn" data-b270-scripture-preview aria-haspopup="dialog" aria-controls="b270-scripture-preview">Preview</button><form class="b270-scripture-default-toggle"><button type="submit" class="b270-linkbtn">Enable</button></form></div></article></section></div>
           <div class="b270-scripture-popup is-visible" style="left:12px;top:12px">${figure}</div></body></html>`);
         doc.close();
         viewport.contentWindow.Function(librarySource)();
         const name = `${width}px/${mark}`;
         const defaultRow = doc.querySelector('.b270-scripture-library-entry--default');
-        const defaultToggle = defaultRow.querySelector('form').getBoundingClientRect();
+        const defaultActions = defaultRow.querySelector('.b270-scripture-actions').getBoundingClientRect();
         const defaultHeading = defaultRow.querySelector('details').getBoundingClientRect();
-        check(Math.abs(defaultToggle.right - defaultRow.getBoundingClientRect().right) < 1, `${name}: default toggle aligns to the right`);
-        check(defaultHeading.right <= defaultToggle.left && Math.abs(defaultHeading.top - defaultToggle.top) < 1, `${name}: default toggle sits beside the heading without overlap`);
+        check(Math.abs(defaultActions.right - defaultRow.getBoundingClientRect().right) < 1, `${name}: default actions align to the right`);
+        if (width <= 360) check(defaultHeading.bottom <= defaultActions.top, `${name}: default actions stack below the heading without overlap`);
+        else check(defaultHeading.right <= defaultActions.left && Math.abs(defaultHeading.top - defaultActions.top) < 1, `${name}: default actions sit beside the heading without overlap`);
         const title = doc.querySelector('.b270-title').getBoundingClientRect();
         const trigger = doc.querySelector('.b270-scripture-trigger');
         const brand = doc.querySelector('.b270-brand-home').getBoundingClientRect();

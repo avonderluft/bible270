@@ -13,11 +13,12 @@ const scriptureRow = (source, disabled, reference, index) => {
   const custom = source === 'Custom';
   const id = `passage-${source}-${index}`;
   const toggle = disabled ? 'Enable' : 'Disable';
-  const actions = custom
-    ? `<div class="b270-scripture-actions"><a href="#edit">Edit</a>
+  const preview = `<button type="button" class="b270-linkbtn" aria-haspopup="dialog" aria-controls="b270-scripture-preview" aria-label="Preview ${reference}" data-b270-scripture-preview data-b270-preview-reference="${reference}" data-b270-preview-translation="NKJV" data-b270-preview-text="A Scripture passage.">Preview</button>`;
+  const actions = `<div class="b270-scripture-actions">${preview}${custom
+    ? `<a href="#edit">Edit</a>
         <form method="post" action="#toggle">${patch}${hidden('scripture_frame[enabled]', disabled ? '1' : '0')}<button class="b270-linkbtn" type="submit">${toggle}</button></form>
-        <form method="post" action="#delete">${hidden('_method', 'delete')}<button class="b270-linkbtn" type="submit">Delete</button></form></div>`
-    : `<form class="b270-scripture-default-toggle" method="post" action="#default">${patch}${hidden('enabled', disabled ? '1' : '0')}<button class="b270-linkbtn" type="submit">${toggle}</button></form>`;
+        <form method="post" action="#delete">${hidden('_method', 'delete')}<button class="b270-linkbtn" type="submit">Delete</button></form>`
+    : `<form class="b270-scripture-default-toggle" method="post" action="#default">${patch}${hidden('enabled', disabled ? '1' : '0')}<button class="b270-linkbtn" type="submit">${toggle}</button></form>`}</div>`;
   return `<article class="b270-scripture-library-entry b270-scripture-library-entry--${source.toLowerCase()}" data-source="${source.toLowerCase()}">
     <details class="b270-scripture-library-disclosure">
       <summary aria-describedby="${id}"><strong>${reference}</strong> · NKJV · ${source}${disabled ? ' · Disabled' : ''}</summary>
@@ -185,20 +186,29 @@ test('admin rows, separate position forms, completion control and reader disclos
               const summary = disclosure.querySelector(':scope > summary');
               const actions = disclosure.nextElementSibling;
               const custom = row.dataset.source === 'custom';
-              check(actions.matches(custom ? '.b270-scripture-actions' : 'form.b270-scripture-default-toggle'), `${label}: actions are a direct sibling of details`);
-              check(viewport.contentWindow.getComputedStyle(row).display === 'grid', `${label}: preserve the two-column grid`);
-              beside(summary, actions, label);
+              check(actions.matches('div.b270-scripture-actions'), `${label}: actions are a direct sibling of details`);
+              const rowStyle = viewport.contentWindow.getComputedStyle(row);
+              check(rowStyle.display === 'grid', `${label}: preserve the grid`);
+              check(rowStyle.gridTemplateColumns.split(' ').length === (width <= 360 ? 1 : 2), `${label}: one column at <=360px, two columns otherwise`);
+              if (width <= 360) {
+                check(rect(disclosure).bottom <= rect(actions).top, `${label}: actions stack below the entire disclosure`);
+                check(viewport.contentWindow.getComputedStyle(actions).justifySelf === 'end', `${label}: stacked actions justify to the end`);
+              } else beside(summary, actions, label);
               inContent(summary, row, label);
               inContent(actions, row, label);
               check(Math.abs(rect(actions).right - rect(row).right) <= 1, `${label}: actions must align to the row's right edge: ${bounds(actions)}; ${bounds(row)}`);
+              const actionStyle = viewport.contentWindow.getComputedStyle(actions);
+              check(actionStyle.display === 'flex' && actionStyle.columnGap === '10px', `${label}: actions use inline flex with 10px gaps`);
+              const controls = [...actions.querySelectorAll('a,button')];
+              const preview = controls[0];
+              check(preview.matches('button.b270-linkbtn[data-b270-scripture-preview]') && preview.type === 'button' && preview.textContent === 'Preview', `${label}: Preview is the first non-submit action`);
+              check(preview.getAttribute('aria-haspopup') === 'dialog' && preview.getAttribute('aria-controls') === 'b270-scripture-preview', `${label}: Preview identifies its dialog`);
               if (custom) {
-                check(viewport.contentWindow.getComputedStyle(actions).display === 'flex', `${label}: custom actions use flex`);
-                const controls = [...actions.querySelectorAll('a,button')];
-                check(controls.length === 3 && controls[0].textContent === 'Edit' && /^(Enable|Disable)$/.test(controls[1].textContent) && controls[2].textContent === 'Delete', `${label}: Edit, toggle and Delete are separate controls`);
-                for (let i = 1; i < controls.length; i++) beside(controls[i - 1], controls[i], `${label}/actions`, true);
+                check(controls.length === 4 && controls[1].textContent === 'Edit' && /^(Enable|Disable)$/.test(controls[2].textContent) && controls[3].textContent === 'Delete', `${label}: Preview, Edit, toggle and Delete are separate controls`);
               } else {
-                check(actions.querySelectorAll('button').length === 1, `${label}: default row has only its toggle`);
+                check(controls.length === 2 && controls[1].closest('form.b270-scripture-default-toggle'), `${label}: default row has Preview and its toggle form`);
               }
+              for (let i = 1; i < controls.length; i++) beside(controls[i - 1], controls[i], `${label}/actions`, true);
               inContent(row, panel, label);
             }
             noOverflow(doc, `${name}/${open ? 'expanded' : 'collapsed'}`);

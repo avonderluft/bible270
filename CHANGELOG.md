@@ -4,6 +4,10 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Added
+
+- preview any Scripture frame from Admin in the current theme
+
 ### Changed
 
 - give longer completion passages more reading time, from 5.5 to 30 seconds

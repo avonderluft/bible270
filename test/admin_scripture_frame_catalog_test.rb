@@ -13,7 +13,9 @@ if RAILS_LOADED
 
       assert_select 'article[aria-label="Custom text: Psalm 119:130"]' do
         assert_select 'summary', text: %r{ · Disabled\z}
-        assert_select '.b270-scripture-actions' do
+        assert_select '.b270-scripture-actions' do |actions|
+          assert_scripture_preview_button(actions.first.parent, @frame)
+          assert_equal %w[button a form form], actions.first.element_children.map(&:name)
           assert_select "> a[href='#{frame_path(@frame)}/edit?sort=first_name']", text: 'Edit'
           assert_select '> form', count: 2
           assert_select 'button', text: 'Enable'
@@ -25,7 +27,9 @@ if RAILS_LOADED
       end
       assert_select 'article[aria-label="Custom text: Psalm 1:1"]' do
         assert_select 'summary', text: %r{ · Custom\z}
-        assert_select '.b270-scripture-actions' do
+        assert_select '.b270-scripture-actions' do |actions|
+          assert_scripture_preview_button(actions.first.parent, enabled)
+          assert_equal %w[button a form form], actions.first.element_children.map(&:name)
           assert_select "> a[href='#{frame_path(enabled)}/edit?sort=first_name']", text: 'Edit'
           assert_select '> form', count: 2
           assert_select 'button', text: 'Disable'
@@ -43,7 +47,7 @@ if RAILS_LOADED
       end
     end
 
-    def test_bundled_texts_have_toggle_only_controls_and_do_not_become_database_records
+    def test_bundled_texts_have_preview_then_toggle_controls_and_do_not_become_database_records
       sign_in_as(@admin)
       defaults = default_attributes
       assert_equal %w[ESV NASB95 NKJV], defaults.map { |frame| frame[:translation] }.uniq.sort
@@ -53,16 +57,19 @@ if RAILS_LOADED
 
       assert_select '#b270-scripture-frames p', text: 'Custom texts supplement the bundled defaults', count: 0
       Bible270::ScriptureFrames.defaults.each do |frame|
-        assert_select 'article[aria-label=?]', "Bundled text: #{frame.reference}" do
+        assert_select 'article[aria-label=?]', "Bundled text: #{frame.reference}" do |entries|
+          assert_scripture_preview_button(entries.first, frame)
           assert_select 'summary', text: "#{frame.reference} · #{frame.translation} · Default"
           assert_select 'details:not([open])', count: 1
           assert_select 'blockquote', count: 1 do |nodes|
             assert_equal frame.text, nodes.first.text
           end
           assert_select '[data-b270-scripture-attribution]', count: 0
-          assert_select 'form.b270-scripture-default-toggle', count: 1 do
+          assert_select '> div.b270-scripture-actions > form.b270-scripture-default-toggle', count: 1 do
             assert_select 'input[name="_method"][value="patch"]'
             assert_select 'input[type="hidden"][name="enabled"][value="0"]'
+            assert_select 'input[type="hidden"][name="return_to"][value="admin"]'
+            assert_select 'input[type="hidden"][name="sort"][value="first_name"]'
             assert_select 'button', text: 'Disable'
           end
           assert_select 'a', text: 'Edit', count: 0
@@ -140,7 +147,8 @@ if RAILS_LOADED
           end
           assert_select "a[href='#{frames_path}']", count: 0
           assert_select "a[href='#{frames_path}/new?sort=first_name']", text: 'Add text'
-          assert_select 'article[data-source="custom"] > details + .b270-scripture-actions', count: 2
+          assert_select 'article > details + div.b270-scripture-actions', count: defaults.length + 2
+          assert_select '[data-b270-scripture-art], .b270-scripture-art, dialog', count: 0
           assert_select 'article', count: defaults.length + 2
           assert_select 'details.b270-scripture-library-disclosure:not([open])', count: defaults.length + 2
           assert_select 'script', count: 0
@@ -159,7 +167,8 @@ if RAILS_LOADED
         get "#{mount}/admin"
 
         assert_response :success
-        assert_select '#b270-scripture-frames', count: 0
+        assert_select '#b270-scripture-frames, #b270-scripture-preview', count: 0
+        assert_select '[data-b270-scripture-preview], script[data-b270-scripture-preview-ui]', count: 0
         assert_select "a[href='#{frames_path}']", count: 0
         assert_select "a[href^='#{frames_path}/new']", count: 0
       end

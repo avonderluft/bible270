@@ -20,9 +20,14 @@
         <% text_id = "b270-scripture-library-#{source.downcase}-#{index}" %>
         <article class="b270-scripture-library-entry b270-scripture-library-entry--<%= source.downcase %>" data-source="<%= source.downcase %>"
                  aria-label="<%= source == 'Default' ? 'Bundled' : 'Custom' %> text: <%= frame.reference %>">
-          <%= render 'bible270/admin/scripture_text', frame: frame, source: source, text_id: text_id, return_to: 'admin' %>
-          <% if source == 'Custom' %>
-            <div class="b270-scripture-actions">
+          <%= render 'bible270/admin/scripture_text', frame: frame, source: source, text_id: text_id %>
+          <div class="b270-scripture-actions">
+            <%= button_tag 'Preview', type: 'button', class: 'b270-linkbtn',
+                  data: { b270_scripture_preview: true, b270_preview_reference: frame.reference,
+                          b270_preview_translation: frame.translation, b270_preview_text: frame.text,
+                          b270_preview_attribution: frame.attribution.to_s },
+                  aria: { haspopup: 'dialog', controls: 'b270-scripture-preview', label: "Preview #{frame.reference}" } %>
+            <% if source == 'Custom' %>
               <%= link_to 'Edit', edit_admin_scripture_frame_path(frame, sort: @reader_sort), aria: { label: "Edit #{frame.reference}" } %>
               <%= button_to frame.enabled? ? 'Disable' : 'Enable', admin_scripture_frame_path(frame), method: :patch,
                     params: { scripture_frame: { enabled: frame.enabled? ? '0' : '1' }, sort: @reader_sort }, class: 'b270-linkbtn',
@@ -30,8 +35,14 @@
               <%= button_to 'Delete', admin_scripture_frame_path(frame), method: :delete, class: 'b270-linkbtn',
                     params: { sort: @reader_sort }, aria: { label: "Delete #{frame.reference}" },
                     form: { data: { b270_admin_confirm: 'Delete this custom scripture frame permanently?' } } %>
-            </div>
-          <% end %>
+            <% elsif @scripture_frame_default_settings_available %>
+              <% disabled = Array(@disabled_default_scripture_frame_ids).include?(frame.id) %>
+              <%= button_to disabled ? 'Enable' : 'Disable', admin_default_scripture_frame_path(frame.id), method: :patch,
+                    params: { enabled: disabled ? '1' : '0', return_to: 'admin', sort: @reader_sort },
+                    class: 'b270-linkbtn', form: { class: 'b270-scripture-default-toggle' },
+                    aria: { label: "#{disabled ? 'Enable' : 'Disable'} #{frame.reference}" } %>
+            <% end %>
+          </div>
         </article>
       <% end %>
     </div>

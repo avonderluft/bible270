@@ -424,7 +424,7 @@ The [bundled YAML catalog](config/scripture_frames.yml) supplies the defaults in
 - For non-Scripture text, select **Other quotation** under Translation and enter **Author / source** and the quote. No Bible credit is attached.
 - Edit or delete custom texts; enable or disable any text. Disabled texts remain previewable but do not appear in random frames.
 
-Custom passages come first in biblical order, then quotations and defaults. Hover or focus a heading to preview; select it to expand. Use text you have permission to reproduce.
+Custom passages come first in biblical order, then quotations and defaults. **Preview** opens the reader-facing frame in your theme, without animation or a timer. Hover or focus a heading for plain text; select it to expand. Use text you have permission to reproduce.
 
 **Custom texts are stored in the database and supplement, not change, the YAML catalog.** Texts and enable/disable choices persist across runs. Defaults start enabled and cannot be edited or deleted. Custom texts require migration `20260101000027`.
 

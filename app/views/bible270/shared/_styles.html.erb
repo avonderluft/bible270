@@ -526,6 +526,11 @@
   .b270-scripture-actions>a,.b270-scripture-actions .b270-linkbtn{margin:0;font-size:12.5px;color:var(--oxblood)}
   .b270-scripture-library-entry{padding:10px 0;border-top:1px solid var(--line-soft);font-size:13px}
   .b270-scripture-library-entry--default,.b270-scripture-library-entry--custom{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px}
+  @media(max-width:360px){
+    #b270-scripture-frames{padding-inline:10px}
+    .b270-scripture-library-entry--default,.b270-scripture-library-entry--custom{grid-template-columns:minmax(0,1fr)}
+    .b270-scripture-actions{justify-self:end}
+  }
   .b270-scripture-default-toggle{margin:0}
   .b270 .b270-scripture-default-toggle .b270-linkbtn{margin:0;font-size:12.5px;line-height:inherit;white-space:nowrap;color:var(--oxblood)}
   .b270-scripture-library-disclosure{position:relative}
@@ -561,6 +566,14 @@
                          width:min(32rem,calc(100vw - 24px));max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);
                          padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);background:color-mix(in srgb,var(--card) 90%,var(--gold));color:var(--ink);
                          box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity 180ms ease-out}
+  .b270-scripture-preview{box-sizing:border-box;width:min(32rem,calc(100vw - 24px));max-width:none;
+                         max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;
+                         padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);background:color-mix(in srgb,var(--card) 90%,var(--gold));color:var(--ink);box-shadow:var(--shadow)}
+  .b270-scripture-preview::backdrop{background:rgb(0 0 0 / .55)}
+  .b270-scripture-preview-close{display:flex;justify-content:flex-end;margin:0 0 8px}
+  .b270-scripture-preview-close .b270-linkbtn{margin:0;padding:0 6px;color:var(--ink);font-size:22px;line-height:1}
+  .b270-scripture-preview-close .b270-linkbtn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .b270[data-display-mode="sage"] .b270-scripture-preview,
   .b270[data-display-mode="sage"] .b270-scripture-library-text,
   .b270[data-display-mode="sage"] .b270-scripture-art__mat,
   .b270[data-display-mode="sage"] .b270-scripture-popup{background:#d1e2ea}
