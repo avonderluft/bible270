@@ -4,9 +4,18 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-11-18
+
 ### Added
 
 - preview any Scripture frame from Admin in the current theme
+- expand the bundled Scripture frame collection
+
+## [1.19.0] - 2026-11-15
+
+### Added
+
+- expand the bundled Scripture frame collection
 
 ### Changed
 
@@ -927,7 +936,9 @@ This is the initial public release.
 
 - Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.18.1...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.20.0...main
+[1.20.0]: https://github.com/avonderluft/bible270/compare/v1.19.0...v1.20.0
+[1.19.0]: https://github.com/avonderluft/bible270/compare/v1.18.1...v1.19.0
 [1.18.1]: https://github.com/avonderluft/bible270/compare/v1.18.0...v1.18.1
 [1.18.0]: https://github.com/avonderluft/bible270/compare/v1.17.2...v1.18.0
 [1.17.2]: https://github.com/avonderluft/bible270/compare/v1.17.1...v1.17.2
