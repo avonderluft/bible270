@@ -4,6 +4,10 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Fixed
+
+- keep Scripture frame tests independent of routine catalog edits
+
 ## [1.20.0] - 2026-11-18
 
 ### Added

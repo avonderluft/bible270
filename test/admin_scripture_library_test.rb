@@ -15,7 +15,7 @@ if RAILS_LOADED
       Bible270.config.admin_resolver = nil
       Bible270.config.current_reader_resolver = nil
       Bible270.config.registration_notice_deliver_later = false
-      Bible270.config.scripture_frames_path = nil
+      Bible270.config.scripture_frames_path = ScriptureFrameFixtures::CATALOG_PATH
       @admin = create_reader('admin', admin: true)
       @site_admin = create_reader('site-admin')
       Bible270.config.admin_emails = [@site_admin.email]

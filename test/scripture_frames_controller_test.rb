@@ -2,6 +2,7 @@
 
 require 'test_helper'
 require 'bible270/scripture_frames'
+require_relative 'support/scripture_frame_fixtures'
 
 if RAILS_LOADED
   class ScriptureFramesControllerTest < ActionDispatch::IntegrationTest
@@ -9,7 +10,7 @@ if RAILS_LOADED
       clear_engine_tables!
       Bible270::ScriptureFrame.delete_all
       @previous_path = Bible270.config.scripture_frames_path
-      Bible270.config.scripture_frames_path = nil
+      Bible270.config.scripture_frames_path = ScriptureFrameFixtures::CATALOG_PATH
       @default_frames = Bible270::ScriptureFrames.defaults.map(&:dup)
       @directory = Dir.mktmpdir('scripture-frame-requests')
     end

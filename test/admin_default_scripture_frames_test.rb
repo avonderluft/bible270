@@ -2,6 +2,7 @@
 
 require 'test_helper'
 require 'bible270/scripture_frames'
+require_relative 'support/scripture_frame_fixtures'
 
 if RAILS_LOADED
   class AdminDefaultScriptureFramesTest < ActionDispatch::IntegrationTest
@@ -15,7 +16,7 @@ if RAILS_LOADED
       Bible270.config.admin_resolver = nil
       Bible270.config.current_reader_resolver = nil
       Bible270.config.registration_notice_deliver_later = false
-      Bible270.config.scripture_frames_path = nil
+      Bible270.config.scripture_frames_path = ScriptureFrameFixtures::CATALOG_PATH
       Bible270.config.start_date = Bible270.today - 9
       Bible270.config.allow_reader_start_date = true
       @admin = create_reader('admin', admin: true)

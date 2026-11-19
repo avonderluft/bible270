@@ -2,117 +2,22 @@
 
 require 'test_helper'
 require 'bible270/scripture_frames'
+require_relative 'support/scripture_frame_fixtures'
 
 if RAILS_LOADED
   class ScriptureFramesTest < Minitest::Test
     CATALOG = Bible270::ScriptureFrames
-    SUPPLIED_PASSAGES = [
-      { id: 'default:deuteronomy-6-6-7', reference: 'Deuteronomy 6:6-7', translation: 'NASB95',
-        text: 'These words, which I am commanding you today, shall be on your heart. You shall teach them diligently to your sons and shall talk of them when you sit in your house and when you walk by the way and when you lie down and when you rise up.',
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:deuteronomy-11-18', reference: 'Deuteronomy 11:18', translation: 'NKJV',
-        text: 'Therefore you shall lay up these words of mine in your heart and in your soul, and bind them as a sign on your hand, and they shall be as frontlets between your eyes.',
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:deuteronomy-30-14', reference: 'Deuteronomy 30:14', translation: 'ESV',
-        text: 'But the word is very near you. It is in your mouth and in your heart, so that you can do it.',
-        attribution: 'ESV © 2001 Crossway.' },
-      { id: 'default:psalm-1-1-2', reference: 'Psalm 1:1-2', translation: 'NASB95',
-        text: "How blessed is the man who does not walk in the counsel of the wicked,\nNor stand in the path of sinners,\nNor sit in the seat of scoffers!\nBut his delight is in the law of the LORD,\nAnd in His law he meditates day and night.",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:psalm-19-8', reference: 'Psalm 19:8', translation: 'NKJV',
-        text: "The statutes of the LORD are right, rejoicing the heart;\nThe commandment of the LORD is pure, enlightening the eyes.",
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:psalm-107-20', reference: 'Psalm 107:20', translation: 'NKJV',
-        text: "He sent His word and healed them,\nAnd delivered them from their destructions.",
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:psalm-119-9', reference: 'Psalm 119:9', translation: 'NASB95',
-        text: "How can a young man keep his way pure?\nBy keeping it according to Your word.",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:psalm-119-11', reference: 'Psalm 119:11', translation: 'NASB95',
-        text: "Your word I have treasured in my heart,\nThat I may not sin against You.",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:psalm-119-47', reference: 'Psalm 119:47', translation: 'NKJV',
-        text: "I will delight myself in Your commandments,\nWhich I love.",
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:psalm-119-103', reference: 'Psalm 119:103', translation: 'NASB95',
-        text: "How sweet are Your words to my taste!\nYes, sweeter than honey to my mouth!",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:psalm-119-105', reference: 'Psalm 119:105', translation: 'NKJV',
-        text: "Your word is a lamp to my feet\nAnd a light to my path.",
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:psalm-119-130', reference: 'Psalm 119:130', translation: 'NASB95',
-        text: "The unfolding of Your words gives light;\nIt gives understanding to the simple.",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-
-      { id: 'default:psalm-119-162', reference: 'Psalm 119:162', translation: 'NASB95',
-        text: "I rejoice at Your word,\nAs one who finds great spoil.",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:proverbs-6-23', reference: 'Proverbs 6:23', translation: 'NASB95',
-        text: "For the commandment is a lamp and the teaching is light;\nAnd reproofs for discipline are the way of life",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:proverbs-16-20', reference: 'Proverbs 16:20', translation: 'NASB95',
-        text: "He who gives attention to the word will find good,\nAnd blessed is he who trusts in the LORD.",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:isaiah-40-7-8', reference: 'Isaiah 40:7-8', translation: 'NASB95',
-        text: "The grass withers, the flower fades,\nWhen the breath of the LORD blows upon it;\nSurely the people are grass.\nThe grass withers, the flower fades,\nBut the word of our God stands forever.",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:isaiah-55-11', reference: 'Isaiah 55:11', translation: 'ESV',
-        text: "so shall my word be that goes out from my mouth;\nit shall not return to me empty,\nbut it shall accomplish that which I purpose,\nand shall succeed in the thing for which I sent it.",
-        attribution: 'ESV © 2001 Crossway.' },
-      { id: 'default:isaiah-66-2', reference: 'Isaiah 66:2', translation: 'ESV',
-        text: "All these things my hand has made,\nand so all these things came to be, declares the LORD.\nBut this is the one to whom I will look:\nhe who is humble and contrite in spirit\nand trembles at my word.",
-        attribution: 'ESV © 2001 Crossway.' },
-      { id: 'default:jeremiah-15-16', reference: 'Jeremiah 15:16', translation: 'NASB95',
-        text: "Your words were found and I ate them,\nAnd Your words became for me a joy and the delight of my heart;\nFor I have been called by Your name,\nO LORD God of hosts.",
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:jeremiah-23-29', reference: 'Jeremiah 23:29', translation: 'NKJV',
-        text: "“Is not My word like a fire?” says the LORD,\n“And like a hammer that breaks the rock in pieces?",
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:matthew-24-35', reference: 'Matthew 24:35', translation: 'NKJV',
-        text: 'Heaven and earth will pass away, but My words will by no means pass away.',
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:john-6-63', reference: 'John 6:63', translation: 'NKJV',
-        text: 'It is the Spirit who gives life; the flesh profits nothing. The words that I speak to you are spirit, and they are life.',
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:john-15-3-4', reference: 'John 15:3-4', translation: 'NKJV',
-        text: 'You are already clean because of the word which I have spoken to you. Abide in Me, and I in you. As the branch cannot bear fruit of itself, unless it abides in the vine, neither can you, unless you abide in Me.',
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:john-17-17', reference: 'John 17:17', translation: 'NASB95',
-        text: '“Sanctify them in the truth; Your word is truth.',
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:john-20-31', reference: 'John 20:31', translation: 'NKJV',
-        text: 'these are written that you may believe that Jesus is the Christ, the Son of God, and that believing you may have life in His name.',
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:romans-15-4', reference: 'Romans 15:4', translation: 'NASB95',
-        text: 'For whatever was written in earlier times was written for our instruction, so that through perseverance and the encouragement of the Scriptures we might have hope.',
-        attribution: 'NASB 1995 © The Lockman Foundation.' },
-      { id: 'default:2-corinthians-4-6', reference: '2 Corinthians 4:6', translation: 'NKJV',
-        text: 'For it is the God who commanded light to shine out of darkness, who has shone in our hearts to give the light of the knowledge of the glory of God in the face of Jesus Christ.',
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:ephesians-5-25-27', reference: 'Ephesians 5:25-27', translation: 'ESV',
-        text: 'Christ loved the church and gave himself up for her, that he might sanctify her, having cleansed her by the washing of water with the word, so that he might present the church to himself in splendor, without spot or wrinkle or any such thing, that she might be holy and without blemish.',
-        attribution: 'ESV © 2001 Crossway.' },
-      { id: 'default:colossians-3-16', reference: 'Colossians 3:16', translation: 'ESV',
-        text: 'Let the word of Christ dwell in you richly, teaching and admonishing one another in all wisdom, singing psalms and hymns and spiritual songs, with thankfulness in your hearts to God.',
-        attribution: 'ESV © 2001 Crossway.' },
-      { id: 'default:2-timothy-3-16-17', reference: '2 Timothy 3:16-17', translation: 'ESV',
-        text: 'All Scripture is breathed out by God and profitable for teaching, for reproof, for correction, and for training in righteousness, that the man of God may be complete, equipped for every good work.',
-        attribution: 'ESV © 2001 Crossway.' },
-      { id: 'default:hebrews-4-12', reference: 'Hebrews 4:12', translation: 'NKJV',
-        text: 'For the word of God is living and powerful, and sharper than any two-edged sword, piercing even to the division of soul and spirit, and of joints and marrow, and is a discerner of the thoughts and intents of the heart.',
-        attribution: 'NKJV © 1982 Thomas Nelson.' },
-      { id: 'default:1-peter-2-2-3', reference: '1 Peter 2:2-3', translation: 'NASB95',
-        text: 'like newborn babies, long for the pure milk of the word, so that by it you may grow in respect to salvation, if you have tasted the kindness of the Lord.',
-        attribution: 'NASB 1995 © The Lockman Foundation.' }
-    ].freeze
 
     def setup
       clear_engine_tables!
       Bible270::ScriptureFrame.delete_all
       @previous_path = Bible270.config.scripture_frames_path
       Bible270.config.scripture_frames_path = nil
-      @default_frames = CATALOG.defaults.map(&:dup)
+      @bundled_frames = CATALOG.defaults.map(&:dup)
+      @bundled_attributions = CATALOG.translation_attributions
       @default_translations = CATALOG.translations
+      Bible270.config.scripture_frames_path = ScriptureFrameFixtures::CATALOG_PATH
+      @default_frames = CATALOG.defaults.map(&:dup)
       @directory = Dir.mktmpdir('scripture-frames')
     end
 
@@ -143,26 +48,24 @@ if RAILS_LOADED
       Bible270.config.scripture_frames_path = path
     end
 
-    def test_bundled_catalog_preserves_supplied_passages_and_credits_in_biblical_order
-      frames = CATALOG.defaults.index_by(&:id)
-      assert_equal SUPPLIED_PASSAGES.map { |entry| entry[:id] }.to_a, frames.keys
-
-      SUPPLIED_PASSAGES.each do |expected|
-        assert frames.key?(expected[:id]), "Missing supplied passage #{expected[:id]}"
-        assert_equal expected, frames.fetch(expected[:id]).to_h
-        assert_includes CATALOG.translations, expected[:translation]
-        assert_equal expected[:attribution], CATALOG.attribution_for(expected[:translation].downcase)
-      end
-    end
-
     def test_translation_options_follow_reader_preferences_with_extra_choices_last
-      assert_equal %w[NKJV NASB95 LSB ESV KJV YLT CSB NIV], CATALOG.translations
-      shared = Bible270::Translations.codes & CATALOG.translations
-      assert_equal shared, CATALOG.translations.first(shared.length)
-      assert_equal SUPPLIED_PASSAGES.length, CATALOG.defaults.length
+      use_host(YAML.dump([
+        host_row(translation: 'ZZZHOST', attribution: 'Last host credit.'),
+        host_row(id: 'another-example', translation: 'AAAHOST')
+      ]))
+      available = CATALOG.translation_attributions.keys
+      reader_versions = Bible270::Translations::VERSIONS.keys & available
+      additional_versions = CATALOG.const_get(:ADDITIONAL_ATTRIBUTIONS).keys
+      built_in_versions = (reader_versions + additional_versions).uniq & available
+      preferred = Bible270::Translations.codes & available
+      remaining = built_in_versions - preferred
+      extras = available - built_in_versions
+      assert_equal preferred + remaining + extras.sort, CATALOG.translations
+      assert_equal %w[AAAHOST ZZZHOST], (CATALOG.translations & %w[AAAHOST ZZZHOST])
 
-      Bible270::Translations.stub(:codes, %w[KJV ESV NKJV]) do
-        assert_equal %w[KJV ESV NKJV NASB95 LSB YLT CSB NIV], CATALOG.translations
+      preference = reader_versions.reverse.first(3)
+      Bible270::Translations.stub(:codes, preference) do
+        assert_equal preference + (built_in_versions - preference) + extras.sort, CATALOG.translations
       end
     end
 
@@ -204,10 +107,8 @@ if RAILS_LOADED
       ]))
 
       assert_equal %w[default:host-example default:public-example], CATALOG.defaults.map(&:id)
-      assert_equal default_translations + %w[HOST PUBLIC], CATALOG.translations
-      @default_frames.each do |frame|
-        assert_equal frame.attribution, CATALOG.attribution_for(frame.translation)
-      end
+      assert_equal (default_translations + %w[HOST PUBLIC]).sort, CATALOG.translations.sort
+      assert_equal @bundled_attributions, CATALOG.translation_attributions.except('HOST', 'PUBLIC')
       assert_equal 'Host sample credit.', CATALOG.attribution_for(' host ')
       assert CATALOG.translation_attributions.key?('PUBLIC')
       assert_nil CATALOG.attribution_for('PUBLIC')
@@ -215,12 +116,13 @@ if RAILS_LOADED
     end
 
     def test_host_frames_in_known_translations_can_inherit_bundled_credit
-      use_host(YAML.dump([host_row(translation: ' nkjv ')]))
+      code = @bundled_frames.first.translation
+      credit = @bundled_attributions.fetch(code)
+      use_host(YAML.dump([host_row(translation: " #{code.downcase} ")]))
 
       assert_equal ['default:host-example'], CATALOG.defaults.map(&:id)
-      assert_equal 'NKJV', CATALOG.defaults.first.translation
-      assert_equal 'NKJV © 1982 Thomas Nelson.', CATALOG.defaults.first.attribution
-      assert_equal 'NKJV © 1982 Thomas Nelson.', CATALOG.attribution_for('NKJV')
+      assert_equal [code, credit], [CATALOG.defaults.first.translation, CATALOG.defaults.first.attribution]
+      assert_equal({ code => credit }, CATALOG.translation_attributions.slice(code))
     end
 
     def test_empty_host_catalog_keeps_known_translation_metadata
@@ -231,25 +133,27 @@ if RAILS_LOADED
     end
 
     def test_conflicting_translation_credits_fall_back_instead_of_mislabeling
+      code, credit = @bundled_attributions.find { |_, attribution| attribution }
       [
-        [host_row(translation: 'nasb95', attribution: 'Wrong credit.')],
+        [host_row(translation: code.downcase, attribution: "#{credit} Conflicting credit.")],
         [host_row(translation: 'TEST', attribution: 'One credit.'),
          host_row(id: 'another-example', translation: ' test ', attribution: 'Another credit.')]
       ].each do |rows|
         use_host(YAML.dump(rows))
-        assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
-        assert_equal 'NASB 1995 © The Lockman Foundation.', CATALOG.attribution_for('NASB95')
+        assert_equal @bundled_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+        assert_equal credit, CATALOG.attribution_for(code)
       end
     end
 
     def test_creating_custom_frames_does_not_write_yaml_or_remove_defaults
       bundled = File.expand_path('../config/scripture_frames.yml', __dir__)
       original = File.binread(bundled)
+      credit = CATALOG.attribution_for('NKJV')
       custom = Bible270::ScriptureFrame.create!(reference: 'Custom example', text: 'Sample text.', translation: 'NKJV')
 
       assert_equal original, File.binread(bundled)
       assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
-      assert_equal 'NKJV © 1982 Thomas Nelson.', custom.reload.attribution
+      assert_equal [credit], [custom.reload.attribution]
       assert_includes default_ids, CATALOG.random(exclude: "custom:#{custom.id}").id
       custom.destroy!
       default_ids.each do |previous|
@@ -278,14 +182,34 @@ if RAILS_LOADED
       assert_nil frame.attribution
     end
 
-    def test_catalog_is_read_lazily_without_a_stale_cache
+    def test_host_yaml_normalizes_fields_without_changing_plaintext_contents
+      use_host(YAML.dump([host_row(reference: "  John 1:1\r\n ", translation: ' test ',
+                                   text: "  A <b>sample</b> & \"quoted\" text.\r\nAnother line.  ",
+                                   attribution: "  Host credit.\r\nSecond credit line.  ")]))
+
+      assert_equal({ id: 'default:host-example', reference: 'John 1:1', translation: 'TEST',
+                     text: "A <b>sample</b> & \"quoted\" text.\nAnother line.",
+                     attribution: "Host credit.\nSecond credit line." }, CATALOG.defaults.first.to_h)
+      use_host(YAML.dump([host_row(attribution: " \r\n ")]))
+      assert_nil CATALOG.defaults.first.attribution
+    end
+
+    def test_catalog_is_read_lazily_after_valid_additions_removals_and_text_edits
       use_host(YAML.dump([host_row]))
       assert_equal 'Host example', CATALOG.defaults.first.reference
       assert_nil CATALOG.attribution_for('TEST')
 
-      File.write(Bible270.config.scripture_frames_path, YAML.dump([host_row(reference: 'Updated example', attribution: 'Updated credit.')]))
+      edited = host_row(reference: 'Updated example', text: "Updated text.\nSecond line.", attribution: 'Updated credit.')
+      added = host_row(id: 'added-example', attribution: 'Updated credit.')
+      File.write(Bible270.config.scripture_frames_path, YAML.dump([edited, added]))
+      assert_equal %w[default:host-example default:added-example], CATALOG.defaults.map(&:id)
       assert_equal 'Updated example', CATALOG.defaults.first.reference
+      assert_equal edited['text'], CATALOG.defaults.first.text
       assert_equal 'Updated credit.', CATALOG.attribution_for('TEST')
+
+      File.write(Bible270.config.scripture_frames_path, YAML.dump([added]))
+      assert_equal ['default:added-example'], CATALOG.defaults.map(&:id)
+      assert_equal added['text'], CATALOG.defaults.first.text
     end
 
     def test_empty_host_catalog_is_intentional_and_can_produce_an_empty_pool
@@ -306,7 +230,7 @@ if RAILS_LOADED
         use_host(source)
         log = StringIO.new
         Rails.stub(:logger, Logger.new(log)) do
-          assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+          assert_equal @bundled_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
         end
         assert_includes log.string, 'using bundled defaults'
         refute_includes log.string, 'private'
@@ -318,7 +242,7 @@ if RAILS_LOADED
       Bible270.config.scripture_frames_path = File.join(@directory, 'missing.yml')
       log = StringIO.new
       Rails.stub(:logger, Logger.new(log)) do
-        assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+        assert_equal @bundled_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
       end
       assert_includes log.string, 'using bundled defaults'
       refute_includes log.string, @directory
@@ -333,12 +257,12 @@ if RAILS_LOADED
       ]
       invalid_rows.each do |row|
         use_host(YAML.dump([host_row, row]))
-        assert_equal default_ids, CATALOG.defaults.map(&:id)
+        assert_equal @bundled_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
       end
       use_host(YAML.dump([host_row, host_row]))
-      assert_equal default_ids, CATALOG.defaults.map(&:id)
+      assert_equal @bundled_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
       use_host(YAML.dump({ 'frames' => [] }))
-      assert_equal default_ids, CATALOG.defaults.map(&:id)
+      assert_equal @bundled_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
     end
 
     def test_random_combines_defaults_and_enabled_custom_entries_and_excludes_previous_id
@@ -480,7 +404,7 @@ if RAILS_LOADED
       first, second = default_ids.first(2)
       Bible270::Setting.write(disable_key(first), 'true')
       [nil, '', 'false', 'TRUE', '1', '["default:unknown"]'].each_with_index do |value, index|
-        Bible270::Setting.write(disable_key(default_ids[index + 1]), value)
+        Bible270::Setting.write(disable_key("default:malformed-value-#{index}"), value)
       end
       ['custom:1', 'default:bad_slug', 'default:Bad', 'default:', 'default:bad--slug', 'default:valid\n'].each do |id|
         Bible270::Setting.write(disable_key(id), 'true')
@@ -591,10 +515,10 @@ if RAILS_LOADED
     end
 
     def test_host_catalog_state_follows_stable_ids_across_reloads_removal_and_reintroduction
-      bundled_id = default_ids.first
-      CATALOG.set_default_enabled!(bundled_id, enabled: false)
+      fixture_id = default_ids.first
+      CATALOG.set_default_enabled!(fixture_id, enabled: false)
       use_host(YAML.dump([host_row]))
-      assert_raises(ArgumentError) { CATALOG.set_default_enabled!(bundled_id, enabled: true) }
+      assert_raises(ArgumentError) { CATALOG.set_default_enabled!(fixture_id, enabled: true) }
       assert_equal 'default:host-example', CATALOG.random.id
       CATALOG.set_default_enabled!('default:host-example', enabled: false)
       assert_nil CATALOG.random
@@ -608,10 +532,10 @@ if RAILS_LOADED
       Bible270::Setting.reset_column_information
       assert_nil CATALOG.random
 
-      Bible270.config.scripture_frames_path = nil
+      Bible270.config.scripture_frames_path = ScriptureFrameFixtures::CATALOG_PATH
       CATALOG.stub(:defaults, [@default_frames.first]) { assert_nil CATALOG.random }
-      assert_includes CATALOG.disabled_default_ids, bundled_id
-      CATALOG.set_default_enabled!(bundled_id, enabled: true)
+      assert_includes CATALOG.disabled_default_ids, fixture_id
+      CATALOG.set_default_enabled!(fixture_id, enabled: true)
       assert_equal ['default:host-example'], CATALOG.disabled_default_ids
     end
 
@@ -672,12 +596,13 @@ if RAILS_LOADED
     end
 
     def test_bundled_defaults_work_before_the_custom_table_exists
+      Bible270.config.scripture_frames_path = nil
       assert CATALOG.custom_available?
       Bible270::ScriptureFrame.stub(:table_exists?, false) do
         Bible270::ScriptureFrame.stub(:enabled, -> { flunk 'must not query a missing table' }) do
           refute CATALOG.custom_available?
-          assert_equal @default_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
-          assert_includes @default_frames.map(&:to_h), CATALOG.random.to_h
+          assert_equal @bundled_frames.map(&:to_h), CATALOG.defaults.map(&:to_h)
+          assert_includes @bundled_frames.map(&:to_h), CATALOG.random.to_h
         end
       end
     end

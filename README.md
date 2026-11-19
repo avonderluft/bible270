@@ -767,6 +767,8 @@ bundle exec rubocop --cache false
 
 `rake test` uses up to 16 CPU-aware workers and writes coverage to `coverage/index.html`. Tests share setup in `test/support`; libvips uses one thread per worker to avoid CPU contention.
 
+Scripture behavior tests use `test/fixtures/scripture_frames.yml`. Separate tests validate the bundled catalog without fixing its size or contents; routine passage edits need no fixture updates.
+
 Use `PARALLEL_WORKERS=4 bundle exec rake test` to limit CPU/memory use, or `bundle exec rake test:serial` for serial coverage. `VIPS_CONCURRENCY` overrides image-processing threads. Logs keep warnings and errors in `test/dummy/log/test-*.log`; `TEST_LOG_LEVEL=debug` adds request/SQL details and `TEST_ERROR_PAGES=1` enables developer error pages. Unexpected errors still raise.
 
 JavaScript tests require **Node.js 22+**. Chromium layout checks run when a browser is available (`CHROME_BIN` selects it). Video tests do not contact YouTube; check live playback and host CSP separately.

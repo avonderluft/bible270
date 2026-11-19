@@ -1,0 +1,26 @@
+# Small, stable catalog for behavior tests; independent of the bundled collection.
+- id: sample-psalm
+  reference: Psalm 1:1
+  translation: NASB95
+  text: A sample blessing.
+  attribution: NASB 1995 © The Lockman Foundation.
+
+- id: sample-light
+  reference: Psalm 119:130
+  translation: NASB95
+  text: |-
+    First line & light.
+    Second line with "quotes" and <plain text>.
+  attribution: NASB 1995 © The Lockman Foundation.
+
+- id: sample-john
+  reference: John 17:17
+  translation: NKJV
+  text: A sample passage about truth.
+  attribution: NKJV © 1982 Thomas Nelson.
+
+- id: sample-timothy
+  reference: 2 Timothy 3:16-17
+  translation: ESV
+  text: A sample passage about Scripture.
+  attribution: ESV © 2001 Crossway.

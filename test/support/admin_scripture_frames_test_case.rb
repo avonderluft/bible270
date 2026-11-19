@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../test_helper'
+require_relative 'scripture_frame_fixtures'
 
 if RAILS_LOADED
   module Bible270AdminScripturePreviewAssertions
@@ -38,7 +39,7 @@ if RAILS_LOADED
       Bible270.config.admin_resolver = nil
       Bible270.config.current_reader_resolver = nil
       Bible270.config.registration_notice_deliver_later = false
-      Bible270.config.scripture_frames_path = nil
+      Bible270.config.scripture_frames_path = ScriptureFrameFixtures::CATALOG_PATH
 
       @site_admin = create_reader('site-admin')
       @admin = create_reader('admin', admin: true)
