@@ -1,0 +1,13 @@
+<%# locals: (membership:, url:) %>
+<%= form_with url: url, method: :patch, class: 'b270-startform' do %>
+  <%= hidden_field_tag :participation_id, membership.id, id: nil %>
+  <label class="b270-field">
+    <span>Plan length</span>
+    <span class="b270-select-wrap">
+      <% selected = Bible270::Participation::PLUS95_CHOICES.key(membership.plus95_override) %>
+      <%= select_tag :plus95_override, options_for_select([['Run default', 'default'], ['270 days', '0'], ['365 days (+95)', '1']], selected),
+            class: 'b270-select' %>
+    </span>
+  </label>
+  <%= submit_tag 'Save', class: 'b270-btn' %>
+<% end %>

@@ -7,7 +7,7 @@
     <% if signed_in? && current_reader.id == @reader.id %>
       <p style="margin:2px 0 0"><%= link_to 'Edit your name', profile_path, class: 'b270-linkbtn' %></p>
     <% end %>
-    <p style="margin:2px 0 0;color:var(--faint);font-size:14px"><%= @days_completed %> of <%= Bible270::Plan::DAYS %> days complete · <%= @reader.completion_percent %>%</p>
+    <p style="margin:2px 0 0;color:var(--faint);font-size:14px"><%= @days_completed %> of <%= @reader.plan_days %> days complete · <%= @reader.completion_percent %>%</p>
   </div>
 </div>
 

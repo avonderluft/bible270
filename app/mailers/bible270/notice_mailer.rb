@@ -58,7 +58,7 @@ module Bible270
 
       @day = day.to_i
       @on = Plan.to_date(on)
-      return message.perform_deliveries = false unless Plan.valid_day?(@day) && @on
+      return message.perform_deliveries = false unless @on && Plan.valid_day?(@day, days: @reader.plan_days)
 
       @readings = Plan.readings_for(@day).select { |_, reference| reference }
       @app_name = Bible270.config.app_name

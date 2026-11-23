@@ -220,21 +220,26 @@ module Bible270
       comment.reader_id == current_reader.id || b270_admin_view?
     end
 
-    # One cell of the 270-day grid. Four views drew this by hand in four slightly
+    # One cell of the day grid. Four views drew this by hand in four slightly
     # different ways; now they all call this.
     #
     # The title attribute carries the readings for pointer users; aria-label also
     # includes date, progress, today, and reflection state for assistive technology.
-    def b270_day_cell(day, reader: nil, today: nil, start_date: reader&.effective_start_date)
-      link_to day, day_path(day),
-              class: b270_day_cell_classes(day, reader: reader, today: today),
-              title: b270_day_readings(day),
-              aria: { label: b270_day_cell_label(day, reader: reader, today: today, start_date: start_date) }
+    def b270_day_cell(day, reader: nil, today: nil, start_date: reader&.effective_start_date,
+                      browse_days: reader&.plan_days || Plan::DAYS)
+      label = b270_day_cell_label(day, reader: reader, today: today, start_date: start_date)
+      options = {
+        class: b270_day_cell_classes(day, reader: reader, today: today),
+        title: b270_day_readings(day),
+        aria: { label: label }
+      }
+      day <= browse_days ? link_to(day, day_path(day), options) : tag.span(day, **options)
     end
 
     def b270_day_cell_label(day, reader: nil, today: nil, start_date: reader&.effective_start_date)
       parts = ["Day #{day}"]
-      parts << Plan.date_for(day, start_date).strftime('%A, %B %-d, %Y') if start_date
+      date = Plan.date_for(day, start_date, days: Plan::EXTENDED_DAYS)
+      parts << date.strftime('%A, %B %-d, %Y') if date
       if reader
         status = { complete: 'complete', partial: 'partially read', none: 'not read' }.fetch(reader.day_status(day))
         parts << status
@@ -265,16 +270,19 @@ module Bible270
     # when they have chosen one — b270_passage_url falls back to the site default
     # for a visitor.
     def b270_day_reading_links(day)
-      readings = Bible270::Plan.readings_for(day)
+      # Keep the base plan's familiar three summaries; +95 summaries can join
+      # multiple books or chapter ranges, which chapter-based providers truncate.
+      references = if day > Plan::DAYS
+                     Plan.present_tracks(day).flat_map { |track| Plan.parts_for(day, track) }
+                   else
+                     Plan.readings_for(day).values.compact
+                   end
 
-      links = Bible270::Plan::TRACKS.keys.filter_map do |track|
-        reference = readings[track]
-        next if reference.blank?
+      safe_join(references.map { |ref| b270_passage_link(ref, class: 'b270-reflink') }, ' · ')
+    end
 
-        b270_passage_link reference, class: 'b270-reflink'
-      end
-
-      safe_join(links, ' · ')
+    def b270_reflection_track_options(day)
+      [['The whole day', '']] + Plan.present_tracks(day).map { |track| [b270_track(track)[:label], track] }
     end
 
     # The days that have at least one visible reflection, fetched once per request.

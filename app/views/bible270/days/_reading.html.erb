@@ -10,9 +10,8 @@
   <div class="b270-reading <%= track %> <%= 'multi' if parts.size > 1 %> <%= 'done' if done %>"
        id="reading_<%= day %>_<%= track %>">
     <%# One box per chapter. A reading of a single chapter keeps the original
-        single-box layout; only multi-chapter Old Testament readings split. The
-        multi layout is a block, not a flex row, so each chapter's box sits in the
-        same column as the single box on the other tracks. %>
+        single-box layout. The multi layout is a block, not a flex row, so each
+        chapter's box sits in the same column as the single box on other tracks. %>
     <% if parts.size > 1 %>
       <div class="b270-rbody">
         <div class="b270-cat"><%= t[:label] %></div>
@@ -40,7 +39,7 @@
           <% end %>
         </ul>
         <div class="b270-parts-meta">
-          <%= read_parts.size %> of <%= parts.size %> chapters <%= b270_version_tag(track: track) %>
+          <%= read_parts.size %> of <%= parts.size %> <%= day > Bible270::Plan::DAYS ? 'parts' : 'chapters' %> <%= b270_version_tag(track: track) %>
         </div>
       </div>
     <% else %>
@@ -59,7 +58,7 @@
       <% end %>
       <div class="b270-rbody">
         <div class="b270-cat"><%= t[:label] %></div>
-        <div class="b270-ref"><%= b270_passage_link ref %> <%= b270_version_tag(track: track) %></div>
+        <div class="b270-ref"><%= b270_passage_link parts.first %> <%= b270_version_tag(track: track) %></div>
       </div>
     <% end %>
   </div>

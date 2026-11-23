@@ -11,7 +11,7 @@
   <% if comment.errors.any? %>
     <p style="color:var(--oxblood);font-size:13px"><%= comment.errors.full_messages.to_sentence %></p>
   <% end %>
-  <% if comment.parent_id.present? && (parent = Bible270::Comment.find_by(id: comment.parent_id)) %>
+  <% if comment.parent_id.present? && (parent = Bible270::Comment.for_day(day).find_by(id: comment.parent_id)) %>
     <p class="b270-replying">
       Replying to <strong><%= parent.reader.display_name %></strong>
       · <%= link_to "cancel", day_path(day, anchor: "new_comment_form") %>
@@ -25,8 +25,8 @@
   <div class="row">
     <span class="b270-select-wrap b270-track-select-wrap">
       <%= f.select :track,
-            options_for_select([["The whole day", ""]] + Bible270::Plan::TRACKS.map { |k, v| [v[:label], k] }),
-            {}, class: "b270-select", aria: { label: "Reading this reflection relates to" } %>
+            b270_reflection_track_options(day), { selected: comment.track.to_s },
+            class: "b270-select", aria: { label: "Reading this reflection relates to" } %>
     </span>
     <%= f.submit "Post reflection", class: "b270-btn" %>
   </div>

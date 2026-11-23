@@ -18,7 +18,9 @@ Three tracks every day, balanced by **verse count**:
 
 By default, psalms of 25 verses or fewer stay whole. Longer chapters use selected breaks or balanced divisions; **Psalm 73 stays whole**, **Psalm 69 splits into verses 1–19 and 20–36**, and **Psalm 119 has eleven 16-verse readings** (two acrostic stanzas each). Parts of a divided chapter always fall on consecutive days. See [Tuning the plan](#tuning-the-plan) for overrides.
 
-The Old Testament and Revelation 22 finish on day 270 alongside Psalm 1. Daily readings average about 115 verses (range 76–166).
+The Old Testament and Revelation 22 finish on day 270 alongside Psalm 1. Daily readings average 115 verses (range 76–166).
+
+**Plus95** adds days 271–365 without changing the first 270 days. Read the New Testament, Psalms, and Proverbs again, beginning with Psalm 2 after the day 270 repeat of Psalm 1. Readings average 119 verses per day (range 109–131). Chapters stay whole except Psalm 119, which splits at stanza boundaries. Set the run default under **Admin → Plan length** or when starting a run. Active readers can choose **Run default**, **270 days**, or **365 days (+95)** under **Profile → Plan length**; admins can set the same choice on the reader’s Admin page. The standard overview tagline follows the effective length; custom taglines stay unchanged. Turning +95 off hides the extra readings and check-offs without deleting them. Reflections stay visible and open to replies.
 
 `Bible270::Plan` generates the schedule from `Bible270::Versification`, not the database. **Progress and reflections are public.**
 
@@ -137,6 +139,7 @@ Review the [changelog](CHANGELOG.md) before deploying and run **all current migr
 - `20260101000025` enables admin roles in the panel. Configured admins become Site-admins and keep their access.
 - `20260101000026` saves restart snapshots so future new runs can be reverted.
 - `20260101000027` stores admin-added Scripture frame texts.
+- `20260101000030` adds the per-run Plus95 default; `20260101000031` adds reader overrides. Existing readers inherit their run’s setting.
 
 **Schedule changes do not remap existing day-based check-offs.** Compared with 1.13.3, the current default Psalms/Proverbs assignments differ on days 112–113 and 117–270, including the closing Psalm 1 reading. Review the effect on an active group before upgrading.
 
@@ -302,7 +305,7 @@ Alumni can sign in, view Community's **active-reader list**, and post, reply to,
 
 **Show / Hide Active Readers** starts expanded and remembers your choice for the current tab's sign-in session. Sorting and Reader Stats remain accessible when collapsed.
 
-**Show / Hide Alumni** starts collapsed. Alumni use the selected sort and frozen statistics; each row has a confirmed **Make Active** button. Reader Stats includes active readers only.
+**Show / Hide Alumni** starts collapsed. Alumni use the selected sort and frozen statistics. Expand **Completed** for dates of finished 270- or 365-day runs. Each row has a confirmed **Make Active** button. Reader Stats includes active readers only.
 
 Only admins reactivate alumni; signing in or posting does not re-enroll them:
 
@@ -315,7 +318,7 @@ Admin templates include `bible270/shared/admin_confirmations`, even with custom 
 
 ### Progress sync
 
-Admins can link a reader to existing, active accounts on other installations with the same email. Readers sign in only on the primary site. New check-offs sync automatically; **Sync existing progress** copies earlier completions. Both add only missing check-offs—never uncheck readings, change dates, or copy reflections.
+Admins can link a reader to existing, active accounts on other installations with the same email. Readers sign in only on the primary site. New check-offs sync automatically; **Sync existing progress** copies earlier completions. Both add only missing check-offs—never uncheck readings, change dates, or copy reflections. Linked readers must use the same schedule, including their effective +95 setting.
 
 Install migration `20260101000028` on every participating installation. Site administrators configure trust in their host initializers; no destination credentials are entered in Admin.
 
@@ -563,7 +566,7 @@ Common settings (example sender and host values must be replaced):
 Bible270.configure do |config|
   config.mount_at = "/daily-bread"
   config.app_name = "Daily Bread"
-  config.tagline = "Journeying through Scripture in 9 months"
+  config.tagline = "A 270-day journey through Scripture"
   config.admin_emails = %w[andrew@example.org] # Site-admins
 
   config.start_date = nil                  # no shared calendar by default

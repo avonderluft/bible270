@@ -9,7 +9,7 @@ Bible270.configure do |config|
   config.mount_at = "<%= mount_at %>"
 
   config.app_name = "Daily Bread"
-  config.tagline  = "Journeying through Scripture in 9 months"
+  config.tagline  = "A 270-day journey through Scripture"
 
   # Share the host application's layout, helpers and CSRF setup.
   config.parent_controller = "::ApplicationController"

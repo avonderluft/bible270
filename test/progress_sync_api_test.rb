@@ -233,6 +233,50 @@ if RAILS_LOADED
       assert_equal 0, Bible270::Checkoff.count
     end
 
+    def test_disabled_target_rejects_the_entire_batch_containing_extension_checkoffs
+      readings = [[1, 'nt', 0], [271, 'nt', 0]]
+      signed_post('complete', @binding.merge(readings: readings))
+      assert_response :conflict
+
+      digest = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
+      signed_post('complete', @binding.merge(plan_fingerprint: digest, readings: readings))
+      assert_response :service_unavailable
+      assert_empty @membership.checkoffs
+    end
+
+    def test_target_uses_the_run_length_after_acquiring_the_run_lock
+      toggle_plus95(true)
+      enabled = @binding.merge(plan_fingerprint: Sync.fingerprint)
+      run = Bible270::PlanRun.find(@membership.plan_run_id)
+      lock = run.method(:with_lock)
+      run.stub(:with_lock, ->(&operation) {
+        run.update!(plus95_enabled: false)
+        lock.call(&operation)
+      }) do
+        Bible270::PlanRun.stub(:find, run) do
+          signed_post('complete', enabled.merge(readings: [[271, 'nt', 0]]))
+        end
+      end
+      assert_response :service_unavailable
+      assert_empty @membership.checkoffs
+    end
+
+    def test_completion_reloads_the_pinned_override_after_acquiring_the_run_lock
+      run = Bible270::PlanRun.find(@membership.plan_run_id)
+      lock = run.method(:with_lock)
+      run.stub(:with_lock, ->(&operation) {
+        @membership.update!(plus95_override: true)
+        lock.call(&operation)
+      }) do
+        Bible270::PlanRun.stub(:find, run) do
+          digest = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
+          signed_post('complete', @binding.merge(plan_fingerprint: digest, readings: [[271, 'nt', 0]]))
+        end
+      end
+      assert_response :ok
+      assert_equal [[271, 'nt', 0]], @membership.checkoffs.pluck(:day, :track, :part)
+    end
+
     def test_pinned_identity_survives_email_change_and_never_rematches_the_old_email
       @reader.update!(email: 'changed@example.org')
       other = Bible270::Reader.create!(provider: 'developer', uid: 'new-owner', email: 'reader@example.org', display_name: 'New Owner')
@@ -342,6 +386,71 @@ if RAILS_LOADED
       assert_equal 0, Bible270::Checkoff.count
     end
 
+    def test_real_client_looks_up_and_delivers_using_the_extended_fingerprint
+      toggle_plus95(true)
+      configure_destination
+      Bible270.config.progress_sync_instance_id = 'source-instance'
+      source = Bible270::Reader.create!(provider: 'email', uid: 'source@example.org', email: 'source@example.org', display_name: 'Source')
+      digest = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
+      refute_equal @fingerprint, digest
+      signed_post('lookup', lookup_payload)
+      assert_response :conflict
+
+      with_in_process_http do
+        remote = Sync.lookup(destination: 'church', email: @reader.email)
+        assert_equal digest, remote.fetch('plan_fingerprint')
+        link = create_link(source, remote)
+        readings = [[271, 'nt', 0], [365, 'pp', 0]]
+        delivery = Sync.capture(source.participation, readings).sole
+        assert_equal 1, Sync.deliver_pending(delivery_id: delivery.id)
+        assert_equal readings, @membership.checkoffs.order(:day).pluck(:day, :track, :part)
+        assert_equal({ 'added' => 0, 'existing' => 2 }, Sync::Client.new('church').complete(link, readings))
+
+        toggle_plus95(false)
+        assert_raises(Sync::Unavailable) { Sync::Client.new('church').complete(link, readings) }
+        toggle_plus95(true)
+        assert_equal({ 'added' => 0, 'existing' => 2 }, Sync::Client.new('church').complete(link, readings))
+      end
+    end
+
+    def test_real_client_syncs_matching_lengths_with_different_run_defaults_but_rejects_the_opposite_override
+      configure_destination
+      Bible270.config.progress_sync_instance_id = 'source-instance'
+      destination_run = @membership.plan_run
+      destination_run.update!(plus95_enabled: true, current: nil)
+      source = Bible270::Reader.create!(provider: 'email', uid: 'source@example.org', email: 'source@example.org', display_name: 'Source')
+      source_membership = source.participation
+      source_membership.update!(plus95_override: true)
+      source_run = source_membership.plan_run
+      # Only the destination's run is current while handling an incoming request,
+      # modeling installations with different defaults in the test database.
+      as_destination = ->(&request) do
+        source_run.update!(current: nil)
+        destination_run.update!(current: true)
+        request.call
+      ensure
+        destination_run.update!(current: nil)
+        source_run.update!(current: true)
+      end
+      digest = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
+      refute_equal digest, Sync.fingerprint
+
+      with_in_process_http(around_request: as_destination) do
+        lookup = -> { Sync.lookup(destination: 'church', email: @reader.email, plan_fingerprint: digest) }
+        remote = lookup.call
+        assert_equal digest, remote.fetch('plan_fingerprint')
+        link = create_link(source, remote)
+        delivery = Sync.capture(source_membership, [[271, 'nt', 0]]).sole
+        assert_equal 1, Sync.deliver_pending(delivery_id: delivery.id)
+        assert_equal [[271, 'nt', 0]], @membership.checkoffs.pluck(:day, :track, :part)
+
+        @membership.update!(plus95_override: false)
+        assert_raises(Sync::Conflict, &lookup)
+        assert_raises(Sync::Unavailable) { Sync::Client.new('church').complete(link, [[365, 'nt', 0]]) }
+        assert_equal [[271, 'nt', 0]], @membership.checkoffs.pluck(:day, :track, :part)
+      end
+    end
+
     def test_real_client_signatures_lookup_outbox_and_remote_import_work_together
       configure_destination
       Bible270.config.progress_sync_instance_id = 'source-instance'
@@ -363,6 +472,10 @@ if RAILS_LOADED
     end
 
   private
+
+    def toggle_plus95(enabled)
+      Bible270::PlanRun.update_plus95!(enabled: enabled, expected_run_id: @membership.plan_run_id)
+    end
 
     def mount = Bible270.config.mount_at.chomp('/')
     def lookup_payload = { email: @reader.email, plan_fingerprint: @fingerprint }
@@ -400,14 +513,16 @@ if RAILS_LOADED
 
     # Only the socket is replaced: use the actual client, headers, mounted Rails
     # route, controller, database import, and outbox delivery lifecycle.
-    def with_in_process_http(&block)
+    def with_in_process_http(around_request: ->(&request) { request.call }, &block)
       integration = self
       http_class = Class.new do
         attr_accessor :use_ssl, :verify_mode, :open_timeout, :read_timeout, :write_timeout, :max_retries
 
         define_method(:start) { |&block| block.call(self) }
         define_method(:request) do |request, &block|
-          integration.post request.path, params: request.body, headers: request.each_header.to_h
+          around_request.call do
+            integration.post request.path, params: request.body, headers: request.each_header.to_h
+          end
           result = integration.response
           response = Object.new
           response.define_singleton_method(:code) { result.status.to_s }

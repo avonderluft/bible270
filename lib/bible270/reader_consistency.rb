@@ -44,8 +44,8 @@ module Bible270
     def completion_dates(reader_ids)
       return {} if reader_ids.empty?
 
-      checkoffs = Checkoff.where(reader_id: reader_ids, participation_id: Participation.chosen.select(:id),
-                                 day: 1..Plan::DAYS).group(:reader_id, :day)
+      checkoffs = Checkoff.within_run_schedule.where(reader_id: reader_ids, participation_id: Participation.chosen.select(:id))
+        .group(:reader_id, :day)
       counts = checkoffs.count
       latest = checkoffs.maximum(:created_at)
       dates = Hash.new { |hash, id| hash[id] = [] }
@@ -76,7 +76,7 @@ module Bible270
       joined_at = reader.participation&.joined_at || reader.created_at
       first = [start_date, Bible270.local_time(joined_at).to_date].max
       cutoff = [@today, reader.participation&.archived_on].compact.min
-      last = [cutoff - 1, start_date + Plan::DAYS - 1].min
+      last = [cutoff - 1, start_date + reader.plan_days - 1].min
       return unranked if first > last
 
       completed = 0

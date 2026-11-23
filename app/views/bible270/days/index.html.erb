@@ -1,7 +1,7 @@
 <% content_for :title, Bible270.config.app_name %>
-<p class="b270-eyebrow"><%= Bible270.config.tagline %></p>
+<p class="b270-eyebrow"><%= Bible270.config.tagline_for(days: b270_plan_days) %></p>
 <h1><%= Bible270.config.app_name %> <em>— read God's whole story</em></h1>
-<p class="lede">Daily passages from the Old Testament, New Testament, and Psalms or Proverbs — portions sized to take about the same time to read. Check off what you read; your place is saved for you, and you can share reflections and encourage one another along the way.</p>
+<p class="lede"><% if b270_plan_days > Bible270::Plan::DAYS %>Daily passages from the Old Testament once, and from the New Testament and Psalms/Proverbs twice<% else %>Daily passages from the Old Testament, New Testament, and Psalms/Proverbs<% end %> — portions sized to take about the same time to read. Check off what you read; your place is saved for you, and you can share reflections and encourage one another along the way.</p>
 
 <%= render "bible270/shared/progress", show_start_date: true %>
 

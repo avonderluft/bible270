@@ -7,6 +7,7 @@ module Bible270
     class InvalidStartDate < ArgumentError; end
     class StaleRun < StandardError; end
     class CannotRevert < StandardError; end
+    class Plus95Unavailable < StandardError; end
 
     RESTART_SETTING_KEYS = [Setting::RUN_START_DATE, Setting::ENROLLMENT_OPEN, Setting::ENROLLMENT_CLOSED_AT].freeze
 
@@ -17,10 +18,31 @@ module Bible270
       find_by(current: true) || create_or_find_by!(current: true)
     end
 
+    def plus95_available? = has_attribute?(:plus95_enabled)
+
+    def plus95_enabled? = plus95_available? && self[:plus95_enabled]
+
+    def plan_days = plus95_enabled? ? Plan::EXTENDED_DAYS : Plan::DAYS
+
+    # Use the same run lock as progress writes and run transitions. Only the
+    # schedule changes; extension check-offs and reflections are kept as-is.
+    def self.update_plus95!(enabled:, expected_run_id:)
+      run = current
+      run.with_lock do
+        unless run.current? && run.id.to_s == expected_run_id.to_s
+          raise StaleRun, 'The current run changed; reload before changing +95'
+        end
+
+        raise Plus95Unavailable unless run.plus95_available?
+
+        run.update!(plus95_enabled: enabled)
+      end
+    end
+
     # expected_run_id is mandatory optimistic concurrency protection for the form.
     # All membership transitions lock the run first, so enrollment cannot land in
     # the old run halfway through this transaction.
-    def self.restart!(start_date:, expected_run_id:)
+    def self.restart!(start_date:, expected_run_id:, plus95_enabled: false)
       date = Plan.to_date(start_date)
       raise InvalidStartDate, 'start_date must be a valid date' unless date
 
@@ -30,6 +52,8 @@ module Bible270
         unless old_run.current? && old_run.id.to_s == expected_run_id.to_s
           raise StaleRun, 'The current run changed; reload before restarting'
         end
+
+        raise Plus95Unavailable if plus95_enabled && !old_run.plus95_available?
 
         # Membership changes and admin role changes lock readers before their
         # participations. Hold those locks while archiving and enrolling admins.
@@ -41,7 +65,9 @@ module Bible270
           'settings' => Setting.where(key: RESTART_SETTING_KEYS).pluck(:key, :value).to_h
         }
         old_run.archive_current_memberships!
-        new_run = create!(current: true, start_date: date, restart_snapshot: snapshot)
+        attributes = { current: true, start_date: date, restart_snapshot: snapshot }
+        attributes[:plus95_enabled] = plus95_enabled if old_run.plus95_available?
+        new_run = create!(attributes)
         Setting.set_run_start_date!(date)
         Setting.open_enrollment!
         activate_admins!

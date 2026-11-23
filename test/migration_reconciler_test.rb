@@ -183,6 +183,30 @@ if RAILS_LOADED
       assert_empty build_reconciler(FakeContext.new([migration], [migration.version])).statuses
     end
 
+    def test_copied_plus95_migration_is_recorded_under_its_installed_timestamp
+      migration = FakeMigration.new('AddPlus95EnabledToBible270PlanRuns', 20_260_730_030_530)
+      context = FakeContext.new([migration], [20_260_101_000_030])
+      reconciler = build_reconciler(context)
+      status = reconciler.statuses.first
+
+      assert status.complete?, status.missing.join(', ')
+      reconciler.mark_applied!(status)
+      assert_equal ['20260730030530'], context.schema_migration.versions
+    end
+
+    def test_copied_plus95_override_migration_is_recorded_under_its_own_installed_timestamp
+      plan_default = FakeMigration.new('AddPlus95EnabledToBible270PlanRuns', 20_260_730_030_530)
+      override = FakeMigration.new('AddPlus95OverrideToBible270Participations', 20_260_730_030_531)
+      context = FakeContext.new([plan_default, override], [plan_default.version, 20_260_101_000_031])
+      reconciler = build_reconciler(context)
+      status, = reconciler.statuses
+
+      assert_equal override, status.migration
+      assert status.complete?, status.missing.join(', ')
+      reconciler.mark_applied!(status)
+      assert_equal ['20260730030531'], context.schema_migration.versions
+    end
+
     def test_only_pending_bible270_migrations_are_assessed
       migrations = [
         FakeMigration.new('CreateBible270Readers', 101),
@@ -459,7 +483,67 @@ if RAILS_LOADED
       end
     end
 
+    def test_plus95_requires_a_nonnull_boolean_with_a_false_default
+      migration = MigrationReconcilerTest::FakeMigration.new('AddPlus95EnabledToBible270PlanRuns', 20_260_101_000_030)
+      context = MigrationReconcilerTest::FakeContext.new([migration])
+      reconciler = Bible270::MigrationReconciler.new(connection: @connection, migration_context: context)
+
+      assert_incomplete_plus95_schema(reconciler, 'table bible270_plan_runs')
+      @connection.create_table(:bible270_plan_runs)
+      assert_incomplete_plus95_schema(reconciler, 'column bible270_plan_runs.plus95_enabled')
+
+      [[:boolean, { null: true, default: false }, 'null false'],
+       [:boolean, { null: false, default: true }, 'default false'],
+       [:boolean, { null: false }, 'default false'],
+       [:string, { null: false, default: 'false' }, 'type boolean']].each do |type, options, missing|
+        rollback_schema_change do
+          @connection.add_column :bible270_plan_runs, :plus95_enabled, type, **options
+          assert_incomplete_plus95_schema(reconciler, "column bible270_plan_runs.plus95_enabled #{missing}")
+        end
+      end
+      assert_empty context.schema_migration.versions
+    end
+
+    def test_plus95_override_requires_a_nullable_boolean_with_no_default
+      migration = MigrationReconcilerTest::FakeMigration.new('AddPlus95OverrideToBible270Participations', 20_260_101_000_031)
+      context = MigrationReconcilerTest::FakeContext.new([migration])
+      reconciler = Bible270::MigrationReconciler.new(connection: @connection, migration_context: context)
+      @connection.create_table(:bible270_plan_runs) do |table|
+        table.boolean :plus95_enabled, null: false, default: false
+      end
+
+      assert_incomplete_plus95_schema(reconciler, 'table bible270_participations')
+      @connection.create_table(:bible270_participations)
+      assert_incomplete_plus95_schema(reconciler, 'column bible270_participations.plus95_override')
+
+      [[:string, {}, 'type boolean'],
+       [:boolean, { null: false }, 'null true'],
+       [:boolean, { default: true }, 'default '],
+       [:boolean, { default: false }, 'default '],
+       [:boolean, { default: -> { "''" } }, 'default '],
+       [:boolean, { default: -> { 'CURRENT_TIMESTAMP' } }, 'default_function ']].each do |type, options, missing|
+        rollback_schema_change do
+          @connection.add_column :bible270_participations, :plus95_override, type, **options
+          assert_incomplete_plus95_schema(reconciler, "column bible270_participations.plus95_override #{missing}")
+        end
+      end
+
+      @connection.add_column :bible270_participations, :plus95_override, :boolean, default: -> { '(1 = 1)' }
+      status = reconciler.statuses.fetch(0)
+      refute status.complete?
+      assert_raises(ArgumentError) { reconciler.mark_applied!(status) }
+      assert_empty context.schema_migration.versions
+    end
+
   private
+
+    def assert_incomplete_plus95_schema(reconciler, missing)
+      status = reconciler.statuses.fetch(0)
+
+      assert_includes status.missing, missing
+      refute status.complete?
+      assert_raises(ArgumentError) { reconciler.mark_applied!(status) }
+    end
 
     def assert_incomplete_run_schema
       @reconciler.statuses.first(2).each do |status|

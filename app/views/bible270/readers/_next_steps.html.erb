@@ -22,6 +22,6 @@
   </ul>
   <% if remaining_partial_days.positive? %>
     <p class="b270-next-note">View <%= remaining_partial_days %> more partially read
-      <%= "day".pluralize(remaining_partial_days) %> under “View all 270 days”.</p>
+      <%= "day".pluralize(remaining_partial_days) %> under “View all <%= b270_plan_days %> days”.</p>
   <% end %>
 </div>

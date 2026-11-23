@@ -32,17 +32,18 @@ module Bible270
         raise ConfigurationError, 'Destination URL is invalid'
       end
 
-      def lookup(email)
+      def lookup(email, plan_fingerprint: nil)
         email = email.to_s.strip.downcase
         unless valid_email?(email)
           raise Conflict, 'A valid destination reader email is required'
         end
 
-        result = post('lookup', email: email, plan_fingerprint: ProgressSync.fingerprint)
+        plan_fingerprint ||= ProgressSync.fingerprint
+        result = post('lookup', email: email, plan_fingerprint: plan_fingerprint)
         unless positive_integer?(result['reader_id']) && positive_integer?(result['participation_id']) &&
                nonnegative_integer?(result['generation']) && result['name'].is_a?(String) && !result['name'].strip.empty? &&
                valid_email?(result['email']) && result['email'].strip.downcase == email &&
-               result['plan_fingerprint'] == ProgressSync.fingerprint
+               result['plan_fingerprint'] == plan_fingerprint
           raise Conflict, 'Destination returned an incompatible reader or reading plan'
         end
 

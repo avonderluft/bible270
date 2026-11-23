@@ -21,6 +21,7 @@ module Bible270
       return unless candidate.is_a?(Hash) && candidate['remote'].is_a?(Hash)
 
       context = link_context(reader: reader, admin: admin, destination: candidate['destination'])
+      return unless candidate['remote']['plan_fingerprint'] == context.delete('plan_fingerprint')
       return unless context.all? { |key, value| candidate[key] == value }
       return unless normalized_email(candidate['remote']['email']) == context['email']
 
@@ -47,7 +48,8 @@ module Bible270
         'reader_id' => reader.id, 'admin_id' => admin.id,
         'participation_id' => membership.id, 'generation' => membership.progress_sync_generation,
         'destination' => destination.to_s, 'destination_url' => (entry[:url] || entry['url']).to_s.chomp('/'),
-        'instance_id' => Bible270.config.progress_sync_instance_id.to_s, 'email' => email
+        'instance_id' => Bible270.config.progress_sync_instance_id.to_s, 'email' => email,
+        'plan_fingerprint' => ProgressSync.fingerprint(days: membership.plan_days)
       }
     end
 
@@ -63,7 +65,8 @@ module Bible270
     def lookup
       session.delete(CANDIDATE_SESSION_KEY)
       context = self.class.link_context(reader: @reader, admin: current_reader, destination: params[:destination])
-      remote = ProgressSync.lookup(destination: context['destination'], email: context['email'])
+      plan_fingerprint = context.delete('plan_fingerprint')
+      remote = ProgressSync.lookup(destination: context['destination'], email: context['email'], plan_fingerprint: plan_fingerprint)
       unless remote.is_a?(Hash) && self.class.normalized_email(remote['email']) == context['email']
         raise ProgressSync::Conflict, 'Destination account email does not match this reader'
       end

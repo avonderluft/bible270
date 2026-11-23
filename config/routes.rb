@@ -36,6 +36,7 @@ Bible270::Engine.routes.draw do # rubocop:disable Metrics/BlockLength
   delete 'admin/readers/:id',            to: 'admin#destroy'
   patch  'admin/readers/:id/role',       to: 'admin_roles#update', as: :admin_reader_role
   patch  'admin/readers/:id/participation', to: 'admin#update_participation', as: :admin_reader_participation
+  patch  'admin/readers/:id/plus95', to: 'admin#update_reader_plus95', as: :admin_reader_plus95
   patch  'admin/readers/:id/profile', to: 'admin#update_profile', as: :admin_reader_profile
   patch  'admin/readers/:id/theme', to: 'admin#update_theme', as: :admin_reader_theme
   patch  'admin/readers/:id/notifications', to: 'admin#update_notifications', as: :admin_reader_notifications
@@ -53,6 +54,7 @@ Bible270::Engine.routes.draw do # rubocop:disable Metrics/BlockLength
   patch  'admin/enrollment',             to: 'admin#update_enrollment', as: :admin_enrollment
   patch  'admin/run-start',              to: 'admin#update_run_start', as: :admin_run_start
   delete 'admin/run-start',              to: 'admin#reset_run_start'
+  patch  'admin/run-plus95',             to: 'admin#update_plus95', as: :admin_run_plus95
   get    'admin/comments',               to: 'admin#comments',         as: :admin_comments
   patch  'admin/comments/:id/hide',      to: 'admin#hide_comment',     as: :admin_hide_comment
   patch  'admin/comments/:id/unhide',    to: 'admin#unhide_comment',   as: :admin_unhide_comment
@@ -61,6 +63,7 @@ Bible270::Engine.routes.draw do # rubocop:disable Metrics/BlockLength
   get   'profile',                       to: 'profiles#edit', as: :profile
   patch 'profile',                       to: 'profiles#update'
   patch 'profile/theme',                 to: 'profiles#update_theme', as: :profile_theme
+  patch 'profile/plus95',                to: 'profiles#update_plus95', as: :profile_plus95
   delete 'profile/avatar', to: 'profiles#remove_avatar', as: :profile_avatar
 
   get 'reflections', to: 'comments#index', as: :reflections

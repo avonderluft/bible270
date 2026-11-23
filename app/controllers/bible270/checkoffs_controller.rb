@@ -12,7 +12,7 @@ module Bible270
       # per-chapter check-offs and mean the first part.
       @part  = params[:part].to_i
 
-      head :bad_request and return unless Plan.valid_day?(@day) &&
+      head :bad_request and return unless Plan.valid_day?(@day, days: b270_plan_days) &&
                                           Plan.present_tracks(@day).include?(@track) &&
                                           Plan.valid_part?(@day, @track, @part)
 
@@ -61,7 +61,8 @@ module Bible270
       marked_read = nil
       membership = current_reader.participation
       # Serialize completion events and match restart's run-then-reader lock order.
-      membership.plan_run.with_lock do
+      run = membership.plan_run
+      run.with_lock do
         current_reader.with_lock do
           current_reader.reload_progress
           unless current_reader.participation.id == membership.id &&
@@ -69,7 +70,11 @@ module Bible270
             raise PlanRun::StaleRun
           end
 
-          current_reader.ensure_progress_writable!
+          latest_membership = current_reader.ensure_progress_writable!
+          # +95 can be turned off without changing the membership ID.
+          @b270_plan_days = latest_membership.plan_days
+          raise PlanRun::StaleRun unless Plan.valid_day?(@day, days: @b270_plan_days)
+
           marked_read, @completion_event_id = apply_checkoff(requested_state)
           @reader = current_reader.reload.reload_progress
           @day_just_completed = marked_read && @completion_event_id && @reader.day_complete?(@day)

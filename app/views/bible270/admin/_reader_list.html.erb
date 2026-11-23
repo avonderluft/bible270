@@ -1,3 +1,4 @@
+<%# locals: (readers:, days_completed:, report:, activities:, completed_runs: {}) %>
 <div class="b270-list">
   <% readers.each do |reader| %>
     <div class="b270-li b270-reader-theme" data-display-mode="<%= reader.effective_display_mode %>">
@@ -39,9 +40,18 @@
             No reading activity yet
           <% end %>
         </div>
+        <% if (runs = completed_runs[reader.id]).present? %>
+          <% groups = runs.sort_by(&:first) %>
+          <details class="sub b270-alumni-completions">
+            <summary>Completed: <%= groups.map { |days, dates| "#{days} days ×#{dates.size}" }.join(' · ') %></summary>
+            <% groups.each do |days, dates| %>
+              <div><%= days %> days: <%= safe_join(dates.sort.reverse.map { |date| time_tag(date, format: '%b %-d, %Y') }, ' · ') %></div>
+            <% end %>
+          </details>
+        <% end %>
       </div>
       <div class="stat">
-        <span class="big"><%= (days_completed[reader.id].to_f / Bible270::Plan::DAYS * 100).round %>%</span>
+        <span class="big"><%= (days_completed[reader.id].fdiv(reader.plan_days) * 100).round %>%</span>
         <% if reader.alumni? %>
           <%= button_to 'Make Active', admin_reader_participation_path(reader), method: :patch,
                 params: { status: 'active', expected_run_id: @current_run.id, return_to: 'admin', sort: @reader_sort },

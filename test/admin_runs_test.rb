@@ -89,7 +89,8 @@ if RAILS_LOADED
         assert_select '> input#b270-restart-date[type="date"][name="start_date"][required]'
         assert_select "input[type='hidden'][name='expected_run_id'][value='#{@run.id}']"
         assert_select 'input[type="hidden"][name="confirm_restart"][value="1"]'
-        assert_select 'input[type="checkbox"]', count: 0
+        assert_select 'input[type="checkbox"][name="plus95_enabled"][value="1"]:not([checked])', count: 1
+        assert_select 'input[type="checkbox"]', count: 1
         assert_select '> input[type="submit"][value="Start a new run"]'
       end
       refute_includes response.body, 'I understand that all current readers'

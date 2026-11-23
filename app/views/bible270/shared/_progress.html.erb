@@ -31,7 +31,7 @@
     <div class="b270-bignum">
       <span class="n"><%= panel_reader.days_completed %></span>
       <span class="of">
-        of <%= Bible270::Plan::DAYS %> days complete<% if panel_start_date %>
+        of <%= panel_reader.plan_days %> days complete<% if panel_start_date %>
           · plan <% if panel_start_date == Bible270.today %>starts today<% elsif panel_start_date > Bible270.today %>starts on <%= panel_start_date.strftime("%b %-d, %Y") %><% else %>started on <%= panel_start_date.strftime("%b %-d, %Y") %><% end %>
         <% end %>
       </span>
@@ -60,7 +60,7 @@
     <% if panel_community_date %>
       <p class="b270-startline">This community plan runs from
          <strong><%= panel_community_date.strftime("%B %-d, %Y") %></strong> to
-         <strong><%= Bible270::Plan.end_date_for(panel_community_date).strftime("%B %-d, %Y") %></strong>.</p>
+         <strong><%= Bible270::Plan.end_date_for(panel_community_date, days: b270_plan_days).strftime("%B %-d, %Y") %></strong>.</p>
     <% end %>
     <p style="margin:14px 0 0"><%= link_to "Start at Day 1 →", day_path(1), class: "b270-btn" %></p>
   <% end %>

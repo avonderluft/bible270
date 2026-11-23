@@ -24,10 +24,11 @@ module Bible270
     before_action :require_admin_view!, except: %i[index update_view]
     before_action :load_reader,
                   only: %i[show destroy update_start update_profile update_theme update_notifications update_completion_animation
-                           remove_avatar complete_through toggle_day update_participation]
+                           remove_avatar complete_through toggle_day update_participation update_reader_plus95]
     before_action :require_active_reader!, only: %i[update_start complete_through toggle_day]
     rescue_from Participation::ArchivedProgress, with: :archived_progress
     rescue_from PlanRun::StaleRun, with: :stale_run
+    rescue_from PlanRun::Plus95Unavailable, with: :plus95_unavailable
     before_action :load_comment, only: %i[hide_comment unhide_comment destroy_comment]
 
     # ---- enrolment --------------------------------------------------------
@@ -55,13 +56,44 @@ module Bible270
         return redirect_to admin_path, alert: 'Confirm starting a new run: admins start fresh and other readers become alumni. Nothing was changed.'
       end
 
-      PlanRun.restart!(start_date: params[:start_date], expected_run_id: params[:expected_run_id])
+      plus95 = params.fetch(:plus95_enabled, '0')
+      unless %w[0 1].include?(plus95)
+        return redirect_to admin_path, alert: 'Choose whether to include +95. Nothing was changed.'
+      end
+
+      PlanRun.restart!(start_date: params[:start_date], expected_run_id: params[:expected_run_id],
+                       plus95_enabled: plus95 == '1')
       redirect_to admin_path,
                   notice: 'Started a new run and opened enrollment. Admins and Site-admins are active with zero progress and no personal start date; other readers are alumni. Past progress, reflections and admin roles are preserved.'
     rescue PlanRun::InvalidStartDate
       redirect_to admin_path, alert: 'Choose a valid start date. Nothing was changed.'
     rescue PlanRun::StaleRun
       redirect_to admin_path, alert: 'The current run changed. Reload this page before starting a new run. Nothing was changed.'
+    end
+
+    def update_plus95
+      plus95 = params[:plus95_enabled]
+      unless %w[0 1].include?(plus95)
+        return redirect_to admin_path, alert: 'Choose whether to enable or disable +95. Nothing was changed.'
+      end
+
+      PlanRun.update_plus95!(enabled: plus95 == '1', expected_run_id: params[:expected_run_id])
+      notice = if plus95 == '1'
+                 'Run default: 365 days (+95). Reader overrides are unchanged.'
+               else
+                 'Run default: 270 days. Reader overrides and extra check-offs are preserved; reflections stay visible.'
+               end
+      redirect_to admin_path, notice: notice
+    end
+
+    def update_reader_plus95
+      days = @reader.update_plus95_override!(params[:plus95_override], expected_participation_id: params[:participation_id])
+      redirect_to admin_reader_path(@reader), notice: "Reader’s plan length is now #{days} days."
+    rescue Participation::InvalidPlanLength
+      redirect_to admin_reader_path(@reader), alert: 'Choose a plan length. Nothing was changed.'
+    rescue PlanRun::Plus95Unavailable
+      redirect_to admin_reader_path(@reader),
+                  alert: 'Install the +95 override database migration before changing this setting. Nothing was changed.'
     end
 
     def revert
@@ -157,8 +189,11 @@ module Bible270
       @readers = @reader_report.sorted_readers
       @alumni = Reader.alumni.with_avatar.to_a
       @alumni_activities = {}
+      @alumni_completed_runs = {}
       if @alumni.any?
-        @alumni_activities = Checkoff.recent_activity_by_reader(@alumni.map(&:id))
+        alumni_ids = @alumni.map(&:id)
+        @alumni_activities = Checkoff.recent_activity_by_reader(alumni_ids)
+        @alumni_completed_runs = Participation.completed_runs_by_reader(alumni_ids)
         @alumni_report = ReaderProgressReport.new(
           readers: @alumni, completed_days: @days_completed,
           recent_activities: @alumni_activities, sort: @reader_sort
@@ -190,10 +225,7 @@ module Bible270
     def show
       @current_run = PlanRun.current
       @past_participations = @reader.participations.where(active: false).includes(:plan_run).order(plan_run_id: :desc).load
-      @history_completed_days = Hash.new(0)
-      Checkoff.where(participation_id: @past_participations.map(&:id)).group(:participation_id, :day).count.each do |(participation_id, day), count|
-        @history_completed_days[participation_id] += 1 if count >= Plan.total_parts(day)
-      end
+      @history_completed_days = Checkoff.completed_days_by_participation(@past_participations.map(&:id))
       @comment_notifications_available = comment_notifications_available_for?(@reader)
       @completion_dove_preference_available = completion_dove_available_for(@reader)
       @days_completed = @reader.days_completed
@@ -329,15 +361,15 @@ module Bible270
                       alert: "Couldn't read #{params[:start_date].inspect} as a date."
         end
       elsif params[:day].present?
-        day = strict_integer(params[:day], 1..Plan::DAYS)
+        day = strict_integer(params[:day], 1..@reader.plan_days)
         if day && @reader.restart_on!(day: day)
           redirect_to admin_reader_path(@reader),
                       notice: "#{@reader.display_name} is now on day #{day}."
         else
-          redirect_to admin_reader_path(@reader), alert: 'Give a start date or a day between 1 and 270.'
+          redirect_to admin_reader_path(@reader), alert: "Give a start date or a day between 1 and #{@reader.plan_days}."
         end
       else
-        redirect_to admin_reader_path(@reader), alert: 'Give a start date or a day between 1 and 270.'
+        redirect_to admin_reader_path(@reader), alert: "Give a start date or a day between 1 and #{@reader.plan_days}."
       end
     end
 
@@ -413,23 +445,21 @@ module Bible270
     end
 
     def complete_through
-      day = strict_integer(params[:day], 0..Plan::DAYS)
-      unless day
-        return redirect_to admin_reader_path(@reader), alert: 'Give a day between 0 and 270.'
+      day = strict_integer(params[:day], 0..@reader.plan_days)
+      unless day && @reader.mark_through!(day)
+        return redirect_to admin_reader_path(@reader), alert: "Give a day between 0 and #{@reader.plan_days}."
       end
 
-      @reader.mark_through!(day)
       redirect_to admin_reader_path(@reader),
                   notice: day.zero? ? 'All check-offs cleared.' : "Marked days 1-#{day} complete."
     end
 
     def toggle_day
-      day = strict_integer(params[:day], 1..Plan::DAYS)
-      unless day
+      day = strict_integer(params[:day], 1..@reader.plan_days)
+      unless day && @reader.toggle_day!(day)
         return redirect_to admin_reader_path(@reader), alert: 'That day is outside the plan.'
       end
 
-      @reader.toggle_day!(day)
       redirect_to admin_reader_path(@reader, anchor: "day-#{day}")
     end
 
@@ -494,6 +524,10 @@ module Bible270
 
         yield
       end
+    end
+
+    def plus95_unavailable
+      redirect_to admin_path, alert: 'Install the +95 database migration before changing this setting. Nothing was changed.'
     end
 
     def stale_run

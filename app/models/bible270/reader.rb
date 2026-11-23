@@ -105,7 +105,7 @@ module Bible270
     end
 
     def self.completed_days_by_id
-      Checkoff.where(participation_id: Participation.chosen.select(:id))
+      Checkoff.within_run_schedule.where(participation_id: Participation.chosen.select(:id))
         .group(:reader_id, :day).count.each_with_object(Hash.new(0)) do |((reader_id, day), done), totals|
         totals[reader_id] += 1 if done >= Plan.total_parts(day)
       end
@@ -114,7 +114,7 @@ module Bible270
     # A day is completed when its final required checkoff is created, so MAX(created_at)
     # is the completion moment. Keep reader_id as a deterministic tie-breaker.
     def self.completers_for(day)
-      reader_ids = Checkoff.where(day: day, participation_id: Participation.active.select(:id))
+      reader_ids = Checkoff.within_run_schedule.where(day: day, participation_id: Participation.active.select(:id))
         .group(:reader_id)
         .having('COUNT(*) >= ?', Plan.total_parts(day))
         .order(Checkoff.arel_table[:created_at].maximum.asc, :reader_id)
@@ -513,6 +513,26 @@ module Bible270
       participation
     end
 
+    def update_plus95_override!(choice, expected_participation_id:)
+      override = Participation::PLUS95_CHOICES.fetch(choice) { raise Participation::InvalidPlanLength }
+      run = PlanRun.current
+      run.with_lock do
+        raise PlanRun::StaleRun unless run.current?
+
+        # Use the run-then-reader lock order of check-offs and restart.
+        with_lock do
+          membership = participation
+          raise Participation::ArchivedProgress unless membership&.active? && membership.plan_run_id == run.id
+          raise PlanRun::StaleRun unless expected_participation_id.to_s == membership.id.to_s
+          raise PlanRun::Plus95Unavailable unless membership.plus95_override_available?
+
+          membership.plan_run = run
+          membership.update!(plus95_override: override)
+          membership.plan_days
+        end
+      end
+    end
+
     def ensure_progress_writable!
       membership = participation
       raise Participation::ArchivedProgress, 'Reader has no participation' unless membership
@@ -559,9 +579,13 @@ module Bible270
     end
     private :enroll_in_current_run!, :protect_archived_schedule, :sync_participation_start_date, :with_writable_progress
 
-    # {day => number of tracks checked off}
+    def plan_days = participation&.plan_days || Plan::DAYS
+
+    def valid_plan_day?(day) = Plan.valid_day?(day, days: plan_days)
+
+    # {day => number of parts checked off}
     def checked_counts
-      @checked_counts ||= checkoffs.group(:day).count
+      @checked_counts ||= checkoffs.where(day: 1..plan_days).group(:day).count
     end
 
     # Tracks ticked on a day, counted from the single grouped query in
@@ -583,7 +607,7 @@ module Bible270
     end
 
     def remaining_parts_for(day)
-      return [] unless Plan.valid_day?(day)
+      return [] unless valid_plan_day?(day)
 
       missing_parts_on(day).map do |track, part|
         { track: track, part: part, reference: Plan.parts_for(day, track).fetch(part) }
@@ -591,11 +615,15 @@ module Bible270
     end
 
     def read_tracks_for(day)
+      return [] unless valid_plan_day?(day)
+
       checkoffs.where(day: day).pluck(:track).uniq
     end
 
     # Which chapters of a track the reader has ticked on this day.
     def read_parts_for(day, track)
+      return [] unless valid_plan_day?(day)
+
       checkoffs.where(day: day, track: track.to_s).pluck(:part)
     end
 
@@ -603,7 +631,8 @@ module Bible270
       return read_parts_for(day, track).include?(part) if part
 
       # No part given: the track counts as read only when every chapter is.
-      read_parts_for(day, track).size >= Plan.part_count(day, track)
+      required = Plan.part_count(day, track)
+      required.positive? && read_parts_for(day, track).size >= required
     end
 
     def track_partially_read?(day, track)
@@ -623,17 +652,18 @@ module Bible270
     # Days on which this track is *finished*. Counting rows would count chapters
     # now that an Old Testament reading has one per chapter.
     def days_read_in(track)
-      checkoffs.where(track: track.to_s).group(:day).count
+      checkoffs.where(track: track.to_s, day: 1..plan_days).group(:day).count
         .count { |day, done| done >= Plan.part_count(day, track) }
     end
 
     def completion_percent
-      (days_completed.to_f / Plan::DAYS * 100).round
+      (days_completed.fdiv(plan_days) * 100).round
     end
 
     # First day not yet fully complete (where the reader "is").
     def current_day
-      (1..Plan::DAYS).find { |d| !day_complete?(d) } || Plan::DAYS
+      days = plan_days
+      (1..days).find { |d| !day_complete?(d) } || days
     end
 
     # Day number implied by the calendar, if a start date is set.
@@ -658,17 +688,19 @@ module Bible270
 
     # Tick every track that has content on this day.
     def mark_day_complete!(day)
-      return false unless Plan.valid_day?(day)
+      return false unless Plan.valid_day?(day, days: Plan::EXTENDED_DAYS)
 
-      with_writable_progress do
+      applied = with_writable_progress do
+        next false unless valid_plan_day?(day)
+
         # Read first rather than rescuing RecordNotUnique: model uniqueness
         # validation can reject duplicates before they reach the database.
         missing = missing_parts_on(day)
         insert_checkoffs(day, missing) if missing.any?
+        true
       end
-
       reload_progress
-      true
+      applied
     end
 
     # [[track, part], ...] not yet ticked on this day.
@@ -693,11 +725,16 @@ module Bible270
     end
 
     def clear_day!(day)
-      return false unless Plan.valid_day?(day)
+      return false unless Plan.valid_day?(day, days: Plan::EXTENDED_DAYS)
 
-      with_writable_progress { checkoffs.where(day: day).destroy_all }
+      applied = with_writable_progress do
+        next false unless valid_plan_day?(day)
+
+        checkoffs.where(day: day).destroy_all
+        true
+      end
       reload_progress
-      true
+      applied
     end
 
     def toggle_day!(day)
@@ -707,23 +744,30 @@ module Bible270
     # Mark everything up to and including `day` complete, and clear anything after.
     def mark_through!(day)
       day = day.to_i
-      return false unless day.between?(0, Plan::DAYS)
+      return false unless day.between?(0, Plan::EXTENDED_DAYS)
 
-      with_writable_progress do
-        checkoffs.where(day: (day + 1)..).delete_all
+      applied = with_writable_progress do
+        last = plan_days
+        next false if day > last
+
+        # Leave hidden Plus95 progress intact while the extension is disabled.
+        checkoffs.where(day: (day + 1)..last).delete_all
         (1..day).each { |d| mark_day_complete!(d) }
+        true
       end
       reload_progress
-      true
+      applied
     end
 
     # Put this reader on `day` as of `on` — i.e. back-date the start so that the
     # given date lands on the given day of the plan.
     def restart_on!(day:, on: Bible270.today)
       day = day.to_i
-      return false unless Plan.valid_day?(day)
+      return false unless Plan.valid_day?(day, days: Plan::EXTENDED_DAYS)
 
-      update!(started_on: Plan.to_date(on) - (day - 1))
+      with_writable_progress do
+        valid_plan_day?(day) && update!(started_on: Plan.to_date(on) - (day - 1))
+      end
     end
 
     # Delivery problems must never stop someone joining, so this logs rather than
@@ -793,7 +837,7 @@ module Bible270
 
     # The plan day that today corresponds to (clamped into range), or nil when undated.
     def calendar_day
-      Plan.day_for(progress_today, effective_start_date)
+      Plan.day_for(progress_today, effective_start_date, days: plan_days)
     end
 
     def progress_status(completed_days: days_completed)
@@ -817,7 +861,7 @@ module Bible270
       raw = raw_calendar_day
       return nil if raw.nil?
 
-      Plan.valid_day?(raw) ? raw : nil
+      valid_plan_day?(raw) ? raw : nil
     end
 
     def today?(day)
@@ -833,15 +877,15 @@ module Bible270
     end
 
     def past_end_date?
-      Plan.after_end?(progress_today, effective_start_date)
+      Plan.after_end?(progress_today, effective_start_date, days: plan_days)
     end
 
     def plan_end_date
-      Plan.end_date_for(effective_start_date)
+      Plan.end_date_for(effective_start_date, days: plan_days)
     end
 
     def date_for_day(day)
-      Plan.date_for(day, effective_start_date)
+      Plan.date_for(day, effective_start_date, days: plan_days)
     end
 
     # How many days behind (positive) or ahead (negative) of the calendar the

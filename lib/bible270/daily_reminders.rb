@@ -28,8 +28,9 @@ module Bible270
       Reader.daily_reminder_recipients(on: date).find_each do |reader|
         next unless reader.daily_reminder_due_at?(local_time)
 
-        day = Plan.day_for(date, reader.effective_start_date, clamp: false)
-        next unless Plan.valid_day?(day)
+        days = reader.plan_days
+        day = Plan.day_for(date, reader.effective_start_date, clamp: false, days: days)
+        next unless Plan.valid_day?(day, days: days)
         next if reader.day_complete?(day)
 
         delivery = NoticeMailer.daily_reminder(reader_id: reader.id, day: day, on: date)

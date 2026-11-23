@@ -26,7 +26,8 @@ module Bible270
                        dependent: :destroy, inverse_of: :parent
     has_many :likes, class_name: 'Bible270::Like', dependent: :destroy, inverse_of: :comment
 
-    validates :day, inclusion: { in: 1..Plan::DAYS }
+    validates :day, inclusion: { in: 1..Plan::EXTENDED_DAYS }
+    validate :extension_day_is_available, if: -> { will_save_change_to_day? || will_save_change_to_parent_id? }
     validates :body, presence: true, length: { maximum: 4000 }
     validates :body_format, inclusion: { in: BODY_FORMATS }, if: :body_format_column?
     # A reflection can be about one track or about the whole day. The form's
@@ -35,9 +36,8 @@ module Bible270
     # "Track is not included in the list".
     before_validation :normalize_track
 
-    validates :track, inclusion: { in: Plan::TRACKS.keys }, allow_blank: true
-    validate :parent_is_a_top_level_reflection
-    validate :parent_is_on_the_same_day
+    validates :track, inclusion: { in: ->(comment) { Plan.present_tracks(comment.day) } }, allow_blank: true
+    validate :valid_reply_parent, if: -> { will_save_change_to_parent_id? || will_save_change_to_day? }
 
     # Fires once the reflection is really saved, so nothing is sent for one whose
     # transaction rolls back. Replies notify their parent author directly; explicit
@@ -47,6 +47,7 @@ module Bible270
     # the same reader five times or repeat the original reply notice.
     after_update_commit :notify_newly_mentioned_readers
 
+    # Reflections are shared across runs, regardless of the viewer's plan length.
     scope :approved, -> { where(approved: true) }
     scope :hidden,   -> { where(approved: false) }
     # Only the reflections themselves: replies are rendered under their parent, so
@@ -83,12 +84,13 @@ module Bible270
     # conversation. Loading only IDs and timestamps keeps older archives cheap to
     # sort, while the displayed page still eager-loads its readers, replies and likes.
     def self.thread_page(day: nil, reader_id: nil, page: 1, per_page: 10)
-      roots = approved.where(parent_id: nil)
+      visible = approved
+      roots = visible.where(parent_id: nil)
       roots = roots.where(day: day) if day
       roots = roots.where(reader_id: reader_id) if reader_id
 
       root_rows = roots.pluck(:id, :created_at)
-      reply_activity = approved.where.not(parent_id: nil).group(:parent_id).maximum(:created_at)
+      reply_activity = visible.where.not(parent_id: nil).group(:parent_id).maximum(:created_at)
       ordered = root_rows.map do |id, created_at|
         [id, [created_at, reply_activity[id]].compact.max]
       end
@@ -100,7 +102,7 @@ module Bible270
       page = page.to_i.clamp(1, pages)
       page_rows = ordered.slice((page - 1) * per_page, per_page) || []
       ids = page_rows.map(&:first)
-      loaded = approved.where(id: ids).with_thread_details.index_by(&:id)
+      loaded = visible.where(id: ids).with_thread_details.index_by(&:id)
 
       ThreadPage.new(
         threads: ids.filter_map { |id| loaded[id] },
@@ -165,23 +167,33 @@ module Bible270
 
   private
 
+    def extension_day_is_available
+      # The plan limits new threads, not replies to approved threads (checked below).
+      return if reply?
+      return unless day && day > Plan::DAYS && reader
+
+      days = if reader.participation
+               reader.plan_days
+             else
+               PlanRun.find_by(current: true)&.plan_days || Plan::DAYS
+             end
+      errors.add(:day, 'is outside the plan') unless Plan.valid_day?(day, days: days)
+    end
+
     def normalize_track
       self.track = Plan.normalize_track(track)
     end
 
     # A reply to a reply would make a tree, and with it the questions of how deep
     # to indent and what hiding a middle node means. One level avoids all of that.
-    def parent_is_a_top_level_reflection
-      return if parent.nil?
-      return if parent.parent_id.nil?
+    def valid_reply_parent
+      return unless reply?
 
-      errors.add(:parent, 'is itself a reply')
-    end
-
-    def parent_is_on_the_same_day
-      return if parent.nil? || parent.day == day
-
-      errors.add(:parent, "is on day #{parent.day}, not #{day}")
+      if parent.nil? || parent.day != day || parent.hidden?
+        errors.add(:parent, 'must be a visible reflection on the same day')
+      elsif parent.reply?
+        errors.add(:parent, 'is itself a reply')
+      end
     end
 
     def notify_comment_readers

@@ -95,6 +95,24 @@ if RAILS_LOADED
       assert_empty ActionMailer::Base.deliveries
     end
 
+    def test_lookup_and_confirmation_use_a_readers_270_override_in_an_extended_run
+      sign_in(@admin)
+      @membership.plan_run.update!(plus95_enabled: true)
+      @membership.update!(plus95_override: false)
+      refute_equal Sync.fingerprint, @remote.fetch('plan_fingerprint')
+
+      token = find_account
+      assert_difference('Bible270::ProgressSyncLink.count', 1) { confirm(token) }
+      assert_equal @remote.fetch('plan_fingerprint'), Bible270::ProgressSyncLink.last.plan_fingerprint
+    end
+
+    def test_candidate_is_invalid_after_the_source_override_changes_the_effective_length
+      sign_in(@admin)
+      token = find_account
+      @membership.update!(plus95_override: true)
+      assert_confirmation_rejected(token)
+    end
+
     def test_forged_or_missing_candidate_is_rejected
       sign_in(@admin)
       token = find_account
@@ -435,10 +453,11 @@ if RAILS_LOADED
     end
 
     def find_account
-      Sync.stub(:lookup, ->(destination:, email:) {
+      Sync.stub(:lookup, ->(destination:, email:, plan_fingerprint:) {
         refute ActiveRecord::Base.connection.transaction_open?, 'Lookup HTTP must not be in a database transaction'
         assert_equal 'church', destination
         assert_equal 'reader@example.org', email
+        assert_equal @remote.fetch('plan_fingerprint'), plan_fingerprint
         @remote
       }) do
         post "#{sync_path}/lookup", params: { destination: 'church', email: 'ignored@example.org' }

@@ -4,7 +4,7 @@
 <h1><%= @reader.display_name %></h1>
 <p class="lede">
   <%= @reader.email.present? ? mail_to(@reader.email) : @reader.provider %> ·
-  <%= @days_completed %> of <%= Bible270::Plan::DAYS %> days ·
+  <%= @days_completed %> of <%= @reader.plan_days %> days ·
   <%= @reader.completion_percent %>%
   <% if @reader.today_day %>· day <%= @reader.today_day %> today
   <% elsif @reader.not_started_yet? %>· starts <%= @reader.effective_start_date.strftime('%b %-d, %Y') %>
@@ -133,6 +133,17 @@
 </div>
 
 <% unless @reader.alumni? %>
+<div class="b270-panel" id="b270-reader-plus95">
+  <% membership = @reader.participation %>
+  <h2 class="b270-subhead">Plan length: <%= membership.plan_days %> days</h2>
+  <% if membership.plus95_override_available? %>
+    <p class="b270-hint">Run default: <%= membership.plan_run.plan_days %> days.</p>
+    <%= render 'bible270/shared/plus95_form', membership: membership, url: admin_reader_plus95_path(@reader) %>
+  <% else %>
+    <p class="b270-hint">Reader plan length overrides are unavailable until the database migration is installed.</p>
+  <% end %>
+</div>
+
 <div class="b270-panel">
   <h2 class="b270-subhead">Where they are in the plan</h2>
   <div class="b270-admin-position-controls">
@@ -140,7 +151,7 @@
       <%= hidden_field_tag :participation_id, @reader.participation.id %>
       <label class="b270-field">
         <span>Day:</span>
-        <%= number_field_tag :day, @reader.calendar_day || 1, min: 1, max: Bible270::Plan::DAYS %>
+        <%= number_field_tag :day, @reader.calendar_day || 1, min: 1, max: @reader.plan_days %>
       </label>
       <%= submit_tag 'Move', class: 'b270-btn' %>
     <% end %>
@@ -229,15 +240,15 @@
     <%= hidden_field_tag :participation_id, @reader.participation.id %>
     <label class="b270-field">
       <span>Mark complete through day (0 clears everything)</span>
-      <%= number_field_tag :day, @days_completed, min: 0, max: Bible270::Plan::DAYS %>
+      <%= number_field_tag :day, @days_completed, min: 0, max: @reader.plan_days %>
     </label>
     <%= submit_tag 'Apply', class: 'b270-btn' %>
   <% end %>
-  <p class="b270-hint">This also clears anything after that day, so it sets their progress exactly.</p>
+  <p class="b270-hint">This also clears check-offs after that day in the visible schedule.</p>
   <% end %>
 
   <div class="b270-grid" style="margin-top:16px">
-    <% (1..Bible270::Plan::DAYS).each do |d| %>
+    <% (1..@reader.plan_days).each do |d| %>
       <% if @reader.alumni? %>
         <%= content_tag :span, d, class: b270_day_cell_classes(d, reader: @reader), title: b270_day_readings(d), id: "day-#{d}" %>
       <% else %>
@@ -264,9 +275,9 @@
           <tr>
             <td>Run <%= participation.plan_run.id %><% if participation.plan_run.reverted_at %> (reverted)<% end %></td>
             <td><%= participation.frozen_start_date ? participation.frozen_start_date.strftime('%b %-d, %Y') : 'Undated' %></td>
-            <td><%= participation.frozen_start_date ? Bible270::Plan.end_date_for(participation.frozen_start_date).strftime('%b %-d, %Y') : 'Undated' %></td>
+            <td><%= participation.frozen_start_date ? Bible270::Plan.end_date_for(participation.frozen_start_date, days: participation.plan_days).strftime('%b %-d, %Y') : 'Undated' %></td>
             <td><%= participation.archived_on ? participation.archived_on.strftime('%b %-d, %Y') : '—' %></td>
-            <td><%= @history_completed_days[participation.id] %>/<%= Bible270::Plan::DAYS %></td>
+            <td><%= @history_completed_days[participation.id] %>/<%= participation.plan_days %></td>
           </tr>
         <% end %>
       </tbody>

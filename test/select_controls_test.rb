@@ -33,7 +33,8 @@ if RAILS_LOADED
     def test_profile_wraps_translation_theme_and_reminder_controls_without_changing_submission
       get "#{mount}/profile"
 
-      assert_wrapped_selects(5)
+      assert_wrapped_selects(6)
+      assert_select '#b270-profile-plus95 .b270-select-wrap > select[name="plus95_override"]'
       assert_header_theme
       assert_select 'span.b270-select-wrap--full > select#bible_version[name="bible_version"] option[value="ESV"][selected]'
       assert_select 'span.b270-select-wrap--full > select#display_mode[name="display_mode"][data-b270-theme-apply="true"] option[value="dark_blue"][selected]'
@@ -75,10 +76,13 @@ if RAILS_LOADED
       end
     end
 
-    def test_admin_reader_wraps_translation_and_theme_without_changing_wiring
+    def test_admin_reader_wraps_translation_theme_and_plan_length_without_changing_wiring
       get "#{mount}/admin/readers/#{@reader.id}"
 
-      assert_wrapped_selects(3)
+      assert_wrapped_selects(4)
+      assert_select '#b270-reader-plus95 .b270-select-wrap > select[name="plus95_override"]' do
+        assert_select 'option[value="default"][selected]', text: 'Run default'
+      end
       assert_select "form[action='#{mount}/admin/readers/#{@reader.id}/version']" do
         assert_select 'input[name="_method"][value="patch"]'
         assert_select 'span.b270-select-wrap--full > select[name="bible_version"][aria-label="Bible translation"]' do

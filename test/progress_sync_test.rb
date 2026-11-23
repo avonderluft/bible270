@@ -15,6 +15,23 @@ class ProgressSyncTest < Bible270ProgressSyncTestCase
     assert_equal original, Sync.fingerprint
   end
 
+  def test_legacy_fingerprint_is_unchanged_and_the_extended_fingerprint_includes_extension_parts
+    legacy = '62db02b2b48aef12e3138afd67534700c20230fb037a94b21b0f90e4cec2b936'
+    plan = Bible270::Plan
+    assert_equal legacy, Sync.fingerprint
+    extended = Sync.fingerprint(days: plan::EXTENDED_DAYS)
+    refute_equal legacy, extended
+
+    parts = plan.method(:parts_for)
+    plan.stub(:parts_for, ->(day, track) { day == 365 && track == 'nt' ? ['Different passage'] : parts.call(day, track) }) do
+      assert_equal legacy, Sync.fingerprint(days: plan::DAYS)
+      refute_equal extended, Sync.fingerprint(days: plan::EXTENDED_DAYS)
+    end
+    toggle_plus95(true)
+    assert_equal extended, Sync.fingerprint
+    assert_equal legacy, Sync.fingerprint(days: plan::DAYS)
+  end
+
   def test_suppression_is_nested_thread_local_and_restored_on_error
     refute Sync.suppressed?
     assert_raises(RuntimeError) do
@@ -32,8 +49,8 @@ class ProgressSyncTest < Bible270ProgressSyncTestCase
   def test_lookup_normalizes_email_and_only_proxies_the_allowlisted_client
     calls = []
     client = Object.new
-    client.define_singleton_method(:lookup) do |email|
-      calls << email
+    client.define_singleton_method(:lookup) do |email, plan_fingerprint:|
+      calls << [email, plan_fingerprint]
       @remote_payload
     end
     client.instance_variable_set(:@remote_payload, @remote)
@@ -41,7 +58,7 @@ class ProgressSyncTest < Bible270ProgressSyncTestCase
       assert_equal @remote, Sync.lookup(destination: 'church', email: ' DEST@EXAMPLE.ORG ')
       assert_raises(Sync::ConfigurationError) { Sync.lookup(destination: 'unknown', email: 'dest@example.org') }
     end
-    assert_equal ['dest@example.org'], calls
+    assert_equal [['dest@example.org', nil]], calls
   end
 
   def test_capture_has_no_network_and_deduplicates_payload
@@ -212,6 +229,45 @@ class ProgressSyncTest < Bible270ProgressSyncTestCase
     assert_equal 'Synced', link.status
     assert_equal 2, link.delivered_count
     assert_equal 0, link.pending_count
+  end
+
+  def test_copy_only_includes_extension_checkoffs_when_the_current_run_enables_them
+    toggle_plus95(true)
+    day = Bible270::Plan::EXTENDED_DAYS
+    triple = [day, 'nt', 0]
+    # Seed persisted progress independently of the local checkoff callback.
+    Bible270::Checkoff.insert_all!([{ reader_id: @reader.id, participation_id: @membership.id, day: day, track: 'nt', part: 0 }])
+    add_checkoff
+
+    extended = create_link(remote: @remote.merge('plan_fingerprint' => Sync.fingerprint))
+    assert_equal [[1, 'ot', 0], triple], Sync.copy_existing!(extended).readings
+    toggle_plus95(false)
+    standard = create_link
+    assert extended.reload.paused?, 'explicitly linking the other schedule replaces the binding'
+    assert_equal [[1, 'ot', 0]], Sync.copy_existing!(standard).readings
+    assert @membership.checkoffs.exists?(day: day)
+  end
+
+  def test_copy_and_relink_use_overrides_instead_of_the_run_default
+    day = Bible270::Plan::EXTENDED_DAYS
+    @membership.update!(plus95_override: true)
+    Bible270::Checkoff.insert_all!([{ reader_id: @reader.id, participation_id: @membership.id, day: day, track: 'nt', part: 0 }])
+    add_checkoff
+    extended_plan = @remote.merge('plan_fingerprint' => Sync.fingerprint(days: day))
+    extended = create_link(remote: extended_plan)
+    assert_equal [[1, 'ot', 0], [day, 'nt', 0]], Sync.copy_existing!(extended).readings
+
+    toggle_plus95(true)
+    @membership.update!(plus95_override: false)
+    assert_raises(Sync::PlanLengthMismatch) { Sync.copy_existing!(extended) }
+    assert extended.reload.active?
+    assert_raises(Sync::Conflict) { create_link(remote: extended_plan) }
+
+    standard = create_link
+    assert extended.reload.paused?
+    assert standard.usable?
+    assert_equal [[1, 'ot', 0]], Sync.copy_existing!(standard).readings
+    assert @membership.checkoffs.exists?(day: day)
   end
 
   def test_copy_only_current_active_membership_and_empty_snapshot_returns_nil

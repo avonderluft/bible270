@@ -1,36 +1,49 @@
 <% content_for :title, "Day #{@day} — #{Bible270.config.app_name}" %>
 
 <div class="b270-day-page">
-  <%= render "bible270/days/day_progress", day: @day, reader: current_reader,
-        just_completed: @day_just_completed, completion_event_id: @completion_event_id %>
+  <% if @discussion_only %>
+    <h1>Day <%= @day %> reflections</h1>
+    <p class="b270-hint">This day is outside the reading plan you’re viewing, but its reflections are still available.</p>
+  <% else %>
+    <%= render "bible270/days/day_progress", day: @day, reader: current_reader,
+          just_completed: @day_just_completed, completion_event_id: @completion_event_id %>
+  <% end %>
 
   <%= render "bible270/shared/interaction_status" %>
 
-  <div id="readings" class="b270-readings">
-    <%= render partial: "bible270/days/reading", collection: %w[ot nt pp],
-               as: :track, locals: { day: @day, readings: @readings, reader_tracks: @reader_tracks } %>
-  </div>
+  <% unless @discussion_only %>
+    <div id="readings" class="b270-readings">
+      <% tracks = @day > Bible270::Plan::DAYS ? Bible270::Plan.present_tracks(@day) : Bible270::Plan::TRACKS.keys %>
+      <%= render partial: "bible270/days/reading", collection: tracks,
+                 as: :track, locals: { day: @day, readings: @readings, reader_tracks: @reader_tracks } %>
+    </div>
+  <% end %>
 
   <% unless signed_in? %>
-    <p class="b270-signin-hint" style="margin-top:12px"><%= link_to "Sign in", sign_in_path(origin: request.fullpath) %> to track your reading and join the conversation.</p>
+    <p class="b270-signin-hint" style="margin-top:12px">
+      <%= link_to "Sign in", sign_in_path(origin: request.fullpath) %>
+      <%= @discussion_only ? "to join the conversation." : "to track your reading and join the conversation." %>
+    </p>
   <% end %>
 
   <div class="b270-day-community">
-    <h2 class="b270-section-h">Reflections</h2>
+    <% unless @discussion_only %><h2 class="b270-section-h">Reflections</h2><% end %>
     <div id="comments">
       <%= render partial: "bible270/comments/comment", collection: @comments, as: :comment %>
     </div>
 
     <% if signed_in? %>
-      <div style="margin-top:18px">
-        <%= render "bible270/comments/form", day: @day, comment: @new_comment %>
-      </div>
+      <% if @new_comment %>
+        <div style="margin-top:18px">
+          <%= render "bible270/comments/form", day: @day, comment: @new_comment %>
+        </div>
+      <% end %>
       <%= render "bible270/shared/comment_drafts" %>
       <%= render "bible270/shared/mention_typeahead" %>
       <%= render "bible270/shared/markdown_toolbar" %>
     <% end %>
 
-    <%= render "bible270/days/completers", day: @day, completers: @completers %>
+    <%= render "bible270/days/completers", day: @day, completers: @completers unless @discussion_only %>
   </div>
 </div>
 

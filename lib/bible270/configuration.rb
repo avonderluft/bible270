@@ -315,8 +315,20 @@ module Bible270
 
     attr_accessor :after_sign_out_path, :email_sign_in_max_per_window, :tagline, :footer_html, :footer, :favicon, :avatar_max_bytes, :chapter_breaks, :admin_emails, :admin_resolver, :bible_version, :header_mark, :remember_for, :require_sign_in_to_participate
 
+    DEFAULT_TAGLINE = 'A 270-day journey through Scripture'
+    private_constant :DEFAULT_TAGLINE
+
     # Public labels.
     attr_accessor :app_name
+
+    def tagline_for(days:)
+      case tagline
+      when DEFAULT_TAGLINE, 'Journeying through Scripture in 9 months'
+        "A #{days}-day journey through Scripture"
+      else
+        tagline
+      end
+    end
 
     # Optional community-wide start date for the plan. Set this when everyone
     # reads together as a cohort (e.g. a church starting on a set Sunday):
@@ -372,7 +384,7 @@ module Bible270
       @bible_version = 'NKJV'
       @bible_versions = Translations::VERSIONS.keys
       @app_name = 'Daily Bread'
-      @tagline = 'Journeying through Scripture in 9 months'
+      @tagline = DEFAULT_TAGLINE
       @time_zone = nil
       @reflections_page_size = 10
       @mention_notifications = true

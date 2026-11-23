@@ -12,6 +12,7 @@ module Bible270
     class ConfigurationError < Error; end
     class Unavailable < Error; end
     class Conflict < Error; end
+    class PlanLengthMismatch < Error; end
     class Unauthorized < Error; end
 
     autoload :Client, 'bible270/progress_sync/client'
@@ -35,12 +36,28 @@ module Bible270
 
     # Recompute from the actual schedule, not the gem version or a long-lived
     # digest cache. Include empty readings and the positional checkoff semantics.
-    def fingerprint
-      schedule = (1..Plan::DAYS).map do |day|
+    # Unbound lookups default to the current run's length. Membership-bound
+    # operations supply the member's effective length instead.
+    def fingerprint(days: current_plan_days)
+      schedule = (1..days).map do |day|
         [day, Plan::TRACKS.keys.sort.map { |track| [track, Plan.parts_for(day, track).each_with_index.map { |text, part| [part, text] }] }]
       end
       Digest::SHA256.hexdigest(JSON.generate(['bible270:completion:day-one-based:part-zero-based:v1', schedule]))
     end
+
+    def other_plan_fingerprint?(digest, days:)
+      other_days = days == Plan::DAYS ? Plan::EXTENDED_DAYS : Plan::DAYS
+      digest == fingerprint(days: other_days)
+    end
+
+    def current_plan_days
+      return Plan::DAYS unless defined?(PlanRun)
+
+      PlanRun.find_by(current: true)&.plan_days || Plan::DAYS
+    rescue ActiveRecord::StatementInvalid, ActiveRecord::ConnectionNotEstablished
+      Plan::DAYS
+    end
+    private_class_method :current_plan_days
 
     def suppress
       previous = Thread.current.thread_variable_get(SUPPRESSION_KEY)
@@ -60,19 +77,23 @@ module Bible270
       links = ProgressSyncLink.active.where(participation_id: participation.id)
       return [] unless links.exists?
 
-      triples = normalize_readings(readings)
-      return [] if triples.empty?
-
       captured = []
-      with_source_lock(participation) do |membership|
-        digest = fingerprint
+      with_source_lock(participation) do |membership, run|
+        days = membership.plan_days
+        triples = normalize_readings(readings, days: days)
+        next if triples.empty?
+
+        digest = fingerprint(days: days)
         links.order(:id).lock.each do |link|
-          validate_link!(link, membership: membership, digest: digest)
+          validate_link!(link, membership: membership, run: run, digest: digest)
           unless membership.progress_sync_generation == participation.progress_sync_generation
             raise Conflict, 'Source membership changed; explicitly relink this reader'
           end
 
           captured << enqueue!(link, triples)
+        rescue PlanLengthMismatch
+          # A toggle does not change the binding. Copy can catch up once it matches again.
+          next
         rescue ConfigurationError, Conflict, Unauthorized => e
           pause!(link, e.message)
         end
@@ -80,11 +101,11 @@ module Bible270
       captured
     end
 
-    def lookup(destination:, email:)
+    def lookup(destination:, email:, plan_fingerprint: nil)
       ensure_available!
       ensure_network_outside_transaction!
       configured_destination!(destination)
-      Client.new(destination.to_s).lookup(normalize_email(email))
+      Client.new(destination.to_s).lookup(normalize_email(email), plan_fingerprint: plan_fingerprint)
     end
 
     # A paused link is replaced, never reactivated or retargeted. The caller's
@@ -94,11 +115,8 @@ module Bible270
       destination = destination.to_s
       destination_settings = configured_destination!(destination)
       remote = remote.to_h.transform_keys(&:to_s)
-      digest = fingerprint
-      raise Conflict, 'Destination uses a different reading plan' unless remote['plan_fingerprint'] == digest
-
       attributes = {
-        destination: destination, destination_url: destination_settings.fetch(:url), plan_fingerprint: digest,
+        destination: destination, destination_url: destination_settings.fetch(:url),
         remote_reader_id: remote_integer!(remote, 'reader_id', minimum: 1),
         remote_participation_id: remote_integer!(remote, 'participation_id', minimum: 1),
         remote_generation: remote_integer!(remote, 'generation', minimum: 0),
@@ -108,24 +126,27 @@ module Bible270
       raise Conflict, 'Source membership changed; reload before linking' unless membership
 
       result = nil
-      with_source_lock(membership) do |current|
-        validate_membership!(current)
-        raise Conflict, 'Reading plan changed; look up the destination again' unless fingerprint == digest
+      with_source_lock(membership) do |current, run|
+        validate_membership!(current, run: run)
+        digest = fingerprint(days: current.plan_days)
+        unless remote['plan_fingerprint'] == digest
+          raise Conflict, 'Destination uses a different reading plan; look up the destination again'
+        end
         raise ConfigurationError, 'Destination URL changed; look up the destination again' unless configured_destination!(destination) == destination_settings
 
         existing = ProgressSyncLink.active.where(participation_id: current.id, destination: destination).lock.first
         if existing
           begin
-            validate_link!(existing, membership: current, digest: digest)
+            validate_link!(existing, membership: current, run: run, digest: digest)
             binding_changed = %i[remote_reader_id remote_participation_id remote_generation].any? do |attribute|
               existing.public_send(attribute) != attributes.fetch(attribute)
             end
             pause!(existing, 'Destination reader binding changed; explicitly replaced') if binding_changed
-          rescue ConfigurationError, Conflict, Unauthorized => e
+          rescue PlanLengthMismatch, ConfigurationError, Conflict, Unauthorized => e
             pause!(existing, e.message)
           end
         end
-        result = ProgressSyncLink.create!(attributes.merge(participation: current,
+        result = ProgressSyncLink.create!(attributes.merge(participation: current, plan_fingerprint: digest,
                                                            source_generation: current.progress_sync_generation))
       end
       result
@@ -140,11 +161,13 @@ module Bible270
 
       result = nil
       failure = nil
-      with_source_lock(link.participation) do |membership|
+      with_source_lock(link.participation) do |membership, run|
         link.reload.lock!
         begin
-          validate_link!(link, membership: membership)
-          triples = normalize_readings(membership.checkoffs.order(:day, :track, :part).pluck(:day, :track, :part))
+          validate_link!(link, membership: membership, run: run)
+          days = membership.plan_days
+          rows = membership.checkoffs.where(day: 1..days).order(:day, :track, :part).pluck(:day, :track, :part)
+          triples = normalize_readings(rows, days: days)
           result = enqueue!(link, triples) if triples.any?
         rescue ConfigurationError, Conflict, Unauthorized => e
           pause!(link, e.message)
@@ -257,14 +280,14 @@ module Bible270
     end
     private_class_method :remote_integer!
 
-    def normalize_readings(readings)
+    def normalize_readings(readings, days:)
       Array(readings).map do |triple|
         unless triple.is_a?(Array) && triple.length == 3
           raise Conflict, 'Readings must be [day, track, part] triples'
         end
 
         day, track, part = triple
-        unless Plan.valid_day?(day) && Plan::TRACKS.key?(track) && Plan.valid_part?(day, track, part)
+        unless Plan.valid_day?(day, days: days) && Plan::TRACKS.key?(track) && Plan.valid_part?(day, track, part)
           raise Conflict, 'A completion does not belong to the current reading plan'
         end
 
@@ -276,33 +299,44 @@ module Bible270
     def with_source_lock(participation)
       # Fresh instances avoid stale association caches and lock! rejecting a
       # caller's dirty Reader. Match archive/restart's run -> reader lock order.
-      PlanRun.find(participation.plan_run_id).with_lock do
+      run = PlanRun.find(participation.plan_run_id)
+      run.with_lock do
         Reader.find(participation.reader_id).with_lock do
-          yield Participation.find(participation.id)
+          yield Participation.find(participation.id), run
         end
       end
     end
     private_class_method :with_source_lock
 
-    def validate_membership!(membership)
-      unless membership.active? && PlanRun.where(id: membership.plan_run_id, current: true).exists? &&
+    def validate_membership!(membership, run:)
+      unless membership.active? && membership.plan_run_id == run.id && run.current? &&
              Participation.chosen.where(id: membership.id).exists?
         raise Conflict, 'Source reader is no longer active in the linked run; explicitly relink'
       end
     end
     private_class_method :validate_membership!
 
-    def validate_link!(link, membership: nil, digest: nil)
+    def validate_link!(link, membership: nil, run: nil, digest: nil)
       raise Conflict, 'Progress sync link is paused; explicitly relink' unless link.active?
 
       membership ||= Participation.find(link.participation_id)
-      validate_membership!(membership)
+      run ||= membership.plan_run
+      validate_membership!(membership, run: run)
       unless membership.id == link.participation_id && membership.progress_sync_generation == link.source_generation
         raise Conflict, 'Source membership generation changed; explicitly relink'
       end
-      raise Conflict, 'Reading plan changed; explicitly relink' unless link.plan_fingerprint == (digest || fingerprint)
+
       unless configured_destination!(link.destination).fetch(:url) == link.destination_url
         raise ConfigurationError, 'Destination URL changed; explicitly relink'
+      end
+
+      days = membership.plan_days
+      unless link.plan_fingerprint == (digest || fingerprint(days: days))
+        if other_plan_fingerprint?(link.plan_fingerprint, days: days)
+          raise PlanLengthMismatch, 'Source plan length differs from the linked plan'
+        end
+
+        raise Conflict, 'Reading plan changed; explicitly relink'
       end
 
       true
@@ -345,10 +379,10 @@ module Bible270
 
     def prepare_delivery!(delivery)
       link = ProgressSyncLink.find(delivery.progress_sync_link_id)
-      with_source_lock(link.participation) do |membership|
+      with_source_lock(link.participation) do |membership, run|
         link.reload.lock!
-        validate_link!(link, membership: membership)
-        normalize_readings(delivery.readings)
+        validate_link!(link, membership: membership, run: run)
+        normalize_readings(delivery.readings, days: membership.plan_days)
         unless ProgressSyncDelivery.where(id: delivery.id, claim_token: delivery.claim_token, delivered_at: nil)
             .where('locked_until > ?', Time.current).exists?
           raise Unavailable, 'Delivery lease expired before sending'
@@ -382,7 +416,10 @@ module Bible270
         next unless current
 
         now = Time.current
-        if error
+        if error.is_a?(PlanLengthMismatch)
+          # No HTTP attempt occurred. Keep this batch and its retry budget intact.
+          current.update!(attempts: current.attempts - 1, claim_token: nil, locked_until: nil, next_attempt_at: now + 60)
+        elsif error
           message = error.message.to_s.truncate(1000)
           current.update!(last_error: message, claim_token: nil, locked_until: nil,
                           next_attempt_at: now + [60 * (2**(current.attempts - 1)), 21_600].min)

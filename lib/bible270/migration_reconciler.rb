@@ -41,6 +41,8 @@ module Bible270
       'CreateBible270ScriptureFrames' => :check_scripture_frames,
       'CreateBible270ProgressSync' => :check_progress_sync,
       'AddScriptureFrameRotationToBible270Readers' => :check_scripture_frame_rotation,
+      'AddPlus95EnabledToBible270PlanRuns' => :check_plus95_enabled,
+      'AddPlus95OverrideToBible270Participations' => :check_plus95_override,
 
       'CreateActiveStorageTables' => :check_active_storage
     }.freeze
@@ -316,6 +318,26 @@ module Bible270
                                    scripture_frame_rotation: { type: :json, null: false, default: {} })
     end
 
+    def check_plus95_enabled
+      table_missing(:bible270_plan_runs, columns: %i[plus95_enabled]) +
+        missing_column_definitions(:bible270_plan_runs, plus95_enabled: { type: :boolean, null: false, default: false })
+    end
+
+    def check_plus95_override
+      missing = table_missing(:bible270_participations, columns: %i[plus95_override]) +
+                missing_column_definitions(:bible270_participations,
+                                           plus95_override: { type: :boolean, null: true, default: nil, default_function: nil })
+      return missing unless missing.empty? && connection.adapter_name == 'SQLite'
+
+      # Active Record reports both default fields as nil for some SQLite expressions.
+      default = connection.select_value(<<~SQL)
+        SELECT dflt_value FROM pragma_table_info('bible270_participations') WHERE name = 'plus95_override'
+      SQL
+      return [] if default.nil? || default.casecmp?('NULL')
+
+      ['column bible270_participations.plus95_override default nil']
+    end
+
     def check_admin
       table_missing(:bible270_readers, columns: %i[admin]) +
         missing_column_definitions(:bible270_readers, admin: { type: :boolean, null: false, default: false })
@@ -498,20 +520,25 @@ module Bible270
       connection.columns(table).flat_map do |column|
         definitions.fetch(column.name.to_sym, {}).filter_map do |attribute, expected|
           actual = column.public_send(attribute)
-          if attribute == :default && column.type == :json && actual.is_a?(String)
-            begin
-              actual = JSON.parse(actual)
-            rescue JSON::ParserError
-              # Leave malformed defaults unmatched.
-            end
-          end
-          actual = ActiveModel::Type::Boolean.new.cast(actual) if attribute == :default && column.type == :boolean
-          if attribute == :default && column.type == :integer && actual.is_a?(String) && actual.match?(%r{\A[+-]?\d+\z})
-            actual = Integer(actual, 10)
-          end
+          actual = normalize_column_default(column.type, actual, expected) if attribute == :default
           "column #{table}.#{column.name} #{attribute} #{expected}" unless actual == expected
         end
       end
+    end
+
+    def normalize_column_default(type, actual, expected)
+      case type
+      when :json
+        return JSON.parse(actual) if actual.is_a?(String)
+      when :boolean
+        # A nil default must not match an empty string coerced to nil.
+        return ActiveModel::Type::Boolean.new.cast(actual) unless expected.nil?
+      when :integer
+        return Integer(actual, 10) if actual.is_a?(String) && actual.match?(%r{\A[+-]?\d+\z})
+      end
+      actual
+    rescue JSON::ParserError
+      actual
     end
 
     def missing_indexes(table, expected_indexes)

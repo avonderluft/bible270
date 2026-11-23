@@ -147,4 +147,15 @@
   <% end %>
 </div>
 
+<% unless current_reader.alumni? %>
+  <% membership = current_reader.participation %>
+  <% if membership.plus95_override_available? %>
+    <div class="b270-panel" id="b270-profile-plus95">
+      <h2 class="b270-subhead">Plan length: <%= membership.plan_days %> days</h2>
+      <p class="b270-hint">Run default: <%= membership.plan_run.plan_days %> days. +95 rereads the New Testament, Psalms, and Proverbs.</p>
+      <%= render 'bible270/shared/plus95_form', membership: membership, url: profile_plus95_path %>
+    </div>
+  <% end %>
+<% end %>
+
 <p style="margin-top:18px"><%= link_to "← Back to your progress", progress_path %></p>

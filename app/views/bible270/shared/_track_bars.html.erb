@@ -1,15 +1,8 @@
 <%# locals: (reader:) %>
-<%#
-  The three progress bars. This markup was duplicated in days/index and
-  readers/show, differing only in which reader it described.
-
-  The New Testament total is nt_content_days rather than DAYS, because a plan
-  with rest days has fewer NT readings than days.
-%>
+<% days = reader.plan_days %>
 <div class="b270-tracks">
-  <% [["ot", Bible270::Plan::DAYS],
-      ["nt", Bible270::Plan.nt_content_days],
-      ["pp", Bible270::Plan::DAYS]].each do |track, total| %>
+  <% Bible270::Plan::TRACKS.each_key do |track| %>
+    <% total = Bible270::Plan.track_days(track, days: days) %>
     <% t = b270_track(track) %>
     <% read = reader.days_read_in(track) %>
     <div class="b270-tm">

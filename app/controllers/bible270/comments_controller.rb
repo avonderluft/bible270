@@ -4,7 +4,6 @@ module Bible270
   class CommentsController < ApplicationController
     def index
       visited_at = Time.current
-      @days_with_reflections = Comment.approved.distinct.pluck(:day).sort
       load_reflection_filters
       load_reflection_page
       load_new_reflections
@@ -23,10 +22,17 @@ module Bible270
       return unless require_reader!
 
       @day = params[:day].to_i
-      head :bad_request and return unless Plan.valid_day?(@day)
+      head :bad_request and return unless Plan.valid_day?(@day, days: Plan::EXTENDED_DAYS)
 
-      @comment = current_reader.comments.new(comment_params.merge(day: @day))
-      @readings = Plan.readings_for(@day)
+      @discussion_only = !Plan.valid_day?(@day, days: b270_plan_days)
+      attributes = comment_params
+      # Outside the reader's plan, only an existing visible discussion can receive replies.
+      if @discussion_only && !Comment.for_day(@day).exists?(id: attributes[:parent_id])
+        head :bad_request
+        return
+      end
+
+      @comment = current_reader.comments.new(attributes.merge(day: @day))
 
       if @comment.save
         respond_to do |format|
@@ -44,7 +50,14 @@ module Bible270
                                                                           locals: { day: @day, comment: @comment }),
                    status: :unprocessable_entity
           end
-          format.html { redirect_to day_path(@day), alert: @comment.errors.full_messages.to_sentence }
+          format.html do
+            path = if @discussion_only
+                     day_path(@day, reply_to: @comment.parent_id, anchor: 'new_comment_form')
+                   else
+                     day_path(@day)
+                   end
+            redirect_to path, alert: @comment.errors.full_messages.to_sentence
+          end
         end
       end
     end
@@ -95,6 +108,7 @@ module Bible270
 
     def load_reflection_filters
       root_reflections = Comment.approved.where(parent_id: nil)
+      @days_with_reflections = root_reflections.distinct.pluck(:day).sort
       reader_ids = root_reflections.distinct.pluck(:reader_id)
       @reflection_readers = Reader.where(id: reader_ids).to_a.sort_by(&:sort_name)
 
@@ -150,9 +164,8 @@ module Bible270
     # Scoped to the reader unless they are an administrator, so an ordinary reader
     # cannot use editing or deletion to discover someone else's reflection.
     def editable_comment
-      return current_reader.comments.find_by(id: params[:id]) unless b270_admin_view?
-
-      Comment.find_by(id: params[:id])
+      comments = b270_admin_view? ? Comment.all : current_reader.comments
+      comments.find_by(id: params[:id])
     end
 
     def deletable_comment

@@ -1,15 +1,22 @@
 <%# locals: (reader: nil, expanded: false) %>
-<% if Bible270::Plan::DAYS.positive? %>
-  <% grid_reader = reader || current_reader %>
-  <% grid_start_date = grid_reader&.effective_start_date %>
-  <% today = signed_in? && grid_reader == current_reader ? current_reader.today_day : nil %>
-  <details class="b270-index"<%= " open" if expanded %>>
-    <summary>View all <%= Bible270::Plan::DAYS %> days</summary>
-    <div class="b270-grid">
-      <% (1..Bible270::Plan::DAYS).each do |d| %>
-        <%= b270_day_cell(d, reader: grid_reader, today: today, start_date: grid_start_date) %>
-      <% end %>
-    </div>
-    <p class="b270-gridnote">Dot indicates days with reflections.</p>
-  </details>
-<% end %>
+<%
+  viewer = current_reader if signed_in?
+  grid_reader = reader || viewer
+  membership = grid_reader&.participation
+  grid_days = membership ? grid_reader.plan_days : b270_current_run_days
+  grid_start_date = membership ? grid_reader.effective_start_date : Bible270::Setting.run_start_date
+  today = grid_reader.today_day if viewer && grid_reader == viewer
+  # A public profile shows its subject's calendar, but the day URLs always
+  # use the viewer's plan. Extra cells show progress without a dead link.
+  browse_days = reader && grid_days > Bible270::Plan::DAYS ? b270_plan_days : grid_days
+%>
+<details class="b270-index"<%= " open" if expanded %>>
+  <summary>View all <%= grid_days %> days</summary>
+  <div class="b270-grid">
+    <% (1..grid_days).each do |d| %>
+      <%= b270_day_cell(d, reader: grid_reader, today: today, start_date: grid_start_date,
+                           browse_days: browse_days) %>
+    <% end %>
+  </div>
+  <p class="b270-gridnote">Dot indicates days with reflections.<% if browse_days < grid_days %> Days outside your plan aren’t linked.<% end %></p>
+</details>

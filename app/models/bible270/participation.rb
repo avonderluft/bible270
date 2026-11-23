@@ -5,6 +5,9 @@ module Bible270
     self.table_name = 'bible270_participations'
 
     class ArchivedProgress < StandardError; end
+    class InvalidPlanLength < ArgumentError; end
+
+    PLUS95_CHOICES = { 'default' => nil, '0' => false, '1' => true }.freeze
 
     belongs_to :reader, class_name: 'Bible270::Reader', inverse_of: :participations
     belongs_to :plan_run, class_name: 'Bible270::PlanRun', inverse_of: :participations
@@ -35,6 +38,42 @@ module Bible270
         )
       SQL
     }
+
+    def self.with_plus95
+      inherited = if PlanRun.column_names.include?('plus95_enabled')
+                    where(plan_run_id: PlanRun.where(plus95_enabled: true).select(:id))
+                  else
+                    none
+                  end
+      return inherited unless column_names.include?('plus95_override')
+
+      where(plus95_override: true).or(inherited.where(plus95_override: nil))
+    end
+
+    def plus95_override_available? = has_attribute?(:plus95_override)
+
+    def plan_days
+      override = self[:plus95_override] if plus95_override_available?
+      return plan_run.plan_days if override.nil?
+
+      override ? Plan::EXTENDED_DAYS : Plan::DAYS
+    end
+
+    def self.completed_runs_by_reader(reader_ids)
+      history = where(reader_id: reader_ids, active: false).preload(:plan_run).to_a
+      days_completed = Checkoff.completed_days_by_participation(history.map(&:id))
+      finished = history.select { |membership| days_completed[membership.id] == membership.plan_days }
+      # The last written check-off can belong to any day, not necessarily day 270 or 365.
+      timestamps = Checkoff.latest_checkoff_at_by_participation(finished.map(&:id))
+
+      finished.each_with_object({}) do |membership, readers|
+        date = Bible270.local_time(timestamps[membership.id])&.to_date
+        next unless date
+
+        runs = (readers[membership.reader_id] ||= Hash.new { |lengths, days| lengths[days] = [] })
+        runs[membership.plan_days] << date
+      end
+    end
 
     def alumni? = !active?
 

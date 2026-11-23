@@ -74,7 +74,7 @@ if RAILS_LOADED
 
       headings = css_select('.b270-panel > h2').map { |heading| heading.text.strip }
       assert_equal ['Name and picture', 'Which translation they read', 'Theme', 'Email notifications',
-                    'Where they are in the plan', 'Role: Reader', 'Status: Active', 'Completion animation'], headings.first(8)
+                    'Plan length: 270 days', 'Where they are in the plan', 'Role: Reader', 'Status: Active', 'Completion animation'], headings.first(9)
       assert_equal 1, headings.count('Which translation they read')
       assert_select 'details#b270-reader-completions:not([open])', count: 1
       assert_operator response.body.index('Which translation they read'), :<, response.body.index('Show Completions')

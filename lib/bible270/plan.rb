@@ -3,6 +3,7 @@
 require 'date'
 require 'yaml'
 require 'bible270/versification'
+require 'bible270/plus95'
 
 module Bible270
   # Pure-Ruby, deterministic reading-plan generator. No database required.
@@ -23,6 +24,8 @@ module Bible270
   # in the closing days.
   module Plan
     DAYS = 270
+    PLUS95_DAYS = 95
+    EXTENDED_DAYS = DAYS + PLUS95_DAYS
 
     OT = [
       ['Genesis', 50], ['Exodus', 40], ['Leviticus', 27], ['Numbers', 36],
@@ -570,28 +573,42 @@ module Bible270
 
     # ---- public API -------------------------------------------------------
 
+    # Calendar-day lookup, independent of a reader's plan length. Summaries
+    # describe each track; use parts_for for individual links and checkoffs.
     def readings_for(day)
+      return nil unless valid_day?(day, days: EXTENDED_DAYS)
+      return Plus95::READINGS[day - DAYS - 1].dup if day > DAYS
+
       { 'ot' => ot_plan[day - 1], 'nt' => nt_plan[day - 1], 'pp' => pp_plan[day - 1] }
     end
 
     def present_tracks(day)
-      readings_for(day).select { |_, ref| ref }.keys
+      readings_for(day)&.compact&.keys || []
     end
 
     def required_track_count(day) = present_tracks(day).size
+
+    # Progress denominator: the extension adds NT and wisdom, but no OT days.
+    def track_days(track, days: DAYS)
+      case normalize_track(track)
+      when 'ot' then [days, DAYS].min
+      when 'nt', 'pp' then [days, EXTENDED_DAYS].min
+      else 0
+      end
+    end
 
     # ---- parts of a reading -------------------------------------------------
     #
     # An Old Testament reading is usually several whole chapters (260 of the 270
     # days, up to six), which readers get through one at a time. Each chapter is
-    # a separately tickable part. A New Testament or Psalms/Proverbs reading is a
-    # single chapter or a portion of one, so it has exactly one part.
+    # a separately tickable part. On days 1–270, NT and wisdom have one part
+    # each; on Plus95 days, each chapter or chapter slice is its own part.
     #
-    # Parts are identified by position, so part 0 is always the first chapter of
-    # that day's reading.
+    # Parts are identified by position, so part 0 is always the first passage.
 
     def parts_for(day, track)
-      return [] unless valid_day?(day)
+      return [] unless valid_day?(day, days: EXTENDED_DAYS)
+      return Plus95::PARTS[day - DAYS - 1][track.to_s]&.dup || [] if day > DAYS
 
       case track.to_s
       when 'ot'
@@ -613,10 +630,13 @@ module Bible270
 
     # Every tickable box on a day, across all three tracks.
     def total_parts(day)
+      return 0 unless valid_day?(day, days: EXTENDED_DAYS)
+      return Plus95::PARTS[day - DAYS - 1].values.sum(&:size) if day > DAYS
+
       memo(:"total_parts_#{day}") { present_tracks(day).sum { |track| part_count(day, track) } }
     end
 
-    def valid_day?(day) = day.is_a?(Integer) && day >= 1 && day <= DAYS
+    def valid_day?(day, days: DAYS) = day.is_a?(Integer) && day.between?(1, days)
 
     # Blank means "the whole day", which is stored as NULL. Select fields submit
     # an empty string rather than nil, so this has to be normalised before
@@ -651,28 +671,28 @@ module Bible270
     end
 
     # The calendar date a given plan day falls on.
-    def date_for(day, start_date)
+    def date_for(day, start_date, days: DAYS)
       start = to_date(start_date)
-      return nil unless start && valid_day?(day)
+      return nil unless start && valid_day?(day, days: days)
 
       start + (day - 1)
     end
 
     # The last day of the plan.
-    def end_date_for(start_date)
-      date_for(DAYS, start_date)
+    def end_date_for(start_date, days: DAYS)
+      date_for(days, start_date, days: days)
     end
 
     # Which plan day a calendar date corresponds to. By default the result is
-    # clamped into 1..DAYS; pass clamp: false to get the raw (possibly out of
+    # clamped into 1..days; pass clamp: false to get the raw (possibly out of
     # range) offset, which is how you tell "hasn't started yet" from "day 1".
-    def day_for(date, start_date, clamp: true)
+    def day_for(date, start_date, clamp: true, days: DAYS)
       start = to_date(start_date)
       on    = to_date(date)
       return nil unless start && on
 
       offset = (on - start).to_i + 1
-      clamp ? offset.clamp(1, DAYS) : offset
+      clamp ? offset.clamp(1, days) : offset
     end
 
     def before_start?(date, start_date)
@@ -680,9 +700,9 @@ module Bible270
       raw ? raw < 1 : false
     end
 
-    def after_end?(date, start_date)
-      raw = day_for(date, start_date, clamp: false)
-      raw ? raw > DAYS : false
+    def after_end?(date, start_date, days: DAYS)
+      raw = day_for(date, start_date, clamp: false, days: days)
+      raw ? raw > days : false
     end
 
     def totals

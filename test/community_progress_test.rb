@@ -46,6 +46,64 @@ if RAILS_LOADED
       get "#{mount}/community"
 
       assert_progress(@other, days: 270, width: 100.0)
+      assert_select '.b270-community-completion', text: %r{\ACompleted 270 days · }, count: 1
+    end
+
+    def test_completion_uses_effective_length_and_latest_in_schedule_checkoff_date
+      previous_zone = Bible270.config.time_zone
+      Bible270.config.time_zone = 'America/Los_Angeles'
+      @other.participation.update!(plus95_override: true)
+      complete_days(@reader, 2..270, at: Time.utc(2026, 1, 15, 12))
+      complete_days(@reader, [1], at: Time.utc(2026, 1, 17, 3))
+      # Preserved extension work must not set the date when +95 is off.
+      complete_days(@reader, [271], at: Time.utc(2026, 1, 25, 12))
+      complete_days(@other, 1..270, at: Time.utc(2026, 1, 20, 12))
+
+      get "#{mount}/community"
+      assert_select '.b270-community-completion', count: 0
+      sign_in
+      get "#{mount}/community"
+      assert_select '.b270-community-completion', count: 2
+      assert_select '.b270-community-completion', count: 1, text: 'Completed 270 days · Jan 16, 2026'
+      assert_select '.b270-community-completion', count: 1, text: 'Completed 270 days · Jan 20, 2026'
+      assert_select '.b270-bar[aria-valuenow="270"][aria-valuemax="365"]', count: 1
+
+      complete_days(@other, 271..365, at: Time.utc(2026, 2, 4, 12))
+      date_queries = []
+      collect = ->(*, payload) { date_queries << payload[:sql] if payload[:sql].match?(%r{SELECT MAX\(.*bible270_checkoffs.*created_at}i) }
+      ActiveSupport::Notifications.subscribed(collect, 'sql.active_record') { get "#{mount}/community" }
+      assert_equal 1, date_queries.size
+      assert_select '.b270-community-completion', count: 2
+      assert_select '.b270-community-completion', count: 0, text: 'Completed 270 days · Jan 20, 2026'
+      assert_select '.b270-community-completion', text: 'Completed 365 days · Feb 4, 2026' do
+        assert_select 'time[datetime="2026-02-04"]', text: 'Feb 4, 2026'
+      end
+
+      @other.archive!
+      get "#{mount}/community"
+      assert_select '.b270-community-completion', count: 1, text: 'Completed 270 days · Jan 16, 2026'
+      assert_select ".b270-community-reader-details .name a[href='#{mount}/readers/#{@other.id}']", count: 0
+    ensure
+      Bible270.config.time_zone = previous_zone
+    end
+
+    def test_base_milestone_does_not_count_extra_days_or_use_their_checkoff_dates
+      previous_zone = Bible270.config.time_zone
+      Bible270.config.time_zone = 'UTC'
+      @other.participation.update!(plus95_override: true)
+      complete_days(@other, 2..271, at: Time.utc(2026, 11, 1))
+      sign_in
+
+      get "#{mount}/community"
+      assert_select '.b270-bar[aria-valuenow="270"][aria-valuemax="365"]', count: 1
+      assert_select '.b270-community-completion', count: 0
+
+      complete_days(@other, [1], at: Time.utc(2026, 11, 2))
+      complete_days(@other, [272], at: Time.utc(2026, 11, 3))
+      get "#{mount}/community"
+      assert_select '.b270-community-completion', text: 'Completed 270 days · Nov 2, 2026', count: 1
+    ensure
+      Bible270.config.time_zone = previous_zone
     end
 
     def test_partial_days_do_not_count_but_nonconsecutive_completed_days_do
@@ -197,14 +255,13 @@ if RAILS_LOADED
     end
 
     # These are display fixtures; reader mutation behavior has its own tests.
-    def complete_days(reader, days)
+    def complete_days(reader, days, at: Time.current)
       membership = reader.participation
-      now = Time.current
       rows = days.flat_map do |day|
         Bible270::Plan.present_tracks(day).flat_map do |track|
           Array.new(Bible270::Plan.part_count(day, track)) do |part|
             { reader_id: reader.id, participation_id: membership.id, day: day, track: track, part: part,
-              created_at: now, updated_at: now }
+              created_at: at, updated_at: at }
           end
         end
       end
@@ -241,7 +298,7 @@ if RAILS_LOADED
       assert_equal 1, bulk.size
       # The shared layout loads only the signed-in reader's day grid in addition to the bulk count.
       assert_equal 1, individual.size
-      assert_equal [@reader.id], individual.first[:binds].map(&:value_for_database)
+      assert_equal [@reader.id], individual.first[:binds].select { |bind| bind.name == 'reader_id' }.map(&:value_for_database)
       assert_progress(@other, days: 0, width: 0.0)
       assert_progress(@reader, days: 135, width: 50.0)
       assert_select '.b270-community-reader-details .name a' do |names|

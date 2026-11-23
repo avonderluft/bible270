@@ -24,12 +24,15 @@ module Bible270
       reader = readers.first
       membership = Participation.chosen.find_by(reader_id: reader.id)
       with_membership_lock(membership, reader.id) do |current|
+        digest = Sync.fingerprint(days: current.plan_days)
+        raise Sync::Conflict, 'Reading plans differ' unless @payload['plan_fingerprint'] == digest
+
         unless reader.reload.email.to_s.strip.downcase == email && matching_readers(email).map(&:id) == [reader.id]
           raise Sync::Conflict, 'No unique active reader matches that email'
         end
 
         render json: { reader_id: reader.id, participation_id: current.id, generation: current.progress_sync_generation,
-                       name: reader.display_name, email: email, plan_fingerprint: Sync.fingerprint }
+                       name: reader.display_name, email: email, plan_fingerprint: digest }
       end
     end
 
@@ -37,13 +40,15 @@ module Bible270
       reader_id = integer!('reader_id', minimum: 1)
       participation_id = integer!('participation_id', minimum: 1)
       generation = integer!('generation', minimum: 0)
-      readings = validated_readings!
       membership = Participation.find_by(id: participation_id, reader_id: reader_id)
       with_membership_lock(membership, reader_id) do |current|
         unless current.progress_sync_generation == generation
           raise Sync::Conflict, 'Linked membership changed; explicitly relink'
         end
 
+        days = current.plan_days
+        validate_completion_plan!(days)
+        readings = validated_readings!(days)
         existing = current.checkoffs.pluck(:day, :track, :part).to_set
         missing = readings.reject { |triple| existing.include?(triple) }
         Sync.suppress do
@@ -68,6 +73,10 @@ module Bible270
       super
     rescue Sync::Unauthorized
       render json: { error: 'Progress sync authentication failed' }, status: :unauthorized
+    rescue Sync::PlanLengthMismatch
+      # A matching binding can work again after a destination toggle. Use the
+      # client's existing bounded retry path rather than immediately retiring it.
+      render json: { error: 'Destination plan length differs from the linked plan' }, status: :service_unavailable
     rescue Sync::Conflict, ActiveRecord::RecordNotFound, ActiveRecord::RecordInvalid
       render json: { error: 'Reader, membership, plan, or completion batch is incompatible' }, status: :conflict
     rescue Sync::Unavailable, Sync::ConfigurationError
@@ -95,7 +104,6 @@ module Bible270
 
       @payload = JSON.parse(body)
       raise Sync::Conflict, 'A JSON object is required' unless @payload.is_a?(Hash)
-      raise Sync::Conflict, 'Reading plans differ' unless @payload['plan_fingerprint'] == Sync.fingerprint
     end
 
     def matching_readers(email)
@@ -114,7 +122,18 @@ module Bible270
       value
     end
 
-    def validated_readings!
+    def validate_completion_plan!(days)
+      digest = @payload['plan_fingerprint']
+      return if digest == Sync.fingerprint(days: days)
+
+      if Sync.other_plan_fingerprint?(digest, days: days)
+        raise Sync::PlanLengthMismatch, 'Destination plan length differs from the linked plan'
+      end
+
+      raise Sync::Conflict, 'Reading plans differ'
+    end
+
+    def validated_readings!(days)
       readings = @payload['readings']
       unless readings.is_a?(Array) && readings.length <= 5000
         raise Sync::Conflict, 'A batch must contain at most 5000 readings'
@@ -126,7 +145,7 @@ module Bible270
         end
 
         day, track, part = triple
-        unless day.is_a?(Integer) && part.is_a?(Integer) && Plan.valid_day?(day) &&
+        unless Plan.valid_day?(day, days: days) &&
                Plan::TRACKS.key?(track) && Plan.valid_part?(day, track, part)
           raise Sync::Conflict, 'Invalid reading'
         end
@@ -137,12 +156,13 @@ module Bible270
     def with_membership_lock(membership, reader_id)
       raise Sync::Conflict, 'Linked membership no longer exists' unless membership
 
-      PlanRun.find(membership.plan_run_id).with_lock do
+      run = PlanRun.find(membership.plan_run_id)
+      run.with_lock do
         Reader.find(reader_id).with_lock do
           membership.reload
-          unless membership.active? && PlanRun.where(id: membership.plan_run_id, current: true).exists? &&
-                 Participation.chosen.where(id: membership.id).exists? && @payload['plan_fingerprint'] == Sync.fingerprint
-            raise Sync::Conflict, 'Linked membership is no longer active or compatible'
+          unless membership.active? && membership.plan_run_id == run.id && run.current? &&
+                 Participation.chosen.where(id: membership.id).exists?
+            raise Sync::Conflict, 'Linked membership is no longer active'
           end
 
           yield membership

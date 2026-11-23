@@ -79,6 +79,10 @@ private
     assert_raises(ActiveRecord::RecordInvalid) { create_link(remote: remote) }
   end
 
+  def toggle_plus95(enabled)
+    Bible270::PlanRun.update_plus95!(enabled: enabled, expected_run_id: @membership.plan_run_id)
+  end
+
   def create_link(**overrides)
     Sync.link!(reader: @reader, destination: 'church', remote: @remote,
                expected_participation_id: @membership.id, **overrides)

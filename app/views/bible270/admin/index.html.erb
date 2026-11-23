@@ -32,7 +32,7 @@
     <p class="b270-startline">
       This run <%= @run_start_date > Bible270.today ? 'starts' : 'started' %>
       <strong><%= @run_start_date.strftime('%B %-d, %Y') %></strong> and ends
-      <strong><%= Bible270::Plan.end_date_for(@run_start_date).strftime('%B %-d, %Y') %></strong>.
+      <strong><%= Bible270::Plan.end_date_for(@run_start_date, days: @current_run.plan_days).strftime('%B %-d, %Y') %></strong>.
       <% if @run_start_date_overridden %><span class="b270-badge">Admin override</span><% end %>
     </p>
   <% else %>
@@ -65,6 +65,17 @@
       Configured date:
       <%= @configured_start_date ? @configured_start_date.strftime('%B %-d, %Y') : 'undated' %>.
     </p>
+  <% end %>
+
+  <h3 class="b270-subhead">Plan length: <%= @current_run.plan_days %> days</h3>
+  <% if @current_run.plus95_available? %>
+    <p class="b270-hint">+95 rereads the NT, Psalms, and Proverbs on days 271–365. Turning it off hides those readings and check-offs until re-enabled. Reflections stay visible.</p>
+    <% extended = @current_run.plus95_enabled? %>
+    <%= button_to(extended ? 'Disable +95' : 'Enable +95', admin_run_plus95_path, method: :patch,
+          params: { expected_run_id: @current_run.id, plus95_enabled: extended ? '0' : '1' },
+          class: 'b270-btn') %>
+  <% else %>
+    <p class="b270-hint">+95 is unavailable until the database migration is installed.</p>
   <% end %>
 </div>
 
@@ -191,6 +202,12 @@
     <%= hidden_field_tag :confirm_restart, '1' %>
     <%= label_tag 'b270-restart-date', 'Start date:' %>
     <%= date_field_tag :start_date, nil, required: true, id: 'b270-restart-date' %>
+    <% if @current_run.plus95_available? %>
+      <label for="b270-restart-plus95">
+        <%= check_box_tag :plus95_enabled, '1', false, id: 'b270-restart-plus95' %>
+        Include +95 (365 days)
+      </label>
+    <% end %>
     <%= submit_tag 'Start a new run', class: 'b270-btn' %>
   <% end %>
 </div>
@@ -216,7 +233,7 @@
     <span class="b270-alumni-hide">Hide Alumni (<%= @alumni_count %>)</span>
   </summary>
   <%= render 'reader_list', readers: @alumni, days_completed: @days_completed,
-        report: @alumni_report, activities: @alumni_activities %>
+        report: @alumni_report, activities: @alumni_activities, completed_runs: @alumni_completed_runs %>
   <% if @alumni.empty? %><p class="b270-hint">No alumni yet.</p><% end %>
 </details>
 

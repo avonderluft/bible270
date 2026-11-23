@@ -38,10 +38,27 @@ class ProgressSyncLinksTest < Bible270ProgressSyncTestCase
     assert_empty Sync.capture(@membership, [[1, 'ot', 0]])
   end
 
+  def test_legacy_link_is_not_retired_when_plus95_is_enabled_then_disabled
+    link = create_link
+    generation = @membership.progress_sync_generation
+    toggle_plus95(true)
+    refute link.usable?
+    assert_empty Sync.capture(@membership, [[1, 'ot', 0], [271, 'nt', 0]])
+    assert_raises(Sync::PlanLengthMismatch) { Sync.copy_existing!(link) }
+    assert link.reload.active?
+    assert_nil link.last_error
+    assert_raises(Sync::Conflict) { create_link }
+
+    toggle_plus95(false)
+    assert_equal generation, @membership.reload.progress_sync_generation
+    assert link.usable?
+    assert_equal [[1, 'ot', 0]], Sync.capture(@membership, [[1, 'ot', 0]]).sole.readings
+  end
+
   def test_run_change_and_revert_leave_old_link_stale
     link = create_link
     generation = @membership.progress_sync_generation
-    new_run = Bible270::PlanRun.restart!(start_date: Bible270.today + 1, expected_run_id: @membership.plan_run_id)
+    new_run = Bible270::PlanRun.restart!(start_date: Bible270.today + 1, expected_run_id: @membership.plan_run_id, plus95_enabled: true)
     assert_equal generation + 1, @membership.reload.progress_sync_generation
     refute @membership.active?
     Bible270::PlanRun.revert!(expected_run_id: new_run.id)

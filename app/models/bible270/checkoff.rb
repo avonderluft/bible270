@@ -17,12 +17,18 @@ module Bible270
     around_save :with_writable_participation
     around_destroy :with_writable_participation
 
-    validates :day, inclusion: { in: 1..Plan::DAYS }
+    validates :day, inclusion: { in: ->(checkoff) { 1..(checkoff.participation&.plan_days || Plan::DAYS) } }
     validates :track, inclusion: { in: Plan::TRACKS.keys }
     validates :track, uniqueness: { scope: %i[participation_id day part] }
     validates :part, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
     validate  :track_present_on_day
     validate  :part_within_reading
+
+    scope :within_run_schedule, -> {
+      where(day: 1..Plan::DAYS).or(
+        where(day: (Plan::DAYS + 1)..Plan::EXTENDED_DAYS, participation_id: Participation.with_plus95.select(:id))
+      )
+    }
 
     # Legacy callers (including historical chapter backfills) use insert_all
     # without a membership. Resolve those IDs in bulk without creating membership
@@ -44,16 +50,37 @@ module Bible270
         attributes = attributes.map do |row|
           next row if row.key?(:participation_id)
 
-          row.merge(participation_id: memberships.fetch(row[:reader_id]).id)
+          membership = memberships.fetch(row[:reader_id])
+          if row[:day].to_i > membership.plan_days
+            raise ArgumentError, 'Check-off day is outside the run schedule'
+          end
+
+          row.merge(participation_id: membership.id)
         end
         super
       end
     end
 
+    def self.completed_days_by_participation(participation_ids, through: nil)
+      scope = within_run_schedule.where(participation_id: participation_ids)
+      scope = scope.where(day: 1..through) if through
+      scope.group(:participation_id, :day).count.each_with_object(Hash.new(0)) do |((participation_id, day), count), totals|
+        totals[participation_id] += 1 if count >= Plan.total_parts(day)
+      end
+    end
+
+    def self.latest_checkoff_at_by_participation(participation_ids, through: nil)
+      return {} if participation_ids.empty?
+
+      scope = within_run_schedule.where(participation_id: participation_ids)
+      scope = scope.where(day: 1..through) if through
+      scope.group(:participation_id).maximum(:created_at)
+    end
+
     # The most recently created check-off still present for each reader. This uses
     # three bulk queries regardless of the number of readers displayed in Admin.
     def self.recent_activity_by_reader(reader_ids)
-      latest_ids = where(reader_id: reader_ids, participation_id: Participation.chosen.select(:id))
+      latest_ids = within_run_schedule.where(reader_id: reader_ids, participation_id: Participation.chosen.select(:id))
         .group(:reader_id).maximum(:id).values
       latest_checkoffs = where(id: latest_ids).index_by(&:reader_id)
       day_counts = recent_activity_day_counts(latest_checkoffs.values)
@@ -108,8 +135,13 @@ module Bible270
     def with_writable_participation
       return yield if destroyed_by_association
 
-      participation.plan_run.with_lock do
-        participation.reload.ensure_writable!
+      run = participation.plan_run
+      run.with_lock do
+        participation.reload
+        participation.plan_run = run
+        participation.ensure_writable!
+        raise PlanRun::StaleRun, 'The check-off day is outside the run schedule' if day && day > participation.plan_days
+
         yield
       end
     end

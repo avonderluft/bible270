@@ -12,6 +12,7 @@ module Bible270
 
       @days_completed = Reader.completed_days_by_id
       @reader_today_days = community_today_days
+      @completions = community_completions
     end
 
     # The reader's own progress. Deliberately open to visitors: the panel shows an
@@ -49,14 +50,36 @@ module Bible270
 
   private
 
+    def community_completions
+      finished, remaining = @readers.partition { |reader| @days_completed[reader.id] == reader.plan_days }
+      lengths = finished.to_h { |reader| [reader.participation.id, reader.plan_days] }
+      completions = completion_details(lengths)
+      candidates = remaining.filter_map do |reader|
+        reader.participation.id if reader.plan_days > Plan::DAYS && @days_completed[reader.id].to_i >= Plan::DAYS
+      end
+      return completions if candidates.empty?
+
+      # Extra days can't substitute for missing days in the base plan.
+      base_counts = Checkoff.completed_days_by_participation(candidates, through: Plan::DAYS)
+      milestones = base_counts.select { |_id, count| count == Plan::DAYS }
+      completions.merge(completion_details(milestones, through: Plan::DAYS))
+    end
+
+    def completion_details(lengths, through: nil)
+      Checkoff.latest_checkoff_at_by_participation(lengths.keys, through: through).to_h do |id, at|
+        [id, [lengths.fetch(id), Bible270.local_time(at)&.to_date]]
+      end
+    end
+
     def community_today_days
       # Resolve the shared schedule once, not with a settings query for every reader.
       shared_start = Setting.run_start_date
       today = Bible270.today
       @readers.to_h do |reader|
-        start = (Bible270.config.allow_reader_start_date && reader.started_on) || shared_start
-        day = Plan.day_for(today, start, clamp: false)
-        [reader.id, day && Plan.valid_day?(day) ? day : nil]
+        start = (Bible270.config.allow_reader_start_date && reader.participation.started_on) || shared_start
+        days = reader.plan_days
+        day = Plan.day_for(today, start, clamp: false, days: days)
+        [reader.id, Plan.valid_day?(day, days: days) ? day : nil]
       end
     end
 

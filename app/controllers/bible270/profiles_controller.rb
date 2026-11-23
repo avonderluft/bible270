@@ -66,6 +66,19 @@ module Bible270
       render_theme_error("Your theme could not be saved. #{message.presence || 'Please try again.'}")
     end
 
+    def update_plus95
+      days = current_reader.update_plus95_override!(params[:plus95_override], expected_participation_id: params[:participation_id])
+      redirect_to profile_path, status: :see_other, notice: "Your plan is now #{days} days."
+    rescue Participation::InvalidPlanLength
+      redirect_to profile_path, status: :see_other, alert: 'Choose a plan length from the list.'
+    rescue Participation::ArchivedProgress
+      redirect_to profile_path, status: :see_other, alert: 'Only active readers can change their plan length.'
+    rescue PlanRun::StaleRun
+      redirect_to profile_path, status: :see_other, alert: 'Your run changed. Review your plan length and try again.'
+    rescue PlanRun::Plus95Unavailable
+      redirect_to profile_path, status: :see_other, alert: 'Plan length settings are unavailable until the database is updated.'
+    end
+
     def remove_avatar
       current_reader.remove_avatar!
       redirect_to profile_path, notice: 'Your picture has been removed.'
@@ -171,7 +184,8 @@ module Bible270
         return render_theme_error('Please sign in first.')
       end
 
-      redirect_to sign_in_path(origin: request.fullpath), alert: 'Please sign in first.'
+      origin = action_name == 'update_plus95' ? profile_path : request.fullpath
+      redirect_to sign_in_path(origin: origin), alert: 'Please sign in first.'
     end
   end
 end

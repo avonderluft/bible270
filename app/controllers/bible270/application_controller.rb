@@ -29,7 +29,8 @@ module Bible270
     rescue_from ActionController::InvalidAuthenticityToken, with: :recover_from_stale_page
 
     helper_method :current_reader, :signed_in?, :b270_config, :enrollment_closed?,
-                  :b270_admin?, :b270_site_admin?, :b270_reader_view?, :b270_admin_view?
+                  :b270_admin?, :b270_site_admin?, :b270_reader_view?, :b270_admin_view?,
+                  :b270_plan_days, :b270_current_run_days
 
   private
 
@@ -102,6 +103,20 @@ module Bible270
 
     def signed_in?
       current_reader.present?
+    end
+
+    # Browse the chosen membership, even if archived. A reader without one
+    # has no personal history and browses the same schedule as a visitor.
+    def b270_plan_days
+      @b270_plan_days ||= if current_reader&.participation
+                            current_reader.plan_days
+                          else
+                            b270_current_run_days
+                          end
+    end
+
+    def b270_current_run_days
+      @b270_current_run_days ||= PlanRun.find_by(current: true)&.plan_days || Plan::DAYS
     end
 
     def b270_admin?

@@ -13,6 +13,37 @@ class ProgressSyncDeliveryTest < Bible270ProgressSyncTestCase
     assert_match(%r{linked run}, delivery.last_error)
   end
 
+  def test_source_toggle_defers_an_extended_batch_without_spending_retry_budget
+    toggle_plus95(true)
+    link = create_link(remote: @remote.merge('plan_fingerprint' => Sync.fingerprint))
+    readings = [[271, 'nt', 0], [365, 'pp', 0]]
+    delivery = Sync.capture(@membership, readings).sole
+    toggle_plus95(false)
+
+    with_client(Object.new) do
+      (Sync::MAX_ATTEMPTS + 1).times do
+        delivery.update!(next_attempt_at: Time.current - 1)
+        assert_equal 0, Sync.deliver_pending
+        assert_equal 0, delivery.reload.attempts
+      end
+    end
+    assert link.reload.active?
+    refute link.usable?
+    assert_nil delivery.delivered_at
+    assert_nil delivery.claim_token
+    assert_operator delivery.next_attempt_at, :>, Time.current
+
+    toggle_plus95(true)
+    delivery.update!(next_attempt_at: Time.current - 1)
+    with_client(completion_client do |target, outgoing|
+      assert_equal link.id, target.id
+      assert_equal readings, outgoing
+      { 'added' => 2, 'existing' => 0 }
+    end) { assert_equal 1, Sync.deliver_pending }
+    assert delivery.reload.delivered?
+    assert_equal 1, delivery.attempts
+  end
+
   def test_response_count_sum_must_match_delivery_before_marking_success
     link = create_link
     add_checkoff

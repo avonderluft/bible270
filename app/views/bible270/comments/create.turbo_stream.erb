@@ -10,6 +10,7 @@
 <% end %>
 
 <%= turbo_stream.replace "new_comment_form" do %>
+  <% parent_id = @comment.parent_id if @discussion_only %>
   <%= render "bible270/comments/form", day: @day,
-        comment: Bible270::Comment.new_for_composer(day: @day), posted: true %>
+        comment: Bible270::Comment.new_for_composer(day: @day, parent_id: parent_id), posted: true %>
 <% end %>

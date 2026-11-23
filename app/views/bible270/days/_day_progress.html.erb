@@ -1,7 +1,12 @@
 <%# locals: (day:, reader:, just_completed: false, completion_event_id: nil) %>
 <%
   previous_day = day > 1 ? day - 1 : nil
-  next_day = day < Bible270::Plan::DAYS ? day + 1 : nil
+  next_day = day < b270_plan_days ? day + 1 : nil
+  date = if reader&.participation
+           reader.date_for_day(day)
+         else
+           Bible270::Plan.date_for(day, Bible270::Setting.run_start_date, days: b270_plan_days)
+         end
   total_parts = Bible270::Plan.total_parts(day)
   complete = reader&.day_complete?(day)
   completion_data = just_completed ? { b270_day_just_completed: true, b270_day: day } : {}
@@ -16,10 +21,10 @@
     <% end %>
     <div class="b270-dayhead">
       <div class="k">Day <%= day %><% if complete %><span class="b270-badge">Complete</span><% end %></div>
-      <% if reader&.dated? %>
+      <% if date %>
         <div class="date">
-          <%= reader.date_for_day(day).strftime("%A, %B %-d, %Y") %>
-          <% if reader.today?(day) %><span class="b270-badge">Today</span><% end %>
+          <%= date.strftime("%A, %B %-d, %Y") %>
+          <% if reader&.today?(day) %><span class="b270-badge">Today</span><% end %>
         </div>
       <% end %>
     </div>

@@ -4,6 +4,14 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Added
+
+- set Plus95 per run or in a reader’s Profile: reread the New Testament, Psalms, and Proverbs over 95 more days; reflections stay visible when disabled
+- show the effective plan length in the standard overview tagline
+- show completed runs in Admin Alumni and the 270- and 365-day milestones in Community
+
+**Upgrade:** Install migrations `20260101000030` and `20260101000031` for Plus95 controls.
+
 ### Fixed
 
 - keep Scripture frame tests independent of routine catalog edits

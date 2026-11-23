@@ -13,12 +13,20 @@ module Bible270
 
     def show
       @day = params[:day].to_i
-      redirect_to(root_path, alert: 'That day is outside the plan.') and return unless Plan.valid_day?(@day)
+      @comments = Comment.threads_for_day(@day) if Plan.valid_day?(@day, days: Plan::EXTENDED_DAYS)
+      @discussion_only = !Plan.valid_day?(@day, days: b270_plan_days)
+      # Keep reflection links usable without opening this day for reading progress.
+      if @discussion_only && @comments.blank?
+        redirect_to root_path, alert: 'That day is outside the plan.'
+        return
+      end
 
-      @readings   = Plan.readings_for(@day)
-      @comments   = Comment.threads_for_day(@day)
       @editing_comment_id = editing_comment_id
-      @new_comment = Comment.new_for_composer(day: @day, parent_id: reply_parent&.id)
+      parent = reply_parent
+      @new_comment = Comment.new_for_composer(day: @day, parent_id: parent&.id) if !@discussion_only || parent
+      return if @discussion_only
+
+      @readings = Plan.readings_for(@day)
       @reader_tracks = current_reader ? current_reader.read_tracks_for(@day) : []
       @day_just_completed = flash[:b270_day_just_completed].to_i == @day
       @completion_event_id = flash[:b270_completion_event_id] if @day_just_completed
@@ -40,8 +48,9 @@ module Bible270
     # The reflection being replied to, if the link carried one and it is a
     # top-level reflection: a reply to a reply is not allowed.
     def reply_parent
-      parent = Comment.approved.find_by(id: params[:reply_to])
-      parent if parent && parent.day == @day && parent.parent_id.nil?
+      return if params[:reply_to].blank?
+
+      Comment.for_day(@day).find_by(id: params[:reply_to])
     end
   end
 end

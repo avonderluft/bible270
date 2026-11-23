@@ -176,6 +176,36 @@ if RAILS_LOADED
       assert_empty ActionMailer::Base.deliveries
     end
 
+    def test_reminds_on_day_271_only_while_the_run_enables_plus95
+      reader = create_reader(day: 271)
+      assert_equal 0, Bible270::DailyReminders.deliver(at: @at)
+      refute Bible270::NoticeMailer.daily_reminder(reader_id: reader.id, day: 271, on: @on).perform_deliveries
+
+      enable_plus95(reader)
+      assert_equal 1, Bible270::DailyReminders.deliver(at: @at)
+      assert_equal @on, reader.reload.last_daily_reminder_sent_on
+      mail = ActionMailer::Base.deliveries.last
+      assert_match(%r{day 271}i, mail.subject)
+      assert_includes mail.text_part.body.decoded, Bible270::Plan.readings_for(271).fetch('nt')
+      assert_includes mail.text_part.body.decoded, '/day/271'
+    end
+
+    def test_reminds_for_partial_day_365_skips_complete_day_365_and_stops_after_the_end
+      day = Bible270::Plan::EXTENDED_DAYS
+      partial = create_reader(day: day)
+      complete = create_reader(day: day)
+      enable_plus95(partial)
+      seed_checkoffs(partial, day, remaining: 1)
+      seed_checkoffs(complete, day, remaining: 0)
+
+      assert_equal 1, Bible270::DailyReminders.deliver(at: @at)
+      assert_equal [partial.email], ActionMailer::Base.deliveries.last.to
+      assert_match(%r{day 365}i, ActionMailer::Base.deliveries.last.subject)
+      assert_nil complete.reload.last_daily_reminder_sent_on
+      assert_equal 0, Bible270::DailyReminders.deliver(at: @at + 1.day)
+      assert_equal @on, partial.reload.last_daily_reminder_sent_on
+    end
+
     def test_skips_a_completed_day
       reader = create_reader(day: 3)
       reader.mark_day_complete!(3)
@@ -230,6 +260,19 @@ if RAILS_LOADED
     end
 
   private
+
+    def enable_plus95(reader)
+      Bible270::PlanRun.update_plus95!(enabled: true, expected_run_id: reader.participation.plan_run_id)
+    end
+
+    def seed_checkoffs(reader, day, remaining:)
+      rows = Bible270::Plan.present_tracks(day).flat_map do |track|
+        Bible270::Plan.parts_for(day, track).each_index.map do |part|
+          { reader_id: reader.id, participation_id: reader.participation.id, day: day, track: track, part: part }
+        end
+      end
+      Bible270::Checkoff.insert_all!(rows.take(rows.length - remaining))
+    end
 
     def create_reader(day:, **attributes)
       @sequence += 1

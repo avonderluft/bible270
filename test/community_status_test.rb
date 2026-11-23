@@ -85,7 +85,7 @@ if RAILS_LOADED
       assert_equal 1, calculations
       # The shared layout still loads the signed-in admin's day grid, not each listed reader's progress.
       assert_equal 1, checkoff_queries.size
-      assert_equal [@admin.id], checkoff_queries.first[:binds].map(&:value_for_database)
+      assert_equal [@admin.id], checkoff_queries.first[:binds].select { |bind| bind.name == 'reader_id' }.map(&:value_for_database)
       assert_completed_status(days: 3, status: '2 days behind')
       assert_select "a.b270-admin-progress[href='#{mount}/admin/readers/#{@admin.id}']", text: '0 / 270 days'
     end
