@@ -4,17 +4,23 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-11-22
+
 ### Added
 
-- set Plus95 per run or in a reader’s Profile: reread the New Testament, Psalms, and Proverbs over 95 more days; reflections stay visible when disabled
-- show the effective plan length in the standard overview tagline
-- show completed runs in Admin Alumni and the 270- and 365-day milestones in Community
+- add optional Plus95 per run or reader: reread the New Testament, Psalms, and Proverbs on days 271–365
+- show completed runs in Admin Alumni and 270- and 365-day milestones in Community
+- expand the bundled Scripture frame collection
 
-**Upgrade:** Install migrations `20260101000030` and `20260101000031` for Plus95 controls.
+### Changed
+
+- show plan length and readings on the overview; keep Plus95 reflections visible when disabled
 
 ### Fixed
 
 - keep Scripture frame tests independent of routine catalog edits
+
+**Upgrade:** Install migrations `20260101000030` and `20260101000031` for Plus95 controls.
 
 ## [1.20.0] - 2026-11-18
 
@@ -948,7 +954,8 @@ This is the initial public release.
 
 - Email sign-in requires working Action Mailer delivery in the host application. Set `config.mailer_from`; delivery is inline by default, or set `email_sign_in_deliver_later` when a queue backend is available.
 
-[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.20.0...main
+[Unreleased]: https://github.com/avonderluft/bible270/compare/v1.21.0...main
+[1.21.0]: https://github.com/avonderluft/bible270/compare/v1.20.0...v1.21.0
 [1.20.0]: https://github.com/avonderluft/bible270/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/avonderluft/bible270/compare/v1.18.1...v1.19.0
 [1.18.1]: https://github.com/avonderluft/bible270/compare/v1.18.0...v1.18.1
