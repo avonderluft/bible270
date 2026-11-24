@@ -40,19 +40,17 @@
 
     <%= render "bible270/shared/track_bars", reader: panel_reader %>
 
-    <% if panel_behind %>
-      <div class="b270-progress-actions">
+    <div class="b270-progress-actions">
+      <% if panel_behind %>
         <%= link_to "Catch up from Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
         <%= link_to "Read with the community — Day #{panel_today_day}", day_path(panel_today_day), class: "b270-todaylink" %>
-      </div>
-    <% else %>
-      <div class="b270-progress-actions">
+      <% else %>
         <%= link_to "#{day_verb} reading — Day #{panel_start_day} →", day_path(panel_start_day), class: "b270-btn" %>
         <% if panel_today_day && panel_today_day != panel_start_day %>
           <%= link_to "Go to today (Day #{panel_today_day})", day_path(panel_today_day), class: "b270-todaylink" %>
         <% end %>
-      </div>
-    <% end %>
+      <% end %>
+    </div>
 
   <% else %>
     <p class="b270-signedout"><%= link_to "Sign in", sign_in_path %> to track your progress and join

@@ -1,7 +1,12 @@
 <% content_for :title, "My Progress — #{Bible270.config.app_name}" %>
 
 <p class="b270-eyebrow">My Progress</p>
-<h1>Your reading journey</h1>
+<div class="b270-progress-heading">
+  <h1>Your reading journey</h1>
+  <% if @reader %>
+    <%= link_to "Print checklist", print_progress_path, class: "b270-btn", data: { turbo: false } %>
+  <% end %>
+</div>
 
 <%= render "bible270/shared/progress" %>
 

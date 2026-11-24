@@ -58,8 +58,14 @@ module Bible270
           raise Conflict, 'A completion batch must contain at most 5000 readings'
         end
 
+        # Retain the link's digest for base-only batches, including for older peers.
+        fingerprint = link.plan_fingerprint
+        if readings.any? { |triple| triple.is_a?(Array) && triple.first.is_a?(Integer) && triple.first > Plan::DAYS }
+          fingerprint = ProgressSync.fingerprint(days: Plan::EXTENDED_DAYS)
+        end
+
         result = post('complete', reader_id: link.remote_reader_id, participation_id: link.remote_participation_id,
-                                  generation: link.remote_generation, plan_fingerprint: link.plan_fingerprint, readings: readings)
+                                  generation: link.remote_generation, plan_fingerprint: fingerprint, readings: readings)
         unless nonnegative_integer?(result['added']) && nonnegative_integer?(result['existing']) &&
                result['added'] + result['existing'] == readings.uniq.length
           raise Unavailable, 'Destination returned invalid completion counts'

@@ -77,12 +77,41 @@ class ProgressSyncClientTest < Minitest::Test
   end
 
   def test_complete_uses_only_pinned_ids_generation_and_plan_not_email
-    with_response({ 'added' => 1, 'existing' => 0 }) do |http, _|
-      assert_equal({ 'added' => 1, 'existing' => 0 }, client.complete(@link, [[1, 'nt', 0], [1, 'nt', 0]]))
-      payload = JSON.parse(http.request_sent.body)
-      assert_equal [12, 34, 0, @digest], payload.values_at('reader_id', 'participation_id', 'generation', 'plan_fingerprint')
-      refute payload.key?('email')
-      assert_equal '/bible/progress-sync/complete', http.request_sent.path
+    readings = Array.new(2) { [Bible270::Plan::DAYS, 'nt', 0] }
+    Sync.stub(:fingerprint, ->(**) { flunk 'base-only batches must keep the stored fingerprint' }) do
+      with_response({ 'added' => 1, 'existing' => 0 }) do |http, _|
+        assert_equal({ 'added' => 1, 'existing' => 0 }, client.complete(@link, readings))
+        assert_equal({ 'reader_id' => 12, 'participation_id' => 34, 'generation' => 0,
+                       'plan_fingerprint' => @digest, 'readings' => readings }, JSON.parse(http.request_sent.body))
+        assert_equal '/bible/progress-sync/complete', http.request_sent.path
+      end
+    end
+  end
+
+  def test_base_only_completion_retains_an_extended_link_fingerprint
+    @link.plan_fingerprint = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
+    with_response({ 'added' => 0, 'existing' => 1 }) do |http, _|
+      client.complete(@link, [[1, 'nt', 0]])
+      assert_equal @link.plan_fingerprint, JSON.parse(http.request_sent.body).fetch('plan_fingerprint')
+    end
+  end
+
+  def test_mixed_completion_uses_the_extended_fingerprint_without_changing_the_link
+    extended_digest = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
+    readings = [[1, 'nt', 0], [Bible270::Plan::DAYS + 1, 'nt', 0], [Bible270::Plan::DAYS + 1, 'nt', 0]]
+    with_response({ 'added' => 1, 'existing' => 1 }) do |http, _|
+      assert_equal({ 'added' => 1, 'existing' => 1 }, client.complete(@link, readings))
+      assert_equal({ 'reader_id' => 12, 'participation_id' => 34, 'generation' => 0,
+                     'plan_fingerprint' => extended_digest, 'readings' => readings }, JSON.parse(http.request_sent.body))
+    end
+    assert_equal @digest, @link.plan_fingerprint
+  end
+
+  def test_malformed_completions_still_allow_the_peer_to_reject_the_batch
+    with_response({}, status: 409) do |http, _|
+      readings = [nil, { 'day' => 271 }, ['271', 'nt', 0]]
+      assert_raises(Sync::Conflict) { client.complete(@link, readings) }
+      assert_equal readings, JSON.parse(http.request_sent.body).fetch('readings')
     end
   end
 

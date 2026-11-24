@@ -242,13 +242,12 @@ class ProgressSyncTest < Bible270ProgressSyncTestCase
     extended = create_link(remote: @remote.merge('plan_fingerprint' => Sync.fingerprint))
     assert_equal [[1, 'ot', 0], triple], Sync.copy_existing!(extended).readings
     toggle_plus95(false)
-    standard = create_link
-    assert extended.reload.paused?, 'explicitly linking the other schedule replaces the binding'
-    assert_equal [[1, 'ot', 0]], Sync.copy_existing!(standard).readings
+    assert extended.reload.active?
+    assert_equal [[1, 'ot', 0]], Sync.copy_existing!(extended).readings
     assert @membership.checkoffs.exists?(day: day)
   end
 
-  def test_copy_and_relink_use_overrides_instead_of_the_run_default
+  def test_copy_uses_overrides_without_requiring_a_relink
     day = Bible270::Plan::EXTENDED_DAYS
     @membership.update!(plus95_override: true)
     Bible270::Checkoff.insert_all!([{ reader_id: @reader.id, participation_id: @membership.id, day: day, track: 'nt', part: 0 }])
@@ -259,14 +258,10 @@ class ProgressSyncTest < Bible270ProgressSyncTestCase
 
     toggle_plus95(true)
     @membership.update!(plus95_override: false)
-    assert_raises(Sync::PlanLengthMismatch) { Sync.copy_existing!(extended) }
     assert extended.reload.active?
-    assert_raises(Sync::Conflict) { create_link(remote: extended_plan) }
-
-    standard = create_link
-    assert extended.reload.paused?
-    assert standard.usable?
-    assert_equal [[1, 'ot', 0]], Sync.copy_existing!(standard).readings
+    assert extended.usable?
+    assert_equal [[1, 'ot', 0]], Sync.copy_existing!(extended).readings
+    assert_raises(ActiveRecord::RecordInvalid) { create_link(remote: extended_plan) }
     assert @membership.checkoffs.exists?(day: day)
   end
 

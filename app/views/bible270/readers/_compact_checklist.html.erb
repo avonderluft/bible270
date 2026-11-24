@@ -1,0 +1,27 @@
+<% codes = Bible270::Versification::VERSES.keys.zip(Bible270::Translations::BIBLE_COM_BOOK_CODES).to_h.transform_values { |code| code.sub(/[A-Z]+/, &:capitalize) } %>
+<ol class="compact-checklist" role="list" aria-labelledby="checklist-title">
+  <% readings.each do |day, tracks| %>
+    <li class="compact-day">
+      <span class="day-number"><span class="visually-hidden">Day </span><%= day %></span>
+      <div>
+        <% tracks.each do |track, parts| %>
+          <% previous_book = nil %>
+          <% parts.each_with_index do |reference, part| %>
+            <% book, _, numbers = reference.rpartition(" ") %>
+            <% if (code = codes[book]) && numbers.match?(/\A\d/)
+                 short_reference = book == previous_book ? numbers : "#{code} #{numbers}"
+                 previous_book = book
+               else
+                 short_reference = reference
+                 previous_book = nil
+               end %>
+            <% checked = checked_parts.include?([day, track, part]) %>
+            <span class="passage" role="img" aria-label="<%= reference %> — <%= checked ? "Read" : "Not yet read" %>">
+              <span class="box" aria-hidden="true"><%= "✓" if checked %></span><span class="short-reference"><%= short_reference %></span>
+            </span>
+          <% end %>
+        <% end %>
+      </div>
+    </li>
+  <% end %>
+</ol>

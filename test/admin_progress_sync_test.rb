@@ -106,11 +106,13 @@ if RAILS_LOADED
       assert_equal @remote.fetch('plan_fingerprint'), Bible270::ProgressSyncLink.last.plan_fingerprint
     end
 
-    def test_candidate_is_invalid_after_the_source_override_changes_the_effective_length
+    def test_candidate_stays_valid_when_the_source_override_changes_the_effective_length
       sign_in(@admin)
       token = find_account
       @membership.update!(plus95_override: true)
-      assert_confirmation_rejected(token)
+
+      assert_difference('Bible270::ProgressSyncLink.count', 1) { confirm(token) }
+      assert Bible270::ProgressSyncLink.last.usable?
     end
 
     def test_forged_or_missing_candidate_is_rejected

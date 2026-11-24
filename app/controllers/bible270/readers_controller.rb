@@ -33,6 +33,19 @@ module Bible270
       @remaining_partial_days = [partial_days.size - @partial_day_tasks.size, 0].max
     end
 
+    def print_progress
+      response.headers['Cache-Control'] = 'private, no-store'
+      @reader = current_reader
+      unless @reader
+        return redirect_to sign_in_path(origin: print_progress_path), alert: 'Please sign in to print your reading checklist.'
+      end
+
+      @plan_days = @reader.plan_days
+      @plan_start = @reader.effective_start_date
+      @checked_parts = @reader.checkoffs.where(day: 1..@plan_days).pluck(:day, :track, :part).to_set
+      render layout: false, formats: [:html]
+    end
+
     def show
       @reader = Reader.find_by(id: params[:id])
       redirect_to(community_path, alert: 'Reader not found.') and return unless @reader

@@ -21,8 +21,8 @@ module Bible270
       return unless candidate.is_a?(Hash) && candidate['remote'].is_a?(Hash)
 
       context = link_context(reader: reader, admin: admin, destination: candidate['destination'])
-      return unless candidate['remote']['plan_fingerprint'] == context.delete('plan_fingerprint')
-      return unless context.all? { |key, value| candidate[key] == value }
+      return unless ProgressSync.fingerprint_days(candidate['remote']['plan_fingerprint'])
+      return unless context.except('plan_fingerprint').all? { |key, value| candidate[key] == value }
       return unless normalized_email(candidate['remote']['email']) == context['email']
 
       candidate

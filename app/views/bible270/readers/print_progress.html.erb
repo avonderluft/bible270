@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="only light">
+  <title>Reading checklist — <%= Bible270.config.app_name %></title>
+  <style nonce="<%= content_security_policy_nonce %>">
+    body { margin: 1rem; color: #000; background: #fff; font: 1rem/1.35 system-ui, sans-serif; }
+    main { max-width: 65rem; margin: auto; }
+    h1 { font-size: 1.5em; margin: 0 0 .2em; }
+    h2 { font-size: 1.25em; margin: .7em 0 .2em; }
+    p { margin: 0 0 .6em; }
+    a { color: inherit; }
+    button { font: inherit; }
+    .checklist-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .75em; margin-bottom: .6em; }
+    .checklist-heading h1, .checklist-heading p { margin: 0; }
+    .checklist-heading p { min-width: 0; text-align: right; overflow-wrap: anywhere; }
+    .print-controls { margin-bottom: 1em; }
+    .print-controls a { margin-right: .75em; }
+    .print-controls p { margin-top: .3em; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: .5pt solid #000; padding: .16em .4em; text-align: left; vertical-align: top; }
+    thead th { border-bottom-width: 1pt; }
+    .passage { display: inline-block; margin-right: .4em; vertical-align: top; }
+    .box {
+      box-sizing: border-box; display: inline-block; width: 1em; height: 1em; border: 1px solid;
+      vertical-align: -.12em; line-height: .9; text-align: center;
+    }
+    .visually-hidden {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+    }
+
+    .compact-checklist, .print-only { display: none; }
+
+    @page { margin: 10mm; }
+    @media print {
+      body { margin: 0; font: 8pt/1.14 Arial, sans-serif; }
+      main { max-width: none; }
+      .print-controls, .screen-checklist { display: none; }
+      .print-only { display: inline; }
+      .compact-checklist {
+        display: block; margin: 0; padding: 0; list-style: none;
+        columns: 3; column-gap: 8pt;
+      }
+      .compact-day {
+        display: grid; grid-template-columns: 3ch minmax(0, 1fr); gap: 2.5pt;
+        break-inside: avoid; border-bottom: .25pt dotted;
+      }
+      .checklist-extended .compact-checklist { line-height: 1.21; }
+      .day-number { text-align: right; font-weight: bold; font-variant-numeric: tabular-nums; }
+      .compact-checklist .passage { max-width: 100%; margin-right: 0; }
+      .compact-checklist .box { width: .85em; height: .85em; margin-right: 1pt; vertical-align: -.08em; line-height: .75; }
+      /* Use more of the second sheet on the shorter plan without forcing page breaks. */
+      .checklist-base .compact-checklist { font-size: 8.5pt; line-height: 1.25; }
+      .checklist-base .compact-day { padding-block: .6pt; }
+      .checklist-base .compact-checklist .box { font-size: 8pt; } /* Keep the original box size. */
+    }
+    /* A4 portrait has more vertical room than Letter. */
+    @media print and (min-height: 270mm) and (max-aspect-ratio: 3/4) {
+      .checklist-extended .compact-checklist { line-height: 1.225; }
+    }
+  </style>
+</head>
+<body>
+  <main class="<%= @plan_days > Bible270::Plan::DAYS ? 'checklist-extended' : 'checklist-base' %>">
+    <div class="print-controls">
+      <%= link_to "Back to My Progress", progress_path %>
+      <button id="print-checklist" type="button" hidden>Print checklist</button>
+      <p>You can also print from your browser with Ctrl+P or ⌘+P.</p>
+    </div>
+    <header class="checklist-heading">
+      <h1 id="checklist-title">Reading checklist</h1>
+      <p><%= @plan_days %>-day plan for <%= @reader.display_name %><% if @plan_start %><span class="print-only"> · Day 1: <time datetime="<%= @plan_start.iso8601 %>"><%= @plan_start.strftime("%b %-d, %Y") %></time></span><% end %></p>
+    </header>
+
+    <% base_days = Bible270::Plan::DAYS %>
+    <% readings = (1..@plan_days).to_h do |day|
+         [day, Bible270::Plan::TRACKS.keys.to_h { |track| [track, Bible270::Plan.parts_for(day, track)] }]
+       end %>
+    <%= render "compact_checklist", readings: readings, checked_parts: @checked_parts %>
+
+    <% sections = [1..base_days] %>
+    <% sections << ((base_days + 1)..@plan_days) if @plan_days > base_days %>
+    <% sections.each do |days| %>
+      <% extension = days.begin > base_days %>
+      <% tracks = extension ? Bible270::Plan::TRACKS.except("ot") : Bible270::Plan::TRACKS %>
+      <% if extension %><h2 class="screen-checklist" id="extension-title">+95 readings</h2><% end %>
+      <table class="screen-checklist" aria-labelledby="<%= extension ? "extension-title" : "checklist-title" %>">
+        <thead>
+          <tr>
+            <th scope="col">Day</th>
+            <% if @plan_start %><th scope="col">Date</th><% end %>
+            <% tracks.each do |track, info| %>
+              <th scope="col" class="track-<%= track %>"><%= info.fetch(:label) %></th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% days.each do |day| %>
+            <tr id="day-<%= day %>">
+              <th scope="row"><%= day %></th>
+              <% if @plan_start %>
+                <% date = Bible270::Plan.date_for(day, @plan_start, days: @plan_days) %>
+                <td><time datetime="<%= date.iso8601 %>"><%= date.strftime("%b %-d, %Y") %></time></td>
+              <% end %>
+              <% tracks.each_key do |track| %>
+                <% parts = readings.fetch(day).fetch(track) %>
+                <td class="track-<%= track %>">
+                  <% if parts.empty? %>
+                    <span aria-hidden="true">—</span><span class="visually-hidden">No reading</span>
+                  <% end %>
+                  <% parts.each_with_index do |reference, part| %>
+                    <% checked = @checked_parts.include?([day, track, part]) %>
+                    <span class="passage">
+                      <span class="box" aria-hidden="true"><%= "✓" if checked %></span>
+                      <span class="reference"><%= reference %></span><span class="visually-hidden"> — <%= checked ? "Read" : "Not yet read" %></span>
+                    </span>
+                  <% end %>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </main>
+  <script nonce="<%= content_security_policy_nonce %>">
+    (() => {
+      const button = document.getElementById('print-checklist');
+      button.addEventListener('click', () => window.print());
+      button.hidden = false;
+    })();
+  </script>
+</body>
+</html>

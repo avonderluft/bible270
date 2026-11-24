@@ -251,7 +251,8 @@ class ViewsTest < Minitest::Test
       controller = File.join(root, "app/controllers/bible270/#{File.basename(File.dirname(view))}_controller.rb")
       next unless File.exist?(controller)
 
-      used = File.read(view).scan(%r{(?<![\w.])@([a-z_][a-z0-9_]*)}).flatten.uniq
+      ruby = File.read(view).scan(%r{<%(?![%#]).*?%>}m).join("\n")
+      used = ruby.scan(%r{(?<![\w.])@([a-z_][a-z0-9_]*)}).flatten.uniq
       assigned = File.read(controller).scan(%r{@([a-z_][a-z0-9_]*)\s*(?:\|\|)?=}).flatten.uniq
 
       (used - assigned).each do |name|

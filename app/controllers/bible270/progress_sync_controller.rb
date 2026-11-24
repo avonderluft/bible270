@@ -24,8 +24,8 @@ module Bible270
       reader = readers.first
       membership = Participation.chosen.find_by(reader_id: reader.id)
       with_membership_lock(membership, reader.id) do |current|
-        digest = Sync.fingerprint(days: current.plan_days)
-        raise Sync::Conflict, 'Reading plans differ' unless @payload['plan_fingerprint'] == digest
+        digest = @payload['plan_fingerprint']
+        fingerprint_days!(digest)
 
         unless reader.reload.email.to_s.strip.downcase == email && matching_readers(email).map(&:id) == [reader.id]
           raise Sync::Conflict, 'No unique active reader matches that email'
@@ -46,9 +46,9 @@ module Bible270
           raise Sync::Conflict, 'Linked membership changed; explicitly relink'
         end
 
-        days = current.plan_days
-        validate_completion_plan!(days)
+        days = fingerprint_days!(@payload['plan_fingerprint'])
         readings = validated_readings!(days)
+        # Include stored +95 checkoffs even when the member's current schedule hides them.
         existing = current.checkoffs.pluck(:day, :track, :part).to_set
         missing = readings.reject { |triple| existing.include?(triple) }
         Sync.suppress do
@@ -73,10 +73,6 @@ module Bible270
       super
     rescue Sync::Unauthorized
       render json: { error: 'Progress sync authentication failed' }, status: :unauthorized
-    rescue Sync::PlanLengthMismatch
-      # A matching binding can work again after a destination toggle. Use the
-      # client's existing bounded retry path rather than immediately retiring it.
-      render json: { error: 'Destination plan length differs from the linked plan' }, status: :service_unavailable
     rescue Sync::Conflict, ActiveRecord::RecordNotFound, ActiveRecord::RecordInvalid
       render json: { error: 'Reader, membership, plan, or completion batch is incompatible' }, status: :conflict
     rescue Sync::Unavailable, Sync::ConfigurationError
@@ -122,15 +118,8 @@ module Bible270
       value
     end
 
-    def validate_completion_plan!(days)
-      digest = @payload['plan_fingerprint']
-      return if digest == Sync.fingerprint(days: days)
-
-      if Sync.other_plan_fingerprint?(digest, days: days)
-        raise Sync::PlanLengthMismatch, 'Destination plan length differs from the linked plan'
-      end
-
-      raise Sync::Conflict, 'Reading plans differ'
+    def fingerprint_days!(digest)
+      Sync.fingerprint_days(digest) || raise(Sync::Conflict, 'Reading plans differ')
     end
 
     def validated_readings!(days)

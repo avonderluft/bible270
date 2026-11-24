@@ -69,6 +69,7 @@ Bible270::Engine.routes.draw do # rubocop:disable Metrics/BlockLength
   get 'reflections', to: 'comments#index', as: :reflections
 
   get 'progress', to: 'readers#progress', as: :progress
+  get 'progress/print', to: 'readers#print_progress', as: :print_progress
 
   get 'community', to: 'readers#index', as: :community
   get 'mention-suggestions', to: 'readers#mention_suggestions', as: :mention_suggestions, defaults: { format: :json }

@@ -79,9 +79,8 @@ if RAILS_LOADED
       end
 
       refute calculated
-      assert_select 'p.lede', text: 'Walking through the Word, sharing reflections and encouraging one another.' do
-        assert_select 'a', text: %r{Go to today}, count: 0
-      end
+      assert_select 'p.lede', text: 'Walking through the Word, sharing reflections and encouraging one another.'
+      assert_select '.b270-community-heading .b270-todaylink', count: 0
       assert_select '.b270-reader-progress, .b270-admin-progress, .b270-community-status', count: 0
       assert_select "a[href^='#{mount}/admin/readers/']", count: 0
     end
@@ -95,9 +94,8 @@ if RAILS_LOADED
       assert_response :success
       assert_select '.b270-community-reader-details .b270-reader-progress span.b270-reader-progress-count',
                     text: '0 / 270 days', count: 2
-      assert_select 'p.lede', text: 'Walking through the Word, sharing reflections and encouraging one another. Go to today (Day 5)' do
-        assert_select "a.b270-todaylink[href='#{mount}/day/5']", text: 'Go to today (Day 5)'
-      end
+      assert_select '.b270-community-heading > h1 + a.b270-todaylink[href=?]', "#{mount}/day/5", text: 'Go to today (Day 5)'
+      assert_select 'p.lede', text: 'Walking through the Word, sharing reflections and encouraging one another.'
       assert_select '.b270-admin-progress', count: 0
     end
 
@@ -217,15 +215,19 @@ if RAILS_LOADED
       assert_select '.b270-next-note', text: 'View 1 more partially read day under “View all 270 days”.'
     end
 
-    def test_the_progress_page_offers_the_next_day
+    def test_overview_and_progress_place_today_beside_the_next_reading
       @reader.mark_through!(2)
+      @reader.set_start_date!(Bible270.today - 1)
       sign_in_as(@reader)
 
-      get "#{mount}/progress"
+      ["#{mount}/", "#{mount}/progress"].each do |path|
+        get path
 
-      # Day 3 is next, so it should say Continue rather than Start.
-      assert_match(%r{Continue reading}, response.body)
-      assert_match(%r{/day/3}, response.body)
+        assert_select '.b270-progress-actions' do
+          assert_select '> a.b270-btn[href=?]', "#{mount}/day/3", text: 'Continue reading — Day 3 →'
+          assert_select '> a.b270-btn + a.b270-todaylink[href=?]', "#{mount}/day/2", text: 'Go to today (Day 2)'
+        end
+      end
     end
 
     def test_a_reader_behind_schedule_gets_clear_recovery_choices

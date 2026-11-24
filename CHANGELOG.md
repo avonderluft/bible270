@@ -4,6 +4,18 @@ Notable changes, following [Keep a Changelog](https://keepachangelog.com/en/1.1.
 
 ## [Unreleased]
 
+### Added
+
+- print a black-and-white reading checklist sized to use two sheets
+
+### Changed
+
+- put today links beside reading actions and compact the partially read list
+
+### Fixed
+
+- sync check-offs between 270- and 365-day plans without relinking when lengths change
+
 ## [1.21.0] - 2026-11-22
 
 ### Added

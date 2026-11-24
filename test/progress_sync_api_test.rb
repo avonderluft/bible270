@@ -224,7 +224,7 @@ if RAILS_LOADED
     end
 
     def test_plan_fingerprint_is_required_for_lookup_and_completion
-      [nil, 'wrong-plan', 123].each do |fingerprint|
+      [nil, 'wrong-plan', '0' * 64, @fingerprint.upcase, 123, [], {}].each do |fingerprint|
         signed_post('lookup', lookup_payload.merge(plan_fingerprint: fingerprint))
         assert_response :conflict
         signed_post('complete', @binding.merge(plan_fingerprint: fingerprint, readings: [[1, 'nt', 0]]))
@@ -233,48 +233,46 @@ if RAILS_LOADED
       assert_equal 0, Bible270::Checkoff.count
     end
 
-    def test_disabled_target_rejects_the_entire_batch_containing_extension_checkoffs
-      readings = [[1, 'nt', 0], [271, 'nt', 0]]
-      signed_post('complete', @binding.merge(readings: readings))
-      assert_response :conflict
-
-      digest = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
-      signed_post('complete', @binding.merge(plan_fingerprint: digest, readings: readings))
-      assert_response :service_unavailable
-      assert_empty @membership.checkoffs
-    end
-
-    def test_target_uses_the_run_length_after_acquiring_the_run_lock
+    def test_base_fingerprint_rejects_extension_readings_even_on_an_extended_target
       toggle_plus95(true)
-      enabled = @binding.merge(plan_fingerprint: Sync.fingerprint)
-      run = Bible270::PlanRun.find(@membership.plan_run_id)
-      lock = run.method(:with_lock)
-      run.stub(:with_lock, ->(&operation) {
-        run.update!(plus95_enabled: false)
-        lock.call(&operation)
-      }) do
-        Bible270::PlanRun.stub(:find, run) do
-          signed_post('complete', enabled.merge(readings: [[271, 'nt', 0]]))
-        end
-      end
-      assert_response :service_unavailable
+      signed_post('complete', @binding.merge(readings: [[1, 'nt', 0], [271, 'nt', 0]]))
+      assert_response :conflict
       assert_empty @membership.checkoffs
     end
 
-    def test_completion_reloads_the_pinned_override_after_acquiring_the_run_lock
+    def test_invalid_extended_readings_reject_the_entire_batch
+      existing = add_checkoff(@reader, [1, 'nt', 0])
+      invalid = [[366, 'nt', 0], [271.0, 'nt', 0], [271, 'unknown', 0], [271, 'ot', 0], [271, 'nt', '0'],
+                 [271, 'nt', Bible270::Plan.part_count(271, 'nt')]]
+      invalid.each do |triple|
+        signed_post('complete', @binding.merge(plan_fingerprint: extended_fingerprint, readings: [[2, 'nt', 0], [271, 'nt', 0], triple]))
+        assert_response :conflict
+        assert_equal [existing.attributes], @membership.checkoffs.map(&:attributes)
+      end
+    end
+
+    def test_completion_signature_binds_the_fingerprint
+      base_payload = @binding.merge(readings: [[1, 'nt', 0], [271, 'nt', 0]])
+      signed_post('complete', base_payload.merge(plan_fingerprint: extended_fingerprint), sign_body: JSON.generate(base_payload))
+      assert_response :unauthorized
+      assert_empty @membership.checkoffs
+    end
+
+    def test_completion_rechecks_generation_after_acquiring_the_run_lock
       run = Bible270::PlanRun.find(@membership.plan_run_id)
       lock = run.method(:with_lock)
       run.stub(:with_lock, ->(&operation) {
-        @membership.update!(plus95_override: true)
-        lock.call(&operation)
+        lock.call do
+          @membership.update!(progress_sync_generation: @binding[:generation] + 1)
+          operation.call
+        end
       }) do
         Bible270::PlanRun.stub(:find, run) do
-          digest = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
-          signed_post('complete', @binding.merge(plan_fingerprint: digest, readings: [[271, 'nt', 0]]))
+          signed_post('complete', @binding.merge(plan_fingerprint: extended_fingerprint, readings: [[271, 'nt', 0]]))
         end
       end
-      assert_response :ok
-      assert_equal [[271, 'nt', 0]], @membership.checkoffs.pluck(:day, :track, :part)
+      assert_response :conflict
+      assert_empty @membership.checkoffs
     end
 
     def test_pinned_identity_survives_email_change_and_never_rematches_the_old_email
@@ -350,7 +348,7 @@ if RAILS_LOADED
         insert.call(rows)
         raise ActiveRecord::RecordInvalid, Bible270::Checkoff.new
       }) do
-        signed_post('complete', @binding.merge(readings: [[1, 'nt', 0], [2, 'nt', 0]]))
+        signed_post('complete', @binding.merge(plan_fingerprint: extended_fingerprint, readings: [[1, 'nt', 0], [271, 'nt', 0]]))
         assert_response :conflict
       end
       assert_equal 0, Bible270::Checkoff.count
@@ -386,68 +384,78 @@ if RAILS_LOADED
       assert_equal 0, Bible270::Checkoff.count
     end
 
-    def test_real_client_looks_up_and_delivers_using_the_extended_fingerprint
-      toggle_plus95(true)
+    def test_real_client_syncs_extended_source_to_base_target_and_reveals_stored_checkoffs_on_enable
       configure_destination
       Bible270.config.progress_sync_instance_id = 'source-instance'
       source = Bible270::Reader.create!(provider: 'email', uid: 'source@example.org', email: 'source@example.org', display_name: 'Source')
-      digest = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
+      source.participation.update!(plus95_override: true)
+      digest = extended_fingerprint
       refute_equal @fingerprint, digest
-      signed_post('lookup', lookup_payload)
-      assert_response :conflict
+      assert_equal Bible270::Plan::DAYS, @membership.plan_days
 
       with_in_process_http do
-        remote = Sync.lookup(destination: 'church', email: @reader.email)
+        remote = Sync.lookup(destination: 'church', email: @reader.email, plan_fingerprint: digest)
         assert_equal digest, remote.fetch('plan_fingerprint')
         link = create_link(source, remote)
-        readings = [[271, 'nt', 0], [365, 'pp', 0]]
+        readings = [[1, 'nt', 0], [271, 'nt', 0], [365, 'pp', 0]]
+        before = persistent_state
         delivery = Sync.capture(source.participation, readings).sole
         assert_equal 1, Sync.deliver_pending(delivery_id: delivery.id)
+        assert_equal [3, 0], [link.reload.last_added, link.last_existing]
+        assert_equal before, persistent_state
         assert_equal readings, @membership.checkoffs.order(:day).pluck(:day, :track, :part)
-        assert_equal({ 'added' => 0, 'existing' => 2 }, Sync::Client.new('church').complete(link, readings))
+        assert_equal [1], @membership.checkoffs.within_run_schedule.pluck(:day)
+        refute @reader.reload.read?(271, 'nt', 0)
+        assert_equal({ 'added' => 0, 'existing' => 3 }, Sync::Client.new('church').complete(link, readings))
 
-        toggle_plus95(false)
-        assert_raises(Sync::Unavailable) { Sync::Client.new('church').complete(link, readings) }
         toggle_plus95(true)
-        assert_equal({ 'added' => 0, 'existing' => 2 }, Sync::Client.new('church').complete(link, readings))
+        assert_equal readings, @membership.checkoffs.within_run_schedule.order(:day).pluck(:day, :track, :part)
+        assert @reader.reload.read?(271, 'nt', 0)
+        assert @reader.read?(365, 'pp', 0)
       end
     end
 
-    def test_real_client_syncs_matching_lengths_with_different_run_defaults_but_rejects_the_opposite_override
+    def test_real_client_syncs_base_source_to_extended_target
       configure_destination
       Bible270.config.progress_sync_instance_id = 'source-instance'
-      destination_run = @membership.plan_run
-      destination_run.update!(plus95_enabled: true, current: nil)
+      @membership.update!(plus95_override: true)
       source = Bible270::Reader.create!(provider: 'email', uid: 'source@example.org', email: 'source@example.org', display_name: 'Source')
-      source_membership = source.participation
-      source_membership.update!(plus95_override: true)
-      source_run = source_membership.plan_run
-      # Only the destination's run is current while handling an incoming request,
-      # modeling installations with different defaults in the test database.
-      as_destination = ->(&request) do
-        source_run.update!(current: nil)
-        destination_run.update!(current: true)
-        request.call
-      ensure
-        destination_run.update!(current: nil)
-        source_run.update!(current: true)
-      end
-      digest = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
-      refute_equal digest, Sync.fingerprint
+      assert_equal Bible270::Plan::DAYS, source.participation.plan_days
+      assert_equal Bible270::Plan::EXTENDED_DAYS, @membership.plan_days
 
-      with_in_process_http(around_request: as_destination) do
-        lookup = -> { Sync.lookup(destination: 'church', email: @reader.email, plan_fingerprint: digest) }
-        remote = lookup.call
-        assert_equal digest, remote.fetch('plan_fingerprint')
-        link = create_link(source, remote)
-        delivery = Sync.capture(source_membership, [[271, 'nt', 0]]).sole
+      with_in_process_http do
+        remote = Sync.lookup(destination: 'church', email: @reader.email)
+        assert_equal @fingerprint, remote.fetch('plan_fingerprint')
+        create_link(source, remote)
+        readings = [[270, 'nt', 0]]
+        delivery = Sync.capture(source.participation, readings).sole
         assert_equal 1, Sync.deliver_pending(delivery_id: delivery.id)
-        assert_equal [[271, 'nt', 0]], @membership.checkoffs.pluck(:day, :track, :part)
+        assert_equal readings, @membership.checkoffs.within_run_schedule.pluck(:day, :track, :part)
+      end
+    end
 
-        @membership.update!(plus95_override: false)
-        assert_raises(Sync::Conflict, &lookup)
-        assert_raises(Sync::Unavailable) { Sync::Client.new('church').complete(link, [[365, 'nt', 0]]) }
-        assert_equal [[271, 'nt', 0]], @membership.checkoffs.pluck(:day, :track, :part)
+    def test_existing_base_link_keeps_delivering_after_both_readers_change_length
+      configure_destination
+      Bible270.config.progress_sync_instance_id = 'source-instance'
+      source = Bible270::Reader.create!(provider: 'email', uid: 'source@example.org', email: 'source@example.org', display_name: 'Source')
+
+      with_in_process_http do
+        link = create_link(source, Sync.lookup(destination: 'church', email: @reader.email))
+        assert_equal @fingerprint, link.plan_fingerprint
+        source.participation.update!(plus95_override: true)
+        add_checkoff(source, [271, 'nt', 0])
+        source.participation.update!(plus95_override: false)
+        assert_equal 1, Sync.deliver_pending
+        assert_empty @membership.checkoffs.within_run_schedule
+        assert_equal [271], @membership.checkoffs.pluck(:day)
+
+        @membership.update!(plus95_override: true)
+        add_checkoff(source, [270, 'nt', 0])
+        assert_equal 1, Sync.deliver_pending
+        assert_equal [270, 271], @membership.checkoffs.within_run_schedule.order(:day).pluck(:day)
+        assert link.reload.active?
+        assert_equal @fingerprint, link.plan_fingerprint
+        assert_equal 2, link.delivered_count
       end
     end
 
@@ -479,6 +487,7 @@ if RAILS_LOADED
 
     def mount = Bible270.config.mount_at.chomp('/')
     def lookup_payload = { email: @reader.email, plan_fingerprint: @fingerprint }
+    def extended_fingerprint = Sync.fingerprint(days: Bible270::Plan::EXTENDED_DAYS)
 
     def signed_post(action, payload, raw: false, sign_body: nil, sign_path: nil, timestamp: Time.now.to_i.to_s, query: '', extra_headers: {}) # rubocop:disable Metrics/ParameterLists
       body = raw ? payload : JSON.generate(payload)
@@ -513,16 +522,14 @@ if RAILS_LOADED
 
     # Only the socket is replaced: use the actual client, headers, mounted Rails
     # route, controller, database import, and outbox delivery lifecycle.
-    def with_in_process_http(around_request: ->(&request) { request.call }, &block)
+    def with_in_process_http(&block)
       integration = self
       http_class = Class.new do
         attr_accessor :use_ssl, :verify_mode, :open_timeout, :read_timeout, :write_timeout, :max_retries
 
         define_method(:start) { |&block| block.call(self) }
         define_method(:request) do |request, &block|
-          around_request.call do
-            integration.post request.path, params: request.body, headers: request.each_header.to_h
-          end
+          integration.post request.path, params: request.body, headers: request.each_header.to_h
           result = integration.response
           response = Object.new
           response.define_singleton_method(:code) { result.status.to_s }

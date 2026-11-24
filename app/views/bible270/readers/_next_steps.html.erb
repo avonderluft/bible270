@@ -8,8 +8,7 @@
       <li class="b270-task">
         <div class="b270-task-body">
           <strong><%= link_to "Day #{day}", day_path(day, anchor: "reading_#{day}_#{first_track}") %></strong>
-          <span>
-            Still to read:
+          <span>·
             <%= safe_join(task[:remaining].map { |part|
                   link_to(part[:reference], day_path(day, anchor: "reading_#{day}_#{part[:track]}"))
                 }, " · ") %>

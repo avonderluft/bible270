@@ -24,6 +24,8 @@ The Old Testament and Revelation 22 finish on day 270 alongside Psalm 1. Daily r
 
 `Bible270::Plan` generates the schedule from `Bible270::Versification`, not the database. **Progress and reflections are public.**
 
+Use **My Progress → Print checklist** for a compact black-and-white copy of your plan, with a box for each passage.
+
 Community lists readers alphabetically. Signed-in readers, including admins in non-admin view, see progress bars and completed-day counts. A line marks today on active schedules, except undated, future, or ended ones. Visitors see names and join dates; management links and ahead/behind labels are admin-only.
 
 ## Requirements
@@ -318,7 +320,7 @@ Admin templates include `bible270/shared/admin_confirmations`, even with custom 
 
 ### Progress sync
 
-Admins can link a reader to existing, active accounts on other installations with the same email. Readers sign in only on the primary site. New check-offs sync automatically; **Sync existing progress** copies earlier completions. Both add only missing check-offs—never uncheck readings, change dates, or copy reflections. Linked readers must use the same schedule, including their effective +95 setting.
+Admins can link a reader to existing, active accounts on other installations with the same email. Readers sign in only on the primary site. New check-offs sync automatically; **Sync existing progress** copies earlier completions. Both add only missing check-offs—never uncheck readings, change dates, or copy reflections. Linked readers can use different plan lengths. Extra check-offs received by a 270-day reader stay hidden until +95 is enabled. Upgrade all linked sites for mixed-length sync. If a link already paused over a length mismatch, relink it and use **Sync existing progress**.
 
 Install migration `20260101000028` on every participating installation. Site administrators configure trust in their host initializers; no destination credentials are entered in Admin.
 
